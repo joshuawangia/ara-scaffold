@@ -144,3 +144,77 @@ A13. Standalone local schemas use full Draft 2020-12, including conditionals for
 verification. Runtime owns any provider-compatible structured-output projection
 and must always revalidate the original schema locally. Provider acceptance of
 these exact schema features is unexecuted, not assumed.
+
+## Beta engine decisions
+
+E1. Execute natively in the assigned lane, without delegation or publishing. The
+brief governs the return-to-caller handoff and permits lane commits. Baseline:
+`b8dd2d7`; real `uv sync`; 45 scaffold tests passed. New licensing tests first
+failed at the missing Licenser import, then passed after implementation.
+
+E2. Licensing checks bank identity, exact nonempty slots, canonical conclusion,
+and scope annotations first. For deductions the solver runs before schema
+matching so invalid sequents report SOLVER_COUNTEREXAMPLE, even if the named
+rule also mismatches. An entailed sequent still fails if it does not instantiate
+the named rule. Solver UNKNOWN and timeout are separate discard reasons.
+
+E3. Formula symbols use disjoint atom, predicate/arity, constant and variable
+namespaces. Quantifiers share one individual sort. Schema matching backtracks
+across commutative partitions; quantifier instances use capture-avoiding
+substitution. Scoped deductions prove the exported sequent using subproof
+implications; closure must separately prove the scoped result children.
+
+E4. Runtime entrypoint is `Engine(...).analyse(target)`; `search` is the single
+polarity primitive. EngineConfig.from_mapping consumes the existing bounds and
+optional solver_timeout_ms (1000 ms default). The scaffold config has no timeout
+key; its semantics and the shared types/ports remain unchanged. API and reasoned
+bounds are documented in ara/engine/README.md. No seam changes.
+
+E5. The best-first queue contains partial AND trees and branches over alternative
+licensed cuts. Cost is inference count plus unresolved external leaves; frozen
+T leaves cost zero; opposition in T makes cost infinite (JSON null). Random ties
+use a local seed. Depth, total allocated search nodes and cycles bound search.
+Closure counts only canonical/id-matching T leaves and local discharged
+assumptions. Missing CQ support leaves the inference itself on the frontier.
+Nonempty CQ answers must cite existing frozen T ids; this checks evidence
+presence, not semantic truth. Adapter exceptions propagate.
+
+E6. Shared premises mean canonical formula identity, not T id or text identity.
+Independent route count is the exact maximum disjoint set, including external
+CQ evidence and excluding discharged assumptions. It counts routes discovered
+within caps; a closed T terminus is not expanded to enumerate alternative proofs.
+
+E7. Forward search applies deductive schemas over the finite observed formula
+vocabulary, including quantifier substitution. Defeasible/scoped instances are
+replayed from closed proof graphs because the bank contains no formal conclusion
+schema for defeasible forms. One forward layer cannot consume its own new
+consequences. Scoped exports account for their subproof height. Consequence and
+instantiation-work caps are explicit with FORWARD_CAP and truncated=true.
+
+E8. Tier 1 marks discovered canonical premise sets with opposite licensed
+conclusions and requests a structured repair once per pair. Repairs are returned,
+not automatically applied to frozen T. Tier 2 pairs opposing CLOSED routes and
+runs forward from both; first flag is ordered by positive-route then negative-route
+consequences, or null when no bounded consequence is flagged. No model text
+creates a license or changes T through either path.
+
+E9. Graph/analysis JSON contains no wall-clock data. EngineDecision events retain
+real timestamps and reason codes through EventSink. Replays with the same seed
+and port outputs are byte-identical; logs appropriately retain run timestamps.
+Tests are scripted ports with placeholders, without network or provider imports.
+
+E10. Final conflict review found that immediate slot sets alone omit a closed
+route's CQ dependencies and exported scoped support. A new regression failed
+with no Tier 1 conflict for equal external support. Tier 1 now also compares
+closed routes by the same external canonical support used for independence;
+repair fills for these sets are labelled support_0, support_1, etc., with frozen
+T ids. Duplicate immediate/external witnesses request only one repair per pair.
+
+E11. Final lane verification: `uv run pytest -q` passed 96/96 (51 engine,
+45 scaffold). The executable negative-control runner produced 26 assertion
+failures under deliberate production mutations and 26 green restorations,
+including solver, bank, terminus, CQ, seeding, exported support, quantifiers,
+and best-first priority. `git diff --check`, byte compilation and an AST import
+audit passed. The external beta-report.md contains the test-by-test controls and
+five placed integration findings. No provider smoke, publishing or fresh-clone
+proof was performed in this engine lane; those remain integration obligations.

@@ -465,3 +465,11 @@ lists actual serving models by call kind and explicitly discloses fallback calls
 Admission retains the configured primary-model reservation; the server's default
 chain can consume additional billable partial output. Actual whole-chain usage is
 checked after each call; a post-call STOP cannot undo an oversized charge.
+
+D13. The first clean B9 trial at 191d366 stopped before the audit when a cut
+proposal exhausted 4096 output tokens. The partial output was rejected without
+retry and its USD 0.835520 measured spend is retained. Smoke now uses the normal
+8192 output allowance; the USD 5 and 1,000,000-token caps, requested model, default
+fallbacks, audit prompt and all acceptance guards are unchanged. A new clean-clone
+trial is required; this configuration change does not turn the failed trial into
+a success or enable retries of output-limit stops.

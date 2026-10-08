@@ -32,7 +32,7 @@ smoke:
   node_cap: 8
   forward_pass_depth: 1
   essay_word_limit: 300
-  max_output_tokens: 4096
+  max_output_tokens: 8192
   web_search_max_uses: 1
   token_cap: 1000000
   cost_cap_usd: 5.0

@@ -126,3 +126,10 @@ A10. Budget defaults: 200000 tokens, USD 10, output maximum 8192 tokens per call
 smoke uses 2 targets, depth 2, node cap 24 and 300-word draft. Pricing is explicit
 config data including cache and web tool assumptions requiring provider-lane
 verification before monetary enforcement. No pricing is inferred as zero.
+
+A11. Substitution.slot may be the reserved conclusion slot (UI) or a premise
+slot (EG). The formula at that slot is an instance metavariable constrained to
+the stated body substitution; it is not an independent free choice. Conclusion
+slot id is fixed to `conclusion` for deductive forms. Conjunction elimination
+and disjunctive syllogism use commutative matching; double negation is oriented
+as elimination, with introduction available through canonical normalization.

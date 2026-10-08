@@ -1,0 +1,744 @@
+bank_version: 1.0.0
+entries:
+- id: modus_ponens
+  name: Modus ponens
+  kind: deductive
+  premise_slots:
+  - id: conditional
+    template: '{conditional}'
+  - id: antecedent
+    template: '{antecedent}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: conditional
+      formula:
+        op: implies
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    - slot: antecedent
+      formula:
+        op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+    conclusion:
+      op: atom
+      args: []
+      name: Q
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: modus_tollens
+  name: Modus tollens
+  kind: deductive
+  premise_slots:
+  - id: conditional
+    template: '{conditional}'
+  - id: negated_consequent
+    template: '{negated_consequent}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: conditional
+      formula:
+        op: implies
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    - slot: negated_consequent
+      formula:
+        op: not
+        args:
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: not
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: hypothetical_syllogism
+  name: Hypothetical syllogism
+  kind: deductive
+  premise_slots:
+  - id: first
+    template: '{first}'
+  - id: second
+    template: '{second}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    - R
+    term_variables: []
+    premises:
+    - slot: first
+      formula:
+        op: implies
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    - slot: second
+      formula:
+        op: implies
+        args:
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: R
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: implies
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      - op: atom
+        args: []
+        name: R
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: disjunctive_syllogism
+  name: Disjunctive syllogism
+  kind: deductive
+  premise_slots:
+  - id: disjunction
+    template: '{disjunction}'
+  - id: negated_disjunct
+    template: '{negated_disjunct}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: disjunction
+      formula:
+        op: or
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    - slot: negated_disjunct
+      formula:
+        op: not
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: atom
+      args: []
+      name: Q
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: conjunction_introduction
+  name: Conjunction introduction
+  kind: deductive
+  premise_slots:
+  - id: left
+    template: '{left}'
+  - id: right
+    template: '{right}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: left
+      formula:
+        op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+    - slot: right
+      formula:
+        op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+    conclusion:
+      op: and
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      - op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: conjunction_elimination
+  name: Conjunction elimination
+  kind: deductive
+  premise_slots:
+  - id: conjunction
+    template: '{conjunction}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: conjunction
+      formula:
+        op: and
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: atom
+      args: []
+      name: P
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: disjunction_introduction
+  name: Disjunction introduction
+  kind: deductive
+  premise_slots:
+  - id: disjunct
+    template: '{disjunct}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: disjunct
+      formula:
+        op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+    conclusion:
+      op: or
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      - op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: reductio_ad_absurdum
+  name: Reductio ad absurdum
+  kind: deductive
+  premise_slots:
+  - id: assumption
+    template: '{assumption}'
+  - id: positive_result
+    template: '{positive_result}'
+  - id: negative_result
+    template: '{negative_result}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: assumption
+      formula:
+        op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+    - slot: positive_result
+      formula:
+        op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+    - slot: negative_result
+      formula:
+        op: not
+        args:
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: not
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes:
+    - id: reductio
+      assumption_slot: assumption
+      result_slots:
+      - positive_result
+      - negative_result
+- id: conditional_proof
+  name: Conditional proof
+  kind: deductive
+  premise_slots:
+  - id: assumption
+    template: '{assumption}'
+  - id: result
+    template: '{result}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables: []
+    premises:
+    - slot: assumption
+      formula:
+        op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+    - slot: result
+      formula:
+        op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+    conclusion:
+      op: implies
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      - op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes:
+    - id: conditional
+      assumption_slot: assumption
+      result_slots:
+      - result
+- id: universal_instantiation
+  name: Universal instantiation
+  kind: deductive
+  premise_slots:
+  - id: universal
+    template: '{universal}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables:
+    - x
+    - a
+    premises:
+    - slot: universal
+      formula:
+        op: forall
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: x
+    conclusion:
+      op: atom
+      args: []
+      name: Q
+      terms: []
+      variable: null
+    substitutions:
+    - slot: conclusion
+      body_variable: P
+      variable: x
+      term: &id001
+        kind: constant
+        name: a
+    scopes: []
+- id: existential_generalisation
+  name: Existential generalisation
+  kind: deductive
+  premise_slots:
+  - id: instance
+    template: '{instance}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    term_variables:
+    - x
+    - a
+    premises:
+    - slot: instance
+      formula:
+        op: atom
+        args: []
+        name: Q
+        terms: []
+        variable: null
+    conclusion:
+      op: exists
+      args:
+      - op: atom
+        args: []
+        name: P
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: x
+    substitutions:
+    - slot: instance
+      body_variable: P
+      variable: x
+      term: *id001
+    scopes: []
+- id: double_negation
+  name: Double negation elimination
+  kind: deductive
+  premise_slots:
+  - id: double_negated
+    template: '{double_negated}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    term_variables: []
+    premises:
+    - slot: double_negated
+      formula:
+        op: not
+        args:
+        - op: not
+          args:
+          - op: atom
+            args: []
+            name: P
+            terms: []
+            variable: null
+          name: null
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: atom
+      args: []
+      name: P
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []
+- id: constructive_dilemma
+  name: Constructive dilemma
+  kind: deductive
+  premise_slots:
+  - id: first
+    template: '{first}'
+  - id: second
+    template: '{second}'
+  - id: disjunction
+    template: '{disjunction}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  source:
+    work: Classical natural deduction
+    locator: standard rule form; no page claimed
+  critical_questions: []
+  formula_schema:
+    formula_variables:
+    - P
+    - Q
+    - R
+    - S
+    term_variables: []
+    premises:
+    - slot: first
+      formula:
+        op: implies
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: R
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    - slot: second
+      formula:
+        op: implies
+        args:
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: S
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    - slot: disjunction
+      formula:
+        op: or
+        args:
+        - op: atom
+          args: []
+          name: P
+          terms: []
+          variable: null
+        - op: atom
+          args: []
+          name: Q
+          terms: []
+          variable: null
+        name: null
+        terms: []
+        variable: null
+    conclusion:
+      op: or
+      args:
+      - op: atom
+        args: []
+        name: R
+        terms: []
+        variable: null
+      - op: atom
+        args: []
+        name: S
+        terms: []
+        variable: null
+      name: null
+      terms: []
+      variable: null
+    substitutions: []
+    scopes: []

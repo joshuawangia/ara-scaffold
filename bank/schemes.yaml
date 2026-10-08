@@ -1,0 +1,531 @@
+bank_version: 1.0.0
+entries:
+- id: expert_opinion
+  name: Expert opinion
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: expertise
+    template: '{expertise}'
+  - id: assertion
+    template: '{assertion}'
+  - id: domain_match
+    template: '{domain_match}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: How well supported is {expertise}?
+  - id: cq2
+    template: Is {assertion} consistent with {domain_match}?
+  - id: cq3
+    template: Is {conclusion} supported independently of {assertion}?
+  formula_schema: null
+- id: position_to_know
+  name: Position to know
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: access
+    template: '{access}'
+  - id: assertion
+    template: '{assertion}'
+  - id: reliability
+    template: '{reliability}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {access} support {assertion}?
+  - id: cq2
+    template: Is {reliability} established?
+  formula_schema: null
+- id: witness_testimony
+  name: Witness testimony
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: observation
+    template: '{observation}'
+  - id: testimony
+    template: '{testimony}'
+  - id: reliability
+    template: '{reliability}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {observation} support {testimony}?
+  - id: cq2
+    template: Does {reliability} support {conclusion}?
+  formula_schema: null
+- id: popular_opinion
+  name: Popular opinion
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: acceptance
+    template: '{acceptance}'
+  - id: population
+    template: '{population}'
+  - id: relevance
+    template: '{relevance}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {acceptance} established for {population}?
+  - id: cq2
+    template: Does {relevance} support {conclusion}?
+  formula_schema: null
+- id: analogy
+  name: Analogy
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: source_case
+    template: '{source_case}'
+  - id: similarity
+    template: '{similarity}'
+  - id: transfer
+    template: '{transfer}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {similarity} relevant to {transfer}?
+  - id: cq2
+    template: Does {source_case} support {conclusion}?
+  formula_schema: null
+- id: cause_to_effect
+  name: Cause to effect
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: causal_rule
+    template: '{causal_rule}'
+  - id: cause
+    template: '{cause}'
+  - id: conditions
+    template: '{conditions}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Are {conditions} satisfied?
+  - id: cq2
+    template: Does {causal_rule} connect {cause} to {conclusion}?
+  formula_schema: null
+- id: correlation_to_cause
+  name: Correlation to cause
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: correlation
+    template: '{correlation}'
+  - id: direction
+    template: '{direction}'
+  - id: alternatives
+    template: '{alternatives}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {correlation} established?
+  - id: cq2
+    template: Are {direction} and {alternatives} sufficient for {conclusion}?
+  formula_schema: null
+- id: sign
+  name: Sign
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: sign_relation
+    template: '{sign_relation}'
+  - id: observed_sign
+    template: '{observed_sign}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {observed_sign} reliable?
+  - id: cq2
+    template: Does {sign_relation} support {conclusion}?
+  formula_schema: null
+- id: established_rule
+  name: Established rule
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: rule
+    template: '{rule}'
+  - id: applicability
+    template: '{applicability}'
+  - id: exceptions
+    template: '{exceptions}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {applicability} satisfy {rule}?
+  - id: cq2
+    template: Do {exceptions} defeat {conclusion}?
+  formula_schema: null
+- id: verbal_classification
+  name: Verbal classification
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: criteria
+    template: '{criteria}'
+  - id: properties
+    template: '{properties}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Are {criteria} appropriate?
+  - id: cq2
+    template: Do {properties} satisfy {criteria}?
+  formula_schema: null
+- id: practical_reasoning
+  name: Practical reasoning
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: goal
+    template: '{goal}'
+  - id: means
+    template: '{means}'
+  - id: alternatives
+    template: '{alternatives}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Do {means} achieve {goal}?
+  - id: cq2
+    template: Do {alternatives} defeat {conclusion}?
+  formula_schema: null
+- id: positive_consequences
+  name: Positive consequences
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: action
+    template: '{action}'
+  - id: consequences
+    template: '{consequences}'
+  - id: valuation
+    template: '{valuation}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {action} produce {consequences}?
+  - id: cq2
+    template: Does {valuation} support {conclusion}?
+  formula_schema: null
+- id: negative_consequences
+  name: Negative consequences
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: action
+    template: '{action}'
+  - id: consequences
+    template: '{consequences}'
+  - id: valuation
+    template: '{valuation}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {action} produce {consequences}?
+  - id: cq2
+    template: Does {valuation} support {conclusion}?
+  formula_schema: null
+- id: commitment
+  name: Commitment
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: commitment
+    template: '{commitment}'
+  - id: implication
+    template: '{implication}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {commitment} established?
+  - id: cq2
+    template: Does {implication} connect {commitment} to {conclusion}?
+  formula_schema: null
+- id: inconsistent_commitment
+  name: Inconsistent commitment
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: first_commitment
+    template: '{first_commitment}'
+  - id: second_commitment
+    template: '{second_commitment}'
+  - id: incompatibility
+    template: '{incompatibility}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Are {first_commitment} and {second_commitment} established?
+  - id: cq2
+    template: Does {incompatibility} support {conclusion}?
+  formula_schema: null
+- id: precedent
+  name: Precedent
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: prior_case
+    template: '{prior_case}'
+  - id: similarity
+    template: '{similarity}'
+  - id: applicable_rule
+    template: '{applicable_rule}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {similarity} justify applying {applicable_rule}?
+  - id: cq2
+    template: Is {prior_case} relevant to {conclusion}?
+  formula_schema: null
+- id: best_explanation
+  name: Best explanation / abduction
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: observations
+    template: '{observations}'
+  - id: explanation
+    template: '{explanation}'
+  - id: alternatives
+    template: '{alternatives}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {explanation} account for {observations}?
+  - id: cq2
+    template: Do {alternatives} defeat {conclusion}?
+  formula_schema: null
+- id: example
+  name: Example
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: instance
+    template: '{instance}'
+  - id: representativeness
+    template: '{representativeness}'
+  - id: generalisation
+    template: '{generalisation}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {instance} support {generalisation}?
+  - id: cq2
+    template: Is {representativeness} adequate for {conclusion}?
+  formula_schema: null
+- id: slippery_slope
+  name: Gradualism / slippery slope
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: initial_step
+    template: '{initial_step}'
+  - id: transition_chain
+    template: '{transition_chain}'
+  - id: endpoint
+    template: '{endpoint}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Does {initial_step} initiate {transition_chain}?
+  - id: cq2
+    template: Does {transition_chain} support {endpoint}?
+  - id: cq3
+    template: Does {endpoint} support {conclusion}?
+  formula_schema: null
+- id: ad_hominem_direct
+  name: 'Ad hominem: direct'
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: credibility_attribute
+    template: '{credibility_attribute}'
+  - id: relevance
+    template: '{relevance}'
+  - id: assertion
+    template: '{assertion}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {credibility_attribute} established?
+  - id: cq2
+    template: Does {relevance} connect {credibility_attribute} to {assertion}?
+  formula_schema: null
+- id: ad_hominem_circumstantial
+  name: 'Ad hominem: circumstantial'
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: circumstances
+    template: '{circumstances}'
+  - id: commitment
+    template: '{commitment}'
+  - id: inconsistency
+    template: '{inconsistency}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Are {circumstances} established?
+  - id: cq2
+    template: Does {inconsistency} concern {commitment}?
+  - id: cq3
+    template: Does {inconsistency} support {conclusion}?
+  formula_schema: null
+- id: ad_hominem_tu_quoque
+  name: 'Ad hominem: tu quoque'
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: conduct
+    template: '{conduct}'
+  - id: assertion
+    template: '{assertion}'
+  - id: inconsistency
+    template: '{inconsistency}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Are {conduct} and {assertion} established?
+  - id: cq2
+    template: Does {inconsistency} support {conclusion}?
+  formula_schema: null
+- id: bias
+  name: Bias
+  kind: defeasible
+  source:
+    work: Walton, Reed & Macagno (2008), Argumentation Schemes, Cambridge University
+      Press
+    locator: 'page: unknown; chapter: unknown'
+  premise_slots:
+  - id: bias_evidence
+    template: '{bias_evidence}'
+  - id: assertion
+    template: '{assertion}'
+  - id: relevance
+    template: '{relevance}'
+  conclusion_slot:
+    id: conclusion
+    template: '{conclusion}'
+  critical_questions:
+  - id: cq1
+    template: Is {bias_evidence} established?
+  - id: cq2
+    template: Does {relevance} connect {bias_evidence} to {assertion}?
+  formula_schema: null

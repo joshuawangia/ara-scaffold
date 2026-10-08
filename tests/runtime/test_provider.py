@@ -42,7 +42,7 @@ def test_anthropic_sdk_request_shapes_and_accounting(rig):
     class Messages:
         def create(self, **kwargs):
             requests.append(kwargs)
-            return SimpleNamespace(to_dict=lambda: response({'formula': {'op': 'atom', 'name': 'P'}}))
+            return SimpleNamespace(to_dict=lambda **kwargs: response({'formula': {'op': 'atom', 'name': 'P'}}))
         def count_tokens(self, **kwargs):
             counts.append(kwargs)
             return SimpleNamespace(input_tokens=10)
@@ -146,3 +146,33 @@ def test_compound_generation_cannot_omit_all_arguments():
                                                           'name': None, 'terms': [], 'variable': None}})
     compound = Formula('and', (Formula('atom', name='P'), Formula('atom', name='Q')))
     Draft202012Validator(schema).validate({'formula': compound.to_dict()})
+
+
+def test_sdk_container_and_web_results_are_json_safe(rig):
+    from anthropic.types.beta import BetaMessage
+    from datetime import datetime
+    calls, _, log = rig
+    calls.config.update(token_cap=1000000, web_search_max_uses=1)
+    message = BetaMessage.model_validate({
+        'id': 'msg_P', 'type': 'message', 'role': 'assistant', 'model': calls.config['model'],
+        'stop_reason': 'end_turn', 'stop_sequence': None,
+        'container': {'id': 'P', 'expires_at': '2026-10-08T22:00:00Z'},
+        'content': [{'type': 'text', 'text': 'P'},
+                    {'type': 'web_search_tool_result', 'tool_use_id': 'P', 'content': [
+                        {'type': 'web_search_result', 'title': 'P', 'url': 'https://example.org/P',
+                         'encrypted_content': 'P', 'page_age': None}]}],
+        'usage': {'input_tokens': 10, 'output_tokens': 5,
+                  'server_tool_use': {'web_search_requests': 1, 'web_fetch_requests': 0}}})
+    assert isinstance(message.to_dict()['container']['expires_at'], datetime)
+    client = SimpleNamespace(messages=SimpleNamespace(count_tokens=lambda **kw: SimpleNamespace(input_tokens=1)),
+        beta=SimpleNamespace(messages=SimpleNamespace(create=lambda **kw: message)))
+    calls.provider = AnthropicProvider(calls.config, client)
+    evidence = calls.search_evidence({}, [])
+    assert evidence['urls'] == ['https://example.org/P']
+    event = next(e for e in log.read() if e['label'] == 'MODEL')
+    raw = json.loads(event['response'])
+    assert isinstance(raw['container']['expires_at'], str)
+    assert raw['content'][1]['content'][0]['url'] == evidence['urls'][0]
+    assert event['usage']['server_tool_uses'] == 1
+    assert event['cost_usd'] == pytest.approx(.010175)
+    assert list(calls.cache.path.glob('*.json'))

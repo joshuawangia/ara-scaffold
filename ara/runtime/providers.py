@@ -179,4 +179,4 @@ class AnthropicProvider:
         if self.config.get('fallbacks', 'default') == 'default':
             request.update(betas=['server-side-fallback-2026-07-01'], fallbacks='default')
         raw = self.client.beta.messages.create(**request)
-        return Response(raw.to_dict())
+        return Response(raw.to_dict(mode="json"))

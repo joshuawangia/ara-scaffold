@@ -483,3 +483,7 @@ request completed without a server web-search invocation on placeholder input,
 so external-source retrieval remains unexercised. This executed receipt supersedes
 D10's blocked status; B9 remains the authorized provider configuration. Failed
 trial costs and the full per-kind model account remain in delta-report.md.
+
+Z1. SDK 1.12.1 responses use to_dict(mode="json") at the provider boundary.
+A real BetaMessage container expiry and search-result block pass through the
+fake transport, ModelCalls, event log and cache. Python-mode mutation fails.

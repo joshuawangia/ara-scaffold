@@ -19,7 +19,7 @@ def test_fallback_request_shape(rig, mode):
     requests = []
     def create(**kwargs):
         requests.append(kwargs)
-        return SimpleNamespace(to_dict=lambda: response({}))
+        return SimpleNamespace(to_dict=lambda **kwargs: response({}))
     # Only the beta endpoint is exposed, so ordinary messages.create cannot pass.
     client = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
     AnthropicProvider(calls.config, client).complete('formalise', 'P', None, 32)

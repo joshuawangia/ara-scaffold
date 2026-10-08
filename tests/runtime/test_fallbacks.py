@@ -112,9 +112,9 @@ def test_final_fallback_refusal_is_not_retried(rig):
     raw = fallback_response()
     raw['stop_reason'] = 'refusal'
     # Valid audit content cannot override a whole-chain refusal.
-    raw['content'][-1]['text'] = json.dumps({'faithful': True, 'covered_node_ids': ['n1'],
-                                           'missing_node_ids': [], 'extra_steps': []})
-    register(calls, provider, 'audit_essay', {'route': graph().to_dict(), 'draft': draft}, {}, **raw)
+    raw['content'][-1]['text'] = json.dumps({'labels': [{'sentence': 1, 'node_ids': ['n1'],
+                                            'asserts_unlisted_content': False}]})
+    register(calls, provider, 'audit_essay', calls.audit_inputs(graph(), draft), {}, **raw)
     with pytest.raises(Rejected, match='provider stop: refusal'):
         calls.audit_essay(graph(), draft)
     assert provider.calls == 1

@@ -38,14 +38,18 @@ are simulated and incur no provider spend.
 
 ## Real smoke
 
-A clean-clone real smoke completed with both audit passes, route graphs, draft,
+A historical clean-clone real smoke completed with both audit passes, route graphs, draft,
 log and essay/methodology export: 155,636 input tokens, 11,211 output tokens and
 USD 1.058455. Every call was served by `claude-opus-5`. Default server fallbacks
 were enabled, but no fallback hop was reported. Mock tests and production-wire
 controls verify fallback billing, provenance and final-chain refusal handling.
 The placeholder evidence stage returned without invoking a web search; this run
 does not prove live external-source retrieval. Full receipts are in the external
-delta report. Earlier failed runs and their costs remain recorded there.
+delta report. An independent later trial refused the former audit request. The
+current audit labels numbered body sentences against node text; code computes
+coverage and the verdict. It does not request a reconstruction of text production.
+Fresh-clone outcomes for this revision are in the external zeta report; observed
+successes do not guarantee that a provider will never refuse. Earlier failed runs and their costs remain recorded there.
 
 Set `ANTHROPIC_API_KEY` in your environment, or source the operator's credential
 file in the same shell as the command:
@@ -137,7 +141,11 @@ exported before verification and the second audit pass. OPEN frontiers remain
 explicitly unresolved. Budget STOP returns exit 2, preserves partial graphs,
 writes `partial.json` and exports methodology. A provider failure without usage
 charges a labelled conservative reservation, reports unknown actual spend and
-refuses resume.
+refuses resume. Post-dispatch serialization, parsing or completion-log failures
+likewise stop with an incomplete record and reservation-based cap checks.
+Methodology explicitly marks incomplete totals and outstanding dispatches. A
+persistent storage failure may prevent new appends; preserve the log/checkpoint
+and reconcile before starting another run.
 
 The append-only JSONL records full prompts/responses, model id/version, token and
 server-tool usage, cost, time, cache hits, rejections, engine decisions and every
@@ -149,7 +157,9 @@ Essay export removes run metadata and node markers and replaces literal
 `--redact` identifiers. It does not discover identities in prose. Methodology
 intentionally retains the complete record and is not anonymised. Web evidence
 and model audits are bounded assessments, not exhaustive originality or source
-truth proofs. Formal entailment does not establish faithful text translation or
+truth proofs. Sentence inventory and id validation cannot prove that a valid-id
+label is semantically correct; the simple deterministic splitter also splits
+abbreviations at punctuation followed by whitespace. Formal entailment does not establish faithful text translation or
 CQ truth. Search and forward results are bounded by configuration; independent
 route counts cover discovered routes. Scheme forms cite Walton, Reed & Macagno
 (2008); unverified page/chapter locators remain explicitly unknown.

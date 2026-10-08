@@ -487,3 +487,33 @@ trial costs and the full per-kind model account remain in delta-report.md.
 Z1. SDK 1.12.1 responses use to_dict(mode="json") at the provider boundary.
 A real BetaMessage container expiry and search-result block pass through the
 fake transport, ModelCalls, event log and cache. Python-mode mutation fails.
+
+Z2. Post-dispatch serialization, JSON parsing and completion-log failures book the
+admitted reservation, replace any unpersisted in-memory actual charge, emit an
+incomplete MODEL record, enforce the post-call cap, and STOP without retries.
+The raw payload is omitted when it cannot safely be persisted; the prompt and
+reservation remain. Fully parsed schema/reference rejections retain their actual
+usage and existing bounded correction policy. Unknown accounting refuses resume.
+Methodology marks unknown reservations and outstanding dispatches INCOMPLETE.
+A persistent storage outage cannot guarantee a new append: the durable call_start
+and checkpoint still force refusal; restoring storage/reconciling is required.
+
+B10 (brain decision, brief 4). Audit by sentence labelling against outline entries.
+The model receives numbered body sentences and node id/text pairs, without graph
+internals or bibliography. Remove node markers, split on newline or whitespace
+following '.', '!' or '?', trim and discard empty fragments, number from one.
+This deliberately simple deterministic rule can split abbreviations; it is not a
+linguistic sentence parser. Title and separate bibliography are excluded.
+The closed schema permits only sentence number, node_ids and
+asserts_unlisted_content per label. Code rejects unknown/duplicate/missing sentence
+numbers and unknown ids; computes coverage, missing nodes, extra-content sentences
+and faithful; retains exact marker inventory and logs the computed result.
+An adverse valid audit or refusal is final, never corrected into approval.
+Default server fallbacks remain enabled (B9).
+
+Z3. Sentence labels remain a semantic model assessment. Code catches unknown ids,
+missing coverage, flagged additions and missing markers. A false match to a valid
+node with an otherwise valid inventory can pass: placeholders Q versus node P
+prove this limit offline. Neither marker presence nor computed faithful proves
+natural-language equivalence. No semantic guarantee or zero-refusal promise is
+made; fresh-clone live outcomes are observed evidence only.

@@ -36,7 +36,7 @@ CASES = [
      'test_verification_export.py::test_methodology_regenerates_from_log_alone'),
     ('essay_cap', 'calls.py', "require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')", 'pass',
      'test_calls.py::test_essay_word_cap'),
-    ('audit_steps', 'calls.py', "and not data['extra_steps']", 'and True',
+    ('audit_steps', 'calls.py', "not missing and not extra and markers == ids", "not missing and markers == ids",
      'test_calls.py::test_audit_rejects_extra_step'),
     ('unverified_removal', 'calls.py', "if item['status'] == 'unverified':", 'if False:',
      'test_verification_export.py::test_unverified_items_removed_never_replaced'),
@@ -51,7 +51,7 @@ CASES = [
      'test_verification_export.py::test_methodology_regenerates_from_log_alone'),
     ('negation_orchestration', 'orchestration.py', "((analysis.target, 'target'), (analysis.negated, 'negation'))", "((analysis.target, 'target'),)",
      'test_cli.py::test_smoke_cli_runs_both_polarities_and_exports'),
-    ('unknown_spend', 'calls.py', 'if unknown_usage:\n                self.budget.stop', 'if False:\n                self.budget.stop',
+    ('unknown_spend', 'calls.py', 'if unknown_usage:\n                self.budget.after(kind)', 'if False:\n                self.budget.after(kind)',
      'test_calls.py::test_transport_failure_charges_reservation_and_stops'),
 ]
 

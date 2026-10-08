@@ -90,8 +90,8 @@ def test_audit_rejects_extra_step(rig):
     calls, provider, log = rig
     calls.config['validation_attempts'] = 3
     draft = {'title': 'P', 'body': '[[node:n1]] P Q', 'bibliography': []}
-    register(calls, provider, 'audit_essay', {'route': graph().to_dict(), 'draft': draft},
-             {'faithful': True, 'covered_node_ids': ['n1'], 'missing_node_ids': [], 'extra_steps': ['Q']})
+    register(calls, provider, 'audit_essay', calls.audit_inputs(graph(), draft),
+             {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_unlisted_content': True}]})
     with pytest.raises(Rejected, match='audit'):
         calls.audit_essay(graph(), draft)
     assert provider.calls == 1

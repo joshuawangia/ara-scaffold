@@ -69,8 +69,8 @@ def canned(config):
             add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': []}, {'proposals': []})
     route = RouteGraph('route:p', 'n:p', (RouteNode('n:p', TARGETS[0], 'leaf', 't1'),), 'CLOSED')
     add('write_essay', {'route': route.to_dict(), 'word_limit': 300, 'feedback': []}, DRAFT)
-    add('audit_essay', {'route': route.to_dict(), 'draft': DRAFT},
-        {'faithful': True, 'covered_node_ids': ['n:p'], 'missing_node_ids': [], 'extra_steps': []})
+    add('audit_essay', calls.audit_inputs(route, DRAFT),
+        {'labels': [{'sentence': 1, 'node_ids': ['n:p'], 'asserts_unlisted_content': False}]})
     content = [{'type': 'text', 'text': 'P'}]
     add('search_evidence', {'draft': DRAFT, 'items': []}, {}, content)
     add('verify_originality_citations', {'draft': DRAFT, 'items': [],

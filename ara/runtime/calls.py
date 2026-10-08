@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Callable, Any
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError
 
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical
@@ -83,6 +83,33 @@ class ModelCalls:
         raise AssertionError('unreachable')
 
     def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
+        offset = len(self.log.read())
+        before_tokens, before_cost = self.budget.used_tokens, self.budget.used_cost
+        started = time.monotonic()
+        try:
+            return self._execute_once(kind, inputs, check)
+        except Exception as exc:
+            events = self.log.read()[offset:]
+            starts = [e for e in events if e['stage'] == 'call_start']
+            completed = [e for e in events if e['label'] == 'MODEL']
+            if not starts or completed:
+                raise
+            # Any unrecorded dispatched result is incomplete. Do not serialize the
+            # suspect raw response again, and replace any in-memory actual charge.
+            admission = json.loads(starts[-1]['payload_json'])
+            usage = TokenUsage.from_dict(admission['reserved_usage'])
+            cost = self.budget.cost(usage)
+            self.budget.used_tokens, self.budget.used_cost = before_tokens, before_cost
+            self.budget.charge(usage, cost)
+            self.log.emit(RunEvent(now(), kind, 'MODEL', self.provider.model, None,
+                admission['prompt'], None, usage, float(cost), time.monotonic() - started,
+                payload_json=canonical({'status': 'incomplete', 'reason': type(exc).__name__,
+                    'cache_hit': False, 'cache_key': admission['cache_key'],
+                    'accounting': 'reservation_unknown_actual'})))
+            self.budget.after(kind)
+            self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
+
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = None if kind == 'search_evidence' else json.loads(
             (self.root / 'schemas' / f'{kind}.json').read_text())
@@ -132,9 +159,11 @@ class ModelCalls:
                 data = json.loads(Response(raw).text())
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
-        except BudgetStop:
+        except (BudgetStop, json.JSONDecodeError):
             raise
         except Exception as exc:
+            if charged and not isinstance(exc, (Rejected, ValueError, ValidationError)):
+                raise
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
             reason = str(exc) if isinstance(exc, (Rejected, UnpricedModel)) else type(exc).__name__
@@ -142,8 +171,9 @@ class ModelCalls:
             if unknown_usage:
                 usage, cost = estimate, self.budget.cost(estimate)
                 self.budget.charge(usage, cost)
-            self._event(kind, prompt, raw, usage, cost, start, cached, 'rejected', reason, key, unknown_usage)
+            self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage)
             if unknown_usage:
+                self.budget.after(kind)
                 self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
             self.budget.after(kind)
             if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
@@ -229,14 +259,34 @@ class ModelCalls:
             return data
         return self.call('write_essay', self.essay_inputs(route), check)
 
+    @staticmethod
+    def audit_inputs(route: RouteGraph, draft: dict) -> dict:
+        body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
+        parts = [part.strip() for part in re.split(r'(?<=[.!?])\s+|\n+', body) if part.strip()]
+        return {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
+                'nodes': [{'id': n.id, 'text': n.proposition.text} for n in route.nodes]}
+
     def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
+        inputs = self.audit_inputs(route, draft)
         def check(data):
             ids = {n.id for n in route.nodes}
+            expected = {s['sentence'] for s in inputs['sentences']}
+            labels = data['labels']
+            numbers = [item['sentence'] for item in labels]
+            require(len(numbers) == len(set(numbers)) and set(numbers) == expected,
+                    'essay audit: sentence inventory mismatch')
+            covered = {node for item in labels for node in item['node_ids']}
+            require(covered <= ids, 'essay audit: unknown node id')
+            missing = ids - covered
+            extra = [item['sentence'] for item in labels if item['asserts_unlisted_content']]
             markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
-            require(data['faithful'] and not data['missing_node_ids'] and not data['extra_steps']
-                    and set(data['covered_node_ids']) == ids and markers == ids, 'essay audit failed')
-            return data
-        return self.call('audit_essay', {'route': route.to_dict(), 'draft': draft}, check)
+            result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
+                      'extra_steps': extra,
+                      'faithful': not missing and not extra and markers == ids}
+            self.log.record('essay_audit', **result)
+            require(result['faithful'], 'essay audit failed')
+            return result
+        return self.call('audit_essay', inputs, check)
 
     def search_evidence(self, draft: dict, items: list[dict]) -> dict:
         return self.call('search_evidence', {'draft': draft, 'items': items})

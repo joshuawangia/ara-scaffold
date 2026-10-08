@@ -21,7 +21,7 @@ PAYLOADS = {
     'tier1_repair': {'action': 'unresolved', 'detail': 'P', 'proposals': []},
     'write_essay': {'title': 'P', 'body': 'P', 'bibliography': [
         {'id': 'c1', 'text': 'placeholder:1', 'url': None}]},
-    'audit_essay': {'faithful': True, 'covered_node_ids': ['n1'], 'missing_node_ids': [], 'extra_steps': []},
+    'audit_essay': {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_unlisted_content': False}]},
     'verify_originality_citations': {
         'originality': {'assessment': 'unverified', 'evidence_urls': [], 'detail': 'P'},
         'items': [{'id': 'c1', 'kind': 'citation', 'text': 'placeholder:1',

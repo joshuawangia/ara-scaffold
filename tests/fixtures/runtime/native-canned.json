@@ -167,13 +167,13 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:ba9fc6da5c15ed5bda82824fae5b93f3602237b954a5e674c824b4f83fd8a28e": {
+  "audit_essay:b752b8bb5529347b332d8a601d5d68db2ab67d3805f795ec19303de36045c7cc": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
       {
         "type": "text",
-        "text": "{\"covered_node_ids\":[\"n0\"],\"extra_steps\":[],\"faithful\":true,\"missing_node_ids\":[]}"
+        "text": "{\"labels\":[{\"asserts_unlisted_content\":false,\"node_ids\":[\"n0\"],\"sentence\":1}]}"
       }
     ],
     "usage": {

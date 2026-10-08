@@ -27,7 +27,13 @@ def methodology(log_path: Path) -> str:
          'blocks': p['fallback_blocks'], 'iterations': p['fallback_iterations']}
         for e, p in routing if p.get('fallback_used')
     ]
+    unknown = [e for e, p in routing if p.get('accounting') == 'reservation_unknown_actual']
+    pending = max(0, sum(e['stage'] == 'call_start' for e in events) -
+                  sum(not p.get('cache_hit') for e, p in routing))
     summary = {
+        'accounting_complete': not unknown and not pending,
+        'incomplete_calls': len(unknown) + pending,
+        'unresolved_dispatches': pending,
         'served_models_by_kind': served_by_kind,
         'fallback_calls': fallback_calls,
         'models': sorted({(e['model_id'], e['model_version']) for e in calls}, key=repr),
@@ -35,7 +41,8 @@ def methodology(log_path: Path) -> str:
         'tokens': {k: sum(e['usage'][k] for e in events) for k in (
             'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
         'cost_usd': round(sum(e['cost_usd'] for e in events), 10),
-        'accounting_note': 'Totals include conservative reservations for failed calls with unknown usage; these are not measured charges.',
+        'accounting_note': ('INCOMPLETE totals: actual spend is unknown. Reservations are not measured charges.'
+                            if unknown or pending else 'Complete recorded usage; prices are configuration assumptions.'),
         'unknown_spend_reservations_usd': sum(e['cost_usd'] for e in calls
             if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual'),
         'model_call_seconds': sum(e['wall_seconds'] for e in events),

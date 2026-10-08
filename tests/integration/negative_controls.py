@@ -40,6 +40,7 @@ CASES = [
     ('fallback_disclosure', 'ara/runtime/export.py', "for e, p in routing if p.get('fallback_used')", 'for e, p in routing if False', 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology'),
     ('fallback_rate_validation', 'ara/runtime/budget.py', "for rates in config['pricing'].values():", 'for rates in [self.rates]:', 'tests/runtime/test_fallbacks.py::test_fallback_rates_are_validated'),
     ('ambiguous_iteration', 'ara/runtime/budget.py', "if fallback and not iteration.get('model'):", 'if False:', 'tests/runtime/test_fallbacks.py::test_ambiguous_iteration_model_stops'),
+    ('fallback_off', 'ara/runtime/providers.py', "if self.config.get('fallbacks', 'default') == 'default':", 'if True:', 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[off]'),
 ]
 
 

@@ -20,6 +20,16 @@ class FakeEngine:
         self.calls = calls
         self.goals = []
 
+    def analyse(self, target, commitments):
+        from ara.engine import AnalysisResult
+        from ara.engine.search import SearchResult
+        from ara.types import negate_proposition
+        results = []
+        for goal in (target, negate_proposition(target)):
+            routes = self.search(goal, commitments)
+            results.append(SearchResult(goal, routes, sum(r.status == 'CLOSED' for r in routes), 1, False))
+        return AnalysisResult(*results, (), (), ())
+
     def search(self, target, commitments):
         self.goals.append(target)
         t_id = self.calls.map_leaf(target, commitments)

@@ -57,7 +57,7 @@ class MockProvider:
         return Response(json.loads(canonical(self.responses[key])))
 
 
-def structured_schema(schema: dict, depth: int = 6) -> dict:
+def structured_schema(schema: dict, depth: int = 2) -> dict:
     """Project unsupported constraints; local validation remains authoritative.
 
     Formula recursion becomes an acyclic chain of definitions with a finite depth.
@@ -68,16 +68,27 @@ def structured_schema(schema: dict, depth: int = 6) -> dict:
     definitions = original.get('$defs', {})
     formula = definitions.pop('formula', None)
     if formula:
+        # A branch per operator at every depth explodes the service grammar.
+        # Use a uniform AST envelope; the original local schema enforces arity
+        # and operator-specific fields. Explicit defaults also avoid optional-
+        # property combinations multiplying the compiled grammar.
+        operators = [branch['properties']['op']['const'] for branch in formula['oneOf']]
         for level in range(depth + 1):
-            node = json.loads(canonical(formula))
-            if level == 0:
-                node['oneOf'] = [b for b in node['oneOf']
-                                 if b['properties']['op']['const'] in ('atom', 'predicate')]
-            text = canonical(node).replace('#/$defs/formula', f'#/$defs/formula_{level - 1}')
-            definitions[f'formula_{level}'] = json.loads(text)
+            definitions[f'formula_{level}'] = {
+                'type': 'object', 'additionalProperties': False,
+                'properties': {
+                    'op': {'type': 'string', 'enum': operators if level else ['atom', 'predicate']},
+                    'args': {'type': 'array', 'items': {'$ref': f'#/$defs/formula_{level - 1}'}
+                             if level else {'type': 'null'}},
+                    'name': {'type': ['string', 'null']},
+                    'terms': {'type': 'array', 'items': {'$ref': '#/$defs/term'}},
+                    'variable': {'type': ['string', 'null']},
+                },
+                'required': ['op', 'args', 'name', 'terms', 'variable'],
+            }
         original = json.loads(canonical(original).replace('"#/$defs/formula"', f'"#/$defs/formula_{depth}"'))
     unsupported = {'$schema', 'minimum', 'maximum', 'minLength', 'maxLength', 'minItems',
-                   'maxItems', 'uniqueItems', 'if', 'then', 'else', 'allOf'}
+                   'maxItems', 'uniqueItems', 'if', 'then', 'else', 'allOf', 'not'}
     def project(value: Any) -> Any:
         if isinstance(value, list):
             return [project(v) for v in value]
@@ -103,7 +114,7 @@ class AnthropicProvider:
         output = {'effort': self.config['effort']}
         if schema is not None:
             output['format'] = {'type': 'json_schema', 'schema': structured_schema(
-                schema, self.config.get('formula_output_depth', 6))}
+                schema, self.config.get('formula_output_depth', 2))}
         request = {'model': self.model, 'max_tokens': maximum,
                    'thinking': {'type': 'adaptive'}, 'output_config': output,
                    'messages': [{'role': 'user', 'content': prompt}]}

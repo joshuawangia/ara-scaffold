@@ -49,7 +49,7 @@ CASES = [
     ('engine_decisions', 'logging.py', 'def emit(self, event: RunEvent) -> None:',
      "def emit(self, event: RunEvent) -> None:\n        if event.label == 'ENGINE':\n            return",
      'test_verification_export.py::test_methodology_regenerates_from_log_alone'),
-    ('negation_orchestration', 'orchestration.py', "((target, 'target'), (negate_proposition(target), 'negation'))", "((target, 'target'),)",
+    ('negation_orchestration', 'orchestration.py', "((analysis.target, 'target'), (analysis.negated, 'negation'))", "((analysis.target, 'target'),)",
      'test_cli.py::test_smoke_cli_runs_both_polarities_and_exports'),
     ('unknown_spend', 'calls.py', 'if unknown_usage:\n                self.budget.stop', 'if False:\n                self.budget.stop',
      'test_calls.py::test_transport_failure_charges_reservation_and_stops'),

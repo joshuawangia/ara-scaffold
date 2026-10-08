@@ -3,35 +3,37 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
-from typing import Protocol, Any
+from typing import Protocol
 
 from ara.bank import Bank
+from ara.engine import AnalysisResult, Engine, EngineConfig
 from ara.runtime.cache import canonical
-from ara.runtime.calls import ModelCalls, Rejected
+from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.render import save_route
-from ara.types import CommitmentSet, Proposition, RouteGraph, negate_proposition
+from ara.types import CommitmentSet, Proposition, RouteGraph
 
 
 class EngineAPI(Protocol):
-    """Temporary runtime-side interface until the engine lane publishes its API.
+    def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult: ...
 
-    The factory receives adapters implementing every ara.ports protocol. Search
-    returns graphs only. Conflicts performs Tier 1, Tier 2, forward pass and route
-    independence accounting and returns JSON-serializable findings. It emits every
-    licensing/discard decision through the supplied EventSink.
-    """
-    def search(self, target: Proposition, commitments: CommitmentSet) -> tuple[RouteGraph, ...]: ...
-    def conflicts(self, routes: tuple[RouteGraph, ...], commitments: CommitmentSet) -> dict: ...
+
+class NativeEngine:
+    """Bind runtime ports to the engine's complete, deterministic analysis API."""
+    def __init__(self, bank: Bank, calls: ModelCalls):
+        self.bank, self.calls = bank, calls
+
+    def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
+        calls = self.calls
+        engine = Engine(bank=self.bank, commitments=commitments, proposer=calls,
+                        formaliser=calls, leaf_mapper=calls, cq_answerer=calls,
+                        repairer=calls, sink=calls.log,
+                        config=EngineConfig.from_mapping(calls.config))
+        return engine.analyse(target)
 
 
 def native_engine(bank: Bank, calls: ModelCalls) -> EngineAPI:
-    try:
-        from ara.engine import create_engine
-    except ImportError as exc:
-        raise RuntimeError('engine public API unavailable: ara.engine.create_engine; integration required') from exc
-    return create_engine(bank=bank, proposer=calls, formaliser=calls, mapper=calls,
-                         cq_answerer=calls, repairer=calls, sink=calls.log, config=calls.config)
+    return NativeEngine(bank, calls)
 
 
 def prepare(calls: ModelCalls, bank: Bank, literature: str, audience: str,
@@ -48,22 +50,32 @@ def prepare(calls: ModelCalls, bank: Bank, literature: str, audience: str,
 def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
                targets: tuple[Proposition, ...]) -> tuple[RouteGraph, ...]:
     routes = []
-    ids = set()
+    graphs_by_id = {}
+    analyses = []
     for target in targets:
-        for goal, polarity in ((target, 'target'), (negate_proposition(target), 'negation')):
-            calls.log.record('search_started', target=target.id, polarity=polarity, goal=goal.to_dict())
-            found = engine.search(goal, commitments)
-            for route in found:
-                if route.id in ids:
-                    raise ValueError('engine returned duplicate route id')
-                ids.add(route.id)
+        calls.log.record('analysis_started', target=target.to_dict())
+        analysis = engine.analyse(target, commitments)
+        analyses.append(analysis.to_dict())
+        for result, polarity in ((analysis.target, 'target'), (analysis.negated, 'negation')):
+            calls.log.record('search_started', target=target.id, polarity=polarity,
+                             goal=result.target.to_dict(), source='completed engine analysis')
+            for route in result.routes:
+                # Formula-identical targets can share deterministic graph ids.
+                # Retain each search in the log, but persist/select a graph once.
                 calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict())
-                save_route(calls.log.path.parent / 'routes', route)
-                routes.append(route)
+                previous = graphs_by_id.get(route.id)
+                if previous is not None and previous != route:
+                    raise ValueError('engine returned conflicting graphs for one route id')
+                if previous is None:
+                    graphs_by_id[route.id] = route
+                    save_route(calls.log.path.parent / 'routes', route)
+                    routes.append(route)
             calls.log.record('search_finished', target=target.id, polarity=polarity,
-                             routes=[r.id for r in found], closed=[r.id for r in found if r.status == 'CLOSED'])
-    findings = engine.conflicts(tuple(routes), commitments)
-    calls.log.record('conflicts_and_robustness', findings=findings)
+                             routes=[r.id for r in result.routes],
+                             closed=[r.id for r in result.routes if r.status == 'CLOSED'],
+                             truncated=result.truncated, nodes_created=result.nodes_created,
+                             independent_closed_routes=result.independent_closed_routes)
+    calls.log.record('conflicts_and_robustness', findings={'analyses': analyses})
     return tuple(routes)
 
 

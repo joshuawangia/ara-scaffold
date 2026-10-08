@@ -28,9 +28,10 @@ smoke:
   node_cap: 24
   forward_pass_depth: 1
   essay_word_limit: 300
-  max_output_tokens: 2048
+  max_output_tokens: 4096
   web_search_max_uses: 1
   token_cap: 1000000
+  cost_cap_usd: 5.0
 # Runtime provider projection and conservative web-call reservation.
-formula_output_depth: 6
+formula_output_depth: 2
 model_context_token_bound: 200000

@@ -332,3 +332,56 @@ fresh-clone integrated smoke result is claimed. Next unresolved step: connect th
 native_engine adapter to the engine lane's actual public API, then execute the
 credentialed smoke and fresh-clone instructions. Full evidence and six actionable
 findings are placed in /home/dev/wt/shared/ara/gamma-report.md.
+
+## Delta integration decisions
+
+D1. Both requested lane tips are merged into main with merge commits. The only
+merge conflict was appended DECISIONS sections; both are retained as historical
+lane receipts. D1 onward supersede the historical integration gaps in A9, E11,
+G1/G3/G8 and the gamma handoff. No shared type or port changes were needed.
+NativeEngine binds frozen commitments and all runtime ports to Engine.analyse;
+search_all persists both SearchResults and logs the complete AnalysisResult.
+Identical duplicate graphs are persisted once; different graphs with one id fail
+explicitly. Every target/polarity is
+retained in the log. Test-only FakeEngine now returns AnalysisResult; all existing
+lifecycle assertions are retained. There is no production fake or second search.
+
+D2. Add --provider mock for the shipped offline fixture. Native canned responses
+are keyed by the existing call-kind/rendered-input hash. They exercise the real
+CLI, engine, forward licensing, route persistence, audits and exports, with
+byte-identical cached graph replay. They are finite placeholder fixtures, not a
+fallback for arbitrary inputs. Every missing response remains an explicit error.
+
+D3. Live API execution found two SDK request failures hidden by fake-transport
+proof: unsupported JSON Schema `not`, then an oversized compiled formula grammar.
+The provider projection now strips unsupported `not`, uses one AST object shape
+per depth instead of multiplying operator branches, and requires explicit default
+fields in generated formulas. Original local schemas and typed codecs still
+check operator arity, reserved ids and every acceptance constraint. The lane
+projection test now uses the full valid atom codec rather than omitted defaults:
+this tests its original valid-formula purpose against the new provider wire shape,
+without relaxing local acceptance. New regressions preserve both actual failures.
+The configured generation depth is two; deeper requested grammars can exceed the
+service compiler's bounds. This is a generation bound, not a restriction added to
+local solver/AST semantics. The original depth-six grammar was rejected live even
+after branch compaction. No blind provider retry or fallback model was added.
+
+D4. Smoke cost cap is USD 5, token cap 1,000,000, one possible web search; other
+smoke bounds are unchanged. Failed HTTP calls retain separate logs, STOP and
+conservative reservations labelled unknown actual spend. Those reservations are
+not represented as measured charges. Configured pricing/context assumptions and
+all G4–G7 semantic, verification, integrity and anonymisation boundaries remain.
+
+D5. The engine mutation runner initially refused integration because it hardcoded
+the old lane directory. It now verifies the running script's own Git root, like
+the other runners, enabling the unchanged 26 engine controls on main or a clone.
+The runtime negation control follows the new AnalysisResult persistence seam.
+Integration controls disable graph writes and provider projections and require
+assertion failures plus restored passes. No lane test was deleted or weakened.
+
+D6. The first accepted live search later rejected a max_tokens cut response at the
+2048 output allowance. Smoke now reserves 4096 output tokens, preserving the
+USD 5 cap. A low-effort trial returned an empty citation, correctly rejected by
+the untouched local build_t schema. Final smoke retains the base high effort;
+invalid output is never repaired by software or silently retried. Failed attempts
+and their measured/unknown-spend ledgers are retained in ignored run directories.

@@ -98,3 +98,13 @@ Full program DONE-WHEN proofs belong to integration:
 - Originality/citation verification uses evidence acquisition then structured
   classification because citations and structured output cannot share one call.
 - Console script registration precedes implementation; README must disclose this.
+
+## Delta integration checkpoint
+
+Both lanes are merged on main. Engine/runtime integration uses the engine's
+AnalysisResult and immutable ports; mock CLI/e2e/export/cache replay is native.
+Real provider testing has exercised build_t, targets, cuts and formalisation;
+provider projection fixes and a USD 5 smoke cap are recorded in DECISIONS D1–D5.
+Final run receipts, fresh-clone verification, audit and final revision belong in
+`/home/dev/wt/shared/ara/delta-report.md`; historical lane gaps above are retained
+for provenance and superseded by those executed integration receipts.

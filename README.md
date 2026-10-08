@@ -1,135 +1,136 @@
-# ARA scaffold
+# ARA
 
-ARA has a bank, immutable contracts, model runtime and CLI. At the runtime lane
-base, engine modules are placeholders: the native engine factory must be connected
-during integration. Runtime tests exercise the lifecycle with a test-only fake
-engine and deterministic mock provider. No real-provider smoke is claimed here.
-See PLAN.md and DECISIONS.md for ownership and limitations.
+ARA is a Python CLI for bank-constrained symbolic search. The deterministic engine
+checks bank instantiation, Z3 entailment, frozen commitments and route closure.
+The model proposes cuts through validated, cached, logged calls. Both polarities,
+route independence, bounded forward consequences and conflicts use one engine API.
 
-## Install
+## Install and test
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). From the repository root:
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). Obtain a clone from the
+operator and run every command below from its repository root. The operator owns
+private remote publication; installation uses the committed lockfile and local
+bank, schemas and prompts.
 
 ```sh
 uv sync --locked
-```
-
-No remote is configured by alpha. The orchestrator owns private repository
-creation/push; use its clone URL once available. Commands use repository-root
-`bank/`, `schemas/`, `prompts/` and `config.yaml` resources.
-
-## Test
-
-```sh
 uv run pytest
-uv run python tools/negative_controls.py
-uv run python tests/runtime/negative_controls.py
+uv run python tests/integration/negative_controls.py
 ```
 
-Tests use placeholder propositions only and make no network calls. Negative
-controls temporarily modify owned source/schema files, verify tests go red,
-restore them in `finally`, and rerun the same tests green. Run in a clean checkout,
-without another writer. Evidence goes to gitignored `runs/alpha-proof/`.
+The default suite is offline. One separately gated live-provider test is skipped.
+The integration test starts the actual CLI in subprocesses, checks persisted
+artifacts and engine analysis, exports from logs, and proves cached graph replay.
+Negative controls disable production behavior, require red tests, restore it and
+require green tests. Run them without another checkout writer.
 
-## Runtime proof and smoke
-
-Run the offline CLI lifecycle proof (two targets and their negations, route files,
-short draft, audit, verification, export, deterministic cached replay):
+## Offline smoke
 
 ```sh
-uv run pytest tests/runtime/test_cli.py -q
+uv run ara run --smoke --provider mock --run-dir runs/mock-smoke
+uv run ara export --run-dir runs/mock-smoke
 ```
 
-The finite canned responses in `tests/fixtures/runtime/canned.json` are keyed by
-call kind and full rendered-input hash. Missing entries fail loudly. The fake
-engine in these tests proves orchestration only; it is never used by `ara run`.
+This uses the real engine and finite canned responses keyed by call kind and
+rendered-input hash. It needs no credential or network. Mock responses cover the
+shipped placeholder smoke only; other inputs fail explicitly. Mock ledger costs
+are simulated and incur no provider spend.
 
-After the engine integration adapter is connected, set `ANTHROPIC_API_KEY` in the
-environment and run from the repository root:
+## Real smoke
+
+Set `ANTHROPIC_API_KEY` in your environment, or source the operator's credential
+file in the same shell as the command:
 
 ```sh
-uv run ara run --smoke
+set -a; . ~/.config/ara/anthropic.env; set +a
+uv run ara run --smoke --run-dir runs/real-smoke
 ```
 
-The default config uses Anthropic and `claude-opus-5`; SDK credentials are never
-written to files or logs. Smoke uses a placeholder topic/literature, two candidates,
-depth two, at most 24 nodes, a 300-word draft, one web search use and a 1,000,000-token
-cap with USD 10 cost cap. These are caps, not expected consumption. Conservative
-web-call admission reserves full model-context bounds; the ordinary 200k-token
-cap can stop before verification. Change caps and pricing explicitly in config
-for a real run. Ancillary rates/context assumptions still require billing review.
+Default provider/model: Anthropic / `claude-opus-5`, using the official SDK,
+adaptive thinking and structured output with strict local schema checks. Generated
+formula ASTs are bounded to depth two by config; local AST/solver semantics support
+deeper formulas, but larger generation grammars can exceed the API compiler limit.
+Smoke uses placeholder literature, two targets, depth two, 24 search nodes per
+polarity, a 300-word draft and at most one web search per evidence call. Its caps
+are **USD 5 and 1,000,000 tokens**, including conservative admission reservations.
+These are limits, not expected usage. Web admission reserves the configured
+200,000-token context bound for each potential server iteration. Prices and that
+bound are explicit configuration assumptions; actual provider usage is recorded.
+A reservation is checked before each call and actual usage after it. An oversized
+actual charge cannot be undone; STOP prevents subsequent calls.
 
-The real-provider path test is skipped unless both a key and an explicit network
-opt-in are present; a skip is not a passing real-provider proof:
+Use a new empty `--run-dir` when repeating a command. Omitting it generates a run
+id automatically. Reusing the cache avoids paid calls only when all keyed inputs
+match. Delete neither failed logs nor their accounting to disguise a retry.
+
+## Topic, literature, selection and feedback
+
+The following reproducible example uses placeholders. Replace the topic and file
+path with your own runtime inputs for substantive work. They are logged in full.
+First write a bounded example configuration under the ignored runs directory:
 
 ```sh
-ARA_LIVE_TEST=1 uv run pytest tests/runtime/test_provider.py::test_real_provider_path -rs
+uv run python - <<'PY'
+from pathlib import Path
+import yaml
+config = yaml.safe_load(Path('config.yaml').read_text())
+config.update(config['smoke'])
+Path('runs').mkdir(exist_ok=True)
+Path('runs/example-config.yaml').write_text(yaml.safe_dump(config))
+PY
+uv run ara run --config runs/example-config.yaml --topic 'P Q' --literature tests/fixtures/runtime/smoke-literature.txt --run-dir runs/example
 ```
 
-This lane has no credential and has not executed that command against the service.
-Full real-provider smoke and a fresh-clone end-to-end receipt remain integration
-work. At this base `ara.engine.create_engine` is absent; native run exits nonzero
-and writes the error plus methodology. See DECISIONS.md, “Runtime integration gap”.
-
-## Run, select, feedback and export
+This is a real-provider run, using the environment credential from the previous
+step. A normal run waits for human route selection. The unmodified configuration
+requests ten targets, depth six and 500 nodes; its ordinary 200,000-token cap can
+refuse conservative web admission. Review caps before a larger run.
 
 ```sh
-uv run ara run --topic '<runtime topic>' --literature '<runtime literature path>' --audience '<audience>'
-uv run ara select --run-dir runs/<run-id> --route '<route-id>' --human-minutes 2
-uv run ara feedback --run-dir runs/<run-id> --text '<verbatim feedback>'
-uv run ara export --run-dir runs/<run-id> --redact '<identifier>'
+uv run ara select --run-dir runs/example
+uv run ara feedback --run-dir runs/example --text 'P'
+uv run ara select --run-dir runs/example
+uv run ara export --run-dir runs/example --redact 'operator-id'
 ```
 
-`run` freezes the commitment table, proposes ten targets by default, searches each
-and its canonical negation, records conflicts/robustness, and waits for `select`.
-Use `--named-position` to supply one exact position. `--run-dir` chooses a new empty
-output directory; `--config` chooses runtime configuration. Selection without
-`--route` and feedback without `--text` prompt interactively and measure elapsed
-human time. Explicit `--human-minutes` is recorded separately. Smoke selects a
-route automatically with a logged SYSTEM policy. Feedback is included in the next
-draft request without changing the frozen commitments or selected graph.
+Selection prints the actual route ids and prompts for one. Enter an id from that
+list. Feedback is passed to the next draft request; it does not mutate frozen T
+or alter the licensed graph. `--route` supplies a selection without prompting;
+`--named-position` on run accepts one exact position. Interactive elapsed human
+time and explicit `--human-minutes` are logged separately. Smoke selects the first
+CLOSED route (otherwise the first OPEN route) under a logged SYSTEM policy.
 
-Every command logs HUMAN argv and inputs verbatim, with timestamps. Every model
-call records prompt, raw response, model/version, usage, cost, wall time and
-accept/reject status. Budget exhaustion returns exit code 2, writes STOP and
-`partial.json`, retains completed route files, and exports methodology. A transport
-failure without usage records a reservation with unknown actual spend and blocks
-resume; it is never reported as free. No output/cache file belongs in a commit.
+## Artifacts and logging
 
-Artifacts include `events.jsonl`, `events.anchor`, `commitments.json`, route JSON
-and readable trees, `draft.unverified.json`, verified `draft.json`, and
-`export/{essay.txt,methodology.md}`. No essay is exported until both audits and
-verification succeed. Preserve the log and checkpoint together to detect edits
-and truncation on resume. An interrupted append refuses startup. This is local
-integrity detection, not a signed audit against someone who can rewrite both.
+Each run writes `commitments.json`, `routes/*.json` and matching readable trees,
+`events.jsonl` with `events.anchor`, an unverified draft and, after audit and
+verification, `draft.json` and `export/{essay.txt,methodology.md}`. No essay is
+exported before verification and the second audit pass. OPEN frontiers remain
+explicitly unresolved. Budget STOP returns exit 2, preserves partial graphs,
+writes `partial.json` and exports methodology. A provider failure without usage
+charges a labelled conservative reservation, reports unknown actual spend and
+refuses resume.
 
-The essay export omits run metadata and node markers, and replaces explicit
-`--redact` strings. It does not infer personal identities in prose. The methodology
-preserves the full record and is not anonymised. To demonstrate log-only recovery
-without recording a new human command or changing the report:
+The append-only JSONL records full prompts/responses, model id/version, token and
+server-tool usage, cost, time, cache hits, rejections, engine decisions and every
+HUMAN command/input verbatim. Methodology derives from this log alone. Preserve
+its checkpoint to detect tail truncation during resume; rewriting both files can
+forge the local chain. Interrupted appends refuse startup.
 
-```sh
-uv run python -c 'from pathlib import Path; from ara.runtime.export import export_run; export_run(Path("events.jsonl"), Path("recovered"))'
-```
+Essay export removes run metadata and node markers and replaces literal
+`--redact` identifiers. It does not discover identities in prose. Methodology
+intentionally retains the complete record and is not anonymised. Web evidence
+and model audits are bounded assessments, not exhaustive originality or source
+truth proofs. Formal entailment does not establish faithful text translation or
+CQ truth. Search and forward results are bounded by configuration; independent
+route counts cover discovered routes. Scheme forms cite Walton, Reed & Macagno
+(2008); unverified page/chapter locators remain explicitly unknown.
 
-That function needs only the JSONL. Log-only export verifies the chain but cannot
-prove that its tail was not deleted without the separate checkpoint. Full reports
-include every prompt, response, engine decision, human action and accounting note.
+## Content rule
 
-## Shared contracts
-
-- `ara.types`: frozen dataclasses and strict JSON codecs. Canonical formula text
-  is normalized AST JSON, not a natural-language paraphrase or equivalence proof.
-- `ara.ports`: synchronous proposer, formaliser, mapper, CQ answerer, repairer and
-  event sink interfaces. Runtime effects sit behind these ports.
-- `ara.bank.load_bank('bank')`: immutable versioned entries; validation rejects
-  malformed schemas, undefined slots and duplicate ids across files.
-- `schemas`: ten model response schemas and the standalone formula schema.
-  JSON validation is local; no external references or remote resolution.
-
-Bank schemes are normalized forms attributed to Walton, Reed & Macagno (2008).
-Unverified page/chapter locators say unknown. They are not a verified transcription
-of the complete book. Later engine licensing must check named-rule shape, scope,
-substitution, entailment and T membership; scaffold validation proves none of those
-search outcomes by itself. Graph status/frontier/edges are engine-owned claims,
-not inferred by deserializing a graph.
+No philosophical argument, premise, distinction, example or view belongs anywhere
+in tracked code, prompts, tests, fixtures, docs or commit messages. Bank entries
+are forms with slots and critical questions. Fixtures contain placeholders only.
+Supply substantive topic/literature at runtime. Runs, caches, generated drafts and
+logs are gitignored and must never be committed. Credentials come only from the
+environment and must never be written or logged. See AGENTS.md and DECISIONS.md.

@@ -31,6 +31,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     run.add_argument('--run-dir', type=Path)
     run.add_argument('--smoke', action='store_true')
+    run.add_argument('--provider', choices=('anthropic', 'mock'))
     run.add_argument('--topic')
     run.add_argument('--literature', type=Path)
     run.add_argument('--audience', default='runtime audience')
@@ -55,7 +56,7 @@ def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> Mo
     if config['provider'] == 'anthropic':
         provider = AnthropicProvider(config)
     elif config['provider'] == 'mock':
-        provider = MockProvider(Path(config['mock_responses']), config['model'])
+        provider = MockProvider(Path(config.get('mock_responses', root / 'tests/fixtures/runtime/native-canned.json')), config['model'])
     else:
         raise ValueError(f'unknown provider: {config["provider"]}')
     return ModelCalls(config, provider, log, Cache(Path(config['cache_dir'])), root, topic)
@@ -80,6 +81,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 if args.topic is None or args.literature is None:
                     raise ValueError('run requires --topic and --literature, or --smoke')
                 topic, literature = args.topic, args.literature.read_text()
+            if args.provider is not None:
+                config['provider'] = args.provider
             directory = args.run_dir or Path(config['runs_dir']) / uuid.uuid4().hex
             if directory.exists() and any(directory.iterdir()):
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')

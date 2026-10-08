@@ -9,7 +9,7 @@ from jsonschema import Draft202012Validator
 
 from ara.runtime.calls import Rejected
 from ara.runtime.providers import AnthropicProvider, structured_schema
-from ara.types import Proposition, TokenUsage
+from ara.types import Formula, Proposition, TokenUsage
 from test_calls import ROOT, rig, register, response
 
 
@@ -83,7 +83,7 @@ def test_projected_schema_is_acyclic_and_local_validation_is_stricter():
             for item in value:
                 visit(item, chain)
     visit(projected)
-    Draft202012Validator(projected).validate({'formula': {'op': 'atom', 'name': 'P'}})
+    Draft202012Validator(projected).validate({'formula': Formula('atom', name='P').to_dict()})
 
 
 @pytest.mark.skipif(not os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('ARA_LIVE_TEST') != '1',
@@ -99,3 +99,39 @@ def test_real_provider_path(tmp_path):
                        Cache(tmp_path / 'cache'), ROOT, 'P')
     formula = calls.formalise(Proposition('p', 'P'))
     assert formula.op == 'atom' and formula.name == 'P'
+
+
+def test_live_observed_not_constraint_projected_but_locally_enforced():
+    # Live HTTP 400: output_config.format.schema: keyword not is unsupported.
+    schema = json.loads((ROOT / 'schemas/build_t.json').read_text())
+    projected = structured_schema(schema)
+    def assert_supported(node):
+        if isinstance(node, dict):
+            assert 'not' not in node
+            for value in node.values():
+                assert_supported(value)
+        elif isinstance(node, list):
+            for value in node:
+                assert_supported(value)
+    assert_supported(projected)
+    Draft202012Validator.check_schema(projected)
+    invalid = {'commitments': [{'id': 'open', 'text': 'P', 'citation': 'placeholder:1',
+                               'formula': Formula('atom', name='P').to_dict()}]}
+    # Projection accepts the omitted provider constraint; local schema refuses.
+    Draft202012Validator(projected).validate(invalid)
+    from jsonschema import ValidationError
+    with pytest.raises(ValidationError):
+        Draft202012Validator(schema).validate(invalid)
+
+
+def test_compact_formula_projection_keeps_local_operator_checks():
+    schema = json.loads((ROOT / 'schemas/formalise.json').read_text())
+    projected = structured_schema(schema)
+    invalid = {'formula': {'op': 'implies', 'args': [], 'name': None, 'terms': [], 'variable': None}}
+    Draft202012Validator(projected).validate(invalid)
+    from jsonschema import ValidationError
+    with pytest.raises(ValidationError):
+        Draft202012Validator(schema).validate(invalid)
+    # The server-rejected shape branches over every operator at every level.
+    for level in range(3):
+        assert 'anyOf' not in projected['$defs'][f'formula_{level}']

@@ -39,8 +39,8 @@ CASES = (
 
 def check_root() -> None:
     actual = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()
-    if Path(actual) != ROOT or ROOT != Path('/home/dev/wt/ara/wt-engine'):
-        raise RuntimeError('negative controls require the assigned engine worktree')
+    if Path(actual) != ROOT:
+        raise RuntimeError('negative controls require the script checkout root')
 
 
 def run_test(test: str) -> subprocess.CompletedProcess:

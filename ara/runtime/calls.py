@@ -61,7 +61,7 @@ class ModelCalls:
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               'effort': self.config['effort'], 'maximum': self.config['max_output_tokens'],
                               'web_max': self.config['web_search_max_uses'],
-                              'formula_depth': self.config.get('formula_output_depth', 6)})
+                              'formula_depth': self.config.get('formula_output_depth', 2)})
         key = cache_key(kind, template, identity, self.provider.model, schema or {})
         saved = self.cache.get(key)
         start = time.monotonic()

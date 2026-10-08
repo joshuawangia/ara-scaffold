@@ -1,0 +1,1 @@
+"""ARA shared package boundary."""

@@ -21,7 +21,12 @@ def methodology(log_path: Path) -> str:
         'tokens': {k: sum(e['usage'][k] for e in events) for k in (
             'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
         'cost_usd': round(sum(e['cost_usd'] for e in events), 10),
-        'machine_seconds': sum(e['wall_seconds'] for e in events),
+        'accounting_note': 'Totals include conservative reservations for failed calls with unknown usage; these are not measured charges.',
+        'unknown_spend_reservations_usd': sum(e['cost_usd'] for e in calls
+            if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual'),
+        'model_call_seconds': sum(e['wall_seconds'] for e in events),
+        'machine_seconds': sum(json.loads(e['payload_json']).get('machine_elapsed_seconds', 0)
+                               for e in events if e['stage'] == 'command_timing'),
         'human_elapsed_seconds': sum(p.get('elapsed_seconds', 0) for p in payloads),
         'human_reported_minutes': sum(p.get('reported_minutes', 0) for p in payloads),
         'human_time_note': 'Elapsed prompt time and operator-reported time are separate, not inferred from CLI startup.',

@@ -86,8 +86,10 @@ def test_projected_schema_is_acyclic_and_local_validation_is_stricter():
     Draft202012Validator(projected).validate({'formula': {'op': 'atom', 'name': 'P'}})
 
 
-@pytest.mark.skipif(not os.environ.get('ANTHROPIC_API_KEY'), reason='ANTHROPIC_API_KEY absent: real-provider path unexecuted')
-@pytest.mark.skipif(os.environ.get('ARA_LIVE_TEST') != '1', reason='live network opt-in ARA_LIVE_TEST=1 required; offline suite only')
+@pytest.mark.skipif(not os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('ARA_LIVE_TEST') != '1',
+                    reason=('ANTHROPIC_API_KEY absent: real-provider path unexecuted'
+                            if not os.environ.get('ANTHROPIC_API_KEY') else
+                            'live network opt-in ARA_LIVE_TEST=1 required; offline suite only'))
 def test_real_provider_path(tmp_path):
     from ara.runtime.cache import Cache
     from ara.runtime.calls import ModelCalls

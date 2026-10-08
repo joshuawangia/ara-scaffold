@@ -66,6 +66,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     raw_args = list(sys.argv[1:] if argv is None else argv)
     args = parser().parse_args(raw_args)
     log = None
+    started = time.monotonic()
+    human_elapsed = 0.0
     try:
         if args.command == 'run':
             config = yaml.safe_load(args.config.read_text())
@@ -82,10 +84,14 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if directory.exists() and any(directory.iterdir()):
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')
             log = EventLog(directory / 'events.jsonl')
-            log.human('run', topic, argv=raw_args, literature=literature, audience=args.audience,
+            log.human('run', args.topic if args.topic is not None else json.dumps(raw_args, ensure_ascii=False),
+                      argv=raw_args, topic=args.topic,
+                      literature=literature if args.literature is not None else None,
                       named_position=args.named_position, reported_minutes=args.human_minutes)
             bank = load_bank(ROOT / 'bank')
-            log.record('run_started', config=config, topic=topic, bank_version=bank.bank_version,
+            log.record('run_started', config=config, topic=topic, literature=literature, audience=args.audience,
+                       literature_source='human_file' if args.literature is not None else 'smoke_fixture',
+                       bank_version=bank.bank_version,
                        architecture='L: versioned bank; T: frozen commitments; H: model cut proposer; '
                        'deterministic engine: licensing, search, conflicts; runtime: effects',
                        tools=['Anthropic Messages API', 'web_search_20260209', 'Z3', 'jsonschema'])
@@ -110,6 +116,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             export_run(log.path, directory / 'export')
             print(str(directory))
             return 0
+        if not (args.run_dir / 'events.jsonl').is_file():
+            raise ValueError('run log does not exist')
         log = EventLog(args.run_dir / 'events.jsonl')
         log.human(args.command + '_command', json.dumps(raw_args, ensure_ascii=False),
                   argv=raw_args, reported_minutes=args.human_minutes)
@@ -117,6 +125,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             start = time.monotonic()
             text = args.text if args.text is not None else input('Feedback: ')
             elapsed = time.monotonic() - start if args.text is None else 0
+            human_elapsed += elapsed
             log.human('feedback', text, elapsed_seconds=elapsed)
             return 0
         if args.command == 'export':
@@ -133,6 +142,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         start = time.monotonic()
         route_id = args.route if args.route is not None else input('Route id: ')
         elapsed = time.monotonic() - start if args.route is None else 0
+        human_elapsed += elapsed
         log.human('select', route_id, elapsed_seconds=elapsed)
         chosen = next((r for r in routes if r.id == route_id), None)
         if chosen is None:
@@ -149,6 +159,15 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             export_run(log.path, log.path.parent / 'export')
         print(f'ara: {exc}', file=sys.stderr)
         return 2
+    finally:
+        if log is not None:
+            log.record('command_timing', command=args.command,
+                       machine_elapsed_seconds=max(0.0, time.monotonic() - started - human_elapsed))
+            # Refresh after timing so exports include the completed command.
+            if args.command != 'feedback':
+                destination = (args.output if args.command == 'export' else None) or log.path.parent / 'export'
+                redactions = tuple(args.redact) if args.command == 'export' else ()
+                export_run(log.path, destination, redactions)
 
 
 if __name__ == '__main__':

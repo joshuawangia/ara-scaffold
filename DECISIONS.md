@@ -233,3 +233,29 @@ engine lane has adopted it. Integration must align `native_engine` to that lane'
 public API. Missing API is a loud nonzero error; production never uses the test
 fake or duplicates engine search. Real-provider full smoke, final engine/runtime
 integration and fresh-clone end-to-end proof remain integration-owned.
+
+G10. Accounting failures after dispatch charge the conservative reservation with
+`accounting=reservation_unknown_actual`, log STOP, and refuse resumption. A call
+interrupted between call_start and its response also refuses resumption. The
+methodology identifies reservations separately from measured cost. Cache writes
+without TTL detail use the more expensive configured rate. Command wall time
+excluding measured interactive input is recorded separately from model-call time.
+Smoke topic/literature supplied by software are SYSTEM fixture data, not HUMAN
+content; only argv and actually supplied content are attributed to the human.
+
+### Gamma verification handoff
+
+Base: b8dd2d7c7d0b60a014ba9d9e3c43f1c21008105b. First runtime checkpoint:
+9e05c74 (final revision recorded in the external gamma report). Executed local
+suite: 77 passed, one live-provider test skipped because ANTHROPIC_API_KEY is
+absent. Runtime negative controls: 22 intentional failures, every restored test
+passed. The initial schema mutation survived because typed decoding also rejected
+its fixture; the test was strengthened to isolate an unknown top-level schema
+property before recording the successful negative control. Offline mock CLI
+receipt: four route graphs, 70 input and 42 output tokens, USD 0.0014 simulated
+ledger, zero provider spend. Native CLI with mock transport refuses the absent
+engine factory with exit 2 and preserves the log and methodology. No real API or
+fresh-clone integrated smoke result is claimed. Next unresolved step: connect the
+native_engine adapter to the engine lane's actual public API, then execute the
+credentialed smoke and fresh-clone instructions. Full evidence and six actionable
+findings are placed in /home/dev/wt/shared/ara/gamma-report.md.

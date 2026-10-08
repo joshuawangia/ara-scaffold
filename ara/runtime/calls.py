@@ -68,6 +68,9 @@ class ModelCalls:
         raw = None
         usage, cost = TokenUsage(), self.budget.cost(TokenUsage())
         cached = saved is not None
+        dispatched = False
+        charged = False
+        estimate = TokenUsage()
         try:
             if cached:
                 raw = saved['raw']
@@ -76,11 +79,13 @@ class ModelCalls:
                 self.budget.before(estimate, kind)
                 self.log.record('call_start', kind=kind, model=self.provider.model, prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
+                dispatched = True
                 raw = self.provider.complete(kind, prompt, schema, self.config['max_output_tokens']).raw
                 usage = Response(raw).usage
                 require(all(type(n) is int and n >= 0 for n in usage.to_dict().values()), 'invalid usage')
                 cost = self.budget.cost(usage, raw['usage'])
                 self.budget.charge(usage, cost)
+                charged = True
             # Stop reason is checked BEFORE interpreting any content blocks.
             require(raw['stop_reason'] == 'end_turn', f'provider stop: {raw["stop_reason"]}')
             require(not any(isinstance(v, dict) and (v.get('is_error') or
@@ -101,7 +106,13 @@ class ModelCalls:
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
             reason = str(exc) if isinstance(exc, Rejected) else type(exc).__name__
-            self._event(kind, prompt, raw, usage, cost, start, cached, 'rejected', reason, key)
+            unknown_usage = dispatched and not charged
+            if unknown_usage:
+                usage, cost = estimate, self.budget.cost(estimate)
+                self.budget.charge(usage, cost)
+            self._event(kind, prompt, raw, usage, cost, start, cached, 'rejected', reason, key, unknown_usage)
+            if unknown_usage:
+                self.budget.stop('provider failed without usage; reservation charged; actual spend unknown', kind)
             self.budget.after(kind)
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key)
@@ -110,13 +121,16 @@ class ModelCalls:
             self.cache.put(key, {'raw': raw})
         return result
 
-    def _event(self, kind, prompt, raw, usage, cost, start, cached, status, reason, key):
+    def _event(self, kind: str, prompt: str, raw: dict | None, usage: TokenUsage,
+               cost: Any, start: float, cached: bool, status: str, reason: str | None,
+               key: str, unknown_usage: bool = False) -> None:
         self.log.emit(RunEvent(now(), kind, 'MODEL', self.provider.model,
                               raw.get('model') if raw else None, prompt,
                               canonical(raw) if raw is not None else None, usage, float(cost),
                               time.monotonic() - start,
                               payload_json=canonical({'status': status, 'reason': reason,
-                                                       'cache_hit': cached, 'cache_key': key})))
+                                                       'cache_hit': cached, 'cache_key': key,
+                                                       'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual'})))
 
     def build_t(self, literature: str, audience: str) -> CommitmentSet:
         return self.call('build_t', {'literature': literature, 'audience': audience}, CommitmentSet.from_dict)

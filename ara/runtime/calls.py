@@ -144,7 +144,7 @@ class ModelCalls:
             if unknown_usage:
                 self.budget.stop('provider failed without usage; reservation charged; actual spend unknown', kind)
             self.budget.after(kind)
-            if validating:
+            if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc

@@ -88,11 +88,14 @@ def test_essay_word_cap(rig):
 
 def test_audit_rejects_extra_step(rig):
     calls, provider, log = rig
+    calls.config['validation_attempts'] = 3
     draft = {'title': 'P', 'body': '[[node:n1]] P Q', 'bibliography': []}
     register(calls, provider, 'audit_essay', {'route': graph().to_dict(), 'draft': draft},
              {'faithful': True, 'covered_node_ids': ['n1'], 'missing_node_ids': [], 'extra_steps': ['Q']})
     with pytest.raises(Rejected, match='audit'):
         calls.audit_essay(graph(), draft)
+    assert provider.calls == 1
+    assert not any(e['stage'] == 'validation_retry' for e in log.read())
 
 
 @pytest.mark.parametrize('cap,value', [('token_cap', 15000), ('cost_cap_usd', .30)])

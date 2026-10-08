@@ -108,3 +108,9 @@ provider projection fixes and a USD 5 smoke cap are recorded in DECISIONS D1–D
 Final run receipts, fresh-clone verification, audit and final revision belong in
 `/home/dev/wt/shared/ara/delta-report.md`; historical lane gaps above are retained
 for provenance and superseded by those executed integration receipts.
+
+Final integration disposition: both lanes are native and the offline lifecycle is
+complete. Real runs reach graphs and drafts but Opus 5 refuses the required essay
+audit (reasoning_extraction), including a clarified public-artifact request. No
+verified real essay/export or successful real smoke is claimed. See DECISIONS
+D10–D12, README and the external delta report before proceeding.

@@ -33,10 +33,17 @@ uv run ara export --run-dir runs/mock-smoke
 
 This uses the real engine and finite canned responses keyed by call kind and
 rendered-input hash. It needs no credential or network. Mock responses cover the
-shipped placeholder smoke only; other inputs fail explicitly. Mock ledger costs
+shipped placeholder smoke and the feedback example below; other inputs fail explicitly. Mock ledger costs
 are simulated and incur no provider spend.
 
 ## Real smoke
+
+The executed live run currently stops at the required essay audit: Opus 5 returns
+`refusal` with category `reasoning_extraction` when comparing the supplied public
+symbolic graph and draft. Graphs, draft and methodology are retained; a verified
+essay is not exported. This is a provider block, not a successful real smoke.
+The credential worked and all preceding stages executed. Keep this limitation
+visible until an approved provider/model resolves it; do not bypass the audit.
 
 Set `ANTHROPIC_API_KEY` in your environment, or source the operator's credential
 file in the same shell as the command:
@@ -57,7 +64,7 @@ are **USD 5 and 1,000,000 tokens**, including conservative admission reservation
 These are limits, not expected usage. Smoke permits up to three explicitly
 logged attempts for a response that fails local validation; every attempt reserves
 and records its own usage. Invalid responses are never cached. Refusals, transport
-failures, output-token stops and bank-license failures are not retried. Web admission reserves the configured
+failures, output-token stops, negative essay audits and bank-license failures are not retried. Web admission reserves the configured
 200,000-token context bound for each potential server iteration. Prices and that
 bound are explicit configuration assumptions; actual provider usage is recorded.
 A reservation is checked before each call and actual usage after it. An oversized
@@ -65,7 +72,8 @@ actual charge cannot be undone; STOP prevents subsequent calls.
 
 Use a new empty `--run-dir` when repeating a command. Omitting it generates a run
 id automatically. Reusing the cache avoids paid calls only when all keyed inputs
-match. Delete neither failed logs nor their accounting to disguise a retry.
+match. Use one paid writer per cache; divergent concurrent outputs fail explicitly.
+Delete neither failed logs nor their accounting to disguise a retry.
 
 ## Topic, literature, selection and feedback
 
@@ -79,14 +87,14 @@ from pathlib import Path
 import yaml
 config = yaml.safe_load(Path('config.yaml').read_text())
 config.update(config['smoke'])
+config['provider'] = 'mock'
 Path('runs').mkdir(exist_ok=True)
 Path('runs/example-config.yaml').write_text(yaml.safe_dump(config))
 PY
 uv run ara run --config runs/example-config.yaml --topic 'P Q' --literature tests/fixtures/runtime/smoke-literature.txt --run-dir runs/example
 ```
 
-This is a real-provider run, using the environment credential from the previous
-step. A normal run waits for human route selection. The unmodified configuration
+This reproducible example is offline. A normal run waits for human route selection. The unmodified configuration
 requests ten targets, depth six and 500 nodes; its ordinary 200,000-token cap can
 refuse conservative web admission. Review caps before a larger run.
 
@@ -95,6 +103,13 @@ uv run ara select --run-dir runs/example
 uv run ara feedback --run-dir runs/example --text 'P'
 uv run ara select --run-dir runs/example
 uv run ara export --run-dir runs/example --redact 'operator-id'
+```
+
+For the real provider with topic/literature flags, the following command uses
+the credential from the earlier shell step and pauses before selection/audit:
+
+```sh
+uv run ara run --config runs/example-config.yaml --provider anthropic --topic 'P Q' --literature tests/fixtures/runtime/smoke-literature.txt --run-dir runs/real-inputs
 ```
 
 Selection prints the actual route ids and prompts for one. Enter an id from that

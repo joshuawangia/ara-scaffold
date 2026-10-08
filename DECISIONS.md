@@ -416,3 +416,26 @@ forward analysis, draft/audits/web/export and the USD 5 cap remain. Truncation a
 OPEN frontiers are logged, never presented as completeness. Normal search bounds
 remain depth six / 500 nodes. Integration tests do not weaken their artifact or
 analysis assertions; the bounded search policy is explicit in README/config.
+
+D10. Real-provider integration remains blocked at the required essay audit.
+Opus 5 returned stop_reason=refusal, category=reasoning_extraction, on both the
+original audit prompt and a clarification that compares supplied public artifacts.
+Refusals remain logged rejections, without retry or fallback; essay export stays
+unavailable. The README explicitly discloses the failed real smoke. The operator
+must resolve this provider/model conflict before claiming program completion.
+The full graph/draft/log/methodology receipts and accounting are in delta-report.md.
+
+D11. A semantic negative audit is final even when validation correction attempts
+are enabled. Only malformed audit responses can be corrected; a valid adverse
+assessment must never be retried into approval. The original extra-step test now
+enables three attempts and asserts one provider call and no retry event; a
+production-wire mutation proves that guard. Writing instructions distinguish
+proposition labels from sourced quotations to avoid inventing quotations during
+verification. None of these changes bypass the live refusal in D10.
+
+D12. The earlier depth-two diagnostic v8 and the later bounded v9 briefly shared
+one cache; v8 refused a divergent concurrent response, preserving the existing
+entry rather than overwriting it. This was an integration execution collision,
+not a successful smoke. Its actual paid usage is retained in its methodology.
+Use one paid writer per cache. Final offline lifecycle proof includes the shipped
+placeholder feedback input and subsequent selection/draft/export.

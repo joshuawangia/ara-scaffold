@@ -69,7 +69,8 @@ node_cap × bank-entry-count × 10 prevents combinatorial enumeration from hangi
 Both caps produce FORWARD_CAP and truncated=true, never a completeness claim.
 
 Tier 1 compares canonical premise sets of discovered licensed steps, including
-forward deductions. Contradictory conclusions mark the set and call the repair
+forward deductions, and the full external support of closed routes (including
+CQ evidence and scoped exports). Contradictory conclusions mark the set and call the repair
 port once per canonical pair. Scope-local assumptions are excluded from global
 conflict grouping. Repair proposals are returned for review; they do not mutate
 frozen T or become licensed automatically. Tier 2 pairs CLOSED target/negation

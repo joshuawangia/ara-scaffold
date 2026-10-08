@@ -202,3 +202,19 @@ E9. Graph/analysis JSON contains no wall-clock data. EngineDecision events retai
 real timestamps and reason codes through EventSink. Replays with the same seed
 and port outputs are byte-identical; logs appropriately retain run timestamps.
 Tests are scripted ports with placeholders, without network or provider imports.
+
+E10. Final conflict review found that immediate slot sets alone omit a closed
+route's CQ dependencies and exported scoped support. A new regression failed
+with no Tier 1 conflict for equal external support. Tier 1 now also compares
+closed routes by the same external canonical support used for independence;
+repair fills for these sets are labelled support_0, support_1, etc., with frozen
+T ids. Duplicate immediate/external witnesses request only one repair per pair.
+
+E11. Final lane verification: `uv run pytest -q` passed 96/96 (51 engine,
+45 scaffold). The executable negative-control runner produced 26 assertion
+failures under deliberate production mutations and 26 green restorations,
+including solver, bank, terminus, CQ, seeding, exported support, quantifiers,
+and best-first priority. `git diff --check`, byte compilation and an AST import
+audit passed. The external beta-report.md contains the test-by-test controls and
+five placed integration findings. No provider smoke, publishing or fresh-clone
+proof was performed in this engine lane; those remain integration obligations.

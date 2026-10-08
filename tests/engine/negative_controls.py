@@ -28,6 +28,12 @@ CASES = (
     ('forward_flag', 'ara/engine/forward.py', 'flagged = commitments.contains_formula(formula.negated())', 'flagged = False', 'test_conflicts.py::test_forward_depth_and_flag'),
     ('tier1', 'ara/engine/conflicts.py', 'if opposite in group and pair not in marked:', 'if False:', 'test_conflicts.py::test_tier1_marks_same_premises_and_requests_repair'),
     ('tier2', 'ara/engine/conflicts.py', 'tier2.append(Tier2Conflict(p.id, n.id, flagged))', 'pass', 'test_conflicts.py::test_tier2_records_first_flagged_consequence'),
+    ('exported_support', 'ara/engine/conflicts.py', 'register(support, premises, root.proposition)', 'pass', 'test_conflicts.py::test_tier1_compares_exported_external_support_including_cqs'),
+    ('forward_history', 'ara/engine/forward.py', 'on_license(proposal, result)', 'pass', 'test_conflicts.py::test_tier1_includes_forward_licenses'),
+    ('canonical_membership', 'ara/engine/terminus.py', 'commitment.formula.canonical() == leaf.formula.canonical()', 'True', 'test_search.py::test_terminus_rejects_forged_id_and_formula'),
+    ('quantifier', 'ara/formal.py', "z3.ForAll if op == 'forall' else z3.Exists", 'z3.Exists', 'test_licensing.py::test_quantifier_compilation_and_substitution'),
+    ('scoped_closure', 'ara/engine/search.py', 'for scope_id, assumption in reversed(context):', 'for scope_id, assumption in ():', 'test_search.py::test_conditional_scope_closes_without_turning_assumption_into_commitment'),
+    ('best_first', 'ara/engine/search.py', "float('inf') if cost is None else cost, rng.random()", "float('inf') if cost is None else -cost, rng.random()", 'test_search.py::test_best_first_prefers_closed_cheaper_alternative'),
 )
 
 

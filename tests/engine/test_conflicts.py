@@ -124,3 +124,15 @@ def test_tier1_includes_forward_licenses():
                {p.formula.canonical() for p in c.conclusions} == {P.canonical(), P.negated().canonical()}
                for c in result.tier1)
     assert ports.repairs
+
+
+def test_tier1_compares_exported_external_support_including_cqs():
+    cuts = {Q.canonical(): (proposal('sign', Q, sign_relation=P, observed_sign=R),),
+            Q.negated().canonical(): (proposal('sign', Q.negated(), sign_relation=R, observed_sign=R),)}
+    e, ports = engine(table(P, R), cuts, forward_pass_depth=0)
+    # Both roots depend on P and R once CQ evidence is included, although the
+    # immediate slot fills differ. The external premise set must be marked.
+    result = e.analyse(prop(Q))
+    assert len(result.tier1) == 1
+    assert set(result.tier1[0].premise_forms) == {P.canonical(), R.canonical()}
+    assert len(ports.repairs) == 1

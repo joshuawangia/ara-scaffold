@@ -8,7 +8,7 @@ from ara.engine.forward import Consequence, ForwardResult, forward_pass
 from ara.engine.licensing import emit
 from ara.engine.routes import leaf_premises
 from ara.engine.search import SearchResult
-from ara.types import Formula, Proposition, Record, Tier1Repair, negate_proposition
+from ara.types import Formula, PremiseFill, Proposition, Record, Tier1Repair, negate_proposition
 
 if TYPE_CHECKING:
     from ara.engine.search import Engine
@@ -47,23 +47,30 @@ def analyse(engine: Engine, target: Proposition) -> AnalysisResult:
                                  engine.config.node_cap, closed, r.id,
                                  lambda p, license: engine._licenses.append((p, license))) for r in closed)
     groups, tier1, marked = {}, [], set()
-    for proposal, license in engine._licenses:
-        # A scoped assumption is not a global premise. Scoped conflicts are
-        # discovered through their closed exported routes below.
-        if license.entry.formula_schema and license.entry.formula_schema.scopes:
-            continue
-        key = tuple(sorted({p.formula.canonical() for p in license.premises}))
+    def register(key: tuple[str, ...], premises: tuple[PremiseFill, ...], conclusion: Proposition) -> None:
         group = groups.setdefault(key, {})
-        conclusion = license.conclusion
         opposite = conclusion.formula.negated().canonical()
         pair = (key, tuple(sorted((conclusion.formula.canonical(), opposite))))
         if opposite in group and pair not in marked:
             conclusions = (group[opposite], conclusion)
             emit(engine.sink, 'discarded', 'TIER1_CONFLICT', detail=';'.join(key))
-            repair = engine.repairer.repair_tier1(proposal.premises, conclusions, engine.commitments)
+            repair = engine.repairer.repair_tier1(premises, conclusions, engine.commitments)
             tier1.append(Tier1Conflict(key, conclusions, repair))
             marked.add(pair)
         group[conclusion.formula.canonical()] = conclusion
+    for proposal, license in engine._licenses:
+        # Local assumptions cannot be grouped as global premises.
+        if license.entry.formula_schema and license.entry.formula_schema.scopes:
+            continue
+        key = tuple(sorted({p.formula.canonical() for p in license.premises}))
+        register(key, proposal.premises, license.conclusion)
+    for route in closed:
+        support = tuple(sorted(leaf_premises(route, engine.commitments)))
+        premises = tuple(PremiseFill(f'support_{i}', form,
+                         next(c.id for c in engine.commitments.commitments if c.formula.canonical() == form))
+                         for i, form in enumerate(support))
+        root = next(n for n in route.nodes if n.id == route.root_id)
+        register(support, premises, root.proposition)
     by_id = {f.route_id: f for f in forward}
     tier2 = []
     for p in positive.routes:

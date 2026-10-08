@@ -73,3 +73,15 @@ def test_verified_item_requires_evidence():
     payload['items'][0].update(status='verified', action='retain')
     with pytest.raises(ValidationError):
         validator('verify_originality_citations').validate(payload)
+
+
+def test_formula_schema_accepts_serialized_ast():
+    from ara.types import Term
+    p, q = Formula('atom', name='P'), Formula('atom', name='Q')
+    expressions = [p, Formula('not', (p,)), *[
+        Formula(op, (p, q)) for op in ('and', 'or', 'implies', 'iff')],
+        Formula('predicate', name='F', terms=(Term('variable', 'x'), Term('constant', 'a')))]
+    expressions.extend([Formula(op, (expressions[-1],), variable='x') for op in ('forall', 'exists')])
+    for formula in expressions:
+        validator('formula').validate(formula.to_dict())
+        validator('formalise').validate({'formula': formula.to_dict()})

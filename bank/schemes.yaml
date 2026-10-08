@@ -19,11 +19,17 @@ entries:
     template: '{conclusion}'
   critical_questions:
   - id: cq1
-    template: How well supported is {expertise}?
+    template: Is {expertise} credible in the domain specified by {domain_match}?
   - id: cq2
-    template: Is {assertion} consistent with {domain_match}?
+    template: Does {domain_match} cover {assertion}?
   - id: cq3
-    template: Is {conclusion} supported independently of {assertion}?
+    template: Does {assertion} support {conclusion}?
+  - id: cq4
+    template: Is the source of {assertion} trustworthy?
+  - id: cq5
+    template: Is {assertion} consistent with other expert assessments of {domain_match}?
+  - id: cq6
+    template: Is {assertion} based on evidence within {domain_match}?
   formula_schema: null
 - id: position_to_know
   name: Position to know
@@ -44,9 +50,11 @@ entries:
     template: '{conclusion}'
   critical_questions:
   - id: cq1
-    template: Does {access} support {assertion}?
+    template: Is the source of {assertion} in the position specified by {access}?
   - id: cq2
-    template: Is {reliability} established?
+    template: Is the source of {assertion} trustworthy according to {reliability}?
+  - id: cq3
+    template: Was {assertion} actually asserted?
   formula_schema: null
 - id: witness_testimony
   name: Witness testimony
@@ -67,9 +75,13 @@ entries:
     template: '{conclusion}'
   critical_questions:
   - id: cq1
-    template: Does {observation} support {testimony}?
+    template: Is {testimony} internally consistent?
   - id: cq2
-    template: Does {reliability} support {conclusion}?
+    template: Is {testimony} consistent with {observation}?
+  - id: cq3
+    template: Is the source of {testimony} reliable according to {reliability}?
+  - id: cq4
+    template: Is {testimony} consistent with other evidence concerning {observation}?
   formula_schema: null
 - id: popular_opinion
   name: Popular opinion
@@ -113,9 +125,13 @@ entries:
     template: '{conclusion}'
   critical_questions:
   - id: cq1
-    template: Is {similarity} relevant to {transfer}?
+    template: Are there relevant differences that undermine {similarity}?
   - id: cq2
-    template: Does {source_case} support {conclusion}?
+    template: Is {source_case} established?
+  - id: cq3
+    template: Does {similarity} justify {transfer}?
+  - id: cq4
+    template: Is there a counteranalogy to {transfer}?
   formula_schema: null
 - id: cause_to_effect
   name: Cause to effect
@@ -139,6 +155,8 @@ entries:
     template: Are {conditions} satisfied?
   - id: cq2
     template: Does {causal_rule} connect {cause} to {conclusion}?
+  - id: cq3
+    template: Do intervening factors defeat {causal_rule} under {conditions}?
   formula_schema: null
 - id: correlation_to_cause
   name: Correlation to cause
@@ -161,7 +179,10 @@ entries:
   - id: cq1
     template: Is {correlation} established?
   - id: cq2
-    template: Are {direction} and {alternatives} sufficient for {conclusion}?
+    template: Is {direction} justified?
+  - id: cq3
+    template: Have common-cause and reverse-direction possibilities in {alternatives}
+      been addressed?
   formula_schema: null
 - id: sign
   name: Sign
@@ -247,9 +268,13 @@ entries:
     template: '{conclusion}'
   critical_questions:
   - id: cq1
-    template: Do {means} achieve {goal}?
+    template: Is {goal} achievable?
   - id: cq2
-    template: Do {alternatives} defeat {conclusion}?
+    template: Are {means} necessary or sufficient for {goal}?
+  - id: cq3
+    template: Are {alternatives} preferable to {means}?
+  - id: cq4
+    template: Do adverse consequences of {means} defeat {conclusion}?
   formula_schema: null
 - id: positive_consequences
   name: Positive consequences
@@ -385,7 +410,9 @@ entries:
   - id: cq1
     template: Does {explanation} account for {observations}?
   - id: cq2
-    template: Do {alternatives} defeat {conclusion}?
+    template: Does {explanation} account for {observations} better than {alternatives}?
+  - id: cq3
+    template: Have plausible {alternatives} been adequately examined?
   formula_schema: null
 - id: example
   name: Example
@@ -431,8 +458,10 @@ entries:
   - id: cq1
     template: Does {initial_step} initiate {transition_chain}?
   - id: cq2
-    template: Does {transition_chain} support {endpoint}?
+    template: Is each transition in {transition_chain} supported?
   - id: cq3
+    template: Can {transition_chain} be stopped before {endpoint}?
+  - id: cq4
     template: Does {endpoint} support {conclusion}?
   formula_schema: null
 - id: ad_hominem_direct

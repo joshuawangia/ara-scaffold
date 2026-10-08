@@ -49,7 +49,7 @@ def test_malformed_formula_rejected(payload):
 
 def test_commitment_set_frozen():
     source = [Commitment('t1', 'P', 'placeholder:1', atom('P'))]
-    table = CommitmentSet.build(source)
+    table = CommitmentSet(source)
     source.clear()
     assert table.get('t1').text == 'P'
     assert table.get('missing') is None
@@ -82,3 +82,31 @@ def test_route_graph_roundtrip():
     assert decoded.nodes[1].t_id == 't1'
     assert decoded.nodes[0].children == ('n2',)
     assert decoded.to_json() == graph.to_json()
+
+
+def test_scoped_graph_and_event_roundtrip():
+    from ara.types import CQAnswer, EngineDecision, ProofScope, RunEvent, TokenUsage
+    p, q = Proposition('p', 'P', atom('P')), Proposition('q', 'Q', atom('Q'))
+    graph = RouteGraph('g2', 'n3', (
+        RouteNode('n1', p, 'assumption', scope_id='conditional'),
+        RouteNode('n2', q, 'inference', children=('n1',), scope_id='conditional',
+                  cq_answers=(CQAnswer('cq1', 'P', True, ('t1',)),)),
+        RouteNode('n3', Proposition('pq', 'P -> Q', Formula('implies', (p.formula, q.formula))),
+                  'inference', children=('n2',)),
+    ), scopes=(ProofScope('conditional', 'n1', ('n2',), 'n3'),), frontier=('n2',))
+    restored = RouteGraph.from_json(graph.to_json())
+    assert restored == graph
+    assert restored.scopes[0].result_node_ids == ('n2',)
+    event = RunEvent('2026-10-08T00:00:00Z', 'licensing', 'ENGINE',
+                     usage=TokenUsage(2, 3, 4, 5, 1),
+                     decision=EngineDecision('discarded', 'UNKNOWN_BANK_ID', 'P'),
+                     payload_json='{"b":2, "a":1}')
+    assert RunEvent.from_json(event.to_json()) == event
+    assert event.payload_json == '{"a":1,"b":2}'
+    with pytest.raises(FrozenInstanceError):
+        restored.scopes[0].result_node_ids = ()
+
+
+def test_unformalised_negation_rejected():
+    with pytest.raises(ValueError, match='formula'):
+        negate_proposition(Proposition('p', 'P'))

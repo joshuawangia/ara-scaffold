@@ -62,9 +62,8 @@ def test_malformed_formula_schema_rejected(mutation):
     elif mutation == 'metavariable':
         entry['formula_schema']['conclusion'] = {'op': 'atom', 'name': 'UNDECLARED'}
     elif mutation == 'substitution':
-        entry['formula_schema']['substitutions'] = [
-            {'slot': 'missing', 'body_variable': 'P', 'variable': 'x',
-             'term': {'kind': 'constant', 'name': 'a'}}]
+        entry = next(e for e in data['entries'] if e['id'] == 'universal_instantiation')
+        entry['formula_schema']['substitutions'][0]['slot'] = 'missing'
     else:
         entry['formula_schema']['scopes'] = [
             {'id': 's1', 'assumption_slot': 'missing', 'result_slots': ['conditional']}]
@@ -82,3 +81,24 @@ def test_cross_file_duplicate_and_version_rejected(tmp_path):
     (tmp_path / 'b.yaml').write_text(yaml.safe_dump(data))
     with pytest.raises(ValueError, match='version'):
         load_bank(tmp_path)
+
+
+def test_duplicate_yaml_key_rejected(tmp_path):
+    path = tmp_path / 'a.yaml'
+    path.write_text('bank_version: 1.0.0\nbank_version: 2.0.0\nentries: []\n')
+    with pytest.raises(ValueError, match='duplicate YAML'):
+        load_bank(path)
+
+
+def test_deductive_schema_required():
+    data = document()
+    data['entries'][0]['formula_schema'] = None
+    with pytest.raises(ValueError, match='requires formula schema'):
+        validate_bank(data)
+
+
+def test_defeasible_cqs_required():
+    data = yaml.safe_load((BANK / 'schemes.yaml').read_text())
+    data['entries'][0]['critical_questions'] = []
+    with pytest.raises(ValueError, match='requires CQs'):
+        validate_bank(data)

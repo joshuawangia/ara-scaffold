@@ -133,3 +133,14 @@ the stated body substitution; it is not an independent free choice. Conclusion
 slot id is fixed to `conclusion` for deductive forms. Conjunction elimination
 and disjunctive syllogism use commutative matching; double negation is oriented
 as elimination, with introduction available through canonical normalization.
+
+A12. RouteGraph.dialectical_cost uses null for an infinite or not-yet-evaluated
+cost; the engine should distinguish those cases through status/decision events,
+never serialize nonstandard JSON Infinity. Type constructors validate shape,
+not graph closure, CQ truth, membership, or proof correctness. Those remain
+engine responsibilities. A CQ answer's answered flag alone is not evidence.
+
+A13. Standalone local schemas use full Draft 2020-12, including conditionals for
+verification. Runtime owns any provider-compatible structured-output projection
+and must always revalidate the original schema locally. Provider acceptance of
+these exact schema features is unexecuted, not assumed.

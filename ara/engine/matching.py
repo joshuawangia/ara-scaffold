@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from itertools import combinations, product
+from itertools import combinations
 from typing import Iterator
 
 from ara.types import Formula, FormulaSchema, Term

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "answer_cq",
+  "type": "object",
+  "properties": {
+    "cq_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answered": {
+      "type": "boolean"
+    },
+    "supporting_t_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "cq_id",
+    "answer",
+    "answered",
+    "supporting_t_ids"
+  ],
+  "additionalProperties": false
+}

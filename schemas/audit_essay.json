@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "audit_essay",
+  "type": "object",
+  "properties": {
+    "faithful": {
+      "type": "boolean"
+    },
+    "covered_node_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "missing_node_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "extra_steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "faithful",
+    "covered_node_ids",
+    "missing_node_ids",
+    "extra_steps"
+  ],
+  "additionalProperties": false
+}

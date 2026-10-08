@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "propose_cuts",
+  "type": "object",
+  "properties": {
+    "proposals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/proposal"
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "proposals"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "premise_fill": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "t_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "slot",
+        "text",
+        "t_id",
+        "scope_id"
+      ],
+      "additionalProperties": false
+    },
+    "proposal": {
+      "type": "object",
+      "properties": {
+        "bank_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "premises": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/premise_fill"
+          },
+          "minItems": 1
+        },
+        "conclusion_text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "bank_id",
+        "premises",
+        "conclusion_text"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

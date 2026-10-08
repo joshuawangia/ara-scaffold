@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "map_leaf",
+  "type": "object",
+  "properties": {
+    "t_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "t_id"
+  ],
+  "additionalProperties": false
+}

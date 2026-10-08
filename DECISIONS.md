@@ -144,3 +144,22 @@ A13. Standalone local schemas use full Draft 2020-12, including conditionals for
 verification. Runtime owns any provider-compatible structured-output projection
 and must always revalidate the original schema locally. Provider acceptance of
 these exact schema features is unexecuted, not assumed.
+
+## Beta engine decisions
+
+E1. Execute natively in the assigned lane, without delegation or publishing. The
+brief governs the return-to-caller handoff and permits lane commits. Baseline:
+`b8dd2d7`; real `uv sync`; 45 scaffold tests passed. New licensing tests first
+failed at the missing Licenser import, then passed after implementation.
+
+E2. Licensing checks bank identity, exact nonempty slots, canonical conclusion,
+and scope annotations first. For deductions the solver runs before schema
+matching so invalid sequents report SOLVER_COUNTEREXAMPLE, even if the named
+rule also mismatches. An entailed sequent still fails if it does not instantiate
+the named rule. Solver UNKNOWN and timeout are separate discard reasons.
+
+E3. Formula symbols use disjoint atom, predicate/arity, constant and variable
+namespaces. Quantifiers share one individual sort. Schema matching backtracks
+across commutative partitions; quantifier instances use capture-avoiding
+substitution. Scoped deductions prove the exported sequent using subproof
+implications; closure must separately prove the scoped result children.

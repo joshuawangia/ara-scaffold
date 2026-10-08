@@ -22,6 +22,13 @@ class Rejected(ValueError):
     pass
 
 
+class InvalidOutput(Rejected):
+    """A fully accounted model response failed local validation."""
+    def __init__(self, reason: str, feedback: dict):
+        super().__init__(reason)
+        self.feedback = feedback
+
+
 def require(condition: bool, reason: str) -> None:
     if not condition:
         raise Rejected(reason)
@@ -60,6 +67,22 @@ class ModelCalls:
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
     def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
+        attempts = self.config.get('validation_attempts', 1)
+        if type(attempts) is not int or not 1 <= attempts <= 3:
+            raise ValueError('validation_attempts must be between 1 and 3')
+        request_inputs = inputs
+        for attempt in range(attempts):
+            try:
+                return self._call_once(kind, request_inputs, check)
+            except InvalidOutput as exc:
+                if attempt + 1 == attempts:
+                    raise
+                self.log.record('validation_retry', kind=kind, next_attempt=attempt + 2,
+                                reason=str(exc))
+                request_inputs = {**inputs, 'validation_feedback': exc.feedback}
+        raise AssertionError('unreachable')
+
+    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = None if kind == 'search_evidence' else json.loads(
             (self.root / 'schemas' / f'{kind}.json').read_text())
@@ -74,6 +97,7 @@ class ModelCalls:
         usage, cost = TokenUsage(), self.budget.cost(TokenUsage())
         cached = saved is not None
         dispatched = False
+        validating = False
         charged = False
         estimate = TokenUsage()
         try:
@@ -102,6 +126,7 @@ class ModelCalls:
                 data = {'text': Response(raw).text(), 'urls': urls, 'content': raw['content']}
                 require(bool(data['text']), 'empty evidence response')
             else:
+                validating = True
                 data = json.loads(Response(raw).text())
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
@@ -119,6 +144,10 @@ class ModelCalls:
             if unknown_usage:
                 self.budget.stop('provider failed without usage; reservation charged; actual spend unknown', kind)
             self.budget.after(kind)
+            if validating:
+                raise InvalidOutput(reason, {'error': str(exc),
+                    'rejected_response': Response(raw).text(),
+                    'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key)
         self.budget.after(kind)

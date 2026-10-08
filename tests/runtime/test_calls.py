@@ -183,3 +183,34 @@ def test_full_local_schema_reaches_provider_and_log(rig, monkeypatch):
     assert json.loads(schema_text) == json.loads((ROOT / 'schemas/formalise.json').read_text())
     event = next(e for e in log.read() if e['label'] == 'MODEL')
     assert event['prompt'] == prompts[0]
+
+
+@pytest.mark.parametrize('limit_retry', [False, True])
+def test_validation_retry_is_accounted_and_admitted(rig, limit_retry):
+    calls, provider, log = rig
+    calls.config['validation_attempts'] = 3
+    entry = {'id': 'c1', 'text': 'P', 'citation': 'placeholder:1',
+             'formula': Formula('atom', name='P').to_dict()}
+    invalid, valid = {'commitments': [entry, entry]}, {'commitments': [entry]}
+    inputs = {'literature': 'P', 'audience': 'P'}
+    register(calls, provider, 'build_t', inputs, invalid)
+    feedback = {'error': 'duplicate commitment id', 'rejected_response': canonical(invalid),
+                'instruction': 'Return a new response satisfying every local schema and reference constraint.'}
+    register(calls, provider, 'build_t', {**inputs, 'validation_feedback': feedback}, valid)
+    if limit_retry:
+        prompt = calls.render('build_t', inputs)[1]
+        calls.config['token_cap'] = len(prompt.encode()) + calls.config['max_output_tokens']
+        with pytest.raises(BudgetStop):
+            calls.build_t('P', 'P')
+        assert provider.calls == 1
+        assert log.read()[-1]['label'] == 'STOP'
+        assert not list(calls.cache.path.glob('*.json'))
+    else:
+        assert calls.build_t('P', 'P').get('c1').citation == 'placeholder:1'
+        assert provider.calls == 2
+        models = [e for e in log.read() if e['label'] == 'MODEL']
+        assert [json.loads(e['payload_json'])['status'] for e in models] == ['rejected', 'accepted']
+        assert all(e['cost_usd'] > 0 and e['usage']['input_tokens'] > 0 for e in models)
+        assert calls.budget.used_tokens == 16
+        assert len(list(calls.cache.path.glob('*.json'))) == 1
+        assert any(e['stage'] == 'validation_retry' for e in log.read())

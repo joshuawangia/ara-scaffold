@@ -398,3 +398,21 @@ local validation still requires exact operator arity. Full-schema transport/log
 and nonempty-compound regressions each have a production-wire negative control.
 All rejected outputs remain logged and uncached; no retry or repair fallback was
 introduced. The external delta report retains every live attempt's ledger.
+
+D8. A second clean-clone trial returned duplicate commitment ids and stopped,
+correctly. Smoke now allows at most three explicitly logged stateless validation
+attempts, each with the original inputs plus the rejected output and validation
+feedback. Every attempt passes the same budget admission, response logging, local
+schema/typed/reference checks and actual accounting. Only accepted outputs enter
+cache. Refusal, max_tokens, server/transport errors and engine licensing are never
+retried by this mechanism. This supersedes G3/D6/D7's no-retry statement only for
+accounted local-validation failures; there is still no hidden SDK retry or license
+fallback. Non-smoke defaults to one attempt unless explicitly configured (1–3).
+
+D9. Live depth-two search incurred over 60 model records before finishing its
+first target. Smoke now uses depth one and eight nodes per polarity to keep the
+end-to-end proof small; two targets, the real engine, both polarities, conflict/
+forward analysis, draft/audits/web/export and the USD 5 cap remain. Truncation and
+OPEN frontiers are logged, never presented as completeness. Normal search bounds
+remain depth six / 500 nodes. Integration tests do not weaken their artifact or
+analysis assertions; the bounded search policy is explicit in README/config.

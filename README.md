@@ -51,10 +51,13 @@ adaptive thinking and structured output with strict local schema checks. Every
 structured prompt also contains the full local response schema. Generated
 formula ASTs are bounded to depth two by config; local AST/solver semantics support
 deeper formulas, but larger generation grammars can exceed the API compiler limit.
-Smoke uses placeholder literature, two targets, depth two, 24 search nodes per
+Smoke uses placeholder literature, two targets, depth one, eight search nodes per
 polarity, a 300-word draft and at most one web search per evidence call. Its caps
 are **USD 5 and 1,000,000 tokens**, including conservative admission reservations.
-These are limits, not expected usage. Web admission reserves the configured
+These are limits, not expected usage. Smoke permits up to three explicitly
+logged attempts for a response that fails local validation; every attempt reserves
+and records its own usage. Invalid responses are never cached. Refusals, transport
+failures, output-token stops and bank-license failures are not retried. Web admission reserves the configured
 200,000-token context bound for each potential server iteration. Prices and that
 bound are explicit configuration assumptions; actual provider usage is recorded.
 A reservation is checked before each call and actual usage after it. An oversized

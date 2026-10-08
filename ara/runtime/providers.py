@@ -68,24 +68,31 @@ def structured_schema(schema: dict, depth: int = 2) -> dict:
     definitions = original.get('$defs', {})
     formula = definitions.pop('formula', None)
     if formula:
-        # A branch per operator at every depth explodes the service grammar.
-        # Use a uniform AST envelope; the original local schema enforces arity
-        # and operator-specific fields. Explicit defaults also avoid optional-
-        # property combinations multiplying the compiled grammar.
+        # Two AST families avoid the per-operator grammar explosion while
+        # keeping compound arguments nonempty (minItems=1 is SDK-supported).
         operators = [branch['properties']['op']['const'] for branch in formula['oneOf']]
         for level in range(depth + 1):
-            definitions[f'formula_{level}'] = {
+            leaf = {
                 'type': 'object', 'additionalProperties': False,
                 'properties': {
-                    'op': {'type': 'string', 'enum': operators if level else ['atom', 'predicate']},
-                    'args': {'type': 'array', 'items': {'$ref': f'#/$defs/formula_{level - 1}'}
-                             if level else {'type': 'null'}},
-                    'name': {'type': ['string', 'null']},
+                    'op': {'type': 'string', 'enum': ['atom', 'predicate']},
+                    'args': {'type': 'array', 'items': {'type': 'null'}},
+                    'name': {'type': 'string'},
                     'terms': {'type': 'array', 'items': {'$ref': '#/$defs/term'}},
-                    'variable': {'type': ['string', 'null']},
+                    'variable': {'type': 'null'},
                 },
                 'required': ['op', 'args', 'name', 'terms', 'variable'],
             }
+            node = leaf
+            if level:
+                compound = json.loads(canonical(leaf))
+                compound['properties'].update({
+                    'op': {'type': 'string', 'enum': [op for op in operators if op not in ('atom', 'predicate')]},
+                    'args': {'type': 'array', 'minItems': 1, 'items': {'$ref': f'#/$defs/formula_{level - 1}'}},
+                    'name': {'type': 'null'}, 'variable': {'type': ['string', 'null']},
+                })
+                node = {'anyOf': [leaf, compound]}
+            definitions[f'formula_{level}'] = node
         original = json.loads(canonical(original).replace('"#/$defs/formula"', f'"#/$defs/formula_{depth}"'))
     unsupported = {'$schema', 'minimum', 'maximum', 'minLength', 'maxLength', 'minItems',
                    'maxItems', 'uniqueItems', 'if', 'then', 'else', 'allOf', 'not'}
@@ -96,6 +103,8 @@ def structured_schema(schema: dict, depth: int = 2) -> dict:
             return value
         result = {('anyOf' if k == 'oneOf' else k): project(v)
                   for k, v in value.items() if k not in unsupported}
+        if 'minItems' in value:
+            result['minItems'] = min(1, value['minItems'])
         if result.get('type') == 'array' and 'items' not in result:
             result['items'] = {'type': 'null'}
         return result

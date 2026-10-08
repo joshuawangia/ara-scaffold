@@ -163,3 +163,23 @@ def test_unknown_cache_ttl_uses_expensive_rate(rig):
     from ara.types import TokenUsage
     calls, _, _ = rig
     assert float(calls.budget.cost(TokenUsage(cache_write_tokens=1000000))) == 10.0
+
+
+def test_full_local_schema_reaches_provider_and_log(rig, monkeypatch):
+    calls, provider, log = rig
+    proposition = Proposition('p', 'P')
+    register(calls, provider, 'formalise', {'proposition': proposition.to_dict()},
+             {'formula': Formula('atom', name='P').to_dict()})
+    prompts = []
+    complete = provider.complete
+    def capture(kind, prompt, schema, maximum):
+        prompts.append(prompt)
+        return complete(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'complete', capture)
+    assert calls.formalise(proposition) == Formula('atom', name='P')
+    assert len(prompts) == 1
+    assert '\nLOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n' in prompts[0]
+    schema_text = prompts[0].split('\nLOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n')[1].split('\nINPUT_JSON\n')[0]
+    assert json.loads(schema_text) == json.loads((ROOT / 'schemas/formalise.json').read_text())
+    event = next(e for e in log.read() if e['label'] == 'MODEL')
+    assert event['prompt'] == prompts[0]

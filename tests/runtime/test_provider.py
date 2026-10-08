@@ -127,11 +127,22 @@ def test_live_observed_not_constraint_projected_but_locally_enforced():
 def test_compact_formula_projection_keeps_local_operator_checks():
     schema = json.loads((ROOT / 'schemas/formalise.json').read_text())
     projected = structured_schema(schema)
-    invalid = {'formula': {'op': 'implies', 'args': [], 'name': None, 'terms': [], 'variable': None}}
+    invalid = {'formula': {'op': 'implies', 'args': [Formula('atom', name='P').to_dict()],
+                           'name': None, 'terms': [], 'variable': None}}
     Draft202012Validator(projected).validate(invalid)
     from jsonschema import ValidationError
     with pytest.raises(ValidationError):
         Draft202012Validator(schema).validate(invalid)
     # The server-rejected shape branches over every operator at every level.
     for level in range(3):
-        assert 'anyOf' not in projected['$defs'][f'formula_{level}']
+        assert len(projected['$defs'][f'formula_{level}'].get('anyOf', [])) <= 2
+
+
+def test_compound_generation_cannot_omit_all_arguments():
+    schema = structured_schema(json.loads((ROOT / 'schemas/formalise.json').read_text()))
+    from jsonschema import ValidationError
+    with pytest.raises(ValidationError):
+        Draft202012Validator(schema).validate({'formula': {'op': 'and', 'args': [],
+                                                          'name': None, 'terms': [], 'variable': None}})
+    compound = Formula('and', (Formula('atom', name='P'), Formula('atom', name='Q')))
+    Draft202012Validator(schema).validate({'formula': compound.to_dict()})

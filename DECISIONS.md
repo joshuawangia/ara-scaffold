@@ -354,8 +354,8 @@ fallback for arbitrary inputs. Every missing response remains an explicit error.
 
 D3. Live API execution found two SDK request failures hidden by fake-transport
 proof: unsupported JSON Schema `not`, then an oversized compiled formula grammar.
-The provider projection now strips unsupported `not`, uses one AST object shape
-per depth instead of multiplying operator branches, and requires explicit default
+The provider projection now strips unsupported `not`, uses two AST families
+per depth (leaf/compound) instead of multiplying per-operator branches, and requires explicit default
 fields in generated formulas. Original local schemas and typed codecs still
 check operator arity, reserved ids and every acceptance constraint. The lane
 projection test now uses the full valid atom codec rather than omitted defaults:
@@ -385,3 +385,16 @@ USD 5 cap. A low-effort trial returned an empty citation, correctly rejected by
 the untouched local build_t schema. Final smoke retains the base high effort;
 invalid output is never repaired by software or silently retried. Failed attempts
 and their measured/unknown-spend ledgers are retained in ignored run directories.
+
+D7. Repeated live empty-citation and empty-compound responses showed that schema
+projection must communicate and preserve constraints, not just compile. Structured
+prompts now include the complete original local response schema before input data;
+that exact prompt reaches the provider, log and cache identity. build_t explicitly
+copies nonempty supplied source identifiers. Existing canned response bodies are
+unchanged; affected prompt hashes were regenerated. Installed SDK 1.12.1's
+transform_schema confirms minItems 0/1 support. The compact projection therefore
+uses separate leaf/compound families and preserves minItems=1 for compounds, while
+local validation still requires exact operator arity. Full-schema transport/log
+and nonempty-compound regressions each have a production-wire negative control.
+All rejected outputs remain logged and uncached; no retry or repair fallback was
+introduced. The external delta report retains every live attempt's ledger.

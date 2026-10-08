@@ -51,6 +51,11 @@ class ModelCalls:
 
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
+        if kind != 'search_evidence':
+            # The service grammar is a compact projection. Show the model every
+            # local constraint as well; the same complete prompt is logged/keyed.
+            schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+            template += '\nLOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n' + canonical(schema)
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 

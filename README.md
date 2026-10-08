@@ -47,7 +47,8 @@ uv run ara run --smoke --run-dir runs/real-smoke
 ```
 
 Default provider/model: Anthropic / `claude-opus-5`, using the official SDK,
-adaptive thinking and structured output with strict local schema checks. Generated
+adaptive thinking and structured output with strict local schema checks. Every
+structured prompt also contains the full local response schema. Generated
 formula ASTs are bounded to depth two by config; local AST/solver semantics support
 deeper formulas, but larger generation grammars can exceed the API compiler limit.
 Smoke uses placeholder literature, two targets, depth two, 24 search nodes per

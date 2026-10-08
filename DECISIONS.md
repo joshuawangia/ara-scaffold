@@ -473,3 +473,13 @@ retry and its USD 0.835520 measured spend is retained. Smoke now uses the normal
 fallbacks, audit prompt and all acceptance guards are unchanged. A new clean-clone
 trial is required; this configuration change does not turn the failed trial into
 a success or enable retries of output-limit stops.
+
+D14. A fresh clone at a20e03c completed the real smoke with the unchanged B9
+audit prompt, both audits and full export. Its log reports 155636 input tokens,
+11211 output tokens and USD 1.058455, with no unknown-spend reservation. All
+nine executed call kinds were served by claude-opus-5. Default server fallbacks
+were enabled but no hop occurred; no live fallback hop is claimed. The evidence
+request completed without a server web-search invocation on placeholder input,
+so external-source retrieval remains unexercised. This executed receipt supersedes
+D10's blocked status; B9 remains the authorized provider configuration. Failed
+trial costs and the full per-kind model account remain in delta-report.md.

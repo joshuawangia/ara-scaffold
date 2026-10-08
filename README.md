@@ -38,10 +38,14 @@ are simulated and incur no provider spend.
 
 ## Real smoke
 
-Earlier runs stopped at the required essay audit with a provider refusal. B9 now
-enables the documented server-side default fallback chain while still requesting
-`claude-opus-5`. Final chain refusals remain logged rejections and are never
-retried. The current real-run receipt is recorded in the external delta report.
+A clean-clone real smoke completed with both audit passes, route graphs, draft,
+log and essay/methodology export: 155,636 input tokens, 11,211 output tokens and
+USD 1.058455. Every call was served by `claude-opus-5`. Default server fallbacks
+were enabled, but no fallback hop was reported. Mock tests and production-wire
+controls verify fallback billing, provenance and final-chain refusal handling.
+The placeholder evidence stage returned without invoking a web search; this run
+does not prove live external-source retrieval. Full receipts are in the external
+delta report. Earlier failed runs and their costs remain recorded there.
 
 Set `ANTHROPIC_API_KEY` in your environment, or source the operator's credential
 file in the same shell as the command:
@@ -64,7 +68,7 @@ structured prompt also contains the full local response schema. Generated
 formula ASTs are bounded to depth two by config; local AST/solver semantics support
 deeper formulas, but larger generation grammars can exceed the API compiler limit.
 Smoke uses placeholder literature, two targets, depth one, eight search nodes per
-polarity, a 300-word draft and at most one web search per evidence call. Its caps
+polarity, a 300-word draft, an 8,192-token output allowance and at most one web search per evidence call. Its caps
 are **USD 5 and 1,000,000 tokens**, including conservative admission reservations.
 These are limits, not expected usage. Smoke permits up to three explicitly
 logged attempts for a response that fails local validation; every attempt reserves

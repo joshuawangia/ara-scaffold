@@ -109,8 +109,10 @@ Final run receipts, fresh-clone verification, audit and final revision belong in
 `/home/dev/wt/shared/ara/delta-report.md`; historical lane gaps above are retained
 for provenance and superseded by those executed integration receipts.
 
-Final integration disposition: both lanes are native and the offline lifecycle is
-complete. Real runs reach graphs and drafts but Opus 5 refuses the required essay
-audit (reasoning_extraction), including a clarified public-artifact request. No
-verified real essay/export or successful real smoke is claimed. See DECISIONS
-D10–D12, README and the external delta report before proceeding.
+Current integration disposition: B9 default server fallbacks and the minimal
+audit-clause removal supersede the historical provider block. A clean-clone
+real smoke at a20e03c completed both audit passes and essay/methodology export
+for USD 1.058455; all calls were served by Opus 5, with no fallback hop reported.
+The placeholder evidence stage did not invoke a web search. No live fallback
+hop or external-source retrieval is claimed. See B9/D13/D14 in DECISIONS.md and
+the external delta report for final reproduction and accounting receipts.

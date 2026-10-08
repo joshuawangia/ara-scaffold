@@ -46,7 +46,7 @@ def test_anthropic_sdk_request_shapes_and_accounting(rig):
         def count_tokens(self, **kwargs):
             counts.append(kwargs)
             return SimpleNamespace(input_tokens=10)
-    provider = AnthropicProvider(calls.config, SimpleNamespace(messages=Messages()))
+    provider = AnthropicProvider(calls.config, SimpleNamespace(messages=Messages(), beta=SimpleNamespace(messages=Messages())))
     schema = json.loads((ROOT / 'schemas/formalise.json').read_text())
     estimate = provider.estimate('formalise', 'P', schema, 32)
     assert estimate == TokenUsage(10, 32)

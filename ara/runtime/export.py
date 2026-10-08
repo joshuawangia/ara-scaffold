@@ -15,7 +15,21 @@ def methodology(log_path: Path) -> str:
     calls = [e for e in events if e['label'] == 'MODEL']
     human = [e for e in events if e['label'] == 'HUMAN']
     payloads = [json.loads(e['payload_json']) for e in human]
+    routing = [(e, json.loads(e['payload_json'])) for e in calls]
+    served_by_kind = {
+        kind: sorted({p.get('served_model') or e['model_version'] for e, p in routing
+                      if e['stage'] == kind and (p.get('served_model') or e['model_version'])})
+        for kind in sorted({e['stage'] for e in calls})
+    }
+    fallback_calls = [
+        {'kind': e['stage'], 'requested_model': e['model_id'], 'served_model': p['served_model'],
+         'status': p['status'], 'cache_hit': p['cache_hit'],
+         'blocks': p['fallback_blocks'], 'iterations': p['fallback_iterations']}
+        for e, p in routing if p.get('fallback_used')
+    ]
     summary = {
+        'served_models_by_kind': served_by_kind,
+        'fallback_calls': fallback_calls,
         'models': sorted({(e['model_id'], e['model_version']) for e in calls}, key=repr),
         'roles': sorted({e['stage'] for e in calls}),
         'tokens': {k: sum(e['usage'][k] for e in events) for k in (
@@ -37,7 +51,11 @@ def methodology(log_path: Path) -> str:
     # candidates, searches, decisions, selections, prompts, tools and human input.
     return ('# Methodology\n\nGenerated only from the event log. Search and audit are model assessments; '
             'formal licensing belongs to the engine.\n\n## Accounting\n\n```json\n' +
-            json.dumps(summary, indent=2, ensure_ascii=False) + '\n```\n\n## Complete evidence\n\n' +
+            json.dumps(summary, indent=2, ensure_ascii=False) + '\n```\n\n' +
+            ('Server-side fallback served calls: ' + '; '.join(
+                f"{c['kind']} → {c['served_model']} ({c['status']})" for c in fallback_calls) + '.\n\n'
+             if fallback_calls else 'No server-side fallback was reported.\n\n') +
+            '## Complete evidence\n\n' +
             '\n'.join('```json\n' + canonical(e) + '\n```\n' for e in events))
 
 

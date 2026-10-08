@@ -18,16 +18,42 @@ class MissingResponse(RuntimeError):
 class Response:
     raw: dict
 
-    @property
-    def usage(self) -> TokenUsage:
-        u = self.raw['usage']
-        tool = u.get('server_tool_use') or {}
-        return TokenUsage(u.get('input_tokens', 0), u.get('output_tokens', 0),
-                          u.get('cache_read_input_tokens', 0), u.get('cache_creation_input_tokens', 0),
+    @staticmethod
+    def usage_fields(usage: dict) -> TokenUsage:
+        tool = usage.get('server_tool_use') or {}
+        return TokenUsage(usage.get('input_tokens', 0), usage.get('output_tokens', 0),
+                          usage.get('cache_read_input_tokens') or 0,
+                          usage.get('cache_creation_input_tokens') or 0,
                           tool.get('web_search_requests', 0))
 
+    @property
+    def usage(self) -> TokenUsage:
+        usage = self.raw['usage']
+        iterations = usage.get('iterations') or []
+        if not iterations:
+            return self.usage_fields(usage)
+        if any(i['type'] not in ('message', 'fallback_message') for i in iterations):
+            raise ValueError('unsupported provider usage iteration')
+        parts = [self.usage_fields(i) for i in iterations]
+        totals = {key: sum(p.to_dict()[key] for p in parts)
+                  for key in ('input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens')}
+        return TokenUsage(**totals, server_tool_uses=self.usage_fields(usage).server_tool_uses)
+
+    @property
+    def served_content(self) -> list[dict]:
+        content = self.raw['content']
+        boundary = max((i for i, block in enumerate(content) if block['type'] == 'fallback'), default=-1)
+        return content[boundary + 1:]
+
     def text(self) -> str:
-        return '\n'.join(b['text'] for b in self.raw['content'] if b['type'] == 'text')
+        return '\n'.join(b['text'] for b in self.served_content if b['type'] == 'text')
+
+    def routing(self) -> dict:
+        blocks = [b for b in self.raw['content'] if b['type'] == 'fallback']
+        iterations = self.raw['usage'].get('iterations') or []
+        return {'served_model': self.raw['model'], 'fallback_blocks': blocks,
+                'fallback_iterations': [i for i in iterations if i['type'] == 'fallback_message'],
+                'fallback_used': bool(blocks) or any(i['type'] == 'fallback_message' for i in iterations)}
 
 
 def mock_key(kind: str, prompt: str) -> str:
@@ -118,6 +144,8 @@ class AnthropicProvider:
             # SDK retries can otherwise create unlogged, unreserved billable calls.
             client = Anthropic(max_retries=0)
         self.client, self.config, self.model = client, config, config['model']
+        if config.get('fallbacks', 'default') not in ('default', 'off'):
+            raise ValueError('fallbacks must be default or off')
 
     def request(self, kind: str, prompt: str, schema: dict | None, maximum: int) -> dict:
         output = {'effort': self.config['effort']}
@@ -147,5 +175,8 @@ class AnthropicProvider:
                           server_tool_uses=searches)
 
     def complete(self, kind: str, prompt: str, schema: dict | None, maximum: int) -> Response:
-        raw = self.client.messages.create(**self.request(kind, prompt, schema, maximum))
+        request = self.request(kind, prompt, schema, maximum)
+        if self.config.get('fallbacks', 'default') == 'default':
+            request.update(betas=['server-side-fallback-2026-07-01'], fallbacks='default')
+        raw = self.client.beta.messages.create(**request)
         return Response(raw.to_dict())

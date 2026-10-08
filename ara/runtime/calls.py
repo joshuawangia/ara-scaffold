@@ -9,7 +9,7 @@ from typing import Callable, Any
 
 from jsonschema import Draft202012Validator
 
-from ara.runtime.budget import Budget, BudgetStop
+from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical
 from ara.runtime.logging import EventLog, now
 from ara.runtime.providers import Provider, Response
@@ -89,7 +89,8 @@ class ModelCalls:
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               'effort': self.config['effort'], 'maximum': self.config['max_output_tokens'],
                               'web_max': self.config['web_search_max_uses'],
-                              'formula_depth': self.config.get('formula_output_depth', 2)})
+                              'formula_depth': self.config.get('formula_output_depth', 2),
+                              'fallbacks': self.config.get('fallbacks', 'default')})
         key = cache_key(kind, template, identity, self.provider.model, schema or {})
         saved = self.cache.get(key)
         start = time.monotonic()
@@ -103,6 +104,7 @@ class ModelCalls:
         try:
             if cached:
                 raw = saved['raw']
+                self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
                 estimate = self.provider.estimate(kind, prompt, schema, self.config['max_output_tokens'])
                 self.budget.before(estimate, kind)
@@ -112,7 +114,7 @@ class ModelCalls:
                 raw = self.provider.complete(kind, prompt, schema, self.config['max_output_tokens']).raw
                 usage = Response(raw).usage
                 require(all(type(n) is int and n >= 0 for n in usage.to_dict().values()), 'invalid usage')
-                cost = self.budget.cost(usage, raw['usage'])
+                cost = self.budget.response_cost(raw)
                 self.budget.charge(usage, cost)
                 charged = True
             # Stop reason is checked BEFORE interpreting any content blocks.
@@ -121,9 +123,9 @@ class ModelCalls:
                         str(v.get('type', '')).endswith('_error') or v.get('error_code'))
                         for v in walk(raw['content'])), 'server tool error')
             if schema is None:
-                urls = sorted({v['url'] for v in walk(raw['content']) if isinstance(v, dict)
+                urls = sorted({v['url'] for v in walk(Response(raw).served_content) if isinstance(v, dict)
                                and v.get('type') == 'web_search_result' and isinstance(v.get('url'), str)})
-                data = {'text': Response(raw).text(), 'urls': urls, 'content': raw['content']}
+                data = {'text': Response(raw).text(), 'urls': urls, 'content': Response(raw).served_content}
                 require(bool(data['text']), 'empty evidence response')
             else:
                 validating = True
@@ -135,14 +137,14 @@ class ModelCalls:
         except Exception as exc:
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
-            reason = str(exc) if isinstance(exc, Rejected) else type(exc).__name__
+            reason = str(exc) if isinstance(exc, (Rejected, UnpricedModel)) else type(exc).__name__
             unknown_usage = dispatched and not charged
             if unknown_usage:
                 usage, cost = estimate, self.budget.cost(estimate)
                 self.budget.charge(usage, cost)
             self._event(kind, prompt, raw, usage, cost, start, cached, 'rejected', reason, key, unknown_usage)
             if unknown_usage:
-                self.budget.stop('provider failed without usage; reservation charged; actual spend unknown', kind)
+                self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
             self.budget.after(kind)
             if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': str(exc),
@@ -164,6 +166,8 @@ class ModelCalls:
                               time.monotonic() - start,
                               payload_json=canonical({'status': status, 'reason': reason,
                                                        'cache_hit': cached, 'cache_key': key,
+                                                       'requested_model': self.provider.model,
+                                                       **(Response(raw).routing() if raw else {}),
                                                        'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual'})))
 
     def build_t(self, literature: str, audience: str) -> CommitmentSet:

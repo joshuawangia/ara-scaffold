@@ -439,3 +439,29 @@ entry rather than overwriting it. This was an integration execution collision,
 not a successful smoke. Its actual paid usage is retained in its methodology.
 Use one paid writer per cache. Final offline lifecycle proof includes the shipped
 placeholder feedback input and subsequent selection/draft/export.
+
+
+B9 (brain decision, brief 2b). Continue requesting claude-opus-5; enable the
+server-side default chain with beta.messages.create, the July 2026 header and
+scalar fallbacks="default". Config accepts default/off, default on. Installed
+Anthropic SDK 1.12.1 supports this natively; no extra-body workaround is used.
+This supersedes D10's no-server-fallback disposition, not bank-only licensing.
+Only the private-reasoning-disclosure clause was removed from audit_essay; all
+other audit semantics and final-refusal/no-retry behavior remain unchanged.
+
+Record actual response.model, fallback switch blocks and fallback_message usage
+iterations. Interpret only content after the final switch; retain all raw content
+in the event. Sum iteration tokens and price each named model separately, with
+server-tool charges counted once. Ordinary single-model iterations without model
+use response.model; missing model provenance in a fallback chain stops accounting.
+Unknown model/cache pricing stops loudly with a labelled unknown-spend reservation.
+All configured model rates must be finite and nonnegative. Cached calls validate
+provenance but charge zero incremental usage. Cache identity includes fallback mode.
+
+Opus 4.8 input/output rates are USD 5/25 per MTok, supplied by B9's reference-price
+instruction. No cache rates were supplied for 4.8, so nonzero unpriced cache usage
+is an error. Existing web service prices remain operator assumptions. Methodology
+lists actual serving models by call kind and explicitly discloses fallback calls.
+Admission retains the configured primary-model reservation; the server's default
+chain can consume additional billable partial output. Actual whole-chain usage is
+checked after each call; a post-call STOP cannot undo an oversized charge.

@@ -38,12 +38,10 @@ are simulated and incur no provider spend.
 
 ## Real smoke
 
-The executed live run currently stops at the required essay audit: Opus 5 returns
-`refusal` with category `reasoning_extraction` when comparing the supplied public
-symbolic graph and draft. Graphs, draft and methodology are retained; a verified
-essay is not exported. This is a provider block, not a successful real smoke.
-The credential worked and all preceding stages executed. Keep this limitation
-visible until an approved provider/model resolves it; do not bypass the audit.
+Earlier runs stopped at the required essay audit with a provider refusal. B9 now
+enables the documented server-side default fallback chain while still requesting
+`claude-opus-5`. Final chain refusals remain logged rejections and are never
+retried. The current real-run receipt is recorded in the external delta report.
 
 Set `ANTHROPIC_API_KEY` in your environment, or source the operator's credential
 file in the same shell as the command:
@@ -54,7 +52,14 @@ uv run ara run --smoke --run-dir runs/real-smoke
 ```
 
 Default provider/model: Anthropic / `claude-opus-5`, using the official SDK,
-adaptive thinking and structured output with strict local schema checks. Every
+adaptive thinking and structured output with strict local schema checks.
+`fallbacks: default` enables the July 2026 beta API; `fallbacks: off` disables it.
+Logs retain the requested and actual serving models, switch blocks and fallback
+usage iterations. Each iteration is priced at its model's configured rates;
+unknown model/cache prices stop with explicit unknown-spend accounting.
+Methodology lists actual serving models by call kind and discloses fallback use.
+Server-side fallback attempts may add billable usage beyond the primary-model
+admission reservation; post-call accounting checks the whole chain. Every
 structured prompt also contains the full local response schema. Generated
 formula ASTs are bounded to depth two by config; local AST/solver semantics support
 deeper formulas, but larger generation grammars can exceed the API compiler limit.

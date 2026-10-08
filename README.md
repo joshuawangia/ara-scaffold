@@ -1,9 +1,10 @@
 # ARA scaffold
 
-Alpha establishes the bank and shared contracts for a Python CLI. Engine search,
-provider calls and CLI commands are **not implemented yet**. No real provider run
-has been performed by this phase. See PLAN.md for the implementation/proof owners
-and DECISIONS.md for fixed interfaces and limitations.
+ARA has a bank, immutable contracts, model runtime and CLI. At the runtime lane
+base, engine modules are placeholders: the native engine factory must be connected
+during integration. Runtime tests exercise the lifecycle with a test-only fake
+engine and deterministic mock provider. No real-provider smoke is claimed here.
+See PLAN.md and DECISIONS.md for ownership and limitations.
 
 ## Install
 
@@ -22,6 +23,7 @@ creation/push; use its clone URL once available. Commands use repository-root
 ```sh
 uv run pytest
 uv run python tools/negative_controls.py
+uv run python tests/runtime/negative_controls.py
 ```
 
 Tests use placeholder propositions only and make no network calls. Negative
@@ -29,35 +31,90 @@ controls temporarily modify owned source/schema files, verify tests go red,
 restore them in `finally`, and rerun the same tests green. Run in a clean checkout,
 without another writer. Evidence goes to gitignored `runs/alpha-proof/`.
 
-## Smoke (next integration phase)
+## Runtime proof and smoke
 
-The console entrypoint is registered, but `ara.runtime.cli:main` is intentionally
-absent until the runtime lane implements it. This command is a future interface,
-not an alpha proof:
+Run the offline CLI lifecycle proof (two targets and their negations, route files,
+short draft, audit, verification, export, deterministic cached replay):
+
+```sh
+uv run pytest tests/runtime/test_cli.py -q
+```
+
+The finite canned responses in `tests/fixtures/runtime/canned.json` are keyed by
+call kind and full rendered-input hash. Missing entries fail loudly. The fake
+engine in these tests proves orchestration only; it is never used by `ara run`.
+
+After the engine integration adapter is connected, set `ANTHROPIC_API_KEY` in the
+environment and run from the repository root:
 
 ```sh
 uv run ara run --smoke
 ```
 
-Set `ANTHROPIC_API_KEY` in the environment; never place it in a tracked file or
-log. Smoke will use placeholder topic/literature, 2 candidates, depth 2 and a
-300-word draft. Inspect route graphs, draft, full JSONL and log-derived methodology
-under gitignored `runs/`; record actual tokens and cost. Provider and model are
-configured in `config.yaml`. Ancillary tool/cache pricing awaits provider review.
+The default config uses Anthropic and `claude-opus-5`; SDK credentials are never
+written to files or logs. Smoke uses a placeholder topic/literature, two candidates,
+depth two, at most 24 nodes, a 300-word draft, one web search use and a 1,000,000-token
+cap with USD 10 cost cap. These are caps, not expected consumption. Conservative
+web-call admission reserves full model-context bounds; the ordinary 200k-token
+cap can stop before verification. Change caps and pricing explicitly in config
+for a real run. Ancillary rates/context assumptions still require billing review.
 
-## Real run (next integration phase)
+The real-provider path test is skipped unless both a key and an explicit network
+opt-in are present; a skip is not a passing real-provider proof:
 
 ```sh
-uv run ara run --topic '<runtime topic>' --literature '<runtime literature path>'
-uv run ara select --help
-uv run ara feedback --help
-uv run ara export --help
+ARA_LIVE_TEST=1 uv run pytest tests/runtime/test_provider.py::test_real_provider_path -rs
 ```
 
-Exact selection, feedback and export flags belong to the runtime lane. Human
-inputs must be timestamped and logged verbatim as HUMAN. Generated content,
-drafts, logs and cache are never committed. Final documentation must include an
-executed fresh-clone test and a real-provider smoke receipt.
+This lane has no credential and has not executed that command against the service.
+Full real-provider smoke and a fresh-clone end-to-end receipt remain integration
+work. At this base `ara.engine.create_engine` is absent; native run exits nonzero
+and writes the error plus methodology. See DECISIONS.md, “Runtime integration gap”.
+
+## Run, select, feedback and export
+
+```sh
+uv run ara run --topic '<runtime topic>' --literature '<runtime literature path>' --audience '<audience>'
+uv run ara select --run-dir runs/<run-id> --route '<route-id>' --human-minutes 2
+uv run ara feedback --run-dir runs/<run-id> --text '<verbatim feedback>'
+uv run ara export --run-dir runs/<run-id> --redact '<identifier>'
+```
+
+`run` freezes the commitment table, proposes ten targets by default, searches each
+and its canonical negation, records conflicts/robustness, and waits for `select`.
+Use `--named-position` to supply one exact position. `--run-dir` chooses a new empty
+output directory; `--config` chooses runtime configuration. Selection without
+`--route` and feedback without `--text` prompt interactively and measure elapsed
+human time. Explicit `--human-minutes` is recorded separately. Smoke selects a
+route automatically with a logged SYSTEM policy. Feedback is included in the next
+draft request without changing the frozen commitments or selected graph.
+
+Every command logs HUMAN argv and inputs verbatim, with timestamps. Every model
+call records prompt, raw response, model/version, usage, cost, wall time and
+accept/reject status. Budget exhaustion returns exit code 2, writes STOP and
+`partial.json`, retains completed route files, and exports methodology. A transport
+failure without usage records a reservation with unknown actual spend and blocks
+resume; it is never reported as free. No output/cache file belongs in a commit.
+
+Artifacts include `events.jsonl`, `events.anchor`, `commitments.json`, route JSON
+and readable trees, `draft.unverified.json`, verified `draft.json`, and
+`export/{essay.txt,methodology.md}`. No essay is exported until both audits and
+verification succeed. Preserve the log and checkpoint together to detect edits
+and truncation on resume. An interrupted append refuses startup. This is local
+integrity detection, not a signed audit against someone who can rewrite both.
+
+The essay export omits run metadata and node markers, and replaces explicit
+`--redact` strings. It does not infer personal identities in prose. The methodology
+preserves the full record and is not anonymised. To demonstrate log-only recovery
+without recording a new human command or changing the report:
+
+```sh
+uv run python -c 'from pathlib import Path; from ara.runtime.export import export_run; export_run(Path("events.jsonl"), Path("recovered"))'
+```
+
+That function needs only the JSONL. Log-only export verifies the chain but cannot
+prove that its tail was not deleted without the separate checkpoint. Full reports
+include every prompt, response, engine decision, human action and accounting note.
 
 ## Shared contracts
 

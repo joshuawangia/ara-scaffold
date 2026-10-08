@@ -218,3 +218,117 @@ and best-first priority. `git diff --check`, byte compilation and an AST import
 audit passed. The external beta-report.md contains the test-by-test controls and
 five placed integration findings. No provider smoke, publishing or fresh-clone
 proof was performed in this engine lane; those remain integration obligations.
+## Gamma runtime decisions
+
+G1. Native execution in the assigned worker/worktree. No delegation or push.
+Generic skill shipping steps are outside this worker contract. Shared types and
+ports are unchanged. Runtime-owned EngineAPI describes the lifecycle required
+from the engine factory; see the integration gap below.
+
+G2. Calls use one fresh Messages request, topic-neutral templates, local full
+Draft 2020-12 validation and typed seam decoding before success caching. Cache
+identity includes the specified five B4 components plus provider, effort, output
+bound, web-use bound and formula projection depth. Cache hits are revalidated and
+logged with original response but zero incremental usage/cost. Engine licensing
+remains authoritative; cached proposals do not constitute licenses.
+
+G3. Provider structured output projection removes unsupported validation keywords
+and replaces recursive formula references with an acyclic depth-bounded family
+(default six). At depth zero it permits atoms/predicates only. Local schemas and
+Formula constructors still enforce full constraints. Real API acceptance of this
+projection requires the explicitly opt-in live test; fake SDK proof is not API proof.
+No SDK retries, fallback models or hidden conversation state are used. Refusal,
+max_tokens, pause_turn, unexpected tool_use and server error blocks are rejected.
+
+G4. JSONL and its .anchor tail-checkpoint file are both append-only, flushed and
+fsynced under an advisory lock. Reopening verifies every record and checkpoint;
+an interrupted append refuses recovery rather than guessing. This detects edits,
+reordering and tail truncation when the checkpoint is retained. It is not a signed
+remote audit: someone able to rewrite both files can forge a new chain. Log-only
+export verifies the chain but cannot detect deletion of a valid suffix without
+its checkpoint; retain the checkpoint for restart/integrity verification.
+
+G5. Word count is every whitespace-delimited token in title plus body, including
+route and citation markers. Bibliography is exclusively the separate schema array
+and excluded from the count. The effective limit is min(6000, configured limit).
+Over-limit output is rejected, never truncated. Draft nodes carry [[node:ID]];
+exact marker coverage supplements, but cannot replace, the second model's semantic
+audit. A model's faithful flag alone cannot override missing nodes or extra steps.
+
+G6. Citation syntax is [cite:ID] with a matching bibliography entry; every quotation
+uses straight or curly double quotes. Verification inventories all bibliography
+entries and double-quoted spans, acquires web evidence, then classifies exactly
+that inventory. Evidence URLs must occur in actual server search-result blocks,
+not merely model prose. Unverified spans, markers and bibliography entries are
+removed without replacement. The cleaned draft is audited again before export.
+Web search/classification does not establish exhaustive originality or source
+truth; reports preserve the evidence and uncertainty. Quotes/citations outside
+the specified syntax remain a semantic model-audit responsibility.
+
+G7. Anonymisation is an explicit bounded transformation: export only title/body/
+bibliography (no run metadata or attribution), remove route markers, and replace
+operator-supplied --redact strings literally with [REDACTED]. The schema has no
+author field and prompts prohibit author/affiliation/acknowledgements. This is not
+semantic identity detection; operators must supply identifiers that appear in prose.
+Methodology intentionally preserves the complete human/model record and is not
+represented as anonymised. It is reproducible solely from JSONL, without cache,
+config, bank, graph or draft files. Report timestamps come only from logged events.
+
+G8. Pricing uses explicit config data, Decimal arithmetic, separate cache TTLs and
+server-tool counts; unknown rates never default to zero. Caps are checked before
+and after every paid call; actual usage is logged before a post-call STOP. Search
+admission reserves the configured model context ceiling for every possible search
+iteration plus output bounds. The base 200k-token cap can refuse web verification
+before spending. Smoke adds a 1,000,000-token cap and one search use, sufficient for
+that conservative reservation; cost cap remains USD 10. Configured context/pricing
+are operator assumptions, not an invoice guarantee. Input/output rates come from
+B2; ancillary rates were supplied by alpha and still require current billing review.
+Provider errors with no usage cannot prove zero spend; logs must disclose unknown
+accounting rather than let a failed call become an uncounted retry.
+
+G9. Normal run builds/freezes T, generates targets, searches every target and its
+canonical negation, invokes engine conflict/robustness analysis, then pauses for
+`ara select`. Smoke selects the first CLOSED route (or first OPEN route), with an
+explicit SYSTEM policy record. Human selection is separately HUMAN. Feedback is
+logged verbatim and supplied to subsequent essay calls while the route remains
+fixed and independently audited. Human CLI argv and supplied literature are
+logged; interactive input measures prompt-to-accept elapsed time; explicit minutes
+are labelled separately. Machine timing for model calls is observed wall time.
+
+### Runtime integration gap (no seam changes)
+
+At base b8dd2d7 the engine exports no search API. Runtime currently imports
+`ara.engine.create_engine(bank=..., proposer=..., formaliser=..., mapper=...,
+cq_answerer=..., repairer=..., sink=..., config=...)` and expects `search(target,
+commitments) -> tuple[RouteGraph, ...]` and `conflicts(routes, commitments) -> dict`.
+This is a runtime-owned temporary adapter contract, not a claim that the parallel
+engine lane has adopted it. Integration must align `native_engine` to that lane's
+public API. Missing API is a loud nonzero error; production never uses the test
+fake or duplicates engine search. Real-provider full smoke, final engine/runtime
+integration and fresh-clone end-to-end proof remain integration-owned.
+
+G10. Accounting failures after dispatch charge the conservative reservation with
+`accounting=reservation_unknown_actual`, log STOP, and refuse resumption. A call
+interrupted between call_start and its response also refuses resumption. The
+methodology identifies reservations separately from measured cost. Cache writes
+without TTL detail use the more expensive configured rate. Command wall time
+excluding measured interactive input is recorded separately from model-call time.
+Smoke topic/literature supplied by software are SYSTEM fixture data, not HUMAN
+content; only argv and actually supplied content are attributed to the human.
+
+### Gamma verification handoff
+
+Base: b8dd2d7c7d0b60a014ba9d9e3c43f1c21008105b. First runtime checkpoint:
+9e05c74 (final revision recorded in the external gamma report). Executed local
+suite: 77 passed, one live-provider test skipped because ANTHROPIC_API_KEY is
+absent. Runtime negative controls: 22 intentional failures, every restored test
+passed. The initial schema mutation survived because typed decoding also rejected
+its fixture; the test was strengthened to isolate an unknown top-level schema
+property before recording the successful negative control. Offline mock CLI
+receipt: four route graphs, 70 input and 42 output tokens, USD 0.0014 simulated
+ledger, zero provider spend. Native CLI with mock transport refuses the absent
+engine factory with exit 2 and preserves the log and methodology. No real API or
+fresh-clone integrated smoke result is claimed. Next unresolved step: connect the
+native_engine adapter to the engine lane's actual public API, then execute the
+credentialed smoke and fresh-clone instructions. Full evidence and six actionable
+findings are placed in /home/dev/wt/shared/ara/gamma-report.md.

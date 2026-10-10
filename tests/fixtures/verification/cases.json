@@ -1,0 +1,59 @@
+{
+  "real_quote": {
+    "draft": {
+      "title": "Software optimization",
+      "body": "Knuth wrote: \"premature optimization is the root of all evil\".",
+      "bibliography": []
+    },
+    "status": "verified",
+    "provenance": "Donald E. Knuth (1974), Structured Programming with go to Statements, Computing Surveys 6(4), 261–301, p. 268. Exact contiguous excerpt, https://doi.org/10.1145/356635.356640 ; retrieved reproduction: https://blogs.mathworks.com/steve/2009/08/27/knuth-on-go-to-1974/"
+  },
+  "altered_quote": {
+    "draft": {
+      "title": "Software optimization",
+      "body": "Knuth wrote: \"premature optimization is the root of all progress\".",
+      "bibliography": []
+    },
+    "status": "unverified",
+    "provenance": "Negative fixture: same Knuth 1974 excerpt, replacing evil with progress. Not a source quotation. https://doi.org/10.1145/356635.356640"
+  },
+  "real_citation": {
+    "draft": {
+      "title": "Software modularity",
+      "body": "Software modularity [cite:parnas].",
+      "bibliography": [
+        {
+          "id": "parnas",
+          "text": "David L. Parnas (1972). On the Criteria To Be Used in Decomposing Systems into Modules. Communications of the ACM 15(12), 1053–1058. DOI: 10.1145/361598.361623",
+          "url": "https://doi.org/10.1145/361598.361623"
+        }
+      ]
+    },
+    "status": "verified",
+    "provenance": "Publisher record: https://dl.acm.org/doi/10.1145/361598.361623"
+  },
+  "fabricated_citation": {
+    "draft": {
+      "title": "Software modularity",
+      "body": "Software modularity [cite:invented].",
+      "bibliography": [
+        {
+          "id": "invented",
+          "text": "Z. Q. Nonsuch (1972). The Seventeen-Sided Compiler Scheduling Theorem. Communications of the ACM 15(12), 1901–1919. DOI: 10.1145/361598.999999999",
+          "url": null
+        }
+      ]
+    },
+    "status": "unverified",
+    "provenance": "Deliberately fabricated author, title, pages and DOI. Negative control against the real Parnas record; not asserted as a publication."
+  },
+  "prior_statement": {
+    "draft": {
+      "title": "Software staffing",
+      "body": "Adding people to a late software project makes it later.",
+      "bibliography": []
+    },
+    "assessment": "possible_overlap",
+    "provenance": "Frederick P. Brooks Jr., The Mythical Man-Month (1975), chapter 2, p. 25: Adding manpower to a late software project makes it later. Retrieved attribution: https://en.wikipedia.org/wiki/Brooks%27s_law ; https://en.wikipedia.org/wiki/The_Mythical_Man-Month . The test paraphrases manpower as people and must still flag prior work."
+  }
+}

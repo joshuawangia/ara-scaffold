@@ -581,3 +581,45 @@ provider refusals and B11 fallback semantics are unchanged. The writer prompt
 states the minimum and changes its cache identity; placeholder mock fixtures are
 updated to meet it. B13 proof is offline only; no paid calls are authorized and no
 new live success is claimed. The historical B12 F9 failure remains in the report.
+
+## Round 2 theta — verification known cases
+
+R4. Known-case verification uses recorded real Anthropic responses with requested
+and served models, timestamps and SHA-256 request/prompt hashes. CI replays these
+responses through ModelCalls, cleanup and export with no network. A separately
+opt-in ARA_LIVE_TEST=1 test exercises the real provider and requires web search
+usage for every case. The operator explicitly authorizes non-philosophical
+software-engineering material for these fixtures; the placeholder rule still
+applies to engine propositions and unrelated fixtures. Generated run logs and
+exports remain ignored; only the authorized verification recordings are tracked.
+
+R7. Theta's share of the round-2 USD25 ceiling is USD4, enforced over one shared
+live event ledger including failed attempts. Test-local settings use one search
+per case and a 4096-token output allowance. No profile or configured price changes.
+The five cases are separate evidence calls so an item cannot silently lose its
+search opportunity to another item. Web-result presence and billed search use
+are both checked. The opt-in test can resume its ledger/cache using
+ARA_VERIFICATION_RUN; reused evidence retains its original receipt and is marked.
+
+TH1. A verified quotation must match an evidence excerpt exactly, with only
+layout whitespace normalized and word boundaries preserved. Prefer the API's
+URL-bound cited_text excerpts. The observed live service returns empty citation
+arrays despite supplying source quotations and retrieved URLs. In that case,
+the classifier returns source_excerpt copied from the search evidence, and code
+checks both its presence in that evidence and exact inclusion of the quotation.
+An absent, altered or invented excerpt downgrades the item to unverified/remove.
+No replacement is generated. Source extraction and attribution remain model
+assessments: echoed draft wording in a search narrative is not independent proof
+of attribution, even though instructions forbid selecting it. This is not a
+source-authenticity guarantee or an exhaustive originality test. The unquoted
+Brooks claim must yield possible_overlap and identify its prior source.
+
+TH2. Evidence admission uses the SDK's count_tokens for the initial request plus
+model_context_token_bound for each allowed search iteration. Output and tool-use
+reservations remain bounded for all iterations. Previously the initial count was
+discarded in favor of another full context window, which stopped the fifth test
+at USD2.063590 actual spend. Correcting that over-reservation retains the per-search
+context bound and the same aggregate USD4 ceiling; actual post-call checks,
+unknown-usage STOP and fallback accounting are unchanged. The original stopped
+attempt remains in the ledger and report. This estimate still shares the existing
+assumptions about context bounds and server iterations; actual usage is recorded.

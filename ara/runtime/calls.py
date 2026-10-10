@@ -71,24 +71,27 @@ class ModelCalls:
         attempts = self.config.get('validation_attempts', 1)
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
+        if kind == 'write_essay':
+            attempts = 4
         request_inputs = inputs
         for attempt in range(attempts):
             try:
-                return self._call_once(kind, request_inputs, check)
+                return self._call_once(kind, request_inputs, check, attempt=attempt + 1)
             except InvalidOutput as exc:
                 if attempt + 1 == attempts:
                     raise
                 self.log.record('validation_retry', kind=kind, next_attempt=attempt + 2,
                                 reason=str(exc))
-                request_inputs = {**inputs, 'validation_feedback': exc.feedback}
+                if kind != 'write_essay':
+                    request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
-    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
+    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
         offset = len(self.log.read())
         before_tokens, before_cost = self.budget.used_tokens, self.budget.used_cost
         started = time.monotonic()
         try:
-            return self._execute_once(kind, inputs, check)
+            return self._execute_once(kind, inputs, check, attempt=attempt)
         except Exception as exc:
             events = self.log.read()[offset:]
             starts = [e for e in events if e['stage'] == 'call_start']
@@ -104,18 +107,20 @@ class ModelCalls:
             self.budget.charge(usage, cost)
             self.log.emit(RunEvent(now(), kind, 'MODEL', self.provider.model, None,
                 admission['prompt'], None, usage, float(cost), time.monotonic() - started,
-                payload_json=canonical({'status': 'incomplete', 'reason': type(exc).__name__,
+                payload_json=canonical({'status': 'incomplete', 'attempt': attempt, 'reason': type(exc).__name__,
                     'cache_hit': False, 'cache_key': admission['cache_key'],
                     'accounting': 'reservation_unknown_actual'})))
             self.budget.after(kind)
             self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
 
-    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = None if kind == 'search_evidence' else json.loads(
             (self.root / 'schemas' / f'{kind}.json').read_text())
+        maximum = (self.config.get('write_essay_max_output_tokens', self.config['max_output_tokens'])
+                   if kind == 'write_essay' else self.config['max_output_tokens'])
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
-                              'effort': self.config['effort'], 'maximum': self.config['max_output_tokens'],
+                              'effort': self.config['effort'], 'maximum': maximum,
                               'web_max': self.config['web_search_max_uses'],
                               'formula_depth': self.config.get('formula_output_depth', 2),
                               'fallbacks': self.config.get('fallbacks', ['claude-opus-4-8'])})
@@ -134,12 +139,12 @@ class ModelCalls:
                 raw = saved['raw']
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
-                estimate = self.provider.estimate(kind, prompt, schema, self.config['max_output_tokens'])
+                estimate = self.provider.estimate(kind, prompt, schema, maximum)
                 self.budget.before(estimate, kind)
-                self.log.record('call_start', kind=kind, model=self.provider.model, prompt=prompt,
+                self.log.record('call_start', kind=kind, attempt=attempt, model=self.provider.model, prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
                 dispatched = True
-                raw = self.provider.complete(kind, prompt, schema, self.config['max_output_tokens']).raw
+                raw = self.provider.complete(kind, prompt, schema, maximum).raw
                 usage = Response(raw).usage
                 require(all(type(n) is int and n >= 0 for n in usage.to_dict().values()), 'invalid usage')
                 cost = self.budget.response_cost(raw)
@@ -172,7 +177,7 @@ class ModelCalls:
             if unknown_usage:
                 usage, cost = estimate, self.budget.cost(estimate)
                 self.budget.charge(usage, cost)
-            self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage)
+            self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
             if unknown_usage:
                 self.budget.after(kind)
                 self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
@@ -182,7 +187,7 @@ class ModelCalls:
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             raise Rejected(reason) from exc
-        self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key)
+        self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         self.budget.after(kind)
         if not cached:
             self.cache.put(key, {'raw': raw})
@@ -190,12 +195,12 @@ class ModelCalls:
 
     def _event(self, kind: str, prompt: str, raw: dict | None, usage: TokenUsage,
                cost: Any, start: float, cached: bool, status: str, reason: str | None,
-               key: str, unknown_usage: bool = False) -> None:
+               key: str, unknown_usage: bool = False, *, attempt: int = 1) -> None:
         self.log.emit(RunEvent(now(), kind, 'MODEL', self.provider.model,
                               raw.get('model') if raw else None, prompt,
                               canonical(raw) if raw is not None else None, usage, float(cost),
                               time.monotonic() - start,
-                              payload_json=canonical({'status': status, 'reason': reason,
+                              payload_json=canonical({'status': status, 'reason': reason, 'attempt': attempt,
                                                        'cache_hit': cached, 'cache_key': key,
                                                        'requested_model': self.provider.model,
                                                        **(Response(raw).routing() if raw else {}),
@@ -280,6 +285,7 @@ class ModelCalls:
 
     def essay_inputs(self, route: RouteGraph) -> dict:
         return {'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),
+                'minimum_words': self.config['essay_min_words'],
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
@@ -292,6 +298,8 @@ class ModelCalls:
             body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
             text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
             require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
+            require(word_count(data) >= self.config['essay_min_words'],
+                    'essay writer: minimum words not reached')
             return data
         return self.call('write_essay', self.essay_inputs(route), check)
 

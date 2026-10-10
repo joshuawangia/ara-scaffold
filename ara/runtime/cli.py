@@ -30,7 +30,9 @@ def parser() -> argparse.ArgumentParser:
     run = sub.add_parser('run')
     run.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     run.add_argument('--run-dir', type=Path)
-    run.add_argument('--smoke', action='store_true')
+    profile = run.add_mutually_exclusive_group()
+    profile.add_argument('--smoke', action='store_true')
+    profile.add_argument('--profile', choices=('pilot',))
     run.add_argument('--provider', choices=('anthropic', 'mock'))
     run.add_argument('--topic')
     run.add_argument('--literature', type=Path)
@@ -72,8 +74,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     try:
         if args.command == 'run':
             config = yaml.safe_load(args.config.read_text())
+            selected_profile = 'smoke' if args.smoke else args.profile
+            if selected_profile:
+                config.update(config[selected_profile])
             if args.smoke:
-                config.update(config['smoke'])
                 topic = args.topic if args.topic is not None else 'P Q'
                 literature = args.literature.read_text() if args.literature else (
                     ROOT / 'tests/fixtures/runtime/smoke-literature.txt').read_text()

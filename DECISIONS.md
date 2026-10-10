@@ -581,3 +581,65 @@ provider refusals and B11 fallback semantics are unchanged. The writer prompt
 states the minimum and changes its cache identity; placeholder mock fixtures are
 updated to meet it. B13 proof is offline only; no paid calls are authorized and no
 new live success is claimed. The historical B12 F9 failure remains in the report.
+
+
+## Round 2 eta: writer retries, pilot, Python (R1–R3, R5–R6)
+
+R1. Superseding B13's writer correction policy: write_essay has one initial
+attempt plus at most three retries (four total), independent of validation_attempts.
+Every locally validated rejection retries the identical rendered inputs, schema,
+model and output allowance; no validation_feedback is appended. Invalid responses
+are never cached. Each admission and MODEL event carries its attempt number;
+rejections retain the failing check and actual token/cost accounting. Each retry
+must pass the normal per-call budget reservation. Exhaustion exits 2 through the
+normal CLI path, retaining routes/logs/methodology without exporting an essay.
+
+R2. Contentless means the existing B13 coverage/structure checks fail.
+essay_min_words adds the lower bound: smoke 150 (target 300), pilot 4500
+(target 6000). The ordinary default also uses 4500. Custom configurations must supply
+essay_min_words; absence fails instead of silently disabling the minimum. The existing word_count
+counts whitespace-delimited title and body tokens, including markers, excluding
+bibliography; the same rule serves both bounds. B13 separately excludes markers
+when checking substantive text. The writer receives minimum_words and word_limit.
+The upper bound remains min(6000, configured essay_word_limit). Over-limit drafts
+also retry identically, so all local writer validation failures share one policy.
+Changing the minimum or prompt changes the request/cache identity. Offline smoke
+fixtures now contain 150 placeholder P tokens, plus title/marker, to exercise the
+real configured minimum without introducing substantive content.
+
+R3. Other calls retain validation_attempts (1–3) and correction feedback. An
+adverse audit remains final. Client retries do not cover final provider refusal,
+transport failure, output-token stops, or incomplete accounting; B11 server
+fallback stays unchanged. Accepted drafts still take the existing audit and
+verification lifecycle. Originality/quotation validation code is unchanged.
+
+R5. requires-python is >=3.13; uv.lock is regenerated for that supported range,
+and installation/full-suite verification uses CPython 3.13.15. No dependency is
+added. This supersedes the original >=3.11 repository hygiene statement.
+
+R6. --profile pilot overlays the pilot mapping in config.yaml before constructing
+calls and the engine. --smoke remains available and is mutually exclusive. Pilot
+uses all 10 targets, depth_cap 6, node_cap 500, forward_pass_depth 2, a 6000-word
+limit and 4500-word minimum. There is no target truncation after preparation.
+It retains human selection. The pilot's token_cap 10000000 and cost_cap_usd 100
+are editable per-run ceilings, not a projected cost or a program-wide guard.
+No hard-coded aggregate guard is introduced. A fixture profile with a USD1001
+cap accepts simulated usage beyond the former ordinary USD10 default; USD20
+stops after the same charge and USD0 refuses admission. Real spend is zero here.
+
+Writer output sizing uses successful historical write_essay MODEL receipts at
+/home/dev/wt/ara/wt-fix/runs/{zeta-b12-proof/clone-1,zeta-b11-proof/clone-1,
+zeta-b11-proof/clone-2}/runs/real-smoke/events.jsonl. Output tokens / counted words:
+654/295 = 2.216949 tokens/word; 629/281 = 2.238434; 594/290 = 2.048276.
+These are observed total output tokens divided by the existing word_count,
+including any billed thinking and serialization overhead, not a tokenizer
+measurement of prose alone. Conservatively round the highest ratio to 2.25:
+6000 * 2.25 = 13500; add 2000 tokens for additional JSON/bibliography overhead
+and 4500 for length/thinking variability = 20000 output tokens. This is a sizing
+assumption from short drafts, not evidence that a 6000-word live draft completed.
+The writer-only write_essay_max_output_tokens is used in cache identity, admission,
+and dispatch. Other calls retain max_output_tokens 8192. Writer allowances above
+8192 use beta.messages.stream with get_final_message and JSON-mode serialization,
+preserving fallback parameters and whole-message usage accounting. A stream
+failure takes the existing incomplete-accounting STOP path. No live calls were
+made for this brief; integrated live smoke receipts belong to the caller.

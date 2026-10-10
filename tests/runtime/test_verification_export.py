@@ -70,3 +70,55 @@ def test_methodology_regenerates_from_log_alone(rig, tmp_path):
                      new_report.read_text().split('```json\n')[2:]]
     assert any(e['decision'] and e['decision']['status'] == 'discarded' for e in report_events)
     assert any(e['label'] == 'HUMAN' and json.loads(e['payload_json'])['text'] == ' P\nQ ' for e in report_events)
+
+
+@pytest.mark.parametrize('quote,excerpt,source_url,expected_status', [
+    ('P Q R', 'P Q R', 'https://example.invalid/1', 'verified'),
+    ('P Q R', 'P\n Q  R', 'https://example.invalid/1', 'verified'),
+    ('P Q S', 'P Q R', 'https://example.invalid/1', 'unverified'),
+    ('P Q R', 'P Q RS', 'https://example.invalid/1', 'unverified'),
+    ('P Q R', 'P Q R', 'https://example.invalid/2', 'unverified'),
+    ('P Q R', '', 'https://example.invalid/1', 'unverified'),
+])
+def test_quote_requires_exact_source_excerpt(rig, quote, excerpt, source_url, expected_status):
+    calls, provider, log = rig
+    draft = {'title': 'P', 'body': f'"{quote}"', 'bibliography': []}
+    items = calls.verification_items(draft)
+    url = 'https://example.invalid/1'
+    content = [
+        {'type': 'web_search_tool_result', 'content': [
+            {'type': 'web_search_result', 'url': url, 'title': 'P'}]},
+        {'type': 'text', 'text': 'P Q R', 'citations': [
+            {'type': 'web_search_result_location', 'url': source_url, 'cited_text': excerpt}]},
+    ]
+    evidence = {'text': 'P Q R', 'urls': [url], 'content': content}
+    register(calls, provider, 'search_evidence', {'draft': draft, 'items': items}, {}, content=content)
+    register(calls, provider, 'verify_originality_citations',
+             {'draft': draft, 'items': items, 'evidence': evidence}, verification(draft, 'verified', [url]))
+    cleaned, result = calls.verify_originality_citations(draft)
+    assert result['items'][0]['status'] == expected_status
+    assert cleaned['body'] == (draft['body'] if expected_status == 'verified' else '')
+
+
+@pytest.mark.parametrize('quote,excerpt,expected_status', [
+    ('P Q R', 'P Q R', 'verified'),
+    ('P Q S', 'P Q R', 'unverified'),
+    ('P Q S', 'P Q S', 'unverified'),
+])
+def test_quote_excerpt_must_match_search_evidence(rig, quote, excerpt, expected_status):
+    calls, provider, log = rig
+    draft = {'title': 'P', 'body': f'"{quote}"', 'bibliography': []}
+    items = calls.verification_items(draft)
+    url = 'https://example.invalid/1'
+    content = [{'type': 'text', 'text': 'P Q R'},
+               {'type': 'web_search_tool_result', 'content': [
+                   {'type': 'web_search_result', 'url': url, 'title': 'P'}]}]
+    evidence = {'text': 'P Q R', 'urls': [url], 'content': content}
+    register(calls, provider, 'search_evidence', {'draft': draft, 'items': items}, {}, content=content)
+    payload = verification(draft, 'verified', [url])
+    payload['items'][0]['source_excerpt'] = excerpt
+    register(calls, provider, 'verify_originality_citations',
+             {'draft': draft, 'items': items, 'evidence': evidence}, payload)
+    cleaned, result = calls.verify_originality_citations(draft)
+    assert result['items'][0]['status'] == expected_status
+    assert cleaned['body'] == (draft['body'] if expected_status == 'verified' else '')

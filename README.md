@@ -18,7 +18,7 @@ uv run pytest
 uv run python tests/integration/negative_controls.py
 ```
 
-The default suite is offline. One separately gated live-provider test is skipped.
+The default suite is offline. Two separately gated live-provider tests are skipped.
 The integration test starts the actual CLI in subprocesses, checks persisted
 artifacts and engine analysis, exports from logs, and proves cached graph replay.
 Negative controls disable production behavior, require red tests, restore it and

@@ -169,10 +169,10 @@ class AnthropicProvider:
         count_request['messages'] = [{'role': 'user', 'content': prompt + canonical(schema or {})}]
         count = self.client.messages.count_tokens(**count_request).input_tokens
         searches = self.config['web_search_max_uses'] if kind == 'search_evidence' else 0
-        # A server search may repeatedly consume a full context window. Reserve
-        # the configured model input ceiling for every possible server iteration.
+        # The initial request is counted above. Each server-search iteration
+        # can add a full context window; reserve that ceiling for every use.
         if searches:
-            count = max(count, self.config['model_context_token_bound']) * (searches + 1)
+            count += self.config['model_context_token_bound'] * searches
         return TokenUsage(input_tokens=count, output_tokens=maximum * (searches + 1),
                           server_tool_uses=searches)
 

@@ -176,3 +176,15 @@ def test_sdk_container_and_web_results_are_json_safe(rig):
     assert event['usage']['server_tool_uses'] == 1
     assert event['cost_usd'] == pytest.approx(.010175)
     assert list(calls.cache.path.glob('*.json'))
+
+
+@pytest.mark.parametrize('searches', [0, 1, 5])
+def test_web_admission_counts_initial_request_and_bounds_search_iterations(rig, searches):
+    calls, _, log = rig
+    calls.config['web_search_max_uses'] = searches
+    client = SimpleNamespace(messages=SimpleNamespace(
+        count_tokens=lambda **kw: SimpleNamespace(input_tokens=123)))
+    provider = AnthropicProvider(calls.config, client)
+    estimate = provider.estimate('search_evidence', 'P', None, 32)
+    assert estimate == TokenUsage(123 + searches * calls.config['model_context_token_bound'],
+                                  32 * (searches + 1), server_tool_uses=searches)

@@ -355,6 +355,26 @@ class ModelCalls:
                 require(set(item['evidence_urls']) <= set(evidence['urls']), 'unsupported verification URL')
                 if item['status'] == 'verified':
                     require(bool(item['evidence_urls']), 'verified without evidence')
+                    if item['kind'] == 'quotation':
+                        # Prefer URL-bound API excerpts. Some transports return
+                        # empty citation arrays; then the classifier must extract
+                        # a passage from the search evidence. Attribution remains
+                        # model-assessed; wording is checked locally, never fuzzy.
+                        quote = ' '.join(item['text'].split())
+                        excerpts = [v['cited_text'] for v in walk(evidence['content'])
+                                    if isinstance(v, dict) and
+                                    v.get('type') == 'web_search_result_location' and
+                                    v.get('url') in item['evidence_urls'] and
+                                    isinstance(v.get('cited_text'), str)]
+                        if not excerpts:
+                            extracted = item.get('source_excerpt')
+                            if extracted and ' '.join(extracted.split()) in ' '.join(evidence['text'].split()):
+                                excerpts = [extracted]
+                        exact = any(re.search(r'(?<!\w)' + re.escape(quote) + r'(?!\w)',
+                                              ' '.join(text.split())) for text in excerpts)
+                        if not exact:
+                            item.update(status='unverified', action='remove',
+                                        detail='No exact quotation in the cited source excerpts.')
             originality = data['originality']
             require(set(originality['evidence_urls']) <= set(evidence['urls']), 'unsupported originality URL')
             require(originality['assessment'] == 'unverified' or bool(originality['evidence_urls']),

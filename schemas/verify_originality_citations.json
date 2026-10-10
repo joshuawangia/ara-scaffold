@@ -79,6 +79,13 @@
               "retain",
               "remove"
             ]
+          },
+          "source_excerpt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a quotation, a verbatim source passage extracted from the search evidence; null when unavailable. Source attribution is model-assessed."
           }
         },
         "required": [

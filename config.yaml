@@ -1,6 +1,6 @@
 provider: anthropic
 model: claude-opus-5
-fallbacks: default
+fallbacks: [claude-opus-4-8]
 effort: high
 max_output_tokens: 8192
 token_cap: 200000

@@ -517,3 +517,22 @@ node with an otherwise valid inventory can pass: placeholders Q versus node P
 prove this limit offline. Neither marker presence nor computed faithful proves
 natural-language equivalence. No semantic guarantee or zero-refusal promise is
 made; fresh-clone live outcomes are observed evidence only.
+
+
+B11 (operator decision, brief 4b, 2026-10-10). Keep claude-opus-5 primary and
+explicitly request claude-opus-4-8 on refusal. Observed B9 default-mode evidence
+across the program: at least four refusals and zero fallback hops; this motivates
+replacing default routing, not a claim about all provider behavior. The authorized
+array API requires betas=["server-side-fallback-2026-06-01"] and
+fallbacks=[{"model": "claude-opus-4-8"}]. Config defaults to
+fallbacks: [claude-opus-4-8]; off omits both fields. The old scalar default value
+is rejected to prevent silent retention of the non-routing policy. The June
+header and list cannot be mixed with the July scalar form (HTTP 400).
+Cache identity uses the same explicit/implicit list default. B9 serving-model
+provenance, fallback blocks and iterations, per-model pricing, whole-chain cap
+checks and methodology disclosure remain. Both models retain configured USD5/25
+per million input/output tokens; missing prices still fail explicitly. The API
+owns the fallback within one dispatched request; no client retry or alternate
+model selection is added. A final chain refusal remains a logged rejection with
+no retry. This supersedes B9 default mode and B10's default-routing statement;
+it does not change bank-only licensing or computed sentence audit semantics.

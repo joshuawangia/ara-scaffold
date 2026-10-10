@@ -61,7 +61,11 @@ uv run ara run --smoke --run-dir runs/real-smoke
 
 Default provider/model: Anthropic / `claude-opus-5`, using the official SDK,
 adaptive thinking and structured output with strict local schema checks.
-`fallbacks: default` enables the July 2026 beta API; `fallbacks: off` disables it.
+`fallbacks: [claude-opus-4-8]` explicitly enables the June 2026 refusal-fallback
+API: the primary remains Opus 5 and the server can re-run a refused call on Opus
+4.8. `fallbacks: off` disables both the fallback parameter and beta header. The
+old scalar `default` configuration is rejected; update existing runtime configs
+to the list form. A final refusal from the whole chain is logged and never retried.
 Logs retain the requested and actual serving models, switch blocks and fallback
 usage iterations. Each iteration is priced at its model's configured rates;
 unknown model/cache prices stop with explicit unknown-spend accounting.

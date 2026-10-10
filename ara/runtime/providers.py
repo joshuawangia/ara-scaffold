@@ -144,8 +144,10 @@ class AnthropicProvider:
             # SDK retries can otherwise create unlogged, unreserved billable calls.
             client = Anthropic(max_retries=0)
         self.client, self.config, self.model = client, config, config['model']
-        if config.get('fallbacks', 'default') not in ('default', 'off'):
-            raise ValueError('fallbacks must be default or off')
+        fallbacks = config.get('fallbacks', ['claude-opus-4-8'])
+        if fallbacks != 'off' and not (isinstance(fallbacks, list) and fallbacks and
+                all(isinstance(model, str) and model.strip() == model and model for model in fallbacks)):
+            raise ValueError('fallbacks must be a nonempty list of model ids or off')
 
     def request(self, kind: str, prompt: str, schema: dict | None, maximum: int) -> dict:
         output = {'effort': self.config['effort']}
@@ -176,7 +178,9 @@ class AnthropicProvider:
 
     def complete(self, kind: str, prompt: str, schema: dict | None, maximum: int) -> Response:
         request = self.request(kind, prompt, schema, maximum)
-        if self.config.get('fallbacks', 'default') == 'default':
-            request.update(betas=['server-side-fallback-2026-07-01'], fallbacks='default')
+        fallbacks = self.config.get('fallbacks', ['claude-opus-4-8'])
+        if fallbacks != 'off':
+            request.update(betas=['server-side-fallback-2026-06-01'],
+                           fallbacks=[{'model': model} for model in fallbacks])
         raw = self.client.beta.messages.create(**request)
         return Response(raw.to_dict(mode="json"))

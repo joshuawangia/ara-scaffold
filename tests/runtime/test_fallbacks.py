@@ -1,4 +1,4 @@
-"""B9 accounting, provenance and final-refusal contracts, without network."""
+"""B11 routing and B9 accounting, provenance and final-refusal contracts, without network."""
 import json
 from types import SimpleNamespace
 
@@ -12,10 +12,13 @@ from ara.types import Proposition
 from test_calls import rig, register, response, graph
 
 
-@pytest.mark.parametrize('mode', ['default', 'off'])
+@pytest.mark.parametrize('mode', ['explicit', 'implicit', 'off'])
 def test_fallback_request_shape(rig, mode):
     calls, _, _ = rig
-    calls.config['fallbacks'] = mode
+    if mode == 'implicit':
+        calls.config.pop('fallbacks', None)
+    else:
+        calls.config['fallbacks'] = ['claude-opus-4-8'] if mode == 'explicit' else mode
     requests = []
     def create(**kwargs):
         requests.append(kwargs)
@@ -25,9 +28,9 @@ def test_fallback_request_shape(rig, mode):
     AnthropicProvider(calls.config, client).complete('formalise', 'P', None, 32)
     request = requests[0]
     assert request['model'] == 'claude-opus-5'
-    if mode == 'default':
-        assert request['betas'] == ['server-side-fallback-2026-07-01']
-        assert request['fallbacks'] == 'default'
+    if mode != 'off':
+        assert request['betas'] == ['server-side-fallback-2026-06-01']
+        assert request['fallbacks'] == [{'model': 'claude-opus-4-8'}]
     else:
         assert 'betas' not in request and 'fallbacks' not in request
 
@@ -141,3 +144,53 @@ def test_ambiguous_iteration_model_stops(rig):
     register(calls, provider, 'formalise', {'proposition': p.to_dict()}, {}, **raw)
     with pytest.raises(BudgetStop, match='missing model in fallback usage iteration'):
         calls.formalise(p)
+
+
+@pytest.mark.parametrize('mode', ['default', [], [''], [1], None, True, 'claude-opus-4-8'])
+def test_invalid_fallback_config_is_rejected(rig, mode):
+    calls, _, _ = rig
+    calls.config['fallbacks'] = mode
+    with pytest.raises(ValueError, match='nonempty list of model ids or off'):
+        AnthropicProvider(calls.config, SimpleNamespace())
+
+
+def test_explicit_fallback_through_provider_and_calls(rig):
+    calls, _, log = rig
+    requests = []
+    raw = fallback_response()
+    calls.config['pricing']['claude-opus-4-8'].update(input_per_million_usd=2, output_per_million_usd=8)
+    def create(**kwargs):
+        requests.append(kwargs)
+        return SimpleNamespace(to_dict=lambda **kwargs: raw)
+    client = SimpleNamespace(messages=SimpleNamespace(count_tokens=lambda **kwargs: SimpleNamespace(input_tokens=10)),
+        beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
+    calls.provider = AnthropicProvider(calls.config, client)
+    assert calls.formalise(Proposition('p', 'P')).name == 'P'
+    assert len(requests) == 1
+    assert requests[0]['fallbacks'] == [{'model': 'claude-opus-4-8'}]
+    event = next(e for e in log.read() if e['label'] == 'MODEL')
+    payload = json.loads(event['payload_json'])
+    assert payload['status'] == 'accepted' and payload['served_model'] == 'claude-opus-4-8'
+    assert event['model_id'] == 'claude-opus-5' and event['model_version'] == 'claude-opus-4-8'
+    assert payload['fallback_blocks'] == [raw['content'][1]]
+    assert payload['fallback_iterations'] == raw['usage']['iterations'][1:]
+    assert event['usage']['input_tokens'] == 30 and event['usage']['output_tokens'] == 7
+    assert event['cost_usd'] == pytest.approx(.01018)
+    summary = json.loads(methodology(log.path).split('```json\n')[1].split('\n```')[0])
+    assert summary['served_models_by_kind'] == {'formalise': ['claude-opus-4-8']}
+    assert summary['fallback_calls'][0]['served_model'] == 'claude-opus-4-8'
+
+
+def test_fallback_mode_partitions_cache(rig):
+    calls, provider, log = rig
+    p = Proposition('p', 'P')
+    register(calls, provider, 'formalise', {'proposition': p.to_dict()},
+             {'formula': {'op': 'atom', 'name': 'P'}})
+    calls.formalise(p)
+    calls.config['fallbacks'] = 'off'
+    calls.formalise(p)
+    assert provider.calls == 2
+    calls.config.pop('fallbacks')
+    calls.formalise(p)
+    assert provider.calls == 2  # implicit B11 list shares the explicit-list cache
+    assert json.loads(log.read()[-1]['payload_json'])['cache_hit']

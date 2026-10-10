@@ -30,7 +30,10 @@ CASES = [
     ('provider_not_projection', 'ara/runtime/providers.py',
      "'allOf', 'not'", "'allOf'",
      'tests/runtime/test_provider.py::test_live_observed_not_constraint_projected_but_locally_enforced'),
-    ('fallback_header', 'ara/runtime/providers.py', "request.update(betas=['server-side-fallback-2026-07-01'], fallbacks='default')", "request.update(betas=['server-side-fallback-2026-06-01'], fallbacks='default')", 'tests/runtime/test_fallbacks.py::test_fallback_request_shape'),
+    ('fallback_header', 'ara/runtime/providers.py', "betas=['server-side-fallback-2026-06-01']", "betas=['server-side-fallback-2026-07-01']", 'tests/runtime/test_fallbacks.py::test_fallback_request_shape'),
+    ('fallback_config_validation', 'ara/runtime/providers.py', "if fallbacks != 'off' and not (", 'if False and not (', 'tests/runtime/test_fallbacks.py::test_invalid_fallback_config_is_rejected'),
+    ('fallback_cache', 'ara/runtime/calls.py', "'fallbacks': self.config.get('fallbacks', ['claude-opus-4-8'])", "'fallbacks': 'off'", 'tests/runtime/test_fallbacks.py::test_fallback_mode_partitions_cache'),
+    ('fallback_array', 'ara/runtime/providers.py', "fallbacks=[{'model': model} for model in fallbacks]", "fallbacks='default'", 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[explicit]'),
     ('served_model_price', 'ara/runtime/budget.py', "served_model = raw['model']", "served_model = self.config['model']", 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology[False-True]'),
     ('fallback_iterations_price', 'ara/runtime/budget.py', "model = iteration.get('model') or served_model", "model = self.config['model']", 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology[True-True]'),
     ('fallback_logging', 'ara/runtime/providers.py', "'served_model': self.raw['model']", "'served_model': 'claude-opus-5'", 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology'),
@@ -40,7 +43,7 @@ CASES = [
     ('fallback_disclosure', 'ara/runtime/export.py', "for e, p in routing if p.get('fallback_used')", 'for e, p in routing if False', 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology'),
     ('fallback_rate_validation', 'ara/runtime/budget.py', "for rates in config['pricing'].values():", 'for rates in [self.rates]:', 'tests/runtime/test_fallbacks.py::test_fallback_rates_are_validated'),
     ('ambiguous_iteration', 'ara/runtime/budget.py', "if fallback and not iteration.get('model'):", 'if False:', 'tests/runtime/test_fallbacks.py::test_ambiguous_iteration_model_stops'),
-    ('fallback_off', 'ara/runtime/providers.py', "if self.config.get('fallbacks', 'default') == 'default':", 'if True:', 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[off]'),
+    ('fallback_off', 'ara/runtime/providers.py', "if fallbacks != 'off':", 'if True:', 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[off]'),
 ]
 
 

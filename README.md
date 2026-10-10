@@ -7,7 +7,7 @@ route independence, bounded forward consequences and conflicts use one engine AP
 
 ## Install and test
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). Obtain a clone from the
+Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/). Obtain a clone from the
 operator and run every command below from its repository root. The operator owns
 private remote publication; installation uses the committed lockfile and local
 bank, schemas and prompts.
@@ -49,8 +49,9 @@ delta report. An independent later trial refused the former audit request. The
 current writer and auditor share an outline containing propositions, inference
 links with rule/scheme names, and answered critical questions. Graph bookkeeping
 is excluded. Before the audit, writer validation requires every node marker and
-at least two text tokens after markers are removed. Invalid drafts use the bounded
-correction policy; an adverse audit still ends the run. The audit labels additional premises or inferences; transitions
+at least two text tokens after markers are removed. Invalid drafts use up to four
+identical-input writer attempts; an adverse audit still ends the run. The audit
+labels additional premises or inferences; transitions
 asserting neither are allowed. Code computes coverage and the verdict. It does not request a reconstruction of text production.
 Fresh-clone outcomes for this revision are in the external zeta report; observed
 successes do not guarantee that a provider will never refuse. Earlier failed runs and their costs remain recorded there.
@@ -80,11 +81,16 @@ structured prompt also contains the full local response schema. Generated
 formula ASTs are bounded to depth two by config; local AST/solver semantics support
 deeper formulas, but larger generation grammars can exceed the API compiler limit.
 Smoke uses placeholder literature, two targets, depth one, eight search nodes per
-polarity, a 300-word draft, an 8,192-token output allowance and at most one web search per evidence call. Its caps
+polarity, a 300-word draft with a 150-word minimum, an 8,192-token output allowance
+and at most one web search per evidence call. Its caps
 are **USD 5 and 1,000,000 tokens**, including conservative admission reservations.
-These are limits, not expected usage. Smoke permits up to three explicitly
-logged attempts for a response that fails local validation; every attempt reserves
-and records its own usage. Invalid responses are never cached. Refusals, transport
+These are limits, not expected usage. The writer permits one initial attempt plus
+three retries for local validation
+failures, including contentless, under-length and over-limit drafts. Each retry
+sends identical inputs without validation feedback; every attempt records its
+number, rejection reason, tokens and cost, and must fit the configured caps.
+Other smoke call kinds retain up to three attempts with validation feedback.
+Invalid responses are never cached. Refusals, transport
 failures, output-token stops, negative essay audits and bank-license failures are not retried. Web admission reserves the configured
 200,000-token context bound for each potential server iteration. Prices and that
 bound are explicit configuration assumptions; actual provider usage is recorded.
@@ -95,6 +101,33 @@ Use a new empty `--run-dir` when repeating a command. Omitting it generates a ru
 id automatically. Reusing the cache avoids paid calls only when all keyed inputs
 match. Use one paid writer per cache; divergent concurrent outputs fail explicitly.
 Delete neither failed logs nor their accounting to disguise a retry.
+
+## Pilot profile
+
+With the environment credential set, supply your runtime topic and literature:
+
+```sh
+uv run ara run --profile pilot --topic 'P Q' --literature /path/to/literature.txt --run-dir runs/pilot
+uv run ara select --run-dir runs/pilot
+```
+
+The pilot searches all 10 targets at depth 6 and node cap 500, then waits for
+human route selection. It requests a 6,000-word draft and rejects drafts below
+4,500 words, using the existing title-and-body whitespace count (bibliography
+excluded). The writer has a 20,000-token output allowance and streams through
+the SDK; other calls retain their 8,192-token allowance. DECISIONS.md records
+the observed token ratios and sizing arithmetic.
+
+Edit `pilot.cost_cap_usd` and `pilot.token_cap` in `config.yaml`, or supply your
+own file with `--config`. Older custom configurations must add `essay_min_words`
+(and a `pilot` mapping to use that profile); a missing minimum is not treated as
+zero. Shipped per-run caps are USD 100 and 10,000,000 tokens;
+these are operator-adjustable ceilings, not predicted usage or guaranteed
+completion budgets. No separate aggregate spend guard exists in code. Retry
+reservations and actual usage use the resolved profile caps. `--smoke` remains
+the short automatic-selection profile and cannot be combined with `--profile`.
+The pilot path and streaming request are tested offline; no live pilot completion
+is claimed.
 
 ## Topic, literature, selection and feedback
 

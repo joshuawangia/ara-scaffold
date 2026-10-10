@@ -10,6 +10,7 @@ node_cap: 500
 seed: 0
 forward_pass_depth: 2
 essay_word_limit: 6000
+essay_min_words: 4500
 target_candidates: 10
 cache_dir: cache
 runs_dir: runs
@@ -32,6 +33,7 @@ smoke:
   node_cap: 8
   forward_pass_depth: 1
   essay_word_limit: 300
+  essay_min_words: 150
   max_output_tokens: 8192
   web_search_max_uses: 1
   token_cap: 1000000
@@ -40,3 +42,16 @@ smoke:
 # Runtime provider projection and conservative web-call reservation.
 formula_output_depth: 2
 model_context_token_bound: 200000
+
+# Operator-editable per-run caps; no separate aggregate spend guard.
+pilot:
+  target_candidates: 10
+  depth_cap: 6
+  node_cap: 500
+  forward_pass_depth: 2
+  essay_word_limit: 6000
+  essay_min_words: 4500
+  write_essay_max_output_tokens: 20000
+  token_cap: 10000000
+  cost_cap_usd: 100.0
+  validation_attempts: 3

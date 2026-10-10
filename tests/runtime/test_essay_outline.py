@@ -44,7 +44,7 @@ def test_writer_and_auditor_receive_same_content_only_outline(rig, monkeypatch):
     calls.write_essay(route)
     assert calls.audit_essay(route, draft)['faithful'] is True
     assert requests[0] == ('write_essay', {'topic': 'P', 'outline': expected,
-        'word_limit': calls.config['essay_word_limit'], 'feedback': []})
+        'word_limit': calls.config['essay_word_limit'], 'minimum_words': 0, 'feedback': []})
     assert requests[1][0] == 'audit_essay' and requests[1][1]['outline'] == expected
     assert set(requests[1][1]) == {'topic', 'outline', 'sentences'}
     model_events = [e for e in log.read() if e['label'] == 'MODEL']
@@ -58,7 +58,7 @@ def test_route_status_and_cost_never_reach_writer(rig):
     # These were the metadata narrated in F7. Neither version is expressible input.
     first, second = calls.essay_inputs(route), calls.essay_inputs(other)
     assert first == second
-    assert set(first) == {'outline', 'word_limit', 'feedback'}
+    assert set(first) == {'outline', 'word_limit', 'minimum_words', 'feedback'}
     assert set(first['outline']) == {'nodes', 'links'}
     assert all(set(n) == {'id', 'text'} for n in first['outline']['nodes'])
 

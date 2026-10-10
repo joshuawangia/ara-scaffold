@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 T = CommitmentSet((Commitment('t1', 'P', 'placeholder:1', Formula('atom', name='P')),
                    Commitment('t2', 'Q', 'placeholder:2', Formula('atom', name='Q'))))
 TARGETS = (Proposition('p', 'P', Formula('atom', name='P')), Proposition('q', 'Q', Formula('atom', name='Q')))
-DRAFT = {'title': 'P', 'body': '[[node:n:p]] P P', 'bibliography': []}
+DRAFT = {'title': 'P', 'body': '[[node:n:p]] ' + ' '.join(['P'] * 150), 'bibliography': []}
 
 
 class FakeEngine:
@@ -68,7 +68,7 @@ def canned(config):
                 {'t_id': {'p': 't1', 'q': 't2'}.get(goal.id, 'open')})
             add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': []}, {'proposals': []})
     route = RouteGraph('route:p', 'n:p', (RouteNode('n:p', TARGETS[0], 'leaf', 't1'),), 'CLOSED')
-    add('write_essay', {'outline': calls.essay_outline(route), 'word_limit': 300, 'feedback': []}, DRAFT)
+    add('write_essay', {'outline': calls.essay_outline(route), 'word_limit': 300, 'minimum_words': 150, 'feedback': []}, DRAFT)
     add('audit_essay', calls.audit_inputs(route, DRAFT),
         {'labels': [{'sentence': 1, 'node_ids': ['n:p'], 'asserts_premise_or_inference_not_in_outline': False}]})
     content = [{'type': 'text', 'text': 'P'}]

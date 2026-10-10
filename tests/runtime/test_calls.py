@@ -26,6 +26,7 @@ def response(value, **updates):
 @pytest.fixture
 def rig(tmp_path):
     config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config['essay_min_words'] = 0  # Short boundary fixtures; profile minima have dedicated tests.
     provider = MockProvider({})
     log = EventLog(tmp_path / 'run' / 'events.jsonl')
     calls = ModelCalls(config, provider, log, Cache(tmp_path / 'cache'), ROOT, 'P')

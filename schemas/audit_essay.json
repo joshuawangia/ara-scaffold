@@ -22,14 +22,14 @@
               "minLength": 1
             }
           },
-          "asserts_unlisted_content": {
+          "asserts_premise_or_inference_not_in_outline": {
             "type": "boolean"
           }
         },
         "required": [
           "sentence",
           "node_ids",
-          "asserts_unlisted_content"
+          "asserts_premise_or_inference_not_in_outline"
         ]
       }
     }

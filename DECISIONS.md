@@ -536,3 +536,26 @@ owns the fallback within one dispatched request; no client retry or alternate
 model selection is added. A final chain refusal remains a logged rejection with
 no retry. This supersedes B9 default mode and B10's default-routing statement;
 it does not change bank-only licensing or computed sentence audit semantics.
+
+
+B12 (brain decision, brief 4c). Writer and auditor receive the same deterministic
+essay outline: node propositions (ids only for machine markers/references),
+inference links with bank entry names, and answered critical questions with their
+slot-filled question text and answers. Status, dialectical cost, frontier, CQ ids
+and support bookkeeping, route ids, formulas and raw graph records are excluded.
+Assumptions discharged by a link and its scoped results remain expressible logical
+relationships, without scope ids. Unknown bank entries are rejected, never renamed
+or invented. The writer is instructed not to describe software, the graph or its
+bookkeeping and to present the argument conditionally on its premises; OPEN
+status/frontier remain in route artifacts, not essay prose.
+
+The audit receives numbered sentences and that same outline, replacing B10's
+node-only input. Its boolean is asserts_premise_or_inference_not_in_outline,
+replacing asserts_unlisted_content. Transitions asserting neither a premise nor
+an inference are not extra steps. Code still validates sentence/node inventories,
+computes missing nodes and flagged extra steps, checks machine marker coverage and
+computes faithful; valid-id semantic classification remains model-assessed.
+Adverse audits and final chain refusals remain final; B11 explicit Opus 4.8
+fallback and all usage accounting stay unchanged. Template/schema/input hashes
+invalidate previous writer/audit cache entries. Canned responses are regenerated
+for this contract, without relaxing acceptance or altering the deterministic engine.

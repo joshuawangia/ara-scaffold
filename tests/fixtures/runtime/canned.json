@@ -139,7 +139,7 @@
       "output_tokens": 3
     }
   },
-  "write_essay:cc231ea3e0c05b57ec2cddf91de3d08b0aa21daeab2897785c2ecb46dab86fcb": {
+  "write_essay:5fa788cbd40671480fa7dedbc0f2bcd86370d0f2805007ad94ef22a591488a54": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -153,13 +153,13 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:c124ff3d67cb547b05c6bddba4ac8ef594b8fb5285db2cdcfea41c5b522c62fd": {
+  "audit_essay:af3ea5c391331fa9835b540be92de749f7d809a6d06a84e10aa529e0f726ff85": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
       {
         "type": "text",
-        "text": "{\"labels\":[{\"asserts_unlisted_content\":false,\"node_ids\":[\"n:p\"],\"sentence\":1}]}"
+        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n:p\"],\"sentence\":1}]}"
       }
     ],
     "usage": {

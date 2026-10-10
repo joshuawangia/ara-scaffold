@@ -9,6 +9,7 @@ from typing import Callable, Any
 
 from jsonschema import Draft202012Validator, ValidationError
 
+from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical
 from ara.runtime.logging import EventLog, now
@@ -247,8 +248,38 @@ class ModelCalls:
                          'conclusions': [p.to_dict() for p in conclusions],
                          'commitments': commitments.to_dict()}, Tier1Repair.from_dict)
 
+    def essay_outline(self, route: RouteGraph) -> dict:
+        """Project essay content, retaining ids only as references and markers."""
+        bank = load_bank(self.root / 'bank')
+        links = []
+        for node in route.nodes:
+            if node.kind != 'inference':
+                continue
+            require(node.proposal is not None, 'outline inference has no proposal')
+            entry = bank.get(node.proposal.bank_id)
+            require(entry is not None, 'outline inference has unknown bank entry')
+            fills = {p.slot: p.text for p in node.proposal.premises}
+            fills[entry.conclusion_slot.id] = node.proposition.text
+            questions = {q.id: q.template for q in entry.critical_questions}
+            answered = []
+            for answer in node.cq_answers:
+                if answer.answered and answer.answer.strip():
+                    require(answer.cq_id in questions, 'outline answer has unknown question')
+                    answered.append({'question': questions[answer.cq_id].format_map(fills),
+                                     'answer': answer.answer})
+            link = {'premises': list(node.children), 'conclusion': node.id,
+                    'scheme': entry.name, 'answered_questions': answered}
+            # Assumption discharge is part of the argument, unlike scope ids.
+            scopes = [scope for scope in route.scopes if scope.discharged_by == node.id]
+            if scopes:
+                link['assumptions'] = [scope.assumption_node_id for scope in scopes]
+                link['scoped_results'] = [n for scope in scopes for n in scope.result_node_ids]
+            links.append(link)
+        return {'nodes': [{'id': n.id, 'text': n.proposition.text} for n in route.nodes],
+                'links': links}
+
     def essay_inputs(self, route: RouteGraph) -> dict:
-        return {'route': route.to_dict(), 'word_limit': min(6000, self.config['essay_word_limit']),
+        return {'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
@@ -259,12 +290,11 @@ class ModelCalls:
             return data
         return self.call('write_essay', self.essay_inputs(route), check)
 
-    @staticmethod
-    def audit_inputs(route: RouteGraph, draft: dict) -> dict:
+    def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
         body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
         parts = [part.strip() for part in re.split(r'(?<=[.!?])\s+|\n+', body) if part.strip()]
         return {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
-                'nodes': [{'id': n.id, 'text': n.proposition.text} for n in route.nodes]}
+                'outline': self.essay_outline(route)}
 
     def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
         inputs = self.audit_inputs(route, draft)
@@ -278,7 +308,7 @@ class ModelCalls:
             covered = {node for item in labels for node in item['node_ids']}
             require(covered <= ids, 'essay audit: unknown node id')
             missing = ids - covered
-            extra = [item['sentence'] for item in labels if item['asserts_unlisted_content']]
+            extra = [item['sentence'] for item in labels if item['asserts_premise_or_inference_not_in_outline']]
             markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
             result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
                       'extra_steps': extra,

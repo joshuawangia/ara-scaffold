@@ -13,14 +13,14 @@ def test_sentence_splitter_excludes_bibliography(rig):
         'bibliography': [{'id': 'c1', 'text': 'Q.'}]})
     assert inputs == {'sentences': [{'sentence': 1, 'text': 'P.'}, {'sentence': 2, 'text': 'Q!'},
                                    {'sentence': 3, 'text': 'R?'}, {'sentence': 4, 'text': 'S'}],
-                      'nodes': [{'id': 'n1', 'text': 'P'}]}
+                      'outline': {'nodes': [{'id': 'n1', 'text': 'P'}], 'links': []}}
 
 
 @pytest.mark.parametrize('variant', ['missing', 'unknown_node', 'unknown_sentence', 'duplicate', 'absent', 'faithful', 'unsupported_marker'])
 def test_invalid_labels_cannot_approve(rig, variant):
     calls, provider, log = rig
     draft = {'title': 'P', 'body': '[[node:n1]] P', 'bibliography': []}
-    value = {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_unlisted_content': False}]}
+    value = {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_premise_or_inference_not_in_outline': False}]}
     if variant == 'missing': value['labels'][0]['node_ids'] = []
     if variant == 'unknown_node': value['labels'][0]['node_ids'] = ['n1', 'n2']
     if variant == 'unknown_sentence': value['labels'][0]['sentence'] = 2
@@ -43,7 +43,7 @@ def test_invalid_labels_cannot_approve(rig, variant):
 def test_valid_labels_compute_verdict_and_record_it(rig):
     calls, provider, log = rig
     draft = {'title': 'P', 'body': '[[node:n1]] P', 'bibliography': []}
-    value = {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_unlisted_content': False}]}
+    value = {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_premise_or_inference_not_in_outline': False}]}
     register(calls, provider, 'audit_essay', calls.audit_inputs(graph(), draft), value)
     assert calls.audit_essay(graph(), draft) == {
         'covered_node_ids': ['n1'], 'missing_node_ids': [], 'extra_steps': [], 'faithful': True}
@@ -55,5 +55,5 @@ def test_valid_id_semantic_mislabel_is_model_boundary(rig):
     calls, provider, _ = rig
     draft = {'title': 'Q', 'body': '[[node:n1]] Q', 'bibliography': []}
     register(calls, provider, 'audit_essay', calls.audit_inputs(graph(), draft),
-        {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_unlisted_content': False}]})
+        {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_premise_or_inference_not_in_outline': False}]})
     assert calls.audit_essay(graph(), draft)['faithful'] is True

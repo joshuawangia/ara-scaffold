@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 T = CommitmentSet((Commitment('t1', 'P', 'placeholder:1', Formula('atom', name='P')),
                    Commitment('t2', 'Q', 'placeholder:2', Formula('atom', name='Q'))))
 TARGETS = (Proposition('p', 'P', Formula('atom', name='P')), Proposition('q', 'Q', Formula('atom', name='Q')))
-DRAFT = {'title': 'P', 'body': '[[node:n:p]] P', 'bibliography': []}
+DRAFT = {'title': 'P', 'body': '[[node:n:p]] P P', 'bibliography': []}
 
 
 class FakeEngine:

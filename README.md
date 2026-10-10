@@ -48,7 +48,9 @@ does not prove live external-source retrieval. Full receipts are in the external
 delta report. An independent later trial refused the former audit request. The
 current writer and auditor share an outline containing propositions, inference
 links with rule/scheme names, and answered critical questions. Graph bookkeeping
-is excluded. The audit labels additional premises or inferences; transitions
+is excluded. Before the audit, writer validation requires every node marker and
+at least two text tokens after markers are removed. Invalid drafts use the bounded
+correction policy; an adverse audit still ends the run. The audit labels additional premises or inferences; transitions
 asserting neither are allowed. Code computes coverage and the verdict. It does not request a reconstruction of text production.
 Fresh-clone outcomes for this revision are in the external zeta report; observed
 successes do not guarantee that a provider will never refuse. Earlier failed runs and their costs remain recorded there.

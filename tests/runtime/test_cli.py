@@ -41,8 +41,8 @@ def test_smoke_cli_runs_both_polarities_and_exports(cli_setup, tmp_path):
     assert len(graphs) == 4
     parsed = [RouteGraph.from_json(p.read_text()) for p in graphs]
     assert sum(g.status == 'CLOSED' for g in parsed) == 2
-    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n:p]] P'
-    assert (run / 'export/essay.txt').read_text() == 'P\n\nP\n'
+    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n:p]] P P'
+    assert (run / 'export/essay.txt').read_text() == 'P\n\nP P\n'
     events = EventLog(run / 'events.jsonl').read()
     assert any(e['decision'] and e['decision']['status'] == 'discarded' for e in events)
     human = next(e for e in events if e['label'] == 'HUMAN')
@@ -75,7 +75,7 @@ def test_every_cli_human_input_verbatim(cli_setup, tmp_path):
     assert any(p['text'] == feedback for p in payloads)
     assert any(p['text'] == 'route:p' for p in payloads)
     assert sum(p['reported_minutes'] for p in payloads) == 1.5
-    assert (run / 'export/essay.txt').read_text() == '[REDACTED]\n\n[REDACTED]\n'
+    assert (run / 'export/essay.txt').read_text() == '[REDACTED]\n\n[REDACTED] [REDACTED]\n'
     calls = factory(yaml.safe_load(config.read_text()), EventLog(run / 'events.jsonl'), 'P Q')
     assert calls.essay_inputs(RouteGraph.from_json(next((run / 'routes').glob('*.json')).read_text()))['feedback'] == [feedback]
 

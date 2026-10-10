@@ -111,7 +111,35 @@
       "output_tokens": 3
     }
   },
-  "search_evidence:62e6d1a1b58e6a314c715c1ab9328cb0b07e41b16d850844245ff0998b747194": {
+  "write_essay:e9aa34688b82f57bff6a31375c070984da0f9d7cfb3cbc5a780cf98eb64f63e3": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]] P P\",\"title\":\"P\"}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "audit_essay:6bcd7b2840de5e879a5c20c53f686518cf757a2476405ca9388b6d66a8d084fc": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n0\"],\"sentence\":1}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "search_evidence:4ef2c70b9693907ad720834476c6d4d67e37c42aa1fae08d6447f39952761fb7": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -125,7 +153,7 @@
       "output_tokens": 3
     }
   },
-  "verify_originality_citations:c7827d55cd532c99dda91484a472c300e38b48b54c11c754dfd7b70eea58d859": {
+  "verify_originality_citations:5635ce416db23ba039dad39c3e0763aa6612ca395e5ca5a4db0002954669c50a": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -139,41 +167,13 @@
       "output_tokens": 3
     }
   },
-  "write_essay:d9674bdd3379e62fc211432e8f8c6b80b875a695a4b7d5262ac4cb965fcdd64b": {
+  "write_essay:c09b0f15f249d5f3d84fcfa04225eb8542abecd87be20747b227e6a297b18607": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
       {
         "type": "text",
-        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]] P\",\"title\":\"P\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "write_essay:26d167bcfc7b2e978e166b5f38871a04c28159b4a30d929a233e3a7aef6c41b4": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]] P\",\"title\":\"P\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "audit_essay:2411d9d46cd3f50236285d44d58a93804c13991c87dc346b4f02e980d5ab64b9": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n0\"],\"sentence\":1}]}"
+        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]] P P\",\"title\":\"P\"}"
       }
     ],
     "usage": {

@@ -52,16 +52,16 @@ def test_native_mock_smoke_and_replay(tmp_path):
         assert analysis['forward'] and analysis['forward'][0]['consequences']
     assert any(e['decision'] and e['decision']['reason_code'] == 'BANK_LICENSED' for e in events)
     draft = json.loads((run / 'draft.json').read_text())
-    assert draft['body'] == '[[node:n0]] P'
+    assert draft['body'] == '[[node:n0]] P P'
     cli('export', '--run-dir', str(run), '--output', str(run / 'explicit-export'))
-    assert (run / 'explicit-export/essay.txt').read_text() == 'P\n\nP\n'
+    assert (run / 'explicit-export/essay.txt').read_text() == 'P\n\nP P\n'
     assert (run / 'explicit-export/methodology.md').read_text() == methodology(run / 'events.jsonl')
     cli('feedback', '--run-dir', str(run), '--text', 'P')
     selected = next(g.id for g in graphs if g.nodes[0].proposition.text == 'P')
     cli('select', '--run-dir', str(run), '--route', selected)
     events = EventLog(run / 'events.jsonl').read()
     assert any(e['stage'] == 'feedback' and json.loads(e['payload_json'])['text'] == 'P' for e in events)
-    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n0]] P'
+    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n0]] P P'
     replay = tmp_path / 'replay'
     cli('run', '--smoke', '--provider', 'mock', '--config', str(config_path), '--run-dir', str(replay))
     assert [p.read_bytes() for p in files] == [p.read_bytes() for p in sorted((replay / 'routes').glob('*.json'))]

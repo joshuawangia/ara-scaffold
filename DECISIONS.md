@@ -559,3 +559,25 @@ Adverse audits and final chain refusals remain final; B11 explicit Opus 4.8
 fallback and all usage accounting stay unchanged. Template/schema/input hashes
 invalidate previous writer/audit cache entries. Canned responses are regenerated
 for this contract, without relaxing acceptance or altering the deterministic engine.
+
+
+B13 (brain decision, brief 4d). Writer output is validated before caching or
+composition proceeds to the audit. Its body must contain exactly the route's node
+marker set (missing or unknown IDs reject); markers in the title or bibliography
+do not count. After removing node and citation markers, the body must contain at
+least two whitespace-separated tokens that each contain a Unicode letter or
+number. Empty, single-token and punctuation-only bodies therefore reject even if
+all markers are present. We do not require one sentence per node: one sentence
+may express multiple propositions, and the audit still checks their meaning.
+This is a structural minimum, not proof that two tokens constitute a useful essay.
+
+Failures are local InvalidOutput results under the existing correction policy:
+log/account every attempt, return feedback, admit each correction against budget,
+make at most three attempts (or the configured smaller bound), and never cache a
+failed writer response as success. Exhaustion follows the normal CLI error exit
+with logs, route artifacts and methodology retained, without a final essay.
+Accepted drafts still undergo the unchanged final adverse-audit policy. Final
+provider refusals and B11 fallback semantics are unchanged. The writer prompt
+states the minimum and changes its cache identity; placeholder mock fixtures are
+updated to meet it. B13 proof is offline only; no paid calls are authorized and no
+new live success is claimed. The historical B12 F9 failure remains in the report.

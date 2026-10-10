@@ -6,6 +6,13 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = [
+    ('writer_marker_coverage', 'ara/runtime/calls.py', 'require(markers == {node.id for node in route.nodes},', 'require(True,', 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
+    ('writer_nontrivial_body', 'ara/runtime/calls.py', 'require(len(text_tokens) >= 2,', 'require(True,', 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
+    ('writer_citation_padding', 'ara/runtime/calls.py', '\\]\\]|\\[cite:[^\\]]+\\]', '\\]\\]', 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
+    ('writer_punctuation_padding', 'ara/runtime/calls.py', 'if any(char.isalnum() for char in token)', 'if True', 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
+    ('writer_correction_path', 'ara/runtime/calls.py', "if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):", "if validating and kind != 'write_essay' and not (kind == 'audit_essay' and isinstance(exc, Rejected)):", 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
+    ('writer_exhaustion_bound', 'ara/runtime/calls.py', 'for attempt in range(attempts):', 'for attempt in range(attempts - 1):', 'tests/runtime/test_writer_validation.py::test_writer_correction_exhaustion_clean_cli_stop'),
+    ('writer_failure_not_cached', 'ara/runtime/calls.py', '            if validating and not', "            if kind == 'write_essay': self.cache.put(key, {'raw': raw})\n            if validating and not", 'tests/runtime/test_writer_validation.py::test_writer_correction_exhaustion_clean_cli_stop'),
     ('writer_projection', 'ara/runtime/calls.py', "return {'outline': self.essay_outline(route), 'word_limit':", "return {'outline': route.to_dict(), 'word_limit':", 'tests/runtime/test_essay_outline.py::test_route_status_and_cost_never_reach_writer'),
     ('shared_audit_outline', 'ara/runtime/calls.py', "'outline': self.essay_outline(route)}", "'outline': {'nodes': [], 'links': []}}", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
     ('scheme_name', 'ara/runtime/calls.py', "'scheme': entry.name", "'scheme': entry.id", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),

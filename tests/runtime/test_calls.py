@@ -156,7 +156,7 @@ def test_named_position_preserved(rig):
 def test_essay_bibliography_excluded_but_title_included(rig):
     calls, provider, _ = rig
     calls.config['essay_word_limit'] = 6000
-    draft = {'title': 'P', 'body': ' '.join(['P'] * 5999),
+    draft = {'title': 'P', 'body': '[[node:n1]] ' + ' '.join(['P'] * 5998),
              'bibliography': [{'id': 'c1', 'text': ' '.join(['Q'] * 7000), 'url': None}]}
     register(calls, provider, 'write_essay', calls.essay_inputs(graph()), draft)
     assert calls.write_essay(graph()) == draft

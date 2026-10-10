@@ -287,6 +287,11 @@ class ModelCalls:
         def check(data):
             require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
             require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
+            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
+            require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
+            body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
+            text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
+            require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
             return data
         return self.call('write_essay', self.essay_inputs(route), check)
 

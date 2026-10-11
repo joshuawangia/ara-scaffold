@@ -84,7 +84,9 @@ Smoke uses placeholder literature, two targets, depth one, eight search nodes pe
 polarity, a 300-word draft with a 150-word minimum, an 8,192-token output allowance
 and at most one web search per evidence call. Its caps
 are **USD 5 and 1,000,000 tokens**, including conservative admission reservations.
-These are limits, not expected usage. The writer permits one initial attempt plus
+These are limits, not expected usage. The writer instruction targets about 90% of the hard word maximum to leave
+counting margin, while retaining the minimum. Validation counts all title/body
+whitespace tokens, including markers. The writer permits one initial attempt plus
 three retries for local validation
 failures, including contentless, under-length and over-limit drafts. Each retry
 sends identical inputs without validation feedback; every attempt records its
@@ -112,9 +114,9 @@ uv run ara select --run-dir runs/pilot
 ```
 
 The pilot searches all 10 targets at depth 6 and node cap 500, then waits for
-human route selection. It requests a 6,000-word draft and rejects drafts below
+human route selection. It sets a 6,000-word hard maximum and rejects drafts below
 4,500 words, using the existing title-and-body whitespace count (bibliography
-excluded). Pilot output allowances are 20,000 tokens for the writer, 24,000 for each
+excluded). The writer targets about 5,400 words to leave counting margin. Pilot output allowances are 20,000 tokens for the writer, 24,000 for each
 audit, 64,000 for evidence search and 48,000 for citation/originality
 classification. These calls stream through the SDK. Other calls retain 8,192
 tokens. Per-kind `<kind>_max_output_tokens` settings override the global limit

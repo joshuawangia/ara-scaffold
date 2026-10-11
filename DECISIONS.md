@@ -762,3 +762,20 @@ their existing limits remain. No live pilot is authorized or claimed. Recompute
 cost and cap projections from the final five smoke receipts, outside tracked
 content. More output headroom increases conservative admission; it is not a
 promise that the token/cost caps permit full search-cap exhaustion.
+
+
+## Round 2 iota: leave counting margin below the writer ceiling
+
+Series 4 at 2e5704f02b84 failed on run 2 after all four identical-input writer
+attempts counted 302, 308, 301 and 311 words against the 300-word hard maximum.
+The instruction to aim at the exact maximum left no room for counting error,
+and did not explicitly say that markers count as whitespace-delimited tokens.
+The writer now receives the same counting definition used by validation and
+is asked to aim at about 90% of the maximum while honoring the minimum, checking
+the complete count before return. This is a topic-neutral production instruction;
+no counter, cap, minimum, retry count or audit behavior changes. For the pilot,
+that planning margin targets about 5400 words within the unchanged 4500–6000
+acceptance interval. Required propositions and markers must remain present.
+Fixture request hashes change, response bodies do not. Offline tests cannot
+establish instruction compliance; the failed series and its cost remain recorded,
+and a new five-run live series on this commit supplies the required evidence.

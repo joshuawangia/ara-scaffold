@@ -684,3 +684,19 @@ context bound and the same aggregate USD4 ceiling; actual post-call checks,
 unknown-usage STOP and fallback accounting are unchanged. The original stopped
 attempt remains in the ledger and report. This estimate still shares the existing
 assumptions about context bounds and server iterations; actual usage is recorded.
+
+
+## Round 2 iota: prevent writer extrapolation beyond supplied links
+
+The first integrated five-run series at 07c859a2d428 stopped on run 5: the
+writer covered every node and met length, but added a counterfactual inference
+outside the selected outline. The audit correctly rejected it before export.
+The writer instruction now explicitly excludes inversions, consequences of
+denying premises, and unsupported claims about comparative certainty or
+reasoning itself. Length must come from explaining/restating supplied content,
+not adding inferences. This changes only the producer instruction and its
+mock request keys. Audit verdicts remain final, and the four identical-input
+writer attempts still apply only to local validation failures. No semantic
+compliance guarantee follows from an instruction; a new five-run live series
+is required on the repaired commit. Historical failure and all spend remain
+in the external iota report.

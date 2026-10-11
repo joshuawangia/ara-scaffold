@@ -182,7 +182,7 @@ class AnthropicProvider:
         if fallbacks != 'off':
             request.update(betas=['server-side-fallback-2026-06-01'],
                            fallbacks=[{'model': model} for model in fallbacks])
-        if kind == 'write_essay' and maximum > 8192:
+        if maximum > 8192:
             with self.client.beta.messages.stream(**request) as stream:
                 raw = stream.get_final_message()
         else:

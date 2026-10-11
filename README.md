@@ -114,8 +114,11 @@ uv run ara select --run-dir runs/pilot
 The pilot searches all 10 targets at depth 6 and node cap 500, then waits for
 human route selection. It requests a 6,000-word draft and rejects drafts below
 4,500 words, using the existing title-and-body whitespace count (bibliography
-excluded). The writer has a 20,000-token output allowance and streams through
-the SDK; other calls retain their 8,192-token allowance. DECISIONS.md records
+excluded). Pilot output allowances are 20,000 tokens for the writer, 24,000 for each
+audit, 64,000 for evidence search and 48,000 for citation/originality
+classification. These calls stream through the SDK. Other calls retain 8,192
+tokens. Per-kind `<kind>_max_output_tokens` settings override the global limit
+in reservation, dispatch and cache identity. DECISIONS.md records
 the observed token ratios and sizing arithmetic.
 
 Edit `pilot.cost_cap_usd` and `pilot.token_cap` in `config.yaml`, or supply your

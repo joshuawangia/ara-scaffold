@@ -20,7 +20,7 @@ CASES += [
  ('splitter', 'ara/runtime/calls.py', "parts = [part.strip() for part in re.split(r'(?<=[.!?])\\s+|\\n+', body) if part.strip()]", 'parts = [body.strip()]', 'tests/runtime/test_audit_labels.py::test_sentence_splitter_excludes_bibliography'),
  ('missing_nodes', 'ara/runtime/calls.py', 'missing = ids - covered', 'missing = set()', 'tests/runtime/test_audit_labels.py::test_invalid_labels_cannot_approve[missing]'),
  ('trust_faithful', 'ara/runtime/calls.py', "'faithful': not missing and not extra and markers == ids", "'faithful': data.get('faithful', True)", 'tests/runtime/test_audit_labels.py::test_invalid_labels_cannot_approve[missing]'),
- ('sentence_inventory', 'ara/runtime/calls.py', 'len(numbers) == len(set(numbers)) and set(numbers) == expected', 'True', 'tests/runtime/test_audit_labels.py::test_invalid_labels_cannot_approve[unknown_sentence]'),
+ ('sentence_inventory', 'ara/runtime/calls.py', 'len(numbers) != len(set(numbers)) or set(numbers) != expected', 'False', 'tests/runtime/test_audit_labels.py::test_invalid_labels_cannot_approve[unknown_sentence]'),
  ('node_inventory', 'ara/runtime/calls.py', "require(covered <= ids, 'essay audit: unknown node id')", 'pass', 'tests/runtime/test_audit_labels.py::test_invalid_labels_cannot_approve[unknown_node]'),
  ('marker_support', 'ara/runtime/calls.py', 'not missing and not extra and markers == ids', 'not missing and not extra', 'tests/runtime/test_audit_labels.py::test_invalid_labels_cannot_approve[unsupported_marker]'),
 ]

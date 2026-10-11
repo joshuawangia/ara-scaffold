@@ -52,6 +52,9 @@ pilot:
   essay_word_limit: 6000
   essay_min_words: 4500
   write_essay_max_output_tokens: 20000
+  audit_essay_max_output_tokens: 24000
+  search_evidence_max_output_tokens: 64000
+  verify_originality_citations_max_output_tokens: 48000
   token_cap: 10000000
   cost_cap_usd: 100.0
   validation_attempts: 3

@@ -16,8 +16,8 @@ CASES = [
     ('writer_retry_admission', 'ara/runtime/budget.py', "if self.used_tokens + tokens(usage) > self.config['token_cap']:", 'if False:', WRITER + 'test_writer_retry_requires_new_admission'),
     ('pilot_overlay', 'ara/runtime/cli.py', 'config.update(config[selected_profile])', 'pass', PILOT + 'test_pilot_config_and_caps'),
     ('pilot_config_cost_cap', 'ara/runtime/budget.py', "Decimal(str(self.config['cost_cap_usd']))", "Decimal('10')", PILOT + 'test_pilot_config_and_caps[1001-0]'),
-    ('writer_output_allowance', 'ara/runtime/calls.py', "self.config.get('write_essay_max_output_tokens', self.config['max_output_tokens'])", "self.config['max_output_tokens']", PILOT + 'test_writer_output_limit_reserved_and_dispatched'),
-    ('writer_stream', 'ara/runtime/providers.py', "if kind == 'write_essay' and maximum > 8192:", 'if False:', PILOT + 'test_large_writer_uses_sdk_stream'),
+    ('writer_output_allowance', 'ara/runtime/calls.py', "self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])", "self.config['max_output_tokens']", PILOT + 'test_writer_output_limit_reserved_and_dispatched'),
+    ('writer_stream', 'ara/runtime/providers.py', "if maximum > 8192:", 'if False:', PILOT + 'test_large_writer_uses_sdk_stream'),
 ]
 
 

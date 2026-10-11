@@ -52,6 +52,8 @@ def test_pilot_config_and_caps(tmp_path, cap, expected):
             'essay_word_limit', 'essay_min_words', 'write_essay_max_output_tokens')} == {
                 'target_candidates': 10, 'depth_cap': 6, 'node_cap': 500,
                 'essay_word_limit': 6000, 'essay_min_words': 4500, 'write_essay_max_output_tokens': 20000}
+    assert [resolved.get(f'{kind}_max_output_tokens', resolved['max_output_tokens'])
+            for kind in ('audit_essay', 'search_evidence', 'verify_originality_citations')] == [24000, 64000, 48000]
     assert resolved['cost_cap_usd'] == cap and resolved['token_cap'] == 100_000_000
     events = EventLog(run / 'events.jsonl').read()
     if expected == 0:
@@ -80,7 +82,9 @@ def test_writer_output_limit_reserved_and_dispatched(rig, monkeypatch):
     assert start['reserved_usage']['output_tokens'] == 20000
 
 
-def test_large_writer_uses_sdk_stream(rig):
+@pytest.mark.parametrize('kind,maximum', [('write_essay', 20000), ('audit_essay', 24000),
+    ('search_evidence', 64000), ('verify_originality_citations', 48000)])
+def test_large_writer_uses_sdk_stream(rig, kind, maximum):
     calls, _, _ = rig
     requests = []
     class Stream:
@@ -97,7 +101,36 @@ def test_large_writer_uses_sdk_stream(rig):
         def create(self, **kwargs):
             pytest.fail('large writer must stream')
     provider = AnthropicProvider(calls.config, SimpleNamespace(beta=SimpleNamespace(messages=Messages())))
-    result = provider.complete('write_essay', 'P', None, 20000)
+    result = provider.complete(kind, 'P', None, maximum)
     assert result.raw == response({'P': 'Q'})
-    assert requests[0]['max_tokens'] == 20000
+    assert requests[0]['max_tokens'] == maximum
     assert requests[0]['fallbacks'] == [{'model': 'claude-opus-4-8'}]
+
+
+@pytest.mark.parametrize('profile', ['pilot', 'smoke'])
+@pytest.mark.parametrize('kind,limit,data', [
+    ('write_essay', 20000, {'title': 'P', 'body': 'P Q', 'bibliography': []}),
+    ('audit_essay', 24000, {'labels': []}),
+    ('search_evidence', 64000, {'P': 'Q'}),
+    ('verify_originality_citations', 48000, {'originality': {
+        'assessment': 'unverified', 'evidence_urls': [], 'detail': 'P'}, 'items': []}),
+    ('formalise', 8192, {'formula': {'op': 'atom', 'name': 'P'}}),
+])
+def test_profile_kind_limits_reach_reservation_dispatch_and_cache(rig, monkeypatch, profile, kind, limit, data):
+    calls, provider, log = rig
+    calls.config.update(calls.config[profile])
+    expected = limit if profile == 'pilot' else 8192
+    register(calls, provider, kind, {}, data)
+    maximums = []
+    complete = provider.complete
+    def capture(kind, prompt, schema, maximum):
+        maximums.append(maximum)
+        return complete(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'complete', capture)
+    calls.call(kind, {})
+    calls.call(kind, {})  # Same allowance reuses the accepted response.
+    calls.config[f'{kind}_max_output_tokens'] = expected + 1
+    calls.call(kind, {})  # Changed allowance must not reuse the prior cache entry.
+    assert maximums == [expected, expected + 1]
+    starts = [json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'call_start']
+    assert [s['reserved_usage']['output_tokens'] for s in starts] == [expected, expected + 1]

@@ -117,8 +117,7 @@ class ModelCalls:
         template, prompt = self.render(kind, inputs)
         schema = None if kind == 'search_evidence' else json.loads(
             (self.root / 'schemas' / f'{kind}.json').read_text())
-        maximum = (self.config.get('write_essay_max_output_tokens', self.config['max_output_tokens'])
-                   if kind == 'write_essay' else self.config['max_output_tokens'])
+        maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               'effort': self.config['effort'], 'maximum': maximum,
                               'web_max': self.config['web_search_max_uses'],

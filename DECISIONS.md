@@ -717,3 +717,48 @@ or classified as faithful. Observed failed runs and spend remain in the external
 iota report. Four targeted regression cases were red before the repair. A fifth red-first
 case preserves finality even when an incomplete inventory flags an extra
 inference: such a response stops immediately rather than entering correction.
+
+
+## Round 2 iota continuation: pilot output allowances
+
+The per-kind `<kind>_max_output_tokens` setting generalizes the existing writer
+setting. The resolved value reaches cache identity, admission and dispatch.
+Every request above 8192 tokens uses the SDK stream/final-message path, retaining
+server fallback parameters, JSON serialization and whole-message accounting.
+Smoke settings and final rejection behavior are unchanged.
+
+Sizing observations come from the two successful series-3 smoke logs at
+278abbf91a56 under /home/dev/wt/ara/iota-live/series-3. These are short-draft
+measurements, not pilot completion evidence. Mean draft length was 289.5 words.
+Writer visible density was 2.1140 tokens/word plus 72.5 thinking tokens:
+6000 * 2.1140 + 72.5 + 2000 serialization margin = 14756.5, fitting the existing
+20000 allowance. Retain that larger allowance and its earlier variability margin.
+
+Each audit emitted 0.05181 labels/word at 41 visible tokens/label, no observed
+thinking: 6000 * 0.05181 * 41 = 12745.26. Allow 50% variation plus 4000 thinking
+and serialization tokens: 23117.89, rounded up to 24000 per audit. This covers
+both native audit calls separately, not a combined allowance.
+
+Evidence output averaged 2143 tokens; scaling the entire response with draft
+length gives 2143 * 6000 / 289.5 = 44414.51. Add 25% for more sources/items and
+8000 for thinking/tool-call text: 63518.14, rounded up to 64000. This is deliberately
+more conservative than scaling only with five searches. Admission separately
+reserves six possible server iterations: 64000 * (5 + 1) = 384000 output tokens,
+SDK-counted initial input plus 5 * 200000 context tokens, and five tool uses.
+At configured prices that reserves USD14.65 plus the initial input charge.
+The 64000 allowance is per iteration; 384000 is admission, not predicted output.
+
+Classifier output averaged 889 tokens. Draft-proportional extrapolation is
+889 * 6000 / 289.5 = 18424.87. Double for item inventory and copied source-excerpt
+variation, then add 8000 for thinking/JSON: 44849.74, rounded up to 48000.
+Citation/quotation density is not bounded by word count; neither short-draft
+ratio guarantees arbitrary inventories fit. An output stop remains final.
+
+Native call-graph inspection finds writer, both audits, evidence acquisition
+and citation/originality classification consume the draft. Build-T, target
+proposal, cuts, formalisation, leaf mapping, critical-question answers and
+repair consume literature or route/search inputs, not draft-length-scaled output;
+their existing limits remain. No live pilot is authorized or claimed. Recompute
+cost and cap projections from the final five smoke receipts, outside tracked
+content. More output headroom increases conservative admission; it is not a
+promise that the token/cost caps permit full search-cap exhaustion.

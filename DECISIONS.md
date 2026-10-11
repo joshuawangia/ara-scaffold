@@ -700,3 +700,20 @@ writer attempts still apply only to local validation failures. No semantic
 compliance guarantee follows from an instruction; a new five-run live series
 is required on the repaired commit. Historical failure and all spend remain
 in the external iota report.
+
+
+## Round 2 iota: distinguish malformed audit inventory from an adverse verdict
+
+Series 2 at bad5af510d56 stopped on its third smoke after the auditor returned
+one sentence label for fifteen supplied sentences. This was neither a refusal
+nor a complete adverse audit. Inventory mismatches used Rejected, which the
+audit boundary reserves for final semantic rejections, incorrectly bypassing
+its existing schema-validation correction policy. Missing, duplicate or unknown
+sentence numbers now raise ValidationError: the configured bounded attempts
+carry validation feedback, reserve again, retain rejected usage and never cache
+an incomplete inventory. Complete coverage/extra-step verdict failures, final
+provider refusals and output stops remain final. No incomplete audit is accepted
+or classified as faithful. Observed failed runs and spend remain in the external
+iota report. Four targeted regression cases were red before the repair. A fifth red-first
+case preserves finality even when an incomplete inventory flags an extra
+inference: such a response stops immediately rather than entering correction.

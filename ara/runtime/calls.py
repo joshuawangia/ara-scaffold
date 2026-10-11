@@ -316,8 +316,13 @@ class ModelCalls:
             expected = {s['sentence'] for s in inputs['sentences']}
             labels = data['labels']
             numbers = [item['sentence'] for item in labels]
-            require(len(numbers) == len(set(numbers)) and set(numbers) == expected,
-                    'essay audit: sentence inventory mismatch')
+            if len(numbers) != len(set(numbers)) or set(numbers) != expected:
+                require(not any(item['asserts_premise_or_inference_not_in_outline'] for item in labels),
+                        'essay audit failed')
+                # An incomplete non-adverse inventory supplies no audit verdict.
+                # Correct its shape through the normal bounded validation policy;
+                # a complete adverse audit remains final below.
+                raise ValidationError('essay audit: sentence inventory mismatch')
             covered = {node for item in labels for node in item['node_ids']}
             require(covered <= ids, 'essay audit: unknown node id')
             missing = ids - covered

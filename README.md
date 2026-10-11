@@ -215,7 +215,10 @@ route counts cover discovered routes. Scheme forms cite Walton, Reed & Macagno
 
 No philosophical argument, premise, distinction, example or view belongs anywhere
 in tracked code, prompts, tests, fixtures, docs or commit messages. Bank entries
-are forms with slots and critical questions. Fixtures contain placeholders only.
+are forms with slots and critical questions. Under round-2 R4 in DECISIONS.md,
+`tests/fixtures/verification` holds the authorized non-philosophical
+software-engineering known-case recordings. Every other fixture stays
+placeholder-only.
 Supply substantive topic/literature at runtime. Runs, caches, generated drafts and
 logs are gitignored and must never be committed. Credentials come only from the
 environment and must never be written or logged. See AGENTS.md and DECISIONS.md.

@@ -316,7 +316,8 @@ class ModelCalls:
                     require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
                 by_id = {item.id: item for item in (*existing, *items)}
                 if self.config.get('extraction_require_inference', False) and (
-                        inputs.get('mode') == 'reconcile_ranges' or len(pages) == len(paper.readable_pages)):
+                        inputs.get('mode') != 'reconcile_ranges' and not data['unresolved_references'] and
+                        len(pages) == len(paper.readable_pages)):
                     require(any(item.kind == 'inference' for item in by_id.values()), 'extraction has no stated inference')
                 for item in items:
                     if item.kind == 'inference':
@@ -334,15 +335,22 @@ class ModelCalls:
                 obligations = inputs.get('obligations', [])
                 resolutions = data.get('resolutions', [])
                 resolved_ids = [r['obligation_id'] for r in resolutions]
+                pending_ids = data.get('pending_obligation_ids', [])
                 require(len(resolved_ids) == len(set(resolved_ids)) and
-                        set(resolved_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
+                        len(pending_ids) == len(set(pending_ids)) and not set(pending_ids) & set(resolved_ids) and
+                        set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
+                require(not pending_ids or (allow_incomplete and not data['coverage_complete'] and
+                                           bool(data['unresolved_references'])), 'pending obligation requires incomplete coverage')
+                request = data.get('context_request', {})
+                require(not request or (inputs.get('mode') == 'reconcile_ranges' and bool(pending_ids)),
+                        'context request requires a pending obligation')
                 require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),
                         'obligation resolution lacks accepted evidence')
                 ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
                 dispositions = ([dict(pages=[p.page for p in pages], reason=data['empty_reason'])]
                                 if data.get('empty_reason') else [])
                 return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
-                                       dispositions_json=canonical(dispositions)), data['unresolved_references']
+                                       dispositions_json=canonical(dispositions)), data['unresolved_references'], request
             if corrections is None:
                 return self.call('extract_paper', inputs, check)
             try:
@@ -391,7 +399,7 @@ class ModelCalls:
             self.log.record('extraction_range', source_id=paper.source_id, prefix=prefix,
                             pages=[p.page for p in pages], input_hash=digest(canonical(inputs)))
             try:
-                result, pending = run(inputs, pages, prefix, allow_incomplete=True)
+                result, pending, _ = run(inputs, pages, prefix, allow_incomplete=True)
             except Rejected as exc:
                 if not any(reason in str(exc) for reason in ('provider stop: max_tokens', 'extraction coverage incomplete')) or len(pages) == 1:
                     raise
@@ -407,20 +415,11 @@ class ModelCalls:
             unresolved.extend(obligations)
             save_immutable(self.log.path.parent / f'{paper.source_id}.{prefix}.rich.json', canonical(result.to_dict()))
         segment(paper.readable_pages)
-        items = tuple(item for result in ranges for item in result.items)
-        resolutions_json = '[]'
-        if len(ranges) > 1 or unresolved:
-            inputs = {'mode': 'reconcile_ranges', 'source_id': paper.source_id,
-                      'pdf_sha256': paper.pdf_sha256, 'ranges': [r.to_dict() for r in ranges],
-                      'obligations': unresolved,
-                      'pages': [dict(page=p.page, text=p.text) for p in paper.readable_pages] if unresolved else []}
-            result, _ = run(inputs, paper.readable_pages, 'joined', existing=items)
-            items += result.items
-            resolutions_json = result.resolutions_json
-            self.log.record('extraction_obligations_resolved', source_id=paper.source_id,
-                            obligations=unresolved, resolutions=json.loads(resolutions_json))
+        from ara.runtime.reconciliation import reconcile
+        items, unresolved, resolutions = reconcile(self, paper, ranges, run)
+        resolutions_json = canonical(resolutions)
         require(len({item.id for item in items}) == len(items), 'duplicate merged extraction id')
-        if len(ranges) > 1 and self.config.get('extraction_require_inference', False):
+        if (len(ranges) > 1 or unresolved) and self.config.get('extraction_require_inference', False):
             require(any(item.kind == 'inference' for item in items), 'extraction has no stated inference')
         result = PaperExtraction(paper.source_id, items, obligations_json=canonical(unresolved),
                                  resolutions_json=resolutions_json, dispositions_json=canonical([

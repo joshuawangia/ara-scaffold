@@ -66,6 +66,7 @@ def test_unresolved_obligations_require_evidence(rig, monkeypatch, resolve):
         with pytest.raises(Rejected, match='obligation'):
             extract(calls, (paper,))
         assert not (calls.log.path.parent / 'literature.extracted.txt').exists()
+        assert not (calls.log.path.parent / 'p.joined.rich.json').exists()
     else:
         result = calls.extract_paper(paper)
         data = result.to_dict()

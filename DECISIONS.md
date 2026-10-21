@@ -1144,3 +1144,23 @@ about unknown formulas or symbol reuse. Accepted cumulative T and catalogue are
 measured again. Full profile catalogue capacity is 32k, informed by the prior live
 10,471-token catalogue; no semantic deduplication is performed to fit it. A preflight
 refusal retains root/closure receipts for an explicit subsequent selection decision.
+
+### GX26 — Bounded windows over immutable global evidence
+
+Construction plans lossless counted windows within sources. Root inventories cover
+only their window, but prerequisite closure uses the complete immutable graph.
+Previously formalized exact IDs are reused deterministically. Formalization receives
+the remaining fixed inventory and full-closure/prior-ID receipt; a closure exceeding
+its counted bound refuses before dispatch. Final global selected/omitted accounting
+includes every source item, with preliminary omissions superseded by later closure.
+There is still one construction lifecycle, one merge and one freeze.
+
+Reconciliation shares the counted-window partitioner. No-obligation review traverses
+every bounded graph window and turns newly discovered gaps into stable obligations.
+Each obligation is processed separately against counted source/evidence windows;
+every response accounts for it as resolved or explicitly pending. The model can
+request a complete next page/evidence set, fetched by immutable IDs and counted
+before dispatch. Unknown/unread requests, cycles, request-limit exhaustion or an
+oversized required set refuse without silently dropping context or obligations.
+Accepted range/window artifacts and the obligation ledger survive refusal. Model
+resolution remains a semantic judgment, not a deterministic coverage certificate.

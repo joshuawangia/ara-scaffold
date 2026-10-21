@@ -90,16 +90,16 @@ CASES = [
     ('rich_inference_origin', 'ara/runtime/calls.py', "item.inference_origin == 'paper_stated'", 'True', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[origin]'),
     ('rich_coverage', 'ara/runtime/calls.py', "require(data['coverage_complete'] or (allow_incomplete and bool(data['unresolved_references'])),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[coverage]'),
     ('rich_no_summary_cap', 'schemas/extract_paper.json', '"text": {\n            "type": "string",', '"text": {\n            "maxLength": 400,\n            "type": "string",', 'tests/runtime/test_extraction_rich.py::test_no_compact_summary_limit'),
-    ('rich_range_reconciliation', 'ara/runtime/calls.py', 'if len(ranges) > 1 or unresolved:', 'if False:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
+    ('rich_range_reconciliation', 'ara/runtime/reconciliation.py', 'if len(ranges) == 1 and not obligations:', 'if not obligations:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('strict_partial', 'ara/runtime/extraction.py', "if paper.affected_pages and missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction_rich.py::test_strict_partial_cli'),
-    ('rich_inventory', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[inventory]'),
+    ('rich_inventory', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(window_items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[inventory]'),
     ('rich_dependency_closure', 'ara/runtime/construction.py', 'require(all(dependencies[id] <= selected_ids for id in selected_ids),', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[closure]'),
     ('rich_attribution', 'ara/runtime/construction.py', 'require(c.text == evidence_text(items[c.id]),', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[attribution]'),
     ('rich_symbol_unique', 'ara/runtime/construction.py', 'require(len(set(names)) == len(names),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[duplicate_symbol]'),
     ('rich_symbol_signature', 'ara/runtime/construction.py', "require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[symbol_arity]'),
     ('rich_symbol_alignment', 'ara/runtime/construction.py', 'require(valid_alignments,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[binding]'),
     ('rich_omission_reason', 'ara/runtime/construction.py', "require(all(g['reason'].strip() for g in data['omissions']),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[omission_reason]'),
-    ('rich_working_allowance', 'ara/runtime/construction.py', 'require(cumulative.input_tokens <= metadata['working_t_token_budget'],', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[working]'),
+    ('rich_working_allowance', 'ara/runtime/construction.py', "require(cumulative.input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[working]'),
     ('rich_downstream_admission', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'propose_targets':", 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[downstream]'),
     ('rich_stable_merge', 'ara/runtime/construction.py', 'tuple(sorted(items, key=lambda c: c.id))', 'tuple(items)', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
     ('rich_merge_citations', 'ara/runtime/construction.py', 'require(len({c.citation for c in items}) == len(items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
@@ -124,8 +124,8 @@ CASES.append(('batch_bound_variables', 'ara/runtime/construction.py', "require(t
 CASES += [
     ('directional_shared_branch', 'ara/runtime/construction.py', "deps[item['conclusion_id']].add(id)", "deps[item['conclusion_id']].add(id)\n            for premise in item['premise_ids']: deps[premise].add(id)", 'tests/runtime/test_extraction_round3.py::test_directional_closure_shared_premise_and_qualifier'),
     ('directional_shared_qualifier', 'ara/runtime/construction.py', 'deps[target].add(id)', 'deps[target].add(id); deps[id].add(target)', 'tests/runtime/test_extraction_round3.py::test_directional_closure_shared_premise_and_qualifier'),
-    ('reconciliation_obligation_inventory', 'ara/runtime/calls.py', "set(resolved_ids) == {o['id'] for o in obligations}", 'True', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[False]'),
-    ('reconciliation_source_pages', 'ara/runtime/calls.py', "[dict(page=p.page, text=p.text) for p in paper.readable_pages] if unresolved else []", '[]', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[True]'),
+    ('reconciliation_obligation_inventory', 'ara/runtime/calls.py', "set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}", 'True', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[False]'),
+    ('reconciliation_source_pages', 'ara/runtime/reconciliation.py', "[asdict(pages[p]) for p in page_ids] if obligation or requested else []", '[]', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[True]'),
     ('measured_before_validation', 'ara/runtime/calls.py', "self.log.record('response_received', kind=kind, cache_key=key,", "self.log.record('unrecorded_response', kind=kind, cache_key=key,", 'tests/runtime/test_extraction_round3.py::test_measured_response_survives_followup_count_failure'),
     ('measured_count_failure', 'ara/runtime/calls.py', "self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete'", "self._event(kind, prompt, None, estimate, self.budget.cost(estimate), start, cached, 'incomplete'", 'tests/runtime/test_extraction_round3.py::test_build_count_failure_preserves_measured_raw_receipt'),
     ('extraction_stage_model', 'ara/runtime/providers.py', "return stage_settings(self.config, kind)['model']", "return self.model", 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
@@ -155,12 +155,24 @@ CASES += [
 CASES += [
     ('root_stage_allowance', 'config.yaml', 'select_t_roots_max_output_tokens: 16384', 'select_t_roots_max_output_tokens: 8192', 'tests/runtime/test_root_selection.py::test_root_allowance_is_counted_before_dispatch_and_cache'),
     ('root_stage_reservation', 'config.yaml', 'select_t_roots_max_output_tokens: 16384', 'select_t_roots_max_output_tokens: 8192', 'tests/runtime/test_root_selection.py::test_root_reservation_uses_own_output_allowance'),
-    ('root_complete_groups', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(items),', 'require(True,', 'tests/runtime/test_root_selection.py::test_bad_selection_never_freezes[missing_group]'),
+    ('root_complete_groups', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(window_items),', 'require(True,', 'tests/runtime/test_root_selection.py::test_bad_selection_never_freezes[missing_group]'),
     ('root_group_identity', 'ara/runtime/construction.py', 'set(omitted_groups) <= set(groups_by_id)', 'True', 'tests/runtime/test_root_selection.py::test_bad_selection_never_freezes[unknown_group]'),
     ('root_group_expansion', 'ara/runtime/construction.py', "if id not in short_roots]", 'if True]', 'tests/runtime/test_root_selection.py::test_group_omission_excludes_selected_member'),
     ('root_compact_groups', 'ara/runtime/construction.py', "key = tuple(items[id][field] for field in fields)", "key = tuple(items[id][field] for field in fields) + (id,)", 'tests/runtime/test_root_selection.py::test_grouped_omissions_bound_response_without_losing_items'),
     ('construction_patch_retention', 'ara/runtime/construction.py', 'list({**baseline[field], **updates}.values())', 'list(updates.values())', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[valid-build_t_batch]'),
     ('construction_patch_unchanged', 'ara/runtime/construction.py', 'require(all(item != baseline[field].get(id) for id, item in updates.items()),', 'require(True,', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[unchanged-build_t_batch]'),
+]
+
+CASES += [
+    ('full_profile_caps', 'ara/runtime/cli.py', 'if missing_caps:', 'if False:', 'tests/runtime/test_extraction_round4.py::test_full_profile_refuses_unset_caps_before_provider'),
+    ('empty_range_disposition', 'ara/runtime/calls.py', "bool(data.get('empty_reason', '').strip())", 'True', 'tests/runtime/test_extraction_round4.py::test_empty_range_requires_disposition_and_preserves_aggregate[None]'),
+    ('empty_root_accounting', 'ara/runtime/construction.py', "require(bool(merged.commitments), 'empty working T after accounted omissions')", 'pass', 'tests/runtime/test_extraction_round4.py::test_zero_roots_accounted_without_formalization'),
+    ('closure_preflight', 'ara/runtime/construction.py', "require(projected.input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_closure_preflight_before_formalization'),
+    ('window_inventory', 'ara/runtime/windows.py', 'values[:middle]', 'values[1:middle]', 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
+    ('full_graph_closure', 'ara/runtime/construction.py', "prerequisite_closure(items, selection['roots'])", "prerequisite_closure(window_items, selection['roots'])", 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
+    ('closure_size_admission', 'ara/runtime/construction.py', 'if closure_count.input_tokens > input_bound:', 'if False:', 'tests/runtime/test_evidence_windows.py::test_oversized_selected_closure_refuses_before_formalization'),
+    ('requested_context', 'ara/runtime/reconciliation.py', "ids = tuple(sorted(request['pages']))", 'ids = ()', 'tests/runtime/test_evidence_windows.py::test_reconcile_over_context_with_requested_cross_window_evidence[True]'),
+    ('bounded_graph_review', 'ara/runtime/reconciliation.py', 'for index, ids in enumerate(windows_for()):', 'for index, ids in enumerate([tuple(pages)]):', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
 ]
 
 def main():

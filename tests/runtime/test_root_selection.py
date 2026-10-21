@@ -63,7 +63,7 @@ def test_root_allowance_is_counted_before_dispatch_and_cache(rig, monkeypatch):
     original = provider.estimate
     seen = []
     def estimate(kind, prompt, schema, maximum):
-        if kind == 'select_t_roots':
+        if kind == 'select_t_roots' and 'plan_id' in json.loads(prompt.split('\nINPUT_JSON\n')[1]):
             seen.append(maximum)
             return TokenUsage(input_tokens=190000, output_tokens=maximum)
         return original(kind, prompt, schema, maximum)

@@ -5,3 +5,5 @@ Code computes directional-prerequisites-v1: a conclusion includes its supporting
 In targeted_correction mode, fix the validation_error in candidate. Return the complete short roots list and relevance, but ONLY changed or missing omissions entries, keyed by group_id. Every omitted entry is retained. Do not repeat unchanged omission entries. No entry deletion or wholesale regeneration is supported. The entire merged selection is validated before any closure is accepted.
 
 If the entire window is irrelevant, return roots=[] and a reason for EVERY group. This is an accounted omission, not a failed selection.
+
+The input may be one bounded window of a much larger source graph. Choose roots from the supplied window only. Dependencies may be outside it: code closes roots against the full immutable graph. An earlier window may already have formalized some of that closure; exact IDs are reused, never formalized twice. All preliminary omissions are reconciled against the final global selected inventory.

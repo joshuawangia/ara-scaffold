@@ -452,3 +452,9 @@ subdivision, or terminal. It tests each recorded candidate/patch against its
 original source window; it does not generate corrections, replay the complete
 obligation traversal, prove live admission, or certify completed-paper fidelity.
 Historical spend is not a new charge; replay receipts are offline artifacts.
+
+The provider projection expands range-envelope alternatives to typed, closed
+objects; the SDK transformation contract is checked offline as well as ordinary
+JSON Schema validity. These checks do not prove live service acceptance. A
+provider exception with unknown usage retains the admission reservation and
+blocks a resumed paid run until its accounting is reconciled.

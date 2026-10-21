@@ -112,6 +112,23 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
                 branch['properties']['inference_origin'] = {'type': 'string', 'enum': ['paper_stated']}
             branches.append(branch)
         original['properties']['items']['items'] = {'oneOf': branches}
+        # Local envelope constraints intersect the common root properties.
+        # The service requires typed, closed branches rather than constraint-only
+        # fragments. Keep the common root too: its object-item constraint makes
+        # the empty alternative's null-item array accept only an empty array.
+        if original.get('oneOf'):
+            common = {key: value for key, value in original.items() if key != 'oneOf'}
+            envelopes = []
+            for constraint in original['oneOf']:
+                envelope = json.loads(canonical(common))
+                for name, rules in constraint['properties'].items():
+                    if name == 'items':
+                        envelope['properties'][name].update(rules)
+                    else:
+                        envelope['properties'][name] = rules
+                envelope['required'] = sorted(set(envelope['required']) | set(constraint.get('required', [])))
+                envelopes.append(envelope)
+            original['oneOf'] = envelopes
     definitions = original.get('$defs', {})
     if encoded_formulas:
         # The larger batch grammar exceeds the service compiler's limit with AST alternatives.
@@ -203,7 +220,8 @@ class AnthropicProvider:
         request = self.request(kind, prompt, schema, maximum)
         count_request = {k: v for k, v in request.items() if k not in ('max_tokens', 'output_config')}
         # Include the schema bytes conservatively when count_tokens cannot accept format.
-        count_request['messages'] = [{'role': 'user', 'content': prompt + canonical(schema or {})}]
+        counted_schema = request['output_config']['format']['schema'] if kind == 'extract_paper' else (schema or {})
+        count_request['messages'] = [{'role': 'user', 'content': prompt + canonical(counted_schema)}]
         count = self.client.messages.count_tokens(**count_request).input_tokens
         searches = self.config['web_search_max_uses'] if kind == 'search_evidence' else 0
         # The initial request is counted above. Each server-search iteration

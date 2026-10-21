@@ -106,3 +106,33 @@ def test_provider_wire_cannot_mix_disposition_and_content(rig):
     assert not validator.is_valid({**value, 'empty_reason': 'P'})
     assert validator.is_valid({**value, 'items': [], 'empty_reason': 'P'})
     assert not validator.is_valid({**value, 'items': []})
+    assert not validator.is_valid({**value, 'items': [None], 'empty_reason': 'P'})
+
+
+def test_initial_wire_satisfies_provider_sdk_schema_contract(rig):
+    from anthropic import transform_schema
+    calls, _, papers, *_ = rig
+    wire = structured_schema(calls.response_schema('extract_paper', papers[0].inputs()))
+    # The SDK rejects typeless constraint-only branches before service dispatch.
+    transformed = transform_schema(wire)
+    assert transformed
+    for alternative in wire['anyOf']:
+        assert alternative['type'] == 'object'
+        assert alternative['additionalProperties'] is False
+        assert alternative['properties']['items']['type'] == 'array'
+
+
+def test_extraction_counter_includes_expanded_provider_envelope(rig):
+    from types import SimpleNamespace
+    from ara.runtime.cache import canonical
+    from ara.runtime.providers import AnthropicProvider
+    calls, _, papers, *_ = rig
+    counted = []
+    def count_tokens(**request):
+        counted.append(request)
+        return SimpleNamespace(input_tokens=100)
+    provider = AnthropicProvider(calls.config, SimpleNamespace(messages=SimpleNamespace(count_tokens=count_tokens)))
+    schema = calls.response_schema('extract_paper', papers[0].inputs())
+    wire = provider.request('extract_paper', 'P', schema, 32000)['output_config']['format']['schema']
+    provider.estimate('extract_paper', 'P', schema, 32000)
+    assert counted[0]['messages'][0]['content'] == 'P' + canonical(wire)

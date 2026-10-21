@@ -324,6 +324,12 @@ CASES += [
 ]
 
 CASES += [
+    ('expanded_extraction_schema_count', 'ara/runtime/providers.py',
+     "request['output_config']['format']['schema'] if kind == 'extract_paper' else (schema or {})", 'schema or {}',
+     'tests/runtime/test_extraction_acceptance.py::test_extraction_counter_includes_expanded_provider_envelope'),
+    ('typed_extraction_envelope_wire', 'ara/runtime/providers.py',
+     "if original.get('oneOf'):", 'if False:',
+     'tests/runtime/test_extraction_acceptance.py::test_initial_wire_satisfies_provider_sdk_schema_contract'),
     ('empty_optional_normalization', 'ara/runtime/calls.py',
      "if 'empty_reason' in data and data['empty_reason'] in ('', None):", 'if False:',
      'tests/runtime/test_extraction_acceptance.py::test_empty_optional_normalization_is_logged_without_content_change'),

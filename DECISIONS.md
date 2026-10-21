@@ -1410,7 +1410,7 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   context counting, paper continuation/cost admission and campaign accounting
   apply to every dispatch. Exhausted output retains native subdivision; no
   page locator, source text, attribution, or inference is repaired in code.
-- **Reuse.** Bump the acceptance identity to v2 because envelope validation,
+- **Reuse.** Bump the acceptance identity to v3 because envelope validation,
   normalization and patch acceptance changed. Old campaign costs remain
   importable, but old completed graphs cannot silently satisfy the new policy.
 - **Proof.** Placeholder tests exercise two cumulative patches, repeated unchanged
@@ -1420,3 +1420,18 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   by a restored green test. Real-response and paid evidence belongs only in
   ignored runs and the external execution report. Non-author review follows
   local delivery; no push is authorized here.
+
+- **Provider envelope portability follow-up.** The first live probe at the v2
+  acceptance revision returned a provider bad-request exception before a model
+  response. The native boundary retained its unknown-usage reservation and
+  refused continuation; that accounting is not rewritten or reset. Offline SDK
+  transformation then exposed typeless constraint-only envelope branches.
+  Materialize those wire alternatives as complete typed, closed objects, retain
+  the common root constraints, type the fixed schema-version field, and use an
+  explicit nullable union compatible with SDK transformation. Count the expanded
+  extraction wire schema during request admission; its larger envelope must not
+  be hidden behind the shorter local constraint form. The
+  root item constraint still excludes null items from the empty alternative.
+  Add an SDK transformation regression and a production-wire mutation. This
+  establishes offline schema compatibility, not live service acceptance; the
+  provider's detailed error was not retained, and no second paid run is claimed.

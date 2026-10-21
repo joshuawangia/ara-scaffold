@@ -52,8 +52,11 @@ def extraction_defaults(data: dict) -> dict:
 
 
 def normalize_extraction(data: dict) -> list[dict]:
-    """Remove only a content-free optional disposition; retain every item."""
+    """Normalize content-free wire values; retain every item and disposition."""
     changes = []
+    if 'items' in data and data['items'] is None:
+        data['items'] = []
+        changes.append({'path': '/items', 'operation': 'null_empty_inventory_to_array'})
     if 'empty_reason' in data and data['empty_reason'] in ('', None):
         del data['empty_reason']
         changes.append({'path': '/empty_reason', 'operation': 'remove_empty_optional'})

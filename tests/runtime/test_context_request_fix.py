@@ -93,7 +93,8 @@ def test_mode_contract_reaches_counter_prompt_and_wire(rig, monkeypatch, mode, c
     prompt, schema = seen[0]
     embedded = json.loads(prompt.split('LOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n')[1].split('\nINPUT_JSON\n')[0])
     assert schema == embedded
-    for candidate in (schema, structured_schema(schema)):
+    wire = structured_schema(schema)
+    for candidate in [schema, *wire.get('anyOf', [wire])]:
         props = candidate['properties']
         assert ('context_request' in props) == (mode == 'obligation')
         assert ('pending_obligation_ids' in props) == (mode == 'obligation')

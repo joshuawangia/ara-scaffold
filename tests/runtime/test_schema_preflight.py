@@ -83,7 +83,8 @@ def test_schema_gate_native_wires_and_cost(rig, monkeypatch):
     assert all(kind == 'extract_paper' and maximum == 1 and len(prompt) < 200
                for kind, prompt, _, maximum in sent)
     assert len({json.dumps(wire, sort_keys=True) for _, _, wire, _ in sent}) == 5
-    assert all(len(wire['properties']['items']['items']['anyOf']) == 3 for _, _, wire, _ in sent)
+    assert all(len((wire['anyOf'][0] if 'anyOf' in wire else wire)['properties']['items']['items']['anyOf']) == 3
+               for _, _, wire, _ in sent)
     assert calls.budget.used_cost > 0
     assert len([e for e in log.read() if e['label'] == 'MODEL']) == 5
     assert not list(calls.cache.path.glob('*.json'))

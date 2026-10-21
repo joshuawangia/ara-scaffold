@@ -345,6 +345,12 @@ CASES += [
 ]
 
 CASES += [
+    ('standalone_envelope_alternatives', 'ara/runtime/providers.py',
+     "original = {'oneOf': envelopes}", "original['oneOf'] = envelopes",
+     'tests/runtime/test_extraction_acceptance.py::test_initial_wire_satisfies_provider_sdk_schema_contract'),
+    ('null_inventory_normalization', 'ara/runtime/calls.py',
+     "if 'items' in data and data['items'] is None:", 'if False:',
+     'tests/runtime/test_extraction_acceptance.py::test_null_empty_inventory_normalized_with_original_preserved'),
     ('unknown_reconciliation_policy', 'ara/runtime/budget.py',
      "config.get('unknown_usage_policy', 'refuse') != 'count-at-reservation'", 'True',
      'tests/runtime/test_schema_preflight.py::test_explicit_unknown_reconciliation'),

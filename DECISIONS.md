@@ -1462,3 +1462,19 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   must use `--resume-from` for every prior gate attempt; unknown errors require
   the same explicit reconciliation policy. Probe campaign caps are inherited
   accounted charges plus the separately authorized new-spend allowance.
+
+### Kappa round 2 live grammar rejection and correction
+
+- The first gate's HTTP 400 identified a service constraint absent from the
+  local SDK transform: `anyOf` cannot have sibling object constraints. Preserve
+  its unknown-usage receipt at the full reservation and import it into re-gates.
+- Initial response alternatives now stand alone. The empty alternative uses
+  `items: null`, since an empty-only array cannot be expressed with the service's
+  supported array constraints. The native boundary logs conversion of that
+  content-free null to `[]`, preserves the raw response, and then applies the
+  unchanged complete local schema and semantic guards. A nonempty inventory
+  still cannot share the empty-disposition wire. No content is inferred or lost.
+  The reusable acceptance identity advances to v4 because normalization changed.
+- Regression tests assert standalone alternatives, disjoint nonempty/empty wire
+  values, and logged null normalization with immutable originals. Two additional
+  production-wire controls break the new projection and normalization seams.

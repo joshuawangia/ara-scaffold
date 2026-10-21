@@ -104,7 +104,7 @@ def test_provider_wire_cannot_mix_disposition_and_content(rig):
     assert validator.is_valid(value)
     assert validator.is_valid({**value, 'empty_reason': None})
     assert not validator.is_valid({**value, 'empty_reason': 'P'})
-    assert validator.is_valid({**value, 'items': [], 'empty_reason': 'P'})
+    assert validator.is_valid({**value, 'items': None, 'empty_reason': 'P'})
     assert not validator.is_valid({**value, 'items': []})
     assert not validator.is_valid({**value, 'items': [None], 'empty_reason': 'P'})
 
@@ -116,10 +116,11 @@ def test_initial_wire_satisfies_provider_sdk_schema_contract(rig):
     # The SDK rejects typeless constraint-only branches before service dispatch.
     transformed = transform_schema(wire)
     assert transformed
+    assert not {'type', 'properties', 'required', 'additionalProperties'} & wire.keys()
     for alternative in wire['anyOf']:
         assert alternative['type'] == 'object'
         assert alternative['additionalProperties'] is False
-        assert alternative['properties']['items']['type'] == 'array'
+        assert alternative['properties']['items']['type'] in ('array', 'null')
 
 
 def test_extraction_counter_includes_expanded_provider_envelope(rig):
@@ -136,3 +137,15 @@ def test_extraction_counter_includes_expanded_provider_envelope(rig):
     wire = provider.request('extract_paper', 'P', schema, 32000)['output_config']['format']['schema']
     provider.estimate('extract_paper', 'P', schema, 32000)
     assert counted[0]['messages'][0]['content'] == 'P' + canonical(wire)
+
+
+def test_null_empty_inventory_normalized_with_original_preserved(rig, monkeypatch):
+    calls, provider, papers, *_ = rig
+    value = {**graph(), 'items': None, 'empty_reason': 'P'}
+    sequence(monkeypatch, provider, [value])
+    result = calls.call('extract_paper', papers[0].inputs())
+    assert result['items'] == [] and result['empty_reason'] == 'P'
+    models = [e for e in calls.log.read() if e['label'] == 'MODEL']
+    assert json.loads(json.loads(models[0]['response'])['content'][0]['text'])['items'] is None
+    events = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_normalized']
+    assert events[0]['changes'] == [{'path': '/items', 'operation': 'null_empty_inventory_to_array'}]

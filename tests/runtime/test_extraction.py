@@ -146,12 +146,11 @@ def test_missing_fallback_and_methodology(rig, capsys):
     assert all(e['label'] != 'HUMAN' for e in calls.log.read())
 
 
-@pytest.mark.parametrize('mode', ['invalid', 'blank_page', 'encrypted'])
+@pytest.mark.parametrize('mode', ['invalid', 'encrypted'])
 def test_unreadable_pdf_explicit_fallback(rig, mode):
     calls, provider, _, manifest, fulltext, _ = rig
     path = fulltext / 'p.pdf'
     if mode == 'invalid': path.write_bytes(b'P')
-    elif mode == 'blank_page': pdf(path, ('P', ''))
     else:
         writer = PdfWriter()
         writer.add_blank_page(width=300, height=300)
@@ -159,7 +158,7 @@ def test_unreadable_pdf_explicit_fallback(rig, mode):
         writer.write(path)
     papers = load_papers(manifest, fulltext)
     result = extract(calls, papers)
-    assert 'unreadable_pdf:' in result.read_text()
+    assert ('unreadable_pdf:' if mode == 'invalid' else 'encrypted_pdf') in result.read_text()
     assert provider.calls == 0
 
 
@@ -175,10 +174,10 @@ def test_refuse_missing_and_no_publication(rig):
 def test_oversize_refusal_no_dispatch(rig):
     calls, provider, papers, *_ = rig
     paper = Paper('p', papers[0].record_json, 'P', (PageText(1, 'P' * 210000),))
-    path = extract(calls, (paper,))
+    with pytest.raises(BudgetStop, match='context bound'):
+        extract(calls, (paper,))
     assert provider.calls == 0
-    assert 'context_bound' in path.read_text()
-    assert accounting(calls.log)['extraction']['record_only'][0]['reason'].startswith('context_bound')
+    assert accounting(calls.log)['extraction']['failed'] == ['p']
 
 
 def test_provider_context_bound_rechecked(rig, monkeypatch):

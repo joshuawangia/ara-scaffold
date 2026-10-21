@@ -16,7 +16,7 @@ from ara.runtime.budget import BudgetStop
 from ara.runtime.cache import Cache
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
-from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance
+from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance, MissingExtractionLineage
 from ara.runtime.logging import EventLog, now
 from ara.runtime.orchestration import compose, native_engine, prepare, search_all
 from ara.runtime.providers import AnthropicProvider, MockProvider
@@ -49,6 +49,7 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--paper-id', action='append', default=[])
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
+    extraction.add_argument('--profile', choices=('extraction',))
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -84,6 +85,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     try:
         if args.command == 'extract':
             config = yaml.safe_load(args.config.read_text())
+            if args.profile:
+                config.update(config[args.profile])
             config.setdefault('validation_attempts', 3)
             if args.provider:
                 config['provider'] = args.provider
@@ -121,7 +124,11 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if directory.exists() and any(directory.iterdir()):
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')
             log = EventLog(directory / 'events.jsonl')
-            provenance = literature_provenance(args.literature, literature) if args.literature else ()
+            try:
+                provenance = literature_provenance(args.literature, literature) if args.literature else ()
+            except MissingExtractionLineage as exc:
+                log.record('extraction_lineage_missing', reason=str(exc))
+                raise
             if provenance:
                 import_provenance(log, provenance)
             log.human('run', args.topic if args.topic is not None else json.dumps(raw_args, ensure_ascii=False),

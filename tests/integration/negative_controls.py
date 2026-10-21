@@ -69,13 +69,13 @@ CASES += [
     ('extraction_attribution', 'schemas/extract_paper.json', '"attacked_view"', '"attacked_view", "P"', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[attribution]'),
     ('extraction_source', 'ara/runtime/calls.py', "require(data['source_id'] == paper.source_id,", 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[source]'),
     ('extraction_item_source', 'ara/runtime/calls.py', 'require(item.source_id == paper.source_id,', 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[item_source]'),
-    ('extraction_page_bounds', 'ara/runtime/calls.py', 'require(1 <= item.page_start <= item.page_end <= len(paper.pages),', 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[page]'),
+    ('extraction_page_bounds', 'ara/runtime/calls.py', 'require(1 <= item.page_start <= item.page_end <= len(paper.pages),', 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[reversed]'),
     ('extraction_pdf_pages', 'ara/runtime/extraction.py', "page.extract_text() or ''", "'R'", 'tests/runtime/test_extraction.py::test_page_text_and_immutable_contract'),
-    ('extraction_no_partial_pdf', 'ara/runtime/extraction.py', 'if not pages or any(not page.text.strip() for page in pages):', 'if not pages:', 'tests/runtime/test_extraction.py::test_unreadable_pdf_explicit_fallback[blank_page]'),
+    ('extraction_sparse_image_detection', 'ara/runtime/extraction.py', 'if image_or_form and chars < 200:', 'if False:', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_fallback_marker', 'ara/runtime/extraction.py', "outcome = {**base, 'status': 'record only, not extracted'", "outcome = {**base, 'status': 'extracted'", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
     ('extraction_strict_refusal', 'ara/runtime/extraction.py', "if missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction.py::test_refuse_missing_and_no_publication'),
-    ('extraction_oversize', 'ara/runtime/extraction.py', "if reason is None and len((prompt + schema).encode()) + maximum > calls.config['model_context_token_bound']:", 'if False:', 'tests/runtime/test_extraction.py::test_oversize_refusal_no_dispatch'),
-    ('extraction_provider_context', 'ara/runtime/calls.py', "if kind == 'extract_paper' and estimate.input_tokens + maximum > self.config['model_context_token_bound']:", 'if False:', 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
+    ('extraction_counted_oversize', 'ara/runtime/calls.py', "if kind in ('extract_paper', 'build_t'):", "if kind == 'build_t':", 'tests/runtime/test_extraction.py::test_oversize_refusal_no_dispatch'),
+    ('extraction_provider_context', 'ara/runtime/calls.py', "if kind in ('extract_paper', 'build_t'):", "if kind == 'build_t':", 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
     ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
     ('extraction_actual_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
     ('extraction_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", "attempts = 1 if kind == 'extract_paper' else self.config.get('validation_attempts', 1)", 'tests/runtime/test_extraction.py::test_extraction_retry_and_reservation'),
@@ -90,6 +90,32 @@ CASES += [
     ('extraction_no_record_only_t', 'ara/runtime/calls.py', "require(bool(allowed), 'no extracted claims available to build T')", 'pass', 'tests/runtime/test_extraction.py::test_record_only_cannot_build_t'),
     ('extraction_estimate', 'ara/runtime/extraction.py', 'input_tokens=pages * per_page + readable * overhead', 'input_tokens=readable * overhead', 'tests/runtime/test_extraction.py::test_estimate_only_never_dispatches'),
 ]
+
+
+# Fix-round controls preserve full corpus capacity, coverage and accounting lineage.
+CASES += [
+    ('build_t_context', 'ara/runtime/calls.py', "if kind in ('extract_paper', 'build_t'):", "if kind == 'extract_paper':", 'tests/runtime/test_extraction_fix1.py::test_build_t_counted_context_refusal'),
+    ('extraction_item_budget', 'schemas/extract_paper.json', '"maxItems": 4', '"maxItems": 5', 'tests/runtime/test_extraction_fix1.py::test_extraction_output_budget[items]'),
+    ('extraction_text_budget', 'schemas/extract_paper.json', '"maxLength": 400', '"maxLength": 401', 'tests/runtime/test_extraction_fix1.py::test_extraction_output_budget[text]'),
+    ('extraction_serialized_budget', 'ara/runtime/calls.py', 'require(entry_size(entry) <= ENTRY_BYTES,', 'require(True,', 'tests/runtime/test_extraction_fix1.py::test_extraction_output_budget[serialized]'),
+    ('extraction_blank_pages', 'ara/runtime/extraction.py', "unavailable = 'empty_pdf' if not pages else None", "unavailable = 'empty_pdf' if not pages or any(d.reason == 'blank_page' for d in diagnostics) else None", 'tests/runtime/test_extraction_fix1.py::test_blank_pages_retained_without_rejecting_paper'),
+    ('extraction_page_numbers', 'ara/runtime/extraction.py', 'pages.append(PageText(i, text))', 'pages.append(PageText(len([p for p in pages if p.text.strip()]) + 1, text))', 'tests/runtime/test_extraction_fix1.py::test_blank_pages_retained_without_rejecting_paper'),
+    ('extraction_partial_status', 'ara/runtime/extraction.py', "outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted', **result.to_dict()}", "outcome = {**base, 'status': 'extracted', **result.to_dict()}", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
+    ('extraction_unread_page_citation', 'ara/runtime/calls.py', 'require(item.page_start in readable and item.page_end in readable and', 'require(True or item.page_start in readable and item.page_end in readable and', 'tests/runtime/test_extraction_fix1.py::test_extraction_cannot_cite_unread_image_page'),
+    ('extraction_blank_stream_detection', 'ara/runtime/extraction.py', 'contents.operations if contents is not None else []', 'contents.operations if contents else []', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
+    ('extraction_counted_not_bytes', 'ara/runtime/extraction.py', "if prompt_bytes + maximum > calls.config['model_context_token_bound']:", "if prompt_bytes + maximum > calls.config['model_context_token_bound']:\n            calls.budget.stop('byte bound', 'extract_paper')", 'tests/runtime/test_extraction_fix1.py::test_large_bytes_use_counted_tokens'),
+    ('extraction_cache_lineage_import', 'ara/runtime/extraction.py', 'if missing_lineage(events):', 'if False:', 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
+    ('extraction_cache_lineage_accounting', 'ara/runtime/export.py', "'accounting_complete': not unknown and not pending and not lineage_incomplete,", "'accounting_complete': not unknown and not pending,", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
+    ('extraction_local_inherited_totals', 'ara/runtime/export.py', "'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),", "'local_totals': totals(events),", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
+    ('extraction_enclosing_cap_warning', 'ara/runtime/extraction.py', "print('planned batch exceeds enclosing caps', flush=True)", 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
+    ('extraction_batch_profile', 'ara/runtime/cli.py', 'config.update(config[args.profile])', 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
+    ('extracted_t_output_capacity', 'ara/runtime/calls.py', "maximum = self.config['extracted_build_t_max_output_tokens']", "maximum = self.config['max_output_tokens']", 'tests/runtime/test_extraction_fix1.py::test_capacity53_maximum_through_cli'),
+]
+
+CASES.append(('build_t_retry_context', 'ara/runtime/calls.py', "if kind in ('extract_paper', 'build_t'):", "if kind in ('extract_paper', 'build_t') and attempt == 1:", 'tests/runtime/test_extraction_fix1.py::test_build_t_retry_recounts_feedback'))
+
+CASES.append(('extraction_import_idempotence', 'ara/runtime/extraction.py', "if any(e['stage'] == 'extraction_provenance_import' and", "if False and any(e['stage'] == 'extraction_provenance_import' and", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'))
+CASES.append(('extraction_partial_methodology', 'ara/runtime/export.py', "for p in outcomes if p['status'] == 'partial'", "for p in outcomes if p['status'] == 'extracted'", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'))
 
 
 def main():

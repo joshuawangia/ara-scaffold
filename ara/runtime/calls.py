@@ -13,7 +13,7 @@ from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical
 from ara.runtime.logging import EventLog, now
-from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids
+from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, literature_entry, entry_size, ENTRY_BYTES
 from ara.runtime.providers import Provider, Response
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
@@ -119,6 +119,8 @@ class ModelCalls:
         schema = None if kind == 'search_evidence' else json.loads(
             (self.root / 'schemas' / f'{kind}.json').read_text())
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
+        if kind == 'build_t' and citation_ids(inputs['literature']) is not None:
+            maximum = self.config['extracted_build_t_max_output_tokens']
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               'effort': self.config['effort'], 'maximum': maximum,
                               'web_max': self.config['web_search_max_uses'],
@@ -140,8 +142,13 @@ class ModelCalls:
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
                 estimate = self.provider.estimate(kind, prompt, schema, maximum)
-                if kind == 'extract_paper' and estimate.input_tokens + maximum > self.config['model_context_token_bound']:
-                    self.budget.stop('extraction context bound exceeded; no truncation', kind)
+                if kind in ('extract_paper', 'build_t'):
+                    fits = estimate.input_tokens + maximum <= self.config['model_context_token_bound']
+                    self.log.record('context_admission', kind=kind, input_tokens=estimate.input_tokens,
+                                    output_tokens=maximum, limit=self.config['model_context_token_bound'],
+                                    decision='fits' if fits else 'refused', prompt=prompt)
+                    if not fits:
+                        self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind)
                 self.budget.before(estimate, kind)
                 self.log.record('call_start', kind=kind, attempt=attempt, model=self.provider.model, prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
@@ -216,7 +223,15 @@ class ModelCalls:
                 require(item.source_id == paper.source_id, 'extraction item source id mismatch')
                 require(1 <= item.page_start <= item.page_end <= len(paper.pages), 'extraction page outside paper')
                 require(bool(item.text.strip()), 'extraction text is blank')
-            return PaperExtraction(paper.source_id, items)
+                readable = {page.page for page in paper.readable_pages}
+                require(item.page_start in readable and item.page_end in readable and
+                        not any(item.page_start <= page <= item.page_end for page in paper.affected_pages),
+                        'extraction cites unread page')
+            result = PaperExtraction(paper.source_id, items)
+            entry = literature_entry({**result.to_dict(), 'status': 'partial' if paper.affected_pages else 'extracted',
+                                      'affected_pages': paper.affected_pages})
+            require(entry_size(entry) <= ENTRY_BYTES, 'extraction serialized entry exceeds 2200-byte budget; shorten item text')
+            return result
         return self.call('extract_paper', paper.inputs(), check)
 
     def build_t(self, literature: str, audience: str) -> CommitmentSet:

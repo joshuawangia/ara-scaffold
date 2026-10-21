@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log
+from ara.runtime.extraction import missing_lineage
 
 
 def methodology(log_path: Path) -> str:
@@ -32,7 +33,29 @@ def methodology(log_path: Path) -> str:
                   sum(not p.get('cache_hit') for e, p in routing))
     extraction_calls = [e for e in calls if e['stage'] == 'extract_paper']
     outcomes = [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome']
+    lineage_missing = missing_lineage(events)
+    lineage_incomplete = bool(lineage_missing) or any(e['stage'] == 'extraction_lineage_missing' for e in events)
+    inherited_indices: set[int] = set()
+    receipt_ids = []
+    for i, event in enumerate(events):
+        if event['stage'] == 'extraction_provenance_import':
+            payload = json.loads(event['payload_json'])
+            inherited_indices.update(range(i + 1, min(len(events), i + 1 + payload['records'])))
+            receipt_ids.append(payload.get('receipt_id'))
+    def totals(selected):
+        return {'cost_usd': round(sum(e['cost_usd'] for e in selected), 10),
+                'tokens': {key: sum(e['usage'][key] for e in selected) for key in (
+                    'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
+                'model_calls': sum(e['label'] == 'MODEL' for e in selected),
+                'human_reported_minutes': sum(json.loads(e['payload_json']).get('reported_minutes', 0)
+                                              for e in selected if e['label'] == 'HUMAN')}
     extraction_summary = {
+        'production_lineage_complete': not lineage_incomplete,
+        'missing_origin_cache_keys': lineage_missing,
+        'partial': [{'source_id': p['source_id'], 'affected_pages': p['affected_pages'],
+                     'page_diagnostics': p['page_diagnostics']} for p in outcomes if p['status'] == 'partial'],
+        'page_diagnostics': [{'source_id': p['source_id'], 'pages': p['page_diagnostics']}
+                             for p in outcomes if p.get('page_diagnostics')],
         'call_count': len(extraction_calls),
         'dispatch_count': sum(not json.loads(e['payload_json']).get('cache_hit') for e in extraction_calls),
         'cache_replays': sum(bool(json.loads(e['payload_json']).get('cache_hit')) for e in extraction_calls),
@@ -49,7 +72,10 @@ def methodology(log_path: Path) -> str:
     }
     summary = {
         'extraction': extraction_summary,
-        'accounting_complete': not unknown and not pending,
+        'accounting_complete': not unknown and not pending and not lineage_incomplete,
+        'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),
+        'inherited_totals': totals([e for i, e in enumerate(events) if i in inherited_indices]),
+        'inherited_receipt_ids': receipt_ids,
         'incomplete_calls': len(unknown) + pending,
         'unresolved_dispatches': pending,
         'served_models_by_kind': served_by_kind,
@@ -59,7 +85,8 @@ def methodology(log_path: Path) -> str:
         'tokens': {k: sum(e['usage'][k] for e in events) for k in (
             'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
         'cost_usd': round(sum(e['cost_usd'] for e in events), 10),
-        'accounting_note': ('INCOMPLETE totals: actual spend is unknown. Reservations are not measured charges.'
+        'accounting_note': ('INCOMPLETE production accounting: extraction cache replay lacks original receipts.'
+                            if lineage_incomplete else 'INCOMPLETE totals: actual spend is unknown. Reservations are not measured charges.'
                             if unknown or pending else 'Complete recorded usage; prices are configuration assumptions.'),
         'unknown_spend_reservations_usd': sum(e['cost_usd'] for e in calls
             if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual'),

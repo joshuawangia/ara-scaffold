@@ -837,3 +837,84 @@ never dispatches; use `--provider mock` for credential-free local estimates.
 Generated PDFs, extraction JSON, assembled text, provenance, logs and cache are
 ignored. Tests generate placeholder PDFs at runtime; no real source output enters
 tracked content. Work is isolated from other live runs in its own checkout/cache.
+
+## Round 3 gamma fix 1: corpus capacity, lineage and PDF coverage
+
+GX6 (B1). A generated build-T literature entry now has at most four extracted
+items, each at most 400 characters, enforced by the closed response schema and
+prompt. Acceptance also bounds the canonical entry after JSON-string escaping to
+2200 UTF-8 bytes. This includes ids, generated page citations, status, text and
+partial-coverage notice. Exceeding it retries through normal validation, never
+truncates or drops a paper. The prompt requests a concise selection of central
+material, including stated argument support, and explicitly disclaims exhaustive
+coverage. Full bibliography/checksum/page diagnostics remain in per-paper artifacts
+and logs; build-T receives the compact source-id/items/status projection. All
+selected papers retain an entry, including record-only and partial outcomes.
+
+For 53 papers, 53 * 2200 = 116600 escaped bytes. UTF-8 bytes conservatively bound
+text tokens even for Unicode and JSON escapes. The offline maximum-capacity CLI
+fixture measures 124441 input byte-tokens including assembly/instruction/schema
+wrappers, topic/audience, the provider's extra schema count, and 32 message-envelope
+units: 7841 overhead. With a 64000 build-T output allowance, total is 188441 versus
+200000, leaving 11559 (5.8%) headroom. Topic/audience or correction feedback can
+exceed this fixture's overhead; the actual full provider count is authoritative on
+every dispatch. Different encodings are bounded at acceptance, not assumed to use
+four bytes per token. This byte contract bounds produced artifact size; it is not
+the rejected byte heuristic for deciding whether an input PDF fits (GX9).
+
+GX7 (B1). Up to 53 * 4 = 212 source items can each yield a commitment. Allocate
+approximately 100 tokens for a 400-character statement, 100 for its bounded-depth
+formula, and 50 for id/citation/JSON fields: 212 * 250 = 53000. Add 11000 for
+thinking, serialization and formulation variance, giving 64000 output tokens.
+`extracted_build_t_max_output_tokens` applies only to generated extraction
+literature; ordinary build-T remains at its existing allowance. This is sizing,
+not a guarantee that arbitrary formulas or a model's repetitions fit. Output stops
+remain final. Both extraction and every build-T request now use provider.estimate
+(count_tokens for Anthropic) on the complete prompt and schema, log the count,
+and refuse before dispatch if input plus output allowance exceeds context.
+No model reduction stage is necessary for the bounded 53-paper input.
+
+GX8 (B2/N1). Choose the smaller fail-closed policy: a cache replay without an
+original accepted paid-call receipt earlier in the same source log makes production
+accounting incomplete and prevents artifact import with an explicit reason. The
+operator must import the original extraction artifact directly; no transitive
+origin lookup is invented from cached raw response usage. Replaying a cache still
+costs zero new spend, but no longer claims complete production accounting. Same-log
+cache replay remains usable when the original receipt is present. Import records
+have stable content-derived receipt ids and are idempotent for that receipt in one
+log. Methodology separates local and inherited tokens, cost, model calls and human
+reported time; aggregate consumers can deduplicate by receipt id. Sum local costs
+for new spend; do not sum inherited totals across downstream exports.
+
+GX9 (S1/S2/S3). PDF preflight retains physical numbering and records blank_page
+with its page number. A blank page has no text and no image/form/drawing paint
+operators. Sparse image or form pages (fewer than 200 non-whitespace text characters)
+produce sparse_image_text; other painted textless pages produce
+nontext_visual_content. These pages are excluded from model input/citations and
+make the paper partial, with affected page numbers/diagnostics in outcomes, logs
+and methodology. A fully visual paper remains partial with no items and no model
+call. Readable pages still proceed; blank pages alone do not make coverage partial.
+Encrypted, empty and all-blank papers have distinct reason codes. Tests exposed
+that pypdf ContentStream can be false in a boolean context despite containing paint
+operators: inspect presence with `is not None`, then inspect operations. This
+preflight is a conservative heuristic, not OCR or a completeness/reading-order
+proof; a sufficiently long bad OCR/header layer can evade it.
+
+PDF input bytes now produce only a planning warning. Hard context admission uses
+counted tokens, including full correction prompts and schema. A genuine oversize
+request logs context refusal and STOP without dispatch, rather than publishing a
+record-only artifact based on a byte guess. This supersedes GX2's byte refusal and
+blank-page policy; GX4's artifact projection/import rules are superseded by GX6/GX8.
+Existing v1 artifacts from before this fix whose projection differs fail closed;
+regenerate with the bounded extraction contract rather than stripping provenance.
+
+GX10 (N2). `ara extract --profile extraction` explicitly selects USD30 enclosing
+and extraction caps with 6000000 total tokens and at most three validation
+attempts. Ordinary USD10/200000 defaults are unchanged. The conditional 1819-page
+planning scenario now costs about USD25.23 before retries/fallbacks: 1819 * 1500 +
+53 * 2751 = 2874303 estimated input tokens, plus 434176 output tokens at USD5/25
+per million. It fits this profile's 3308479 combined-token estimate and USD30 cap,
+without guaranteeing retries fit. Preflight explicitly prints and logs
+`planned batch exceeds enclosing caps` when either enclosing limit is insufficient.
+Downstream pilot retains its existing larger caps and counts inherited extraction
+charges; extraction-profile caps are not an authorization to run the batch.

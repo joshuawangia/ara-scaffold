@@ -139,48 +139,68 @@ is claimed.
 Place manifest-listed PDFs in `literature/fulltext/`, then inspect a local estimate:
 
 ```sh
-uv run ara extract --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --provider mock --estimate-only --run-dir runs/extraction-estimate
+uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --provider mock --estimate-only --run-dir runs/extraction-estimate
 ```
 
-With credentials configured, extract selected papers through the normal logged,
-cached model boundary. Omit `--paper-id p` only when ready for the entire manifest;
-`p` below is a placeholder source id to replace with an existing manifest id.
+With credentials configured, extract the chosen sources through the normal logged
+model boundary. `p` below is a placeholder to replace with a manifest id; omit
+`--paper-id` only when ready to extract the entire manifest.
 
 ```sh
-uv run ara extract --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction
+uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction
 uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot-extracted
 ```
 
-Extraction prints pages × estimated tokens and projected cost before dispatch.
-`extraction_cost_cap_usd` defaults to USD30; the enclosing `cost_cap_usd` and
-`token_cap` still apply (ordinary defaults USD10/200000). Supply `--config` to
-adjust caps for a planned batch. Estimates include full output allowances, but
-exclude retries/fallbacks. Each actual attempt reserves budget separately.
-`extract_paper_max_output_tokens` defaults to 8192; validation uses up to three
-attempts unless `validation_attempts` is explicitly configured. Keep separate
-cache paths for concurrent paid workers.
+The explicit extraction profile sets both enclosing and extraction cost caps to
+USD30 and the token cap to 6000000. Ordinary defaults remain USD10/200000 tokens.
+Preflight prints `planned batch exceeds enclosing caps` if its pages × 1500
+input-token estimate plus prompt overhead and output allowances exceed those
+limits. Estimates exclude retries and server fallbacks; actual requests reserve
+and account separately. Use an isolated cache for the planned extraction run.
 
-Each accepted paper produces `<id>.extraction.json`. Claims/arguments carry source
-ids, author/reported/attacked attribution and physical PDF page ranges. Citation
-ids such as `p:pdf:1-2` refer to physical pages, not printed page labels. Local
-pypdf extraction does not perform OCR: malformed/encrypted PDFs or any page without
-extractable text yield an explicit `record only, not extracted` entry by default.
-Oversize papers also fall back with a logged context-bound refusal; no truncation.
-`--missing refuse` instead stops without publishing a literature file. Model,
-validation or budget failures always stop and retain methodology. A record-only
-entry supplies no claims to T, and an all-record-only file cannot build T.
+Each paper supplies at most four central claim/argument items, each at most 400
+characters, with author/reported/attacked attribution. The escaped assembled entry
+is additionally limited to 2200 UTF-8 bytes. Validation retries shorten model
+output; code never slices text or silently drops a paper. This is a bounded central
+selection, not an exhaustive inventory. Full bibliography and page diagnostics
+remain in `<id>.extraction.json` and the log; the literature file carries compact
+source-id/items/status entries. Citation ids such as `p:pdf:1-2` use physical PDF
+pages, not printed page labels.
 
-Keep `literature.extracted.txt`, its `.provenance.json` sidecar, and the original
-extraction log together and available at the recorded path. The run loader verifies
-the artifact against the pinned log and imports extraction receipts before build-T;
-AI output remains SYSTEM/MODEL, with models, calls, tokens, cost and fallback ids
-in methodology. Imported extraction costs count against the downstream run cap.
-They are reused receipts: do not sum multiple downstream methodologies as if each
-paid for the same upstream extraction. Copying only the text file is insufficient.
-Repeated extraction with a new empty run directory reuses validated cache entries
-without another provider call. Changed PDF bytes invalidate the cache even when
-the extracted text is identical. Generated artifacts and PDFs remain gitignored.
-Page bounds/schema checks do not establish semantic fidelity or exhaustive coverage.
+A 53-paper maximum-size offline CLI fixture uses 124441 conservative input
+byte-tokens including instructions and schemas. The generated-literature build-T
+output allowance is 64000 tokens, sized for up to 212 commitments; total 188441
+fits the 200000 context with margin. `extracted_build_t_max_output_tokens` controls
+this allowance; it does not change ordinary build-T. Every actual build-T and
+extraction dispatch counts the full request via the provider and refuses a context
+overflow with a logged STOP. Long custom topic/audience text or validation feedback
+can still exceed context. PDF input bytes are warnings only, never a hard refusal.
+
+pypdf does not perform OCR. Blank pages are recorded and preserve numbering while
+readable pages proceed. Image/form pages with fewer than 200 text characters, and
+painted pages with no text, are flagged and excluded from claim support. Their
+papers are explicitly `partial`, with affected page numbers in outcomes, logs and
+methodology. An entirely visual paper is partial with no items and no model call.
+This heuristic cannot prove text completeness or correct reading order.
+Missing/unreadable PDFs default to `record only, not extracted`; `--missing refuse`
+stops instead. Model/validation/budget/context failures always stop and preserve
+methodology. Record-only entries supply no commitments, and an all-record-only
+collection cannot build T. Partial entries supply only their readable-page items.
+
+Import the **original extraction artifact directly**. Keep its text, provenance
+sidecar and original source log available at the recorded path. The loader verifies
+and imports its receipts with SYSTEM/MODEL labels. Cross-run cached re-extraction
+without original receipts is explicitly marked incomplete and refused at import;
+zero new spend is not complete production accounting. Same-log replay with its
+original receipt remains usable. Do not strip the provenance header to bypass a
+refusal. Artifacts predating this bounded projection must be regenerated.
+
+Methodology separates local and inherited usage/cost/human time and gives imported
+receipts stable ids. Re-importing the same receipt within a log is idempotent;
+aggregate reports should deduplicate inherited receipt ids. Imported charges still
+count against the downstream run budget. PDF bytes partition the cache even when
+text is identical. Generated artifacts and PDFs remain gitignored. Structural
+page/citation checks do not establish semantic support or accurate attribution.
 
 ## Topic, literature, selection and feedback
 

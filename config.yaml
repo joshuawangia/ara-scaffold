@@ -63,3 +63,12 @@ pilot:
 extraction_cost_cap_usd: 30.0
 extract_paper_max_output_tokens: 8192
 extraction_estimated_tokens_per_page: 1500
+
+# Only generated extraction literature receives this build-T output allowance.
+extracted_build_t_max_output_tokens: 64000
+# Explicit batch profile; ordinary/default run caps remain unchanged.
+extraction:
+  token_cap: 6000000
+  cost_cap_usd: 30.0
+  extraction_cost_cap_usd: 30.0
+  validation_attempts: 3

@@ -104,7 +104,7 @@ CASES = [
     ('rich_stable_merge', 'ara/runtime/construction.py', 'tuple(sorted(items, key=lambda c: c.id))', 'tuple(items)', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
     ('rich_merge_citations', 'ara/runtime/construction.py', 'require(len({c.citation for c in items}) == len(items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
     ('rich_plan_identity', 'ara/runtime/construction.py', 'plan_id = digest(canonical(plan))', "plan_id = 'P'", 'tests/runtime/test_extraction_rich.py::test_plan_identity_and_source_order'),
-    ('rich_single_freeze', 'ara/runtime/orchestration.py', "if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):", 'if False:', 'tests/runtime/test_extraction_rich.py::test_freeze_is_unique_and_immutable'),
+    ('rich_single_freeze', 'ara/runtime/orchestration.py', "if any(e['stage'] in ('commitments_frozen', 'frozen_history_import') for e in calls.log.read()):", 'if False:', 'tests/runtime/test_extraction_rich.py::test_freeze_is_unique_and_immutable'),
     ('rich_encoding_warning', 'ara/runtime/extraction.py', "diagnostics.append(PageDiagnostic(i, 'private_use_glyphs', chars))", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoding_warning_retains_text_and_rejects_strict'),
     ('rich_legacy_refusal', 'ara/runtime/extraction.py', "if text.startswith('# ARA extracted literature') and not text.startswith(HEADER):", 'if False:', 'tests/runtime/test_extraction_rich.py::test_legacy_artifact_not_treated_as_human'),
 ]
@@ -322,6 +322,26 @@ CASES += [
      "if paper.affected_pages and missing == 'refuse':", 'if False:',
      'tests/runtime/test_resume_policy.py::test_strict_coverage_refuses_reused_partial_paper'),
 ]
+
+CASES += [
+('shared_freeze', 'ara/runtime/frozen.py', 'require(len(freezes) == 1,', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[no_freeze-exactly one freeze]'),
+('shared_hash', 'ara/runtime/frozen.py', 'require(sha256(content).hexdigest() == expected,', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[hash-file hash mismatch]'),
+('shared_topic', 'ara/runtime/frozen.py', "require(run['topic'] == topic,", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[topic-different topic]'),
+('shared_config', 'ara/runtime/frozen.py', "require(construction_config(run['config']) == construction_config(config),", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[config-config drift]'),
+('shared_schema', 'ara/runtime/frozen.py', 'require(expected_contract == contract(root),', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[schema-schema-version drift]'),
+('shared_receipts', 'ara/runtime/frozen.py', 'require(bool(builds),', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[provenance-missing construction receipts]'),
+('shared_cache_origin', 'ara/runtime/frozen.py', "require(not payload['cache_hit'] or key in origins,", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[cache_origin-missing construction/extraction cache origin]'),
+('shared_prompt', 'ara/runtime/frozen.py', "require(event['prompt'].startswith(prefix + '\\nINPUT_JSON\\n'), 'schema/prompt version drift: ' + kind)", "require(True, 'schema/prompt version drift: ' + kind)", 'tests/integration/test_shared_frozen.py::test_refusals[prompt-schema/prompt version drift]'),
+('shared_campaign', 'ara/runtime/frozen.py', 'charges[digest(canonical(e))] = e', 'charges[str(len(charges))] = e', 'tests/integration/test_shared_frozen.py::test_legacy_freeze_and_budget_campaign'),
+('shared_cache_identity', 'ara/runtime/calls.py', "if 'cache_identity' in self.config else {}", 'if False else {}', 'tests/integration/test_shared_frozen.py::test_shared_candidates'),
+('shared_local_budget', 'ara/runtime/frozen.py', "    commitments = CommitmentSet.from_dict(history['commitments'])", "    from ara.types import RunEvent\n    for row in history['records']:\n        if row['event']['label'] == 'MODEL': log.emit(RunEvent.from_dict(row['event']))\n    commitments = CommitmentSet.from_dict(history['commitments'])", 'tests/integration/test_shared_frozen.py::test_legacy_freeze_and_budget_campaign'),
+]
+
+CASES += [('shared_complete', 'ara/runtime/frozen.py', "require(completed, 'source run is not complete')", 'pass', 'tests/integration/test_shared_frozen.py::test_refusals[incomplete-not complete]'), ('shared_anchor', 'ara/runtime/frozen.py', "require(path.with_suffix('.anchor').read_text().splitlines() == [r['hash'] for r in records],", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[anchor-checkpoint mismatch]'), ('shared_bank', 'ara/runtime/frozen.py', "require(frozen['bank_version'] == bank_version,", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[bank-bank version drift]'), ('shared_response', 'ara/runtime/frozen.py', 'require(CommitmentSet.from_dict(data) == commitments,', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[response-does not match frozen T]'), ('shared_batch', 'ara/runtime/frozen.py', "require(digest(text) == batch['output_hash'],", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[batch]'), ('shared_extraction', 'ara/runtime/frozen.py', "require(len(block) == count and digest(canonical(block)) == payload['receipt_id'],", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[extraction]')]
+
+CASES += [('shared_chain', 'ara/runtime/logging.py', 'digest(canonical(row)) != checksum', 'False', 'tests/integration/test_shared_frozen.py::test_refusals[chain-invalid or modified log]'), ('shared_plan', 'ara/runtime/frozen.py', "require(plan_path.read_text() == canonical(plan['plan']),", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[plan]')]
+
+CASES += [('shared_manifest_presence', 'ara/runtime/frozen.py', "frozen['contract'] if 'contract' in frozen else json.loads(", "frozen.get('contract') or json.loads(", 'tests/integration/test_shared_frozen.py::test_refusals[schema_empty-schema-version drift]')]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

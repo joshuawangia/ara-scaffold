@@ -89,6 +89,9 @@ def methodology(log_path: Path) -> str:
         'origin': 'SYSTEM/MODEL',
         'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),
     }
+    shared = [json.loads(e['payload_json']) for e in events if e['stage'] == 'frozen_history_import']
+    receipt_ids.extend(p['freeze_hash'] for p in shared)
+    inherited_history = [r['event'] for p in shared for r in p['records']]
     summary = {
         **split_totals(events),
         'extraction': extraction_summary,
@@ -98,7 +101,12 @@ def methodology(log_path: Path) -> str:
                          'closure': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_closure']},
         'accounting_complete': not unknown and not pending and not lineage_incomplete,
         'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),
-        'inherited_totals': totals([e for i, e in enumerate(events) if i in inherited_indices]),
+        'inherited_totals': totals([e for i, e in enumerate(events) if i in inherited_indices] + inherited_history),
+        'shared_frozen_t': ({key: value for key, value in shared[0].items()
+                             if key not in ('records', 'commitments', 'artifacts')} if shared else None),
+        'candidate_identity': [dict(seed=p['config']['seed'], cache_identity=p['config']['cache_identity'])
+                               for e in events if e['stage'] == 'run_started'
+                               for p in [json.loads(e['payload_json'])] if 'cache_identity' in p.get('config', {})],
         'inherited_receipt_ids': receipt_ids,
         'incomplete_calls': len(unknown) + pending,
         'unresolved_dispatches': pending,

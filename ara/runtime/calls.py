@@ -158,12 +158,12 @@ class ModelCalls:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
-    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
+    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
         offset = len(self.log.read())
         before_tokens, before_cost = self.budget.used_tokens, self.budget.used_cost
         started = time.monotonic()
         try:
-            return self._execute_once(kind, inputs, check, attempt=attempt)
+            return self._execute_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
         except Exception as exc:
             events = self.log.read()[offset:]
             starts = [e for e in events if e['stage'] == 'call_start']
@@ -193,7 +193,7 @@ class ModelCalls:
             self.budget.after(kind)
             self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
 
-    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
@@ -205,8 +205,13 @@ class ModelCalls:
                               'web_max': self.config['web_search_max_uses'],
                               'formula_depth': self.config.get('formula_output_depth', 2),
                               'fallbacks': stage_settings(self.config, kind).get('fallbacks', ['claude-opus-4-8'])})
+        if schema_smoke:
+            prompt = 'P. Return a JSON object matching the response schema.'
+            maximum = 1
         key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
-        saved = self.cache.get(key)
+        saved = None
+        if not schema_smoke:
+            saved = self.cache.get(key)
         start = time.monotonic()
         raw = None
         usage, cost = TokenUsage(), self.budget.cost(TokenUsage())
@@ -216,7 +221,10 @@ class ModelCalls:
         charged = False
         estimate = TokenUsage()
         try:
-            estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
+            if schema_smoke:
+                estimate = self.provider.estimate(kind, prompt, schema, maximum)
+            else:
+                estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
             if not cached:
                 self.budget.before(estimate, kind, model=self.requested_model(kind))
             if kind == 'extract_paper' and self._paper_budget is not None:
@@ -239,11 +247,16 @@ class ModelCalls:
                                 requested_model=self.requested_model(kind), raw_response=raw,
                                 measured_usage=usage.to_dict(), measured_cost_usd=float(cost))
             # Stop reason is checked BEFORE interpreting any content blocks.
-            require(raw['stop_reason'] == 'end_turn', f'provider stop: {raw["stop_reason"]}')
+            if schema_smoke:
+                require(raw['stop_reason'] in ('end_turn', 'max_tokens'), f'provider stop: {raw["stop_reason"]}')
+            else:
+                require(raw['stop_reason'] == 'end_turn', f'provider stop: {raw["stop_reason"]}')
             require(not any(isinstance(v, dict) and (v.get('is_error') or
                         str(v.get('type', '')).endswith('_error') or v.get('error_code'))
                         for v in walk(raw['content'])), 'server tool error')
-            if schema is None:
+            if schema_smoke:
+                data = {'grammar_accepted': True}
+            elif schema is None:
                 urls = sorted({v['url'] for v in walk(Response(raw).served_content) if isinstance(v, dict)
                                and v.get('type') == 'web_search_result' and isinstance(v.get('url'), str)})
                 data = {'text': Response(raw).text(), 'urls': urls, 'content': Response(raw).served_content}
@@ -269,6 +282,9 @@ class ModelCalls:
         except Exception as exc:
             if not charged and isinstance(exc, BudgetStop):
                 raise
+            if not validating:
+                from ara.runtime.providers import provider_error_evidence
+                self.log.record('provider_error', kind=kind, **provider_error_evidence(exc, prompt))
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
             reason = str(exc) if isinstance(exc, (Rejected, UnpricedModel)) else type(exc).__name__
@@ -299,7 +315,7 @@ class ModelCalls:
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         self._after(kind)
-        if not cached:
+        if not cached and not schema_smoke:
             self.cache.put(key, {'raw': raw})
         return result
 

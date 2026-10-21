@@ -110,8 +110,10 @@ def methodology(log_path: Path) -> str:
             'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
         'cost_usd': round(sum(e['cost_usd'] for e in events), 10),
         'accounting_note': ('INCOMPLETE production accounting: extraction cache replay lacks original receipts.'
-                            if lineage_incomplete else 'INCOMPLETE totals: actual spend is unknown. Reservations are not measured charges.'
+                            if lineage_incomplete else 'INCOMPLETE totals: unknown usage, counted at reservation (upper bound). Reservations are not measured charges.'
                             if unknown or pending else 'Complete recorded usage; prices are configuration assumptions.'),
+        'reconciliation_policy': [json.loads(e['payload_json']) for e in events
+                                  if e['stage'] == 'unknown_usage_reconciled'],
         'unknown_spend_reservations_usd': sum(e['cost_usd'] for e in calls
             if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual'),
         'model_call_seconds': sum(e['wall_seconds'] for e in events),

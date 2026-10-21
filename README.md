@@ -458,3 +458,18 @@ objects; the SDK transformation contract is checked offline as well as ordinary
 JSON Schema validity. These checks do not prove live service acceptance. A
 provider exception with unknown usage retains the admission reservation and
 blocks a resumed paid run until its accounting is reconciled.
+
+Before a paid extraction, compile all extraction response grammars with a
+placeholder-only native gate:
+
+```sh
+uv run ara schema-preflight --profile extraction-full --config config.yaml --run-dir runs/schema-P
+```
+
+The gate allows at most USD1 including imported gate history. A repeated gate
+uses a new directory and `--resume-from runs/schema-P`; preserve all prior
+attempts. Both `schema-preflight` and `extract` accept the explicit
+`--unknown-usage-policy count-at-reservation` option. This counts unknown usage
+at its full reservation upper bound, preserves the original receipts, and never
+claims measured usage. It does not reconcile an interrupted dispatch without a
+receipt. Schema compilation does not establish source extraction quality.

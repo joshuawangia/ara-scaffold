@@ -1435,3 +1435,30 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   Add an SDK transformation regression and a production-wire mutation. This
   establishes offline schema compatibility, not live service acceptance; the
   provider's detailed error was not retained, and no second paid run is claimed.
+
+## Kappa round 2: explicit conservative imports and grammar preflight
+
+- `extract --unknown-usage-policy count-at-reservation` permits importing
+  incomplete receipts only with their full existing reservation counted. It
+  appends a reconciliation event naming receipt hashes and the upper-bound sum;
+  originals remain immutable and retain `reservation_unknown_actual`. Measured
+  totals never include these receipts. Unreceipted dispatches still refuse.
+  Methodology says "unknown usage, counted at reservation" and remains marked
+  incomplete for actual usage. The default policy still refuses continuation.
+- Provider error receipts retain only sanitized HTTP status, error type, message,
+  and request ID. They omit exception representations, requests, URLs, credential
+  values and structured body echoes. Native CLI counter errors receive the same
+  treatment before export or console output.
+- `ara schema-preflight --profile extraction-full --run-dir runs/P` enumerates
+  all response-shaping modes and correction candidates, deduplicates projected
+  wires, and sends each complete grammar through the extraction model/transport.
+  Every kind alternative is present in each compiled grammar. The prompt uses
+  only placeholders and output allowance is one token; `max_tokens` is acceptable
+  here because this gate tests grammar compilation, not graph acceptance. Normal
+  extraction validation, caching and stop handling are unchanged. Gate responses
+  never populate the extraction cache. Requests retain reservations and receipts
+  through the native model boundary; paid errors stop with unknown reservations.
+- The gate caps its entire imported history plus new requests at USD1. Re-gates
+  must use `--resume-from` for every prior gate attempt; unknown errors require
+  the same explicit reconciliation policy. Probe campaign caps are inherited
+  accounted charges plus the separately authorized new-spend allowance.

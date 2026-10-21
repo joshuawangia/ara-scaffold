@@ -4,7 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 import json
 
-from ara.runtime.cache import canonical
+from ara.runtime.cache import canonical, digest
 from ara.runtime.logging import EventLog
 from ara.types import TokenUsage
 from ara.runtime.providers import Response
@@ -42,7 +42,14 @@ class Budget:
         self.used_tokens = sum(tokens(TokenUsage.from_dict(e['usage'])) for e in log.read())
         self.used_cost = sum((Decimal(str(e['cost_usd'])) for e in log.read()), Decimal(0))
         if any(json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual' for e in log.read()):
-            self.stop('prior provider spend is unknown; start a reconciled new run', 'resume')
+            if config.get('unknown_usage_policy', 'refuse') != 'count-at-reservation':
+                self.stop('prior provider spend is unknown; start a reconciled new run', 'resume')
+            unknown = [e for e in log.read()
+                       if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual']
+            log.record('unknown_usage_reconciled', policy='count-at-reservation',
+                       receipt_ids=[digest(canonical(e)) for e in unknown],
+                       upper_bound_usd=float(sum((Decimal(str(e['cost_usd'])) for e in unknown), Decimal(0))),
+                       note='unknown usage, counted at reservation; upper bound, not measured usage')
         starts = sum(e['stage'] == 'call_start' for e in log.read())
         finishes = sum(e['label'] == 'MODEL' and not json.loads(e['payload_json']).get('cache_hit')
                        for e in log.read())

@@ -51,6 +51,14 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--estimate-only', action='store_true')
     extraction.add_argument('--resume-from', type=Path, action='append', default=[])
     extraction.add_argument('--profile', choices=('extraction', 'extraction-full'))
+    extraction.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'), default='refuse')
+    gate = sub.add_parser('schema-preflight')
+    gate.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
+    gate.add_argument('--run-dir', type=Path, required=True)
+    gate.add_argument('--profile', choices=('extraction', 'extraction-full'), default='extraction-full')
+    gate.add_argument('--cost-cap-usd', type=float, default=1.0)
+    gate.add_argument('--resume-from', type=Path, action='append', default=[])
+    gate.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'), default='refuse')
     plan = sub.add_parser('plan-extraction')
     plan.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     plan.add_argument('--manifest', type=Path, required=True)
@@ -101,6 +109,27 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'schema-preflight':
+            from ara.runtime.preflight import schema_preflight
+            from ara.runtime.provenance import checkpoint, read_checkpoint, import_receipts
+            if not 0 <= args.cost_cap_usd <= 1:
+                raise ValueError('schema preflight cap must be between zero and USD1')
+            config = yaml.safe_load(args.config.read_text())
+            config.update(config[args.profile])
+            config.update(cost_cap_usd=args.cost_cap_usd, extraction_cost_cap_usd=args.cost_cap_usd,
+                          unknown_usage_policy=args.unknown_usage_policy)
+            if args.run_dir.exists() and any(args.run_dir.iterdir()):
+                raise ValueError('schema preflight destination must be empty')
+            log = EventLog(args.run_dir / 'events.jsonl')
+            log.human('schema-preflight', json.dumps(raw_args), argv=raw_args,
+                      reported_minutes=args.human_minutes)
+            log.record('schema_preflight_config', config=config)
+            for source in args.resume_from:
+                origin = checkpoint(source / 'events.jsonl')
+                import_receipts(log, read_checkpoint(origin), origin)
+            calls = calls_factory(config, log, 'P')
+            print(json.dumps(schema_preflight(calls)))
+            return 0
         if args.command == 'plan-extraction':
             from ara.runtime.planning import plan_extraction
             config = yaml.safe_load(args.config.read_text())
@@ -118,6 +147,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if args.profile:
                 config.update(config[args.profile])
             validate_profile_caps(config, args.profile)
+            config['unknown_usage_policy'] = args.unknown_usage_policy
             config.setdefault('validation_attempts', 3)
             validate_failure_limit(config)
             if args.provider:
@@ -233,6 +263,13 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         compose(calls, chosen)
         return 0
     except Exception as exc:
+        from anthropic import APIError
+        if isinstance(exc, APIError):
+            from ara.runtime.providers import provider_error_evidence
+            evidence = provider_error_evidence(exc)
+            if log is not None:
+                log.record('provider_error', **evidence)
+            exc = RuntimeError(json.dumps(evidence))
         if log is not None:
             if not isinstance(exc, BudgetStop):
                 log.record('runtime_error', error_type=type(exc).__name__, message=str(exc))

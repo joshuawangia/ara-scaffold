@@ -243,3 +243,30 @@ class AnthropicProvider:
         else:
             raw = self.client.beta.messages.create(**request)
         return Response(raw.to_dict(mode="json"))
+
+
+def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
+    """Allowlisted error fields only; never serialize an exception/request object."""
+    import os
+    import re
+    body = getattr(exc, 'body', None)
+    error = body.get('error', body) if isinstance(body, dict) else {}
+    error = error if isinstance(error, dict) else {}
+    def scrub(value):
+        text = value if isinstance(value, str) else ''
+        # Error services sometimes append an echoed request after the diagnostic.
+        text = re.split(r'(?i)(?:request[ _-]*body|messages|prompt)\s*[:=]', text)[0]
+        for key, secret in os.environ.items():
+            if len(secret) >= 4 and re.search(r'(?i)key|token|secret|password|credential', key):
+                text = text.replace(secret, '[REDACTED]')
+        for part in [prompt, *prompt.splitlines()]:
+            if len(part) >= 8:
+                text = text.replace(part, '[REQUEST REDACTED]')
+        text = re.sub(r'(?i)(?:authorization|x-api-key)\s*:[^\n]*', '[REDACTED]', text)
+        text = re.sub(r'(?i)bearer\s+\S+|sk-[A-Za-z0-9_-]+|https?://\S+', '[REDACTED]', text)
+        text = re.sub(r'[\{\[].*', '[STRUCTURED ECHO REDACTED]', text, flags=re.S)
+        return text[:2000]
+    return {'http_status': getattr(exc, 'status_code', None),
+            'error_type': scrub(error.get('type') or type(exc).__name__),
+            'message': scrub(error.get('message') or 'Provider failure; no structured diagnostic.'),
+            'request_id': scrub(getattr(exc, 'request_id', None)) or None}

@@ -344,6 +344,22 @@ CASES += [
      'tests/runtime/test_extraction_acceptance.py::test_provider_wire_cannot_mix_disposition_and_content'),
 ]
 
+CASES += [
+    ('unknown_reconciliation_policy', 'ara/runtime/budget.py',
+     "config.get('unknown_usage_policy', 'refuse') != 'count-at-reservation'", 'True',
+     'tests/runtime/test_schema_preflight.py::test_explicit_unknown_reconciliation'),
+    ('reconciled_reservation_charge', 'ara/runtime/budget.py',
+     "self.used_cost = sum((Decimal(str(e['cost_usd'])) for e in log.read()), Decimal(0))",
+     'self.used_cost = Decimal(0)',
+     'tests/runtime/test_schema_preflight.py::test_explicit_unknown_reconciliation'),
+    ('provider_error_receipt', 'ara/runtime/calls.py',
+     "self.log.record('provider_error', kind=kind, **provider_error_evidence(exc, prompt))", 'pass',
+     'tests/runtime/test_schema_preflight.py::test_provider_error_evidence_sanitized'),
+    ('schema_gate_inventory', 'ara/runtime/preflight.py',
+     'for identity, inputs, _ in wires:', 'for identity, inputs, _ in wires[:1]:',
+     'tests/runtime/test_schema_preflight.py::test_schema_gate_native_wires_and_cost'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

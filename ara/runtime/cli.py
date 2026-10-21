@@ -17,8 +17,9 @@ from ara.runtime.cache import Cache
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance, MissingExtractionLineage
+from ara.runtime.frozen import load_frozen, import_frozen
 from ara.runtime.logging import EventLog, now
-from ara.runtime.orchestration import compose, native_engine, prepare, search_all
+from ara.runtime.orchestration import compose, native_engine, prepare, prepare_targets, search_all
 from ara.runtime.providers import AnthropicProvider, MockProvider
 from ara.types import RouteGraph
 
@@ -37,6 +38,9 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--provider', choices=('anthropic', 'mock'))
     run.add_argument('--topic')
     run.add_argument('--literature', type=Path)
+    run.add_argument('--from-frozen', type=Path)
+    run.add_argument('--cost-cap-usd', type=float)
+    run.add_argument('--token-cap', type=int)
     run.add_argument('--audience', default='runtime audience')
     run.add_argument('--named-position')
     run.add_argument('--route')
@@ -140,8 +144,22 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             selected_profile = 'smoke' if args.smoke else args.profile
             if selected_profile:
                 config.update(config[selected_profile])
-            validate_profile_caps(config, selected_profile)
-            if args.smoke:
+            if args.cost_cap_usd is not None:
+                config['cost_cap_usd'] = args.cost_cap_usd
+            if args.token_cap is not None:
+                config['token_cap'] = args.token_cap
+            if args.from_frozen:
+                if args.cost_cap_usd is None or args.token_cap is None:
+                    raise ValueError('--from-frozen requires explicit --cost-cap-usd and --token-cap')
+                if args.literature is not None:
+                    raise ValueError('--from-frozen cannot be combined with --literature')
+                if args.topic is None and not args.smoke:
+                    raise ValueError('--from-frozen requires --topic')
+                topic, literature = args.topic if args.topic is not None else 'P Q', ''
+                config['extraction_cost_cap_usd'] = 0
+                config['cache_identity'] = uuid.uuid4().hex
+                config['seed'] = uuid.uuid4().int
+            elif args.smoke:
                 topic = args.topic if args.topic is not None else 'P Q'
                 literature = args.literature.read_text() if args.literature else (
                     ROOT / 'tests/fixtures/runtime/smoke-literature.txt').read_text()
@@ -149,12 +167,18 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 if args.topic is None or args.literature is None:
                     raise ValueError('run requires --topic and --literature, or --smoke')
                 topic, literature = args.topic, args.literature.read_text()
+            if not args.from_frozen:
+                validate_profile_caps(config, selected_profile)
             if args.provider is not None:
                 config['provider'] = args.provider
             directory = args.run_dir or Path(config['runs_dir']) / uuid.uuid4().hex
             if directory.exists() and any(directory.iterdir()):
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')
+            bank = load_bank(ROOT / 'bank')
+            history = load_frozen(args.from_frozen, topic, config, bank.bank_version, ROOT) if args.from_frozen else None
             log = EventLog(directory / 'events.jsonl')
+            if history:
+                commitments = import_frozen(log, history)
             try:
                 provenance = literature_provenance(args.literature, literature) if args.literature else ()
             except MissingExtractionLineage as exc:
@@ -166,16 +190,18 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                       argv=raw_args, topic=args.topic,
                       literature=literature if args.literature is not None and not provenance else None,
                       named_position=args.named_position, reported_minutes=args.human_minutes)
-            bank = load_bank(ROOT / 'bank')
             log.record('run_started', config=config, topic=topic, literature=literature, audience=args.audience,
-                       literature_source='model_extraction' if provenance else ('human_file' if args.literature is not None else 'smoke_fixture'),
+                       literature_source='shared_frozen_t' if history else 'model_extraction' if provenance else ('human_file' if args.literature is not None else 'smoke_fixture'),
                        bank_version=bank.bank_version,
                        architecture='L: versioned bank; T: frozen commitments; H: model cut proposer; '
                        'deterministic engine: licensing, search, conflicts; runtime: effects',
                        tools=['Anthropic Messages API', 'web_search_20260209', 'Z3', 'jsonschema'])
             calls = calls_factory(config, log, topic)
             engine = engine_factory(bank, calls)
-            commitments, targets = prepare(calls, bank, literature, args.audience, args.named_position)
+            if history:
+                targets = prepare_targets(calls, commitments, args.named_position)
+            else:
+                commitments, targets = prepare(calls, bank, literature, args.audience, args.named_position)
             routes = search_all(calls, engine, commitments, targets)
             route_id = args.route
             if route_id:

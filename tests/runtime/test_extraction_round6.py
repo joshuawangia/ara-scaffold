@@ -222,8 +222,18 @@ def test_same_paper_reentry_does_not_reset_allowance(rig, monkeypatch):
 ])
 def test_invalid_paper_limits_refuse_before_dispatch(rig, monkeypatch, key, value):
     calls, _, paper, sent = chain(rig, monkeypatch, **{key: value})
-    with pytest.raises(ValueError, match='paper'):
+    with pytest.raises(ValueError) as error:
         calls.extract_paper(paper)
+    if key == 'extraction_paper_continuation_limit':
+        expected = key + ' must be a finite nonnegative integer'
+    elif key == 'extraction_paper_cost_cap_usd':
+        expected = key + ' must be finite and nonnegative'
+    elif 'cost_cap_usd' in value:
+        expected = 'large paper cost_cap_usd must be finite and nonnegative'
+    else:
+        expected = 'extraction_large_paper_limits requires'
+    # A later serialization failure must not masquerade as admission validation.
+    assert str(error.value).startswith(expected)
     assert not sent
     assert not any(e['stage'] == 'call_start' for e in calls.log.read())
 

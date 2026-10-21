@@ -148,7 +148,8 @@ class ModelCalls:
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
         if kind == 'build_t_batch':
             maximum = self.config['extracted_build_t_max_output_tokens']
-        identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
+        identity = canonical({**({'cache_identity': self.config['cache_identity'], 'seed': self.config['seed']}
+                                 if 'cache_identity' in self.config else {}), 'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               'effort': stage_settings(self.config, kind)['effort'], 'maximum': maximum,
                               'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                               'web_max': self.config['web_search_max_uses'],

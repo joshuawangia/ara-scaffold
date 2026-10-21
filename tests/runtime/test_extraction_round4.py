@@ -101,6 +101,7 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     for item in second['items']: item['source_id'] = 'q'
     value['papers'].append(second)
     calls.config.update(working_t_token_budget=10000, working_t_symbol_token_budget=19000)
+    allowances = []
     original = provider.estimate
     def estimate(kind, prompt, schema, maximum):
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
@@ -109,6 +110,7 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
         return original(kind, prompt, schema, maximum)
     def complete(kind, prompt, schema, maximum):
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'select_t_roots': allowances.append(data['working_token_allowance'])
         result = batch_response(data)
         if kind == 'build_t_batch':
             result['new_symbols'] = []
@@ -123,6 +125,7 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     monkeypatch.setattr(provider, 'complete', complete)
     t = prepare_commitments(calls, load_bank(ROOT / 'bank'), HEADER + json.dumps(value), 'P')
     assert len(t.commitments) == 16
+    assert 0 < allowances[1] < allowances[0] < 10000
     events = calls.log.read()
     merged = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_merged')
     assert len(merged['symbols']) == 16
@@ -130,3 +133,34 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     assert len(json.dumps(merged['symbols'])) > 17000
     assert sum(e['stage'] == 'build_t_capacity_preflight' for e in events) == 2
     assert sum(e['stage'] == 'commitments_frozen' for e in events) == 1
+
+
+def test_catalogue_growth_preflight_precedes_formalization(rig, monkeypatch):
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    calls.config.update(working_t_symbol_growth_tokens_per_item=256, working_t_symbol_token_budget=1000)
+    with pytest.raises(Rejected, match='shared symbol token allowance preflight'):
+        calls.build_t(path.read_text(), 'P')
+    model = [e['stage'] for e in calls.log.read() if e['label'] == 'MODEL']
+    assert model.count('select_t_roots') == 1 and 'build_t_batch' not in model
+
+
+def test_full_profile_reaches_native_construction(rig, tmp_path, capsys):
+    calls, _, _, _, _, config_path = rig
+    literature = tmp_path/'source.txt'
+    literature.write_text('P')
+    arguments = ['run', '--profile', 'extraction-full', '--config', str(config_path),
+                 '--topic', 'P', '--literature', str(literature), '--run-dir', str(tmp_path/'build')]
+    observed = []
+    def factory(config, *args):
+        observed.append(config)
+        raise ValueError('P')
+    assert main(arguments, calls_factory=factory) == 2
+    assert 'operator must set' in capsys.readouterr().err and not observed
+    config = yaml.safe_load(config_path.read_text())
+    config['extraction-full'].update(token_cap=1000000, cost_cap_usd=100, extraction_cost_cap_usd=100)
+    config_path.write_text(yaml.safe_dump(config))
+    assert main(arguments, calls_factory=factory) == 2
+    assert len(observed) == 1
+    assert observed[0]['working_t_symbol_token_budget'] == 32000
+    assert observed[0]['construction_targeted_corrections'] == 1
+    assert observed[0]['stages']['extraction']['model'] == 'claude-opus-5'

@@ -218,6 +218,27 @@ def assemble(outcomes: list[dict]) -> str:
         'papers': entries}) + '\n'
 
 
+def extraction_range_plan(calls: ModelCalls, paper: Paper):
+    """Count initial ranges exactly as execution does; output density is an explicit scenario."""
+    from ara.runtime.windows import counted_windows
+    maximum = calls.config['extract_paper_max_output_tokens']
+    bound = calls.config['model_context_token_bound'] - maximum
+    density = calls.config.get('extraction_planned_output_tokens_per_page', 0)
+    if type(density) is not int or density < 0:
+        raise ValueError('extraction planned output density must be a nonnegative integer')
+    counts = {}
+    def measure(pages):
+        inputs = {**paper.inputs(), 'pages': [asdict(p) for p in pages]}
+        usage = calls.count_request('extract_paper', inputs)
+        counts[tuple(p.page for p in pages)] = usage
+        if density * len(pages) > maximum:
+            return bound + 1
+        return usage.input_tokens
+    windows = counted_windows(paper.readable_pages, measure, bound, lambda: calls.budget.stop(
+        'extract_paper context bound or output planning bound: single page cannot fit; no truncation', 'extract_paper'))
+    return [(pages, counts[tuple(p.page for p in pages)]) for pages in windows]
+
+
 def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'record-only',
             estimate_only: bool = False) -> Path | None:
     from ara.types import TokenUsage

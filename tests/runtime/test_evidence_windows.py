@@ -144,3 +144,57 @@ def test_no_obligation_review_bounds_large_graph_union(rig, monkeypatch):
     windows = [e for e in calls.log.read() if e['stage'] == 'extraction_reconciliation_window']
     assert len(windows) > 1
     assert result.obligations_json == result.resolutions_json == '[]'
+
+
+def test_resolved_ledger_cannot_hide_remaining_reference(rig, monkeypatch):
+    calls, provider, papers, *_ = rig
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        value = graph()
+        value.update(coverage_complete=False, unresolved_references=['Q'])
+        if inputs.get('mode') == 'reconcile_ranges':
+            value['items'] = []
+            known = inputs['ranges'][0]['items'][0]['id']
+            value['resolutions'] = [dict(obligation_id=inputs['obligations'][0]['id'], evidence_ids=[known])]
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', complete)
+    with pytest.raises(Rejected, match='obligation status'):
+        calls.extract_paper(papers[0])
+    assert not any(e['stage'] == 'extraction_graph_merged' for e in calls.log.read())
+
+
+def test_overlapping_closures_include_prior_formulas_and_source_evidence(rig, monkeypatch):
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    data = json.loads(path.read_text()[len(HEADER):])
+    by_id = {i['id'].rsplit(':',1)[-1]: i for i in data['papers'][0]['items']}
+    data['papers'][0]['items'] = [by_id[key] for key in ('p','q','r','d','f','qual','i','j')]
+    original = provider.estimate
+    def estimate(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'select_t_roots' and sum(len(p['items']) for p in inputs['papers']) > 4:
+            return TokenUsage(input_tokens=70001, output_tokens=maximum)
+        return original(kind, prompt, schema, maximum)
+    formalized = []
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'select_t_roots':
+            roots = [i['root_id'] for p in inputs['papers'] for i in p['items'] if i['id'].endswith((':r',':f'))]
+            value = dict(roots=roots, relevance='P', omissions=[dict(group_id=g['group_id'],reason='Q')
+                for g in inputs['selection_groups'] if set(g['root_ids']) - set(roots)])
+        else:
+            if formalized:
+                expected = {i['id'] for i in formalized[0]['commitments']}
+                assert {i['id'] for i in inputs['existing_commitments']} == expected
+                assert {i['id'] for i in inputs['supporting_evidence']} == expected
+                from ara.types import Formula
+                prior_formulas = {i['id']: Formula.from_dict(i['formula']) for i in formalized[0]['commitments']}
+                assert {i['id']: Formula.from_dict(i['formula']) for i in inputs['existing_commitments']} == prior_formulas
+            value = batch_response(inputs)
+            formalized.append(value)
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'estimate', estimate)
+    monkeypatch.setattr(provider, 'complete', complete)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), HEADER+json.dumps(data), 'P')
+    assert len(formalized) == 2
+    assert len(result.commitments) == len({c.id for c in result.commitments}) == 8
+    assert sum(e['stage'] == 'commitments_frozen' for e in calls.log.read()) == 1

@@ -164,6 +164,31 @@ input-token estimate plus prompt overhead and output allowances exceed those
 limits. Estimates exclude retries and server fallbacks; actual requests reserve
 and account separately. Use an isolated cache for the planned extraction run.
 
+For a full-run plan, use the separate `extraction-full` profile. It selects Opus
+in `stages.extraction.model`, disables fallbacks, requires a stated inference in
+an accepted aggregate paper, and allows one targeted correction per paper.
+Its enclosing token/cost caps and extraction cost cap are `null`: the operator
+must set all three before generation. The same profile is accepted by native `ara run --profile extraction-full` so its
+32k catalogue and construction correction policy also reach construction. Use it
+with the original extracted literature and filled operator caps. The historical
+profile above is unchanged.
+
+```sh
+uv run ara plan-extraction --profile extraction-full --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --token-counter local --run-dir runs/extraction-plan
+```
+
+The planner reads PDFs and writes numeric ranges, capacity admissions and cost
+scenarios to `extraction-plan.json`; it cannot generate. `local` labels its
+UTF-8-bytes/4 estimate. `provider` uses the provider's token-count endpoint;
+verify that endpoint remains free before using it. Counts include the runtime's
+conservative schema overhead. Full-profile initial ranges also reserve a scenario
+of 1200 output tokens/readable page, informed by the bounded extraction sample;
+this reduces predictable output exhaustion, but does not guarantee coverage.
+Execution uses the same range planner. Output cost and construction-window counts
+remain estimates: reconciliation, corrections, actual graphs, chosen closures and
+symbol reuse cannot be known before extraction. `fits` concerns initial readable
+ranges only. Inspect unread/glyph-warning counts separately.
+
 Rich v2 extractions preserve page-linked premises, intermediate conclusions,
 conclusions, paper-stated inference links, distinctions, qualifications and
 reported/attacked views, with explicit attribution. There is no four-item or
@@ -173,8 +198,12 @@ subdivides readable physical page ranges. Each range is saved immutably; a logge
 counted reconciliation links ranges without rewriting their evidence. Unresolved
 references receive stable range/page-linked obligation IDs. Reconciliation receives
 counted source pages and must map every obligation to accepted evidence IDs; an
-empty completion cannot discard an obligation. Artifacts retain both ledgers. An oversized
-single page or reconciliation stops explicitly rather than truncating evidence.
+empty completion cannot discard an obligation. Pending obligations traverse bounded
+source/evidence windows, with explicit model requests for additional page/evidence
+context. No-obligation review also uses bounded graph windows. Artifacts retain
+both ledgers, including pending obligations on refusal. An oversized indivisible
+page or required context set stops explicitly. Empty argument-free ranges need
+model-authored reasons; they cannot erase pending obligations.
 Full graphs remain in `<id>.extraction.json`, range artifacts and log-backed v2
 literature. Item-level citations such as `p:pdf:1-2#p:r1-2:p` disambiguate separate
 items on the same pages. Folio labels are not physical page indices.
@@ -183,7 +212,10 @@ Generated literature uses one construction lifecycle, one freeze. Source IDs are
 sorted, content hashes pinned, and batches packed using provider-counted requests,
 not a fixed paper count. Defaults allow 70000 batch input tokens, 64000 output
 and a 16000-token shared-symbol reserve. Plans and their inputs partition caches.
-Each batch first asks the model for relevant roots and grouped omission reasons.
+Evidence windows can divide one large source. Each window asks the model for
+relevant roots and grouped omission reasons. Closure uses the full immutable graph,
+including evidence outside that window. Already accepted IDs are reused exactly;
+accounted zero-root windows skip formalization.
 Code computes `directional-prerequisites-v1`: selected conclusions include their
 supporting links and premises recursively, plus applicable qualifications and
 distinctions. Shared premises or qualifiers do not select other consequences.
@@ -195,9 +227,12 @@ Shared symbol definitions and model-produced semantic reuse decisions are logged
 and validated; code derives syntactic occurrence bindings and copies source text/citations. Code never invents equivalences. Faithful formalisation and semantic
 alignment remain model judgments requiring source inspection.
 
-The working T has a 100000-token counted downstream-input limit, with 8000 reserved
-for wrappers. Batches receive proportional allowances by evidence count; this is a
-selection budget, not a source-extraction cap. A complete relevant argument that
+The working T has a 100000-token counted downstream-input limit. Each batch receives
+remaining measured global capacity, including actual wrappers. Before formalization,
+counted copied evidence in a minimal formula envelope and the existing catalogue
+are checked. The full profile reserves 256 catalogue tokens/selected item for
+planning and allows a 32000-token catalogue. This reservation is configurable,
+not a prediction of symbol semantics; actual accepted T and catalogue are rechecked. A complete relevant argument that
 cannot fit is refused, never silently pruned. Full rich records remain available
 for inspection; current search uses only the selected working T. Every request,
 including downstream requests, retries and cache replay, is counted with its full

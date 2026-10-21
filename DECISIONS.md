@@ -1153,7 +1153,9 @@ Previously formalized exact IDs are reused deterministically. Formalization rece
 the remaining fixed inventory and full-closure/prior-ID receipt; a closure exceeding
 its counted bound refuses before dispatch. Final global selected/omitted accounting
 includes every source item, with preliminary omissions superseded by later closure.
-There is still one construction lifecycle, one merge and one freeze.
+Prior accepted formulas and their immutable source records accompany reused closure
+IDs in later counted formalization. There is still one construction lifecycle,
+one merge and one freeze.
 
 Reconciliation shares the counted-window partitioner. No-obligation review traverses
 every bounded graph window and turns newly discovered gaps into stable obligations.
@@ -1164,3 +1166,26 @@ before dispatch. Unknown/unread requests, cycles, request-limit exhaustion or an
 oversized required set refuse without silently dropping context or obligations.
 Accepted range/window artifacts and the obligation ledger survive refusal. Model
 resolution remains a semantic judgment, not a deterministic coverage certificate.
+
+### GX27 — Unpaid planning shares execution's range admission
+
+`plan-extraction` reads selected PDFs and emits numeric per-paper ranges, input
+counts, coverage counts, construction-window scenarios and costs. Its provider
+has no generation implementation and its internal generation caps are zero;
+operator cap placeholders remain visible in the report. Provider counting is an
+explicit option after verifying its free status; local UTF-8 bytes/4 estimates are
+labelled separately. Initial extraction and planning share the counted range
+partitioner. Full profile output-density planning uses 1200 tokens/readable page
+(the prior bounded sample produced approximately 1150 including thinking).
+
+Cost scenarios use counted initial input plus that output density at configured
+stage rates. Initial full-output reservations are reported separately. Neither
+includes reconciliation, targeted corrections, retries or construction. Estimated
+construction windows use 1270 graph tokens/readable page plus an 8000-token window
+wrapper reservation; actual immutable graph, relevance closure and symbol growth
+must still pass runtime admission. `fits` is a range-size verdict, never approval
+of caps, semantic coverage, unread pages, or the complete downstream run.
+
+The full profile is available to both `extract` and native `run`; both preflight
+the same unset caps before provider creation. Construction therefore receives its
+32k catalogue and targeted policy through the native entrypoint.

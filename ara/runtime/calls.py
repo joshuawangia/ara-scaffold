@@ -14,7 +14,7 @@ from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical, digest
 from ara.runtime.logging import EventLog, now
-from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable
+from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable, extraction_range_plan
 from ara.runtime.providers import Provider, Response, stage_settings
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
@@ -276,9 +276,6 @@ class ModelCalls:
         corrections = self.config.get('extraction_targeted_corrections')
         if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
             raise ValueError('extraction_targeted_corrections must be 0 or 1')
-        maximum = self.config['extract_paper_max_output_tokens']
-        limit = self.config['model_context_token_bound']
-
         def run(inputs, pages, prefix, existing=(), allow_incomplete=False):
             nonlocal corrections
             known = {item.id for item in existing}
@@ -341,6 +338,8 @@ class ModelCalls:
                         set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
                 require(not pending_ids or (allow_incomplete and not data['coverage_complete'] and
                                            bool(data['unresolved_references'])), 'pending obligation requires incomplete coverage')
+                require(not obligations or bool(pending_ids) == bool(data['unresolved_references']),
+                        'unresolved obligation status mismatch')
                 request = data.get('context_request', {})
                 require(not request or (inputs.get('mode') == 'reconcile_ranges' and bool(pending_ids)),
                         'context request requires a pending obligation')
@@ -388,13 +387,6 @@ class ModelCalls:
         unresolved = []
         def segment(pages):
             inputs = {**paper.inputs(), 'pages': [dict(page=p.page, text=p.text) for p in pages]}
-            estimate = self.count_request('extract_paper', inputs)
-            if estimate.input_tokens + maximum > limit:
-                if len(pages) == 1:
-                    self.budget.stop('extract_paper context bound: single page cannot fit; no truncation', 'extract_paper')
-                mid = len(pages) // 2
-                segment(pages[:mid]); segment(pages[mid:])
-                return
             prefix = f'r{pages[0].page}-{pages[-1].page}'
             self.log.record('extraction_range', source_id=paper.source_id, prefix=prefix,
                             pages=[p.page for p in pages], input_hash=digest(canonical(inputs)))
@@ -414,7 +406,8 @@ class ModelCalls:
             ranges.append(result)
             unresolved.extend(obligations)
             save_immutable(self.log.path.parent / f'{paper.source_id}.{prefix}.rich.json', canonical(result.to_dict()))
-        segment(paper.readable_pages)
+        for pages, _ in extraction_range_plan(self, paper):
+            segment(pages)
         from ara.runtime.reconciliation import reconcile
         items, unresolved, resolutions = reconcile(self, paper, ranges, run)
         resolutions_json = canonical(resolutions)

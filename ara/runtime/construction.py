@@ -201,7 +201,11 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     for batch in batches:
         group = json.loads(batch.papers_json)
         window_items = {item['id']: item for paper in group for item in paper['items']}
-        inputs = {**inputs_for(group, batch.index, batch.allowance), 'plan_id': plan_id,
+        prior = [c.to_dict() for r in results for c in r.commitments.commitments]
+        target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
+        current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})
+        available = metadata['working_t_token_budget'] - current.input_tokens
+        inputs = {**inputs_for(group, batch.index, max(0, available)), 'plan_id': plan_id,
                   'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
         root_ids, selection_groups = selection_inventory(window_items)
         groups_by_id = {g['group_id']: g for g in selection_groups}
@@ -236,17 +240,17 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
                    'inventory': sorted(selected_ids - materialized), 'relevance': selection['relevance'], 'omitted': omitted}
         calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
         selected_ids -= materialized
-        inputs = {**inputs, 'closure': closure, 'papers': grouped(selected_ids)}
+        existing_commitments = {c.id: c.to_dict() for r in results for c in r.commitments.commitments
+                                if c.id in closure['already_formalized']}
+        inputs = {**inputs, 'closure': closure, 'papers': grouped(selected_ids),
+                  'existing_commitments': [existing_commitments[id] for id in closure['already_formalized']],
+                  'supporting_evidence': [items[id] for id in closure['already_formalized']]}
         if not selected_ids:
             result = BatchResult(batch.index, CommitmentSet(()), canonical({'omitted': omitted, 'closure': closure}))
             results.append(result)
             calls.log.record('build_t_batch_skipped', plan_id=plan_id, index=batch.index, omitted=omitted)
             save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
             continue
-        prior = [c.to_dict() for r in results for c in r.commitments.commitments]
-        target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
-        current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})
-        available = metadata['working_t_token_budget'] - current.input_tokens
         # Count exact copied evidence with a minimal formula envelope. Actual formulas
         # remain model-authored; the cumulative accepted result is checked separately.
         floor = [dict(id=id, text=evidence_text(items[id]), citation=items[id]['citation'],

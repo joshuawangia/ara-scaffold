@@ -105,6 +105,7 @@ extraction-full:
   fallbacks: []
   extraction_require_inference: true
   extraction_targeted_corrections: 1
+  extraction_planned_output_tokens_per_page: 1200
   construction_targeted_corrections: 1
   validation_attempts: 1
   token_cap: null

@@ -54,7 +54,7 @@ CASES = [
     ('extraction_sparse_image_detection', 'ara/runtime/extraction.py', 'if image_or_form and chars < 200:', 'if False:', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_fallback_marker', 'ara/runtime/extraction.py', "outcome = {**base, 'status': 'record only, not extracted'", "outcome = {**base, 'status': 'extracted'", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
     ('extraction_strict_refusal', 'ara/runtime/extraction.py', "if missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction.py::test_refuse_missing_and_no_publication'),
-    ('extraction_counted_oversize', 'ara/runtime/calls.py', 'if estimate.input_tokens + maximum > limit:', 'if False:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
+    ('extraction_counted_oversize', 'ara/runtime/extraction.py', 'return usage.input_tokens', 'return 0', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('extraction_provider_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'extract_paper':", 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
     ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
     ('extraction_actual_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
@@ -80,7 +80,7 @@ CASES = [
     ('extraction_cache_lineage_accounting', 'ara/runtime/export.py', "'accounting_complete': not unknown and not pending and not lineage_incomplete,", "'accounting_complete': not unknown and not pending,", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_local_inherited_totals', 'ara/runtime/export.py', "'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),", "'local_totals': totals(events),", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_enclosing_cap_warning', 'ara/runtime/extraction.py', "print('planned batch exceeds enclosing caps', flush=True)", 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
-    ('extraction_batch_profile', 'ara/runtime/cli.py', 'config.update(config[args.profile])', 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
+    ('extraction_batch_profile', 'ara/runtime/cli.py', 'if args.profile:\n                config.update(config[args.profile])', 'if args.profile:\n                pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
     ('extracted_t_output_capacity', 'ara/runtime/calls.py', "maximum = self.config['extracted_build_t_max_output_tokens']\n        identity", "maximum = self.config['max_output_tokens']\n        identity", 'tests/runtime/test_extraction_fix1.py::test_capacity53_maximum_through_cli'),
     ('build_t_retry_context', 'ara/runtime/calls.py', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)', "estimate = self.count_request(kind, inputs, maximum=maximum, admission='validation_feedback' not in inputs)", 'tests/runtime/test_extraction_fix1.py::test_build_t_retry_recounts_feedback'),
     ('extraction_import_idempotence', 'ara/runtime/extraction.py', "if any(e['stage'] == 'extraction_provenance_import' and", "if False and any(e['stage'] == 'extraction_provenance_import' and", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
@@ -173,6 +173,30 @@ CASES += [
     ('closure_size_admission', 'ara/runtime/construction.py', 'if closure_count.input_tokens > input_bound:', 'if False:', 'tests/runtime/test_evidence_windows.py::test_oversized_selected_closure_refuses_before_formalization'),
     ('requested_context', 'ara/runtime/reconciliation.py', "ids = tuple(sorted(request['pages']))", 'ids = ()', 'tests/runtime/test_evidence_windows.py::test_reconcile_over_context_with_requested_cross_window_evidence[True]'),
     ('bounded_graph_review', 'ara/runtime/reconciliation.py', 'for index, ids in enumerate(windows_for()):', 'for index, ids in enumerate([tuple(pages)]):', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
+]
+
+CASES += [
+    ('output_density_plan', 'ara/runtime/extraction.py', 'if density * len(pages) > maximum:', 'if False:', 'tests/runtime/test_extraction_plan.py::test_planned_ranges_use_output_density_and_keep_every_page'),
+]
+
+CASES += [
+    ('resolved_pending_status', 'ara/runtime/calls.py', "require(not obligations or bool(pending_ids) == bool(data['unresolved_references']),", 'require(True,', 'tests/runtime/test_evidence_windows.py::test_resolved_ledger_cannot_hide_remaining_reference'),
+]
+
+CASES += [
+    ('catalogue_preflight', 'ara/runtime/construction.py', "require(catalog_tokens + growth <= symbol_budget,", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_catalogue_growth_preflight_precedes_formalization'),
+]
+
+CASES += [
+    ('prior_closure_context', 'ara/runtime/construction.py', "'supporting_evidence': [items[id] for id in closure['already_formalized']]", "'supporting_evidence': []", 'tests/runtime/test_evidence_windows.py::test_overlapping_closures_include_prior_formulas_and_source_evidence'),
+]
+
+CASES += [
+    ('native_full_profile', 'ara/runtime/cli.py', "profile.add_argument('--profile', choices=('pilot', 'extraction-full'))", "profile.add_argument('--profile', choices=('pilot',))", 'tests/runtime/test_extraction_round4.py::test_full_profile_reaches_native_construction'),
+]
+
+CASES += [
+    ('root_measured_remaining_capacity', 'ara/runtime/construction.py', 'inputs_for(group, batch.index, max(0, available))', 'inputs_for(group, batch.index, batch.allowance)', 'tests/runtime/test_extraction_round4.py::test_two_rich_catalogues_share_global_capacity'),
 ]
 
 def main():

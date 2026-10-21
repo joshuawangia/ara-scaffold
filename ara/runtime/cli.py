@@ -33,7 +33,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--run-dir', type=Path)
     profile = run.add_mutually_exclusive_group()
     profile.add_argument('--smoke', action='store_true')
-    profile.add_argument('--profile', choices=('pilot',))
+    profile.add_argument('--profile', choices=('pilot', 'extraction-full'))
     run.add_argument('--provider', choices=('anthropic', 'mock'))
     run.add_argument('--topic')
     run.add_argument('--literature', type=Path)
@@ -50,6 +50,14 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
     extraction.add_argument('--profile', choices=('extraction', 'extraction-full'))
+    plan = sub.add_parser('plan-extraction')
+    plan.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
+    plan.add_argument('--manifest', type=Path, required=True)
+    plan.add_argument('--fulltext-dir', type=Path, required=True)
+    plan.add_argument('--run-dir', type=Path, required=True)
+    plan.add_argument('--paper-id', action='append', default=[])
+    plan.add_argument('--profile', choices=('extraction', 'extraction-full'), default='extraction-full')
+    plan.add_argument('--token-counter', choices=('local', 'provider'), default='local')
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -75,6 +83,15 @@ def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> Mo
     return ModelCalls(config, provider, log, Cache(Path(config['cache_dir'])), root, topic)
 
 
+def validate_profile_caps(config: dict, profile: str | None) -> None:
+    if profile != 'extraction-full':
+        return
+    missing_caps = [key for key in ('token_cap', 'cost_cap_usd', 'extraction_cost_cap_usd')
+                    if config.get(key) is None]
+    if missing_caps:
+        raise ValueError('operator must set extraction-full caps: ' + ', '.join(missing_caps))
+
+
 def main(argv: list[str] | None = None, *, engine_factory: Callable = native_engine,
          calls_factory: Callable = make_calls) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
@@ -83,15 +100,23 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'plan-extraction':
+            from ara.runtime.planning import plan_extraction
+            config = yaml.safe_load(args.config.read_text())
+            config.update(config[args.profile])
+            if args.run_dir.exists() and any(args.run_dir.iterdir()):
+                raise ValueError('new planning directory must be empty')
+            log = EventLog(args.run_dir / 'events.jsonl')
+            log.human('plan-extraction', json.dumps(raw_args), argv=raw_args, reported_minutes=args.human_minutes)
+            log.record('extraction_planning_started', config=config, counter=args.token_counter)
+            papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
+            report = plan_extraction(config, log, papers, ROOT, args.token_counter)
+            return 2 if report['totals']['refused'] else 0
         if args.command == 'extract':
             config = yaml.safe_load(args.config.read_text())
             if args.profile:
                 config.update(config[args.profile])
-            if args.profile == 'extraction-full':
-                missing_caps = [key for key in ('token_cap', 'cost_cap_usd', 'extraction_cost_cap_usd')
-                                if config.get(key) is None]
-                if missing_caps:
-                    raise ValueError('operator must set extraction-full caps: ' + ', '.join(missing_caps))
+            validate_profile_caps(config, args.profile)
             config.setdefault('validation_attempts', 3)
             if args.provider:
                 config['provider'] = args.provider
@@ -115,6 +140,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             selected_profile = 'smoke' if args.smoke else args.profile
             if selected_profile:
                 config.update(config[selected_profile])
+            validate_profile_caps(config, selected_profile)
             if args.smoke:
                 topic = args.topic if args.topic is not None else 'P Q'
                 literature = args.literature.read_text() if args.literature else (

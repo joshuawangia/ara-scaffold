@@ -166,7 +166,8 @@ and account separately. Use an isolated cache for the planned extraction run.
 
 For a full-run plan, use the separate `extraction-full` profile. It selects Opus
 in `stages.extraction.model`, disables fallbacks, requires a stated inference in
-an accepted aggregate paper, and allows one targeted correction per paper.
+an accepted aggregate paper, and allows one targeted correction per range or reconciliation response, within the
+shared paper-wide count and cost limits.
 Its enclosing token/cost caps and extraction cost cap are `null`: the operator
 must set all three before generation. The same profile is accepted by native `ara run --profile extraction-full` so its
 32k catalogue and construction correction policy also reach construction. Use it
@@ -366,3 +367,15 @@ Methodology exposes `measured_usage`, `unknown_usage_reservations` and
 `budget_accounted` for aggregate, local, inherited and extraction scopes. Legacy
 numeric totals remain budget-accounted for compatibility; unknown usage is not a
 measured invoice, and sibling-run campaign reservations require separate accounting.
+
+Extraction stops on the first terminal paper failure. The log and methodology
+retain the failed source and the sources not attempted; no completed literature
+or provenance sidecar is published. Initial extraction and graph review report
+missing context as `new_gaps`; only continuation of a supplied obligation may
+request pages or evidence. Each mode's response schema enforces this distinction.
+
+Partial extraction resume is unsupported. Preserve the original run directory:
+accepted range files and charged receipts are evidence, but cannot yet be safely
+imported as completed literature or skipped on a new run. A rerun into that
+directory refuses before provider construction. A fresh run may repay prior work;
+cross-run cache hits without origin receipts are not valid production provenance.

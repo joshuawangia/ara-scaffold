@@ -77,12 +77,26 @@ class ModelCalls:
     def requested_model(self, kind: str) -> str:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
 
+    def response_schema(self, kind: str, inputs: dict) -> dict | None:
+        if kind == 'search_evidence':
+            return None
+        schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+        if kind == 'extract_paper':
+            mode = inputs.get('original_mode') if inputs.get('mode') == 'targeted_correction' else inputs.get('mode')
+            reconciliation = mode == 'reconcile_ranges'
+            if not reconciliation or not inputs.get('obligations'):
+                for field in ('context_request', 'pending_obligation_ids', 'resolutions'):
+                    del schema['properties'][field]
+            if reconciliation:
+                del schema['properties']['empty_reason']
+        return schema
+
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
         if kind != 'search_evidence':
             # The service grammar is a compact projection. Show the model every
             # local constraint as well; the same complete prompt is logged/keyed.
-            schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+            schema = self.response_schema(kind, inputs)
             template += '\nLOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n' + canonical(schema)
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
@@ -143,8 +157,7 @@ class ModelCalls:
 
     def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
         template, prompt = self.render(kind, inputs)
-        schema = None if kind == 'search_evidence' else json.loads(
-            (self.root / 'schemas' / f'{kind}.json').read_text())
+        schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
         if kind == 'build_t_batch':
             maximum = self.config['extracted_build_t_max_output_tokens']
@@ -268,7 +281,7 @@ class ModelCalls:
             if kind == 'build_t_batch':
                 maximum = self.config['extracted_build_t_max_output_tokens']
         prompt = self.render(kind, inputs)[1]
-        schema = None if kind == 'search_evidence' else json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+        schema = self.response_schema(kind, inputs)
         estimate = self.provider.estimate(kind, prompt, schema, maximum)
         # The search reservation includes future tool iterations. Admission concerns
         # the counted initial context; each iteration is separately bounded by the service.
@@ -300,8 +313,7 @@ class ModelCalls:
         corrections = self.config.get('extraction_targeted_corrections')
         if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
             raise ValueError('extraction_targeted_corrections must be 0 or 1')
-        def run(inputs, pages, prefix, existing=(), allow_incomplete=False):
-            nonlocal corrections
+        def run(inputs, pages, prefix, existing=(), allow_incomplete=False, validate_context=None):
             known = {item.id for item in existing}
             def check(data):
                 require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
@@ -365,6 +377,10 @@ class ModelCalls:
                 request = data.get('context_request', {})
                 require(not request or (inputs.get('mode') == 'reconcile_ranges' and bool(pending_ids)),
                         'context request requires a pending obligation')
+                if request:
+                    require(bool(request['pages'] or request['evidence_ids']), 'unresolved obligation empty context request')
+                    if validate_context is not None:
+                        validate_context(request)
                 require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),
                         'obligation resolution lacks accepted evidence')
                 ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
@@ -385,7 +401,6 @@ class ModelCalls:
                     require(len(old) == len(candidate['items']), 'ambiguous correction inventory')
                 except (ValueError, KeyError, TypeError) as error:
                     raise Rejected('candidate cannot support targeted correction') from error
-                corrections -= 1
                 request = {**inputs, 'mode': 'targeted_correction',
                            'original_mode': inputs.get('mode'), 'candidate': candidate,
                            'validation_error': exc.feedback['error']}
@@ -401,7 +416,7 @@ class ModelCalls:
                     updates = {item['id']: item for item in patch['items']}
                     merged = {**patch, 'items': [updates.pop(id, item) for id, item in old.items()]}
                     merged['items'].extend(updates.values())
-                    schema = json.loads((self.root / 'schemas' / 'extract_paper.json').read_text())
+                    schema = self.response_schema('extract_paper', inputs)
                     Draft202012Validator(schema).validate(merged)
                     return check(merged)
                 return self._call_once('extract_paper', request, corrected, attempt=2)

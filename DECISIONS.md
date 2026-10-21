@@ -1252,3 +1252,50 @@ merged by description or marked complete to meet a cap. Earlier immutable eviden
 and all raw responses remain available; an unaccepted response is retained as a
 receipt rather than retroactively incorporated into the accepted ledger. This
 provides bounded refusal, not automatic collection resume or source fidelity.
+
+### GX30 — Mode-specific context requests and correction per response
+
+The extraction response schema is now specialized from request inputs at the
+single model boundary, shared by rendering, counting, dispatch/cache identity and
+local validation. Initial ranges and graph review without obligations cannot
+express context_request, pending_obligation_ids or resolutions. Only reconciliation
+with supplied obligations exposes those fields. Targeted correction inherits its
+original mode. Reconciliation cannot express a no-argument empty_reason disposition.
+This removes the observed mismatch where an initial response included an empty-array
+context_request object that the prompt forbade and local validation rejected.
+
+Initial ranges report missing cross-range context as new_gaps; runtime assigns
+stable obligations and traverses counted source/evidence windows. This retains the
+native obligation inventory and complete page-linked graph rather than adding a
+second context-fetch lifecycle or discarding requests. A model may still violate
+the wire; those responses remain charged, rejected and eligible for correction.
+Continuation request emptiness, unread/unknown references, cycle and request-count
+checks now run before acceptance, inside targeted recovery. Request keys sort both
+sets so reordered lists cannot evade cycle detection. Requested context still goes
+through counted admission, and capacity refusal retains obligations.
+
+One configured targeted correction applies to each range/reconciliation response,
+not once for the whole paper; this supersedes GX25's per-paper correction statement.
+There is no recursive correction. The existing finite paper-wide continuation and
+USD allowances still admit every attempt, including corrections, before dispatch.
+The observed first-range correction must not consume the recovery opportunity of
+a later range while paper allowance remains. Unchanged candidate items are retained,
+and the whole merged graph is validated under the original mode's schema.
+
+The corpus policy remains stop-on-paper-failure. A terminal exception records a
+failed outcome and an explicit stop receipt listing completed and not-attempted
+sources. Methodology exposes that receipt. No completed literature/sidecar is
+published, so native pilot provenance import cannot treat the failed corpus as
+complete. Bibliographic missing/partial-source policies remain separately explicit.
+
+Automatic partial resume is deferred under the task's small-native-path exception.
+There is no native range restore API: legacy range files have no pinned acceptance
+hash, an accepted correction receipt holds a patch, reconciliation has no restored
+queue/cursor, and provenance assembles every outcome event without attempt selection.
+A safe implementation must reconstruct and bind legacy accepted graphs to original
+receipts, preserve original and subsequent charges/allowances, restore obligations
+and turns, and select final outcomes without erasing failed attempts. Skipping files
+or replaying cross-run cache entries does not establish that provenance. Existing
+run directories therefore refuse before provider construction with an explicit
+resume limitation. Paid accepted evidence is preserved but not automatically reused;
+a fresh run can repay that work. No live extraction completion is claimed.

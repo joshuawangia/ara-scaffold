@@ -278,7 +278,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     if estimate['planned_batch_exceeds_enclosing_caps']:
         print('planned batch exceeds enclosing caps', flush=True)
     outcomes = []
-    for paper in papers:
+    for index, paper in enumerate(papers):
         reason = paper.unavailable
         prompt_bytes = len(calls.render('extract_paper', paper.inputs())[1].encode())
         calls.log.record('extraction_text_coverage', source_id=paper.source_id,
@@ -315,6 +315,11 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
             result = calls.extract_paper(paper)
         except Exception as exc:
             calls.log.record('extraction_outcome', **base, status='failed', reason=type(exc).__name__, items=[])
+            calls.log.record('extraction_stopped', policy='stop-on-paper-failure',
+                             failed_source_id=paper.source_id,
+                             completed=[o['source_id'] for o in outcomes],
+                             not_attempted=[p.source_id for p in papers[index + 1:]],
+                             reason=type(exc).__name__)
             raise  # Validation, provider and budget failures are never bibliographic success.
         outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted', **result.to_dict()}
         calls.log.record('extraction_outcome', **outcome)

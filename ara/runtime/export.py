@@ -79,6 +79,7 @@ def methodology(log_path: Path) -> str:
         'record_only': [{'source_id': p['source_id'], 'reason': p['reason']} for p in outcomes
                         if p['status'] == 'record only, not extracted'],
         'failed': [p['source_id'] for p in outcomes if p['status'] == 'failed'],
+        'stops': [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_stopped'],
         'origin': 'SYSTEM/MODEL',
         'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),
     }

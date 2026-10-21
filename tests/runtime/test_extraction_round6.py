@@ -222,7 +222,7 @@ def test_same_paper_reentry_does_not_reset_allowance(rig, monkeypatch):
 ])
 def test_invalid_paper_limits_refuse_before_dispatch(rig, monkeypatch, key, value):
     calls, _, paper, sent = chain(rig, monkeypatch, **{key: value})
-    with pytest.raises(ValueError, match='paper'):
+    with pytest.raises(ValueError, match=r'^(extraction_paper_|extraction_large_paper_limits |large paper )'):
         calls.extract_paper(paper)
     assert not sent
     assert not any(e['stage'] == 'call_start' for e in calls.log.read())

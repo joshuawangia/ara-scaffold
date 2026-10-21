@@ -76,7 +76,7 @@ def test_zero_inference_refused_without_correction(rig, monkeypatch):
     assert not (calls.log.path.parent / 'literature.extracted.txt').exists()
 
 
-def test_correction_allowance_is_shared_across_ranges(rig, monkeypatch):
+def test_each_range_has_one_correction_inside_paper_allowance(rig, monkeypatch):
     from ara.types import TokenUsage
     calls, provider, papers, *_ = rig
     calls.config.update(extraction_targeted_corrections=1, validation_attempts=3)
@@ -86,16 +86,18 @@ def test_correction_allowance_is_shared_across_ranges(rig, monkeypatch):
         return TokenUsage(input_tokens=200001 if len(data['pages']) > 1 else 100, output_tokens=maximum)
     def complete(kind, prompt, schema, maximum):
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1]); sent.append(data)
+        if data.get('mode') == 'reconcile_ranges':
+            return Response(response({**graph(), 'items': []}))
         value = graph(page=data['pages'][0]['page'])
         if data.get('mode') == 'targeted_correction': value['items'] = value['items'][:1]
         else: value['items'][0]['applies_to'] = ['q']
         return Response(response(value))
     monkeypatch.setattr(provider, 'estimate', estimate)
     monkeypatch.setattr(provider, 'complete', complete)
-    with pytest.raises(Rejected, match='invalid qualification relation'): extract(calls, (papers[0],))
-    assert len(sent) == 3
-    assert sum(d.get('mode') == 'targeted_correction' for d in sent) == 1
-    assert not (calls.log.path.parent / 'literature.extracted.txt').exists()
+    path = extract(calls, (papers[0],))
+    assert len(sent) == 5
+    assert sum(d.get('mode') == 'targeted_correction' for d in sent) == 2
+    assert path.exists()
 
 
 def test_correction_is_readmitted_before_dispatch(rig, monkeypatch):

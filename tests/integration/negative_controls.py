@@ -148,7 +148,7 @@ CASES += [
     ('nonzero_inference_acceptance', 'ara/runtime/calls.py', "require(any(item.kind == 'inference' for item in by_id.values()),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_refused_without_correction'),
     ('targeted_inventory_retained', 'ara/runtime/calls.py', "[updates.pop(id, item) for id, item in old.items()]", '[]', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-inferences]'),
     ('targeted_unchanged_refusal', 'ara/runtime/calls.py', "require(all(item != old.get(item['id']) for item in patch['items']),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
-    ('targeted_per_paper_limit', 'ara/runtime/calls.py', 'corrections -= 1', 'pass', 'tests/runtime/test_extraction_round3b.py::test_correction_allowance_is_shared_across_ranges'),
+    ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if not corrections:', "                if not corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
     ('qualification_local_guard', 'ara/runtime/calls.py', "require(not item.applies_to or item.kind in ('distinction', 'qualification'),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-relation]'),
 ]
 
@@ -227,6 +227,30 @@ CASES += [
     ('paper_boundary_cost', 'ara/runtime/extraction_budget.py',
      'self.start_cost = calls.budget.used_cost', 'self.start_cost = Decimal(0)',
      'tests/runtime/test_extraction_round6.py::test_multi_paper_allowances_reset_at_paper_boundary'),
+]
+
+CASES += [
+    ('mode_specific_context_wire', 'ara/runtime/calls.py',
+     "            if not reconciliation or not inputs.get('obligations'):", '            if False:',
+     'tests/runtime/test_context_request_fix.py::test_mode_contract_reaches_counter_prompt_and_wire'),
+    ('context_validation_before_acceptance', 'ara/runtime/calls.py',
+     '                        validate_context(request)', '                        pass',
+     'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance'),
+    ('correction_paper_limit', 'ara/runtime/extraction_budget.py',
+     'if self.attempts > self.continuation_limit:', 'if False:',
+     'tests/runtime/test_context_request_fix.py::test_correction_still_obeys_paper_allowance'),
+    ('context_cycle_order', 'ara/runtime/reconciliation.py',
+     "return canonical({'pages': sorted(request['pages']), 'evidence_ids': sorted(request['evidence_ids'])})",
+     'return canonical(request)',
+     'tests/runtime/test_context_request_fix.py::test_context_limit_and_reordered_cycle_can_correct[16]'),
+    ('context_empty_recovery', 'ara/runtime/calls.py',
+     "require(bool(request['pages'] or request['evidence_ids']), 'unresolved obligation empty context request')",
+     'pass',
+     'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance[bad_request0]'),
+    ('terminal_paper_policy', 'ara/runtime/extraction.py',
+     '            raise  # Validation, provider and budget failures are never bibliographic success.',
+     '            continue',
+     'tests/runtime/test_context_request_fix.py::test_terminal_failure_stops_corpus_and_pilot_import'),
 ]
 
 def main():

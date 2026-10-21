@@ -121,7 +121,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if args.provider:
                 config['provider'] = args.provider
             if args.run_dir.exists() and any(args.run_dir.iterdir()):
-                raise ValueError('new extraction directory must be empty; reuse the cache with a new directory')
+                raise ValueError('extraction resume is unsupported; preserve accepted artifacts and receipts; '
+                                 'a new run cannot reuse partial evidence with valid provenance')
             log = EventLog(args.run_dir / 'events.jsonl')
             log.human('extract', json.dumps(raw_args, ensure_ascii=False), argv=raw_args,
                       manifest=args.manifest.read_text(), reported_minutes=args.human_minutes)

@@ -41,7 +41,7 @@ def reconcile(calls, paper, ranges, run):
         return counted_windows(tuple(pages), count, limit, lambda: calls.budget.stop(
             'reconciliation indivisible evidence window exceeds context; obligations retained', 'extract_paper'))
 
-    def execute(ids, obligation=None, evidence_ids=(), requested=False):
+    def execute(ids, obligation=None, evidence_ids=(), requested=False, requests=None):
         nonlocal items, turn
         inputs, selected = inputs_for(ids, obligation, evidence_ids, requested)
         calls.count_request('extract_paper', inputs, admission=True)
@@ -50,8 +50,15 @@ def reconcile(calls, paper, ranges, run):
         calls.log.record('extraction_reconciliation_window', source_id=paper.source_id,
                          prefix=prefix, page_ids=list(ids), evidence_ids=[i.id for i in selected],
                          obligation_ids=[o['id'] for o in inputs['obligations']], input_hash=digest(canonical(inputs)))
+        def validate_context(request):
+            require(set(request['pages']) <= set(pages), 'reconciliation requests unread page')
+            require(set(request['evidence_ids']) <= {item.id for item in items},
+                    'reconciliation requests unknown evidence')
+            require(request_key(request) not in requests and len(requests) < max_requests,
+                    'unresolved obligation context request cycle or limit')
         result, new_gaps, request = run(inputs, tuple(pages[p] for p in ids), prefix,
-                                       existing=selected, allow_incomplete=True)
+                                       existing=selected, allow_incomplete=True,
+                                       validate_context=validate_context if obligation else None)
         new_obligations = record_new_obligations(calls.log, paper.source_id, prefix, turn, ids, new_gaps)
         obligations.extend(new_obligations)
         queue.extend(new_obligations)
@@ -73,7 +80,7 @@ def reconcile(calls, paper, ranges, run):
         for initial in windows_for(obligation):
             ids, evidence_ids, requested = initial, (), False
             while True:
-                result, request = execute(ids, obligation, evidence_ids, requested)
+                result, request = execute(ids, obligation, evidence_ids, requested, requests)
                 ledger = json.loads(result.resolutions_json)
                 if ledger:
                     resolutions.extend(ledger)
@@ -83,13 +90,9 @@ def reconcile(calls, paper, ranges, run):
                     break
                 if not request:
                     break
-                key = canonical(request)
-                require(key not in requests and len(requests) < max_requests,
-                        'unresolved obligation context request cycle or limit')
-                requests.add(key)
+                requests.add(request_key(request))
                 ids = tuple(sorted(request['pages']))
                 evidence_ids = tuple(request['evidence_ids'])
-                require(bool(ids) or bool(evidence_ids), 'unresolved obligation empty context request')
                 # Evidence requests carry their actual source pages too. The full
                 # requested set is admitted or refused; it is never silently trimmed.
                 ids = tuple(sorted(set(ids) | {p for item in items if item.id in evidence_ids
@@ -104,3 +107,7 @@ def reconcile(calls, paper, ranges, run):
     calls.log.record('extraction_obligations_resolved', source_id=paper.source_id,
                      obligations=obligations, resolutions=resolutions)
     return items, obligations, resolutions
+
+
+def request_key(request):
+    return canonical({'pages': sorted(request['pages']), 'evidence_ids': sorted(request['evidence_ids'])})

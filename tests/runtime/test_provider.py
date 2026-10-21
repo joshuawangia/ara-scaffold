@@ -202,6 +202,7 @@ def test_rich_nullable_enum_matches_provider_grammar():
         elif isinstance(value, list):
             for child in value: visit(child)
     visit(projected)
+    visit(schema)
     origin = schema['properties']['items']['items']['properties']['inference_origin']
     from jsonschema import Draft202012Validator, ValidationError
     Draft202012Validator(origin).validate(None)

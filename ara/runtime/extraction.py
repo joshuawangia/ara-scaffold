@@ -117,9 +117,12 @@ class PaperExtraction:
     source_id: str
     items: tuple[ExtractedItem, ...]
     schema_version: int = EXTRACTION_VERSION
+    obligations_json: str = '[]'
+    resolutions_json: str = '[]'
 
     def to_dict(self) -> dict:
         return {'schema_version': self.schema_version, 'source_id': self.source_id,
+                'obligations': json.loads(self.obligations_json), 'resolutions': json.loads(self.resolutions_json),
                 'items': [{**asdict(item), 'citation': item.citation} for item in self.items]}
 
 
@@ -227,7 +230,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     usage = TokenUsage(input_tokens=pages * per_page + readable * overhead, output_tokens=readable * maximum)
     estimate = {'papers': len(papers), 'readable_papers': readable, 'pages': pages,
                 'tokens_per_page': per_page, 'input_tokens': usage.input_tokens,
-                'output_token_allowance': usage.output_tokens, 'estimated_usd': float(calls.budget.cost(usage)),
+                'output_token_allowance': usage.output_tokens, 'estimated_usd': float(calls.budget.cost(usage, model=calls.requested_model('extract_paper'))),
                 'extraction_cap_usd': calls.config['extraction_cost_cap_usd'],
                 'run_cap_usd': calls.config['cost_cap_usd'],
                 'note': 'Planning estimate: pages times tokens/page plus prompt overhead and full output allowance; '
@@ -235,7 +238,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     estimate['run_token_cap'] = calls.config['token_cap']
     estimate['planned_batch_exceeds_enclosing_caps'] = (
         usage.input_tokens + usage.output_tokens + calls.budget.used_tokens > calls.config['token_cap'] or
-        calls.budget.cost(usage) + calls.budget.used_cost > calls.config['cost_cap_usd'])
+        calls.budget.cost(usage, model=calls.requested_model('extract_paper')) + calls.budget.used_cost > calls.config['cost_cap_usd'])
     calls.log.record('extraction_estimate', **estimate)
     print('Extraction estimate before dispatch: ' + canonical(estimate), flush=True)
     if estimate['planned_batch_exceeds_enclosing_caps']:

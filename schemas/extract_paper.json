@@ -134,6 +134,32 @@
           "inference_origin"
         ]
       }
+    },
+    "resolutions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "obligation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "obligation_id",
+          "evidence_ids"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

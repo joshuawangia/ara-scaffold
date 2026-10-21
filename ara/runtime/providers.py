@@ -91,6 +91,18 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
     at the runtime acceptance boundary.
     """
     original = json.loads(canonical(schema))
+    if original.get('title') == 'extract_paper_v2':
+        item = original['properties']['items']['items']
+        node = json.loads(canonical(item))
+        link = json.loads(canonical(item))
+        node['properties']['kind']['enum'].remove('inference')
+        for field in ('premise_ids', 'conclusion_id', 'qualification_ids', 'inference_origin'):
+            del node['properties'][field]
+            node['required'].remove(field)
+        link['properties']['kind'] = {'type': 'string', 'enum': ['inference']}
+        link['properties']['conclusion_id'] = {'type': 'string'}
+        link['properties']['inference_origin'] = {'type': 'string', 'enum': ['paper_stated']}
+        original['properties']['items']['items'] = {'oneOf': [node, link]}
     definitions = original.get('$defs', {})
     if encoded_formulas:
         # The larger batch grammar exceeds the service compiler's limit with AST alternatives.
@@ -143,6 +155,11 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
     return project(original)
 
 
+def stage_settings(config: dict, kind: str) -> dict:
+    overrides = config.get('stages', {}).get('extraction', {}) if kind == 'extract_paper' else {}
+    return {**config, **overrides}
+
+
 class AnthropicProvider:
     def __init__(self, config: dict, client: Any = None):
         if client is None:
@@ -150,18 +167,23 @@ class AnthropicProvider:
             # SDK retries can otherwise create unlogged, unreserved billable calls.
             client = Anthropic(max_retries=0)
         self.client, self.config, self.model = client, config, config['model']
-        fallbacks = config.get('fallbacks', ['claude-opus-4-8'])
-        if fallbacks != 'off' and not (isinstance(fallbacks, list) and fallbacks and
-                all(isinstance(model, str) and model.strip() == model and model for model in fallbacks)):
-            raise ValueError('fallbacks must be a nonempty list of model ids or off')
+        for settings in (config, stage_settings(config, 'extract_paper')):
+            fallbacks = settings.get('fallbacks', ['claude-opus-4-8'])
+            if fallbacks != 'off' and not (isinstance(fallbacks, list) and
+                    all(isinstance(model, str) and model.strip() == model and model for model in fallbacks)):
+                raise ValueError('fallbacks must be a list of model ids or off')
+
+    def model_for(self, kind: str) -> str:
+        return stage_settings(self.config, kind)['model']
 
     def request(self, kind: str, prompt: str, schema: dict | None, maximum: int) -> dict:
-        output = {'effort': self.config['effort']}
+        settings = stage_settings(self.config, kind)
+        output = {'effort': settings['effort']}
         if schema is not None:
             output['format'] = {'type': 'json_schema', 'schema': structured_schema(
                 schema, self.config.get('formula_output_depth', 2), encoded_formulas=kind == 'build_t_batch')}
-        request = {'model': self.model, 'max_tokens': maximum,
-                   'thinking': {'type': 'adaptive'}, 'output_config': output,
+        request = {'model': self.model_for(kind), 'max_tokens': maximum,
+                   'thinking': {'type': settings.get('thinking', 'adaptive')}, 'output_config': output,
                    'messages': [{'role': 'user', 'content': prompt}]}
         if kind == 'search_evidence':
             request['tools'] = [{'type': 'web_search_20260209', 'name': 'web_search',
@@ -184,8 +206,8 @@ class AnthropicProvider:
 
     def complete(self, kind: str, prompt: str, schema: dict | None, maximum: int) -> Response:
         request = self.request(kind, prompt, schema, maximum)
-        fallbacks = self.config.get('fallbacks', ['claude-opus-4-8'])
-        if fallbacks != 'off':
+        fallbacks = stage_settings(self.config, kind).get('fallbacks', ['claude-opus-4-8'])
+        if fallbacks and fallbacks != 'off':
             request.update(betas=['server-side-fallback-2026-06-01'],
                            fallbacks=[{'model': model} for model in fallbacks])
         if maximum > 8192:

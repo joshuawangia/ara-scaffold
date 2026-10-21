@@ -66,9 +66,15 @@ uv run ara run --smoke --run-dir runs/real-smoke
 
 Default provider/model: Anthropic / `claude-opus-5`, using the official SDK,
 adaptive thinking and structured output with strict local schema checks.
+Extraction alone uses `stages.extraction.model: claude-sonnet-5-5`, with
+`fallbacks: []`, high effort and adaptive thinking. Other stages remain on Opus 5.
+The stage model, effort, thinking and fallbacks partition caches; receipts and
+methodology disclose requested/served models and versions. Sonnet rates were
+verified on the provider pricing page on 2026-10-21: USD2/M input, USD10/M output,
+USD0.10/M cache reads, USD2.50/M five-minute writes and USD4/M one-hour writes.
 `fallbacks: [claude-opus-4-8]` explicitly enables the June 2026 refusal-fallback
 API: the primary remains Opus 5 and the server can re-run a refused call on Opus
-4.8. `fallbacks: off` disables both the fallback parameter and beta header. The
+4.8. `fallbacks: off` or `[]` disables both the fallback parameter and beta header. The
 old scalar `default` configuration is rejected; update existing runtime configs
 to the list form. A final refusal from the whole chain is logged and never retried.
 Logs retain the requested and actual serving models, switch blocks and fallback
@@ -164,7 +170,10 @@ reported/attacked views, with explicit attribution. There is no four-item or
 character cap. Each call allows 32000 output tokens (including thinking); actual
 output and coverage must be inspected. Context overflow or output exhaustion
 subdivides readable physical page ranges. Each range is saved immutably; a logged,
-counted reconciliation links ranges without rewriting their evidence. An oversized
+counted reconciliation links ranges without rewriting their evidence. Unresolved
+references receive stable range/page-linked obligation IDs. Reconciliation receives
+counted source pages and must map every obligation to accepted evidence IDs; an
+empty completion cannot discard an obligation. Artifacts retain both ledgers. An oversized
 single page or reconciliation stops explicitly rather than truncating evidence.
 Full graphs remain in `<id>.extraction.json`, range artifacts and log-backed v2
 literature. Item-level citations such as `p:pdf:1-2#p:r1-2:p` disambiguate separate
@@ -174,12 +183,16 @@ Generated literature uses one construction lifecycle, one freeze. Source IDs are
 sorted, content hashes pinned, and batches packed using provider-counted requests,
 not a fixed paper count. Defaults allow 70000 batch input tokens, 64000 output
 and a 16000-token shared-symbol reserve. Plans and their inputs partition caches.
-Each batch selects topic/audience-relevant complete connected arguments for a
-working T: selected premises, links and qualifications cannot be separated.
-Every omitted item needs a logged reason. Exact attributed evidence text and
+Each batch first asks the model for relevant roots and grouped omission reasons.
+Code computes `directional-prerequisites-v1`: selected conclusions include their
+supporting links and premises recursively, plus applicable qualifications and
+distinctions. Shared premises or qualifiers do not select other consequences.
+Roots, added IDs, graph hash and rule version are logged. A second model call
+formalizes exactly that fixed inventory. Every omitted item has a model-authored
+reason; code removes required prerequisites from preliminary omission groups. Exact attributed evidence text and
 citations survive into T; identical or contradictory formulas are not deduplicated.
-Shared symbol definitions and model-produced reuse bindings are logged and
-validated. Code never invents equivalences. Faithful formalisation and semantic
+Shared symbol definitions and model-produced semantic reuse decisions are logged
+and validated; code derives syntactic occurrence bindings and copies source text/citations. Code never invents equivalences. Faithful formalisation and semantic
 alignment remain model judgments requiring source inspection.
 
 The working T has a 100000-token counted downstream-input limit, with 8000 reserved
@@ -311,3 +324,10 @@ placeholder-only.
 Supply substantive topic/literature at runtime. Runs, caches, generated drafts and
 logs are gitignored and must never be committed. Credentials come only from the
 environment and must never be written or logged. See AGENTS.md and DECISIONS.md.
+
+Measured responses and usage are persisted before fallible validation/counting.
+A later failure prevents caching/freezing but retains the known bill and response.
+Methodology exposes `measured_usage`, `unknown_usage_reservations` and
+`budget_accounted` for aggregate, local, inherited and extraction scopes. Legacy
+numeric totals remain budget-accounted for compatibility; unknown usage is not a
+measured invoice, and sibling-run campaign reservations require separate accounting.

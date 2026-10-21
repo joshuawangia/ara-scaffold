@@ -146,11 +146,11 @@ def test_ambiguous_iteration_model_stops(rig):
         calls.formalise(p)
 
 
-@pytest.mark.parametrize('mode', ['default', [], [''], [1], None, True, 'claude-opus-4-8'])
+@pytest.mark.parametrize('mode', ['default', [''], [1], None, True, 'claude-opus-4-8'])
 def test_invalid_fallback_config_is_rejected(rig, mode):
     calls, _, _ = rig
     calls.config['fallbacks'] = mode
-    with pytest.raises(ValueError, match='nonempty list of model ids or off'):
+    with pytest.raises(ValueError, match='list of model ids or off'):
         AnthropicProvider(calls.config, SimpleNamespace())
 
 

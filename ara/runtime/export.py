@@ -42,14 +42,22 @@ def methodology(log_path: Path) -> str:
             payload = json.loads(event['payload_json'])
             inherited_indices.update(range(i + 1, min(len(events), i + 1 + payload['records'])))
             receipt_ids.append(payload.get('receipt_id'))
-    def totals(selected):
+    def raw_totals(selected):
         return {'cost_usd': round(sum(e['cost_usd'] for e in selected), 10),
                 'tokens': {key: sum(e['usage'][key] for e in selected) for key in (
                     'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
                 'model_calls': sum(e['label'] == 'MODEL' for e in selected),
                 'human_reported_minutes': sum(json.loads(e['payload_json']).get('reported_minutes', 0)
                                               for e in selected if e['label'] == 'HUMAN')}
+    def split_totals(selected):
+        measured = [e for e in selected if json.loads(e['payload_json']).get('accounting') != 'reservation_unknown_actual']
+        reserved = [e for e in selected if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual']
+        return {'measured_usage': raw_totals(measured), 'unknown_usage_reservations': raw_totals(reserved),
+                'budget_accounted': raw_totals(selected)}
+    def totals(selected):
+        return {**raw_totals(selected), **split_totals(selected)}
     extraction_summary = {
+        **split_totals(extraction_calls),
         'schema_versions': sorted({p.get('schema_version', 1) for p in outcomes if p.get('items')}),
         'item_counts_by_kind': {kind: sum(item['kind'] == kind for p in outcomes for item in p['items'])
                                 for kind in sorted({item['kind'] for p in outcomes for item in p['items']})},
@@ -75,10 +83,12 @@ def methodology(log_path: Path) -> str:
         'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),
     }
     summary = {
+        **split_totals(events),
         'extraction': extraction_summary,
         'construction': {'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
                          'batches': sum(e['stage'] == 'build_t_batch_accepted' for e in events),
-                         'freezes': sum(e['stage'] == 'commitments_frozen' for e in events)},
+                         'freezes': sum(e['stage'] == 'commitments_frozen' for e in events),
+                         'closure': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_closure']},
         'accounting_complete': not unknown and not pending and not lineage_incomplete,
         'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),
         'inherited_totals': totals([e for i, e in enumerate(events) if i in inherited_indices]),

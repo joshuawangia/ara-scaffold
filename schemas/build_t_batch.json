@@ -1,33 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "build_t_batch_v2",
+  "title": "build_t_batch_v3",
   "type": "object",
   "properties": {
     "commitments": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/commitment"
-      }
-    },
-    "omitted": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "evidence_id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "reason": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "evidence_id",
-          "reason"
-        ],
-        "additionalProperties": false
       }
     },
     "new_symbols": {
@@ -75,7 +54,7 @@
         "additionalProperties": false
       }
     },
-    "bindings": {
+    "alignments": {
       "type": "array",
       "items": {
         "type": "object",
@@ -84,19 +63,14 @@
             "type": "string",
             "minLength": 1
           },
-          "evidence_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "minItems": 1,
-            "uniqueItems": true
+          "reason": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
           "name",
-          "evidence_ids"
+          "reason"
         ],
         "additionalProperties": false
       }
@@ -104,9 +78,8 @@
   },
   "required": [
     "commitments",
-    "omitted",
     "new_symbols",
-    "bindings"
+    "alignments"
   ],
   "additionalProperties": false,
   "$defs": {
@@ -120,22 +93,12 @@
             "const": "open"
           }
         },
-        "text": {
-          "type": "string",
-          "minLength": 1
-        },
-        "citation": {
-          "type": "string",
-          "minLength": 1
-        },
         "formula": {
           "$ref": "#/$defs/formula"
         }
       },
       "required": [
         "id",
-        "text",
-        "citation",
         "formula"
       ],
       "additionalProperties": false

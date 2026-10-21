@@ -16,7 +16,8 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v2'
+PLAN_VERSION = 'rich-working-t-v3'
+CLOSURE_VERSION = 'directional-prerequisites-v1'
 
 
 @dataclass(frozen=True)
@@ -48,13 +49,25 @@ def evidence_dependencies(items: dict[str, dict]) -> dict[str, set[str]]:
     deps = {id: set() for id in items}
     for id, item in items.items():
         if item['kind'] == 'inference':
-            group = {id, *item['premise_ids'], item['conclusion_id'], *item['qualification_ids']}
-            for member in group:
-                deps[member].update(group - {member})
+            deps[id].update([*item['premise_ids'], item['conclusion_id'], *item['qualification_ids']])
+            deps[item['conclusion_id']].add(id)
+        # Applicable qualifiers are prerequisites; they never drag in other targets.
         for target in item['applies_to']:
-            deps[id].add(target)
             deps[target].add(id)
     return deps
+
+
+def prerequisite_closure(items: dict[str, dict], roots: list[str]) -> set[str]:
+    from ara.runtime.calls import require
+    require(set(roots) <= set(items), 'unknown selection root')
+    dependencies = evidence_dependencies(items)
+    selected = set(roots)
+    pending = list(roots)
+    while pending:
+        for id in dependencies[pending.pop()] - selected:
+            selected.add(id)
+            pending.append(id)
+    return selected
 
 
 def formula_symbols(formula, bound: frozenset[str] = frozenset()):
@@ -79,7 +92,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     all_items = [item for p in usable for item in p['items']]
     require(len({i['id'] for i in all_items}) == len(all_items), 'duplicate evidence id')
     require(len({i['citation'] for i in all_items}) == len(all_items), 'duplicate evidence citation')
-    metadata = {'version': PLAN_VERSION, 'sources': [
+    metadata = {'version': PLAN_VERSION, 'closure_version': CLOSURE_VERSION, 'sources': [
         {'source_id': p['source_id'], 'content_hash': digest(canonical(p))} for p in papers],
         'topic': calls.topic, 'audience': audience,
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
@@ -128,16 +141,34 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
         dependencies = evidence_dependencies(items)
         inputs = {**inputs_for(group, batch.index, batch.allowance), 'plan_id': plan_id,
                   'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
+        def select(data):
+            roots = data['roots']
+            require(bool(roots) and len(set(roots)) == len(roots) and set(roots) <= set(items), 'invalid selection roots')
+            require(bool(data['relevance'].strip()), 'empty selection reason')
+            omitted = [dict(evidence_id=id, reason=group['reason']) for group in data['omissions'] for id in group['evidence_ids']]
+            excluded = {o['evidence_id'] for o in omitted}
+            require(len(omitted) == len(excluded), 'duplicate omission id')
+            require(not set(roots) & excluded and set(roots) | excluded == set(items), 'working T evidence inventory mismatch')
+            require(all(o['reason'].strip() for o in omitted), 'empty omission reason')
+            return data, omitted
+        selection, omitted = calls.call('select_t_roots', inputs, select)
+        selected_ids = prerequisite_closure(items, selection['roots'])
+        require(all(dependencies[id] <= selected_ids for id in selected_ids), 'working T drops premise/link/qualification')
+        omitted = [o for o in omitted if o['evidence_id'] not in selected_ids]
+        closure = {'rule_version': CLOSURE_VERSION, 'graph_hash': digest(canonical(items)),
+                   'roots': selection['roots'], 'added_ids': sorted(selected_ids - set(selection['roots'])),
+                   'inventory': sorted(selected_ids), 'relevance': selection['relevance'], 'omitted': omitted}
+        calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
+        inputs = {**inputs, 'closure': closure, 'papers': [
+            {**paper, 'items': [i for i in paper['items'] if i['id'] in selected_ids]} for paper in group]}
         # The actual growing catalogue and plan identity are counted again, including retries.
         def check(data):
-            commitments = CommitmentSet.from_dict({'commitments': data['commitments']})
+            ids = [c['id'] for c in data['commitments']]
+            require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
+            commitments = CommitmentSet.from_dict({'commitments': [
+                {**c, 'text': evidence_text(items[c['id']]), 'citation': items[c['id']]['citation']}
+                for c in data['commitments']]})
             selected = {c.id for c in commitments.commitments}
-            omitted = data['omitted']
-            require(len({o['evidence_id'] for o in omitted}) == len(omitted), 'duplicate omission id')
-            excluded = {o['evidence_id'] for o in omitted}
-            require(not selected & excluded and selected | excluded == set(items), 'working T evidence inventory mismatch')
-            require(all(o['reason'].strip() for o in omitted), 'empty omission reason')
-            require(all(dependencies[id] <= selected for id in selected), 'working T drops premise/link/qualification')
             for c in commitments.commitments:
                 require(c.citation == items[c.id]['citation'], 'T citation not in extracted literature')
                 # Text carries attribution and provenance from immutable evidence, not a lossy rewrite.
@@ -146,16 +177,18 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             names = [s['name'] for s in symbols + data['new_symbols']]
             require(len(set(names)) == len(names), 'duplicate symbol definition')
             catalog = {s['name']: s for s in symbols + data['new_symbols']}
-            bindings = data['bindings']
-            require(len({b['name'] for b in bindings}) == len(bindings), 'duplicate symbol binding')
-            bound = {b['name']: set(b['evidence_ids']) for b in bindings}
             used = {}
             for c in commitments.commitments:
                 for name, kind, arity in formula_symbols(c.formula):
                     require(name in catalog, 'undeclared formula symbol')
                     require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity, 'symbol signature mismatch')
                     used.setdefault(name, set()).add(c.id)
-            require(bound == used, 'symbol alignment evidence mismatch')
+            alignments = data['alignments']
+            aligned = [a['name'] for a in alignments]
+            valid_alignments = (len(set(aligned)) == len(aligned) and
+                set(aligned) == set(used) & {s['name'] for s in symbols} and all(a['reason'].strip() for a in alignments))
+            require(valid_alignments, 'symbol alignment evidence mismatch')
+            bindings = [dict(name=name, evidence_ids=sorted(ids)) for name, ids in sorted(used.items())]
             for symbol in data['new_symbols']:
                 require(bool(symbol['definition'].strip()) and set(symbol['evidence_ids']) <= selected and
                         bool(symbol['evidence_ids']), 'symbol definition lacks evidence')
@@ -167,7 +200,8 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             without = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
             with_catalog = calls.count_request('build_t_batch', catalog_inputs)
             require(with_catalog.input_tokens - without.input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
-            return BatchResult(batch.index, commitments, canonical(data))
+            return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
+                'bindings': bindings, 'omitted': omitted, 'closure': closure}))
         result = calls.call('build_t_batch', inputs, check)
         data = json.loads(result.receipt_json)
         symbols += data['new_symbols']

@@ -33,7 +33,7 @@ CASES = [
     ('provider_not_projection', 'ara/runtime/providers.py', "'allOf', 'not'", "'allOf'", 'tests/runtime/test_provider.py::test_live_observed_not_constraint_projected_but_locally_enforced'),
     ('fallback_header', 'ara/runtime/providers.py', "betas=['server-side-fallback-2026-06-01']", "betas=['server-side-fallback-2026-07-01']", 'tests/runtime/test_fallbacks.py::test_fallback_request_shape'),
     ('fallback_config_validation', 'ara/runtime/providers.py', "if fallbacks != 'off' and not (", 'if False and not (', 'tests/runtime/test_fallbacks.py::test_invalid_fallback_config_is_rejected'),
-    ('fallback_cache', 'ara/runtime/calls.py', "'fallbacks': self.config.get('fallbacks', ['claude-opus-4-8'])", "'fallbacks': 'off'", 'tests/runtime/test_fallbacks.py::test_fallback_mode_partitions_cache'),
+    ('fallback_cache', 'ara/runtime/calls.py', "'fallbacks': stage_settings(self.config, kind).get('fallbacks', ['claude-opus-4-8'])", "'fallbacks': 'off'", 'tests/runtime/test_fallbacks.py::test_fallback_mode_partitions_cache'),
     ('fallback_array', 'ara/runtime/providers.py', "fallbacks=[{'model': model} for model in fallbacks]", "fallbacks='default'", 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[explicit]'),
     ('served_model_price', 'ara/runtime/budget.py', "served_model = raw['model']", "served_model = self.config['model']", 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology[False-True]'),
     ('fallback_iterations_price', 'ara/runtime/budget.py', "model = iteration.get('model') or served_model", "model = self.config['model']", 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology[True-True]'),
@@ -44,7 +44,7 @@ CASES = [
     ('fallback_disclosure', 'ara/runtime/export.py', "for e, p in routing if p.get('fallback_used')", 'for e, p in routing if False', 'tests/runtime/test_fallbacks.py::test_fallback_billing_logging_and_methodology'),
     ('fallback_rate_validation', 'ara/runtime/budget.py', "for rates in config['pricing'].values():", 'for rates in [self.rates]:', 'tests/runtime/test_fallbacks.py::test_fallback_rates_are_validated'),
     ('ambiguous_iteration', 'ara/runtime/budget.py', "if fallback and not iteration.get('model'):", 'if False:', 'tests/runtime/test_fallbacks.py::test_ambiguous_iteration_model_stops'),
-    ('fallback_off', 'ara/runtime/providers.py', "if fallbacks != 'off':", 'if True:', 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[off]'),
+    ('fallback_off', 'ara/runtime/providers.py', "if fallbacks and fallbacks != 'off':", 'if True:', 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[off]'),
     ('extraction_schema', 'ara/runtime/calls.py', 'Draft202012Validator(schema).validate(data)', "None if kind == 'extract_paper' else Draft202012Validator(schema).validate(data)", 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[extra]'),
     ('extraction_attribution', 'schemas/extract_paper.json', '"author_claim",', '"P", "author_claim",', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[attribution]'),
     ('extraction_source', 'ara/runtime/calls.py', "require(data['source_id'] == paper.source_id,", 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[source]'),
@@ -56,7 +56,7 @@ CASES = [
     ('extraction_strict_refusal', 'ara/runtime/extraction.py', "if missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction.py::test_refuse_missing_and_no_publication'),
     ('extraction_counted_oversize', 'ara/runtime/calls.py', 'if estimate.input_tokens + maximum > limit:', 'if False:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('extraction_provider_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'extract_paper':", 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
-    ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
+    ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
     ('extraction_actual_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
     ('extraction_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", "attempts = 1 if kind == 'extract_paper' else self.config.get('validation_attempts', 1)", 'tests/runtime/test_extraction.py::test_extraction_retry_and_reservation'),
     ('extraction_model_logging', 'ara/runtime/calls.py', "self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)", "None if kind == 'extract_paper' else self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
@@ -66,7 +66,7 @@ CASES = [
     ('extraction_provenance_integrity', 'ara/runtime/extraction.py', "if events[-1]['stage'] != 'extraction_completed' or complete['literature_sha256'] != digest(text) or assemble(outcomes) != text:", 'if False:', 'tests/runtime/test_extraction.py::test_provenance_integrity'),
     ('extraction_cli_import', 'ara/runtime/cli.py', 'import_provenance(log, provenance)', 'pass', 'tests/runtime/test_extraction.py::test_extract_cli_to_build_t_native_path'),
     ('extraction_ai_label', 'ara/runtime/cli.py', 'literature=literature if args.literature is not None and not provenance else None,', 'literature=literature if args.literature is not None else None,', 'tests/runtime/test_extraction.py::test_extract_cli_to_build_t_native_path'),
-    ('extraction_t_citation', 'ara/runtime/construction.py', "require(c.citation == items[c.id]['citation'],", 'require(True,', 'tests/runtime/test_extraction.py::test_build_t_cannot_cite_fallback_or_invented_page'),
+    ('extraction_t_citation', 'ara/runtime/construction.py', "require(c.citation == items[c.id]['citation'],", 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[citation]'),
     ('extraction_no_record_only_t', 'ara/runtime/calls.py', "require(bool(allowed), 'no extracted claims available to build T')", 'pass', 'tests/runtime/test_extraction.py::test_record_only_cannot_build_t'),
     ('extraction_estimate', 'ara/runtime/extraction.py', 'input_tokens=pages * per_page + readable * overhead', 'input_tokens=readable * overhead', 'tests/runtime/test_extraction.py::test_estimate_only_never_dispatches'),
     ('build_t_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'build_t':", 'tests/runtime/test_extraction_fix1.py::test_build_t_counted_context_refusal'),
@@ -92,12 +92,12 @@ CASES = [
     ('rich_no_summary_cap', 'schemas/extract_paper.json', '"text": {\n            "type": "string",', '"text": {\n            "maxLength": 400,\n            "type": "string",', 'tests/runtime/test_extraction_rich.py::test_no_compact_summary_limit'),
     ('rich_range_reconciliation', 'ara/runtime/calls.py', 'if len(ranges) > 1 or unresolved:', 'if False:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('strict_partial', 'ara/runtime/extraction.py', "if paper.affected_pages and missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction_rich.py::test_strict_partial_cli'),
-    ('rich_inventory', 'ara/runtime/construction.py', 'require(not selected & excluded and selected | excluded == set(items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[inventory]'),
-    ('rich_dependency_closure', 'ara/runtime/construction.py', 'require(all(dependencies[id] <= selected for id in selected),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[qualification]'),
-    ('rich_attribution', 'ara/runtime/construction.py', 'require(c.text == evidence_text(items[c.id]),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[attribution]'),
+    ('rich_inventory', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[inventory]'),
+    ('rich_dependency_closure', 'ara/runtime/construction.py', 'require(all(dependencies[id] <= selected_ids for id in selected_ids),', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[closure]'),
+    ('rich_attribution', 'ara/runtime/construction.py', 'require(c.text == evidence_text(items[c.id]),', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[attribution]'),
     ('rich_symbol_unique', 'ara/runtime/construction.py', 'require(len(set(names)) == len(names),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[duplicate_symbol]'),
     ('rich_symbol_signature', 'ara/runtime/construction.py', "require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[symbol_arity]'),
-    ('rich_symbol_alignment', 'ara/runtime/construction.py', 'require(bound == used,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[binding]'),
+    ('rich_symbol_alignment', 'ara/runtime/construction.py', 'require(valid_alignments,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[binding]'),
     ('rich_omission_reason', 'ara/runtime/construction.py', "require(all(o['reason'].strip() for o in omitted),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[omission_reason]'),
     ('rich_working_allowance', 'ara/runtime/construction.py', 'require(measured.input_tokens - blank.input_tokens <= batch.allowance,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[working]'),
     ('rich_downstream_admission', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'propose_targets':", 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[downstream]'),
@@ -120,6 +120,27 @@ CASES.append(('rich_nullable_provider_schema', 'schemas/extract_paper.json', '"t
 CASES += [('batch_wire_grammar', 'ara/runtime/providers.py', "encoded_formulas=kind == 'build_t_batch'", 'encoded_formulas=False', 'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'), ('batch_wire_decode', 'ara/runtime/calls.py', "item['formula'] = json.loads(item['formula'])", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'), ('batch_wire_invalid_json', 'ara/runtime/calls.py', "raise Rejected('invalid encoded formula JSON') from exc", 'raise', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
 
 CASES.append(('batch_bound_variables', 'ara/runtime/construction.py', "require(term.kind != 'variable' or term.name in bound,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_batch_variables_cannot_bypass_symbol_contract[False]'))
+
+CASES += [
+    ('directional_shared_branch', 'ara/runtime/construction.py', "deps[item['conclusion_id']].add(id)", "deps[item['conclusion_id']].add(id)\n            for premise in item['premise_ids']: deps[premise].add(id)", 'tests/runtime/test_extraction_round3.py::test_directional_closure_shared_premise_and_qualifier'),
+    ('directional_shared_qualifier', 'ara/runtime/construction.py', 'deps[target].add(id)', 'deps[target].add(id); deps[id].add(target)', 'tests/runtime/test_extraction_round3.py::test_directional_closure_shared_premise_and_qualifier'),
+    ('reconciliation_obligation_inventory', 'ara/runtime/calls.py', "set(resolved_ids) == {o['id'] for o in obligations}", 'True', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[False]'),
+    ('reconciliation_source_pages', 'ara/runtime/calls.py', "[dict(page=p.page, text=p.text) for p in paper.readable_pages] if unresolved else []", '[]', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[True]'),
+    ('measured_before_validation', 'ara/runtime/calls.py', "self.log.record('response_received', kind=kind, cache_key=key,", "self.log.record('unrecorded_response', kind=kind, cache_key=key,", 'tests/runtime/test_extraction_round3.py::test_measured_response_survives_followup_count_failure'),
+    ('measured_count_failure', 'ara/runtime/calls.py', "self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete'", "self._event(kind, prompt, None, estimate, self.budget.cost(estimate), start, cached, 'incomplete'", 'tests/runtime/test_extraction_round3.py::test_build_count_failure_preserves_measured_raw_receipt'),
+    ('extraction_stage_model', 'ara/runtime/providers.py', "return stage_settings(self.config, kind)['model']", "return self.model", 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
+    ('extraction_stage_cache', 'ara/runtime/calls.py', 'identity, self.requested_model(kind), schema or {}', 'identity, self.provider.model, schema or {}', 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
+    ('accounting_split', 'ara/runtime/export.py', "'measured_usage': raw_totals(measured)", "'measured_usage': raw_totals(selected)", 'tests/runtime/test_extraction_round3.py::test_accounting_separates_reservations'),
+    ('node_wire_shape', 'ara/runtime/providers.py', "if original.get('title') == 'extract_paper_v2':", 'if False:', 'tests/runtime/test_extraction_round3.py::test_extraction_wire_has_unambiguous_nodes'),
+    ('fixed_formalization_inventory', 'ara/runtime/construction.py', "require(len(set(ids)) == len(ids) and set(ids) == selected_ids,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[qualification]'),
+]
+
+CASES += [
+    ('stage_reservation_price', 'ara/runtime/calls.py', 'self.budget.before(estimate, kind, model=self.requested_model(kind))', 'self.budget.before(estimate, kind)', 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
+    ('known_terminal_log_failure', 'ara/runtime/calls.py', 'if received:', 'if False:', 'tests/runtime/test_extraction_round3.py::test_known_usage_survives_parsing_or_terminal_log_failure[logging]'),
+]
+
+CASES.append(('reconciliation_resolution_evidence', 'ara/runtime/calls.py', "require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),", 'require(True,', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[unknown]'))
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

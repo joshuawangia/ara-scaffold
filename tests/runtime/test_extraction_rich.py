@@ -51,7 +51,7 @@ def rich_calls(rig, monkeypatch):
     path = extract(calls, (papers[0],))
     def complete(kind, prompt, schema, maximum):
         provider.calls += 1
-        assert kind == 'build_t_batch'
+        assert kind in ('select_t_roots', 'build_t_batch')
         return Response(response(batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))))
     monkeypatch.setattr(provider, 'complete', complete)
     return calls, provider, path
@@ -62,34 +62,33 @@ def rich_calls(rig, monkeypatch):
 def test_invalid_working_batch_refused_before_freeze(rig, monkeypatch, case):
     from ara.runtime.providers import Response
     from ara.runtime.calls import Rejected
-    from ara.runtime.orchestration import prepare
+    from ara.runtime.orchestration import prepare_commitments
     from ara.bank import load_bank
     from rich_fixture import batch_response
     calls, provider, path = rich_calls(rig, monkeypatch)
     def complete(kind, prompt, schema, maximum):
         value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        if kind == 'select_t_roots':
+            if case == 'inventory': value['omissions'] = [dict(evidence_ids=['unknown'], reason='P')]
+            if case == 'omission_reason':
+                id = value['roots'].pop()
+                value['omissions'] = [dict(evidence_ids=[id], reason=' ')]
+            return Response(response(value))
         if case == 'duplicate_id': value['commitments'].append(value['commitments'][0])
         if case == 'duplicate_symbol': value['new_symbols'].append(value['new_symbols'][0])
-        if case == 'duplicate_citation': value['commitments'][1]['citation'] = value['commitments'][0]['citation']
+        if case == 'duplicate_citation': value['commitments'][0]['citation'] = 'P'
         if case == 'unknown_symbol': value['commitments'][0]['formula']['name'] = 'Q_Q'
         if case == 'symbol_arity': value['new_symbols'][0]['arity'] = 1
-        if case == 'binding': value['bindings'][0]['evidence_ids'].pop()
+        if case == 'binding': value['alignments'] = [dict(name='unknown', reason='P')]
         if case == 'qualification':
-            item = value['commitments'].pop(5)
-            value['omitted'].append({'evidence_id': item['id'], 'reason': 'P'})
+            missing = value['commitments'].pop(5)['id']
             for symbol in value['new_symbols']:
-                symbol['evidence_ids'] = [id for id in symbol['evidence_ids'] if id != item['id']]
-            for binding in value['bindings']:
-                binding['evidence_ids'] = [id for id in binding['evidence_ids'] if id != item['id']]
-        if case == 'inventory': value['omitted'].append({'evidence_id': 'unknown', 'reason': 'P'})
+                symbol['evidence_ids'] = [id for id in symbol['evidence_ids'] if id != missing]
         if case == 'attribution': value['commitments'][0]['text'] = 'P'
-        if case == 'omission_reason':
-            value['omitted'] = [{'evidence_id': c['id'], 'reason': ' '} for c in value['commitments']]
-            value['commitments'] = []; value['bindings'] = []; value['new_symbols'] = []
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     with pytest.raises(Rejected):
-        prepare(calls, load_bank(ROOT / 'bank'), path.read_text(), 'P')
+        prepare_commitments(calls, load_bank(ROOT / 'bank'), path.read_text(), 'P')
     assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())
     assert not (calls.log.path.parent / 'commitments.json').exists()
 
@@ -162,7 +161,7 @@ def test_page_ranges_and_logged_reconciliation(rig, monkeypatch):
     path = extract(calls, (paper,))
     items = json.loads(path.read_text()[len(HEADER):])['papers'][0]['items']
     assert len(items) == 16 and len({x['id'] for x in items}) == 16
-    assert [x['pages'][0]['page'] for x in seen if 'pages' in x] == [1, 2]
+    assert [x['pages'][0]['page'] for x in seen if x.get('pages')] == [1, 2]
     assert seen[-1]['mode'] == 'reconcile_ranges'
     assert len([e for e in calls.log.read() if e['label'] == 'MODEL']) == 3
     assert len(list(calls.log.path.parent.glob('p.r*.rich.json'))) == 2
@@ -206,7 +205,7 @@ def test_plan_identity_and_source_order(rig, monkeypatch):
     assert calls.build_t(text, 'P') == first
     plans = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'build_t_plan']
     assert plans[-1]['plan_id'] != plan['plan_id']
-    assert provider.calls == 3  # extraction plus two differently keyed constructions
+    assert provider.calls == 5  # extraction plus two selection/formalization lifecycles
     assert plans[-1]['plan']['sources'][0]['content_hash'] == plan['plan']['sources'][0]['content_hash']
 
 
@@ -312,6 +311,7 @@ def test_encoded_batch_formula_still_requires_local_validation(rig, monkeypatch,
     calls, provider, path = rich_calls(rig, monkeypatch)
     def complete(kind, prompt, schema, maximum):
         value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        if kind == 'select_t_roots': return Response(response(value))
         for c in value['commitments']:
             c['formula'] = canonical(c['formula']) if valid else 'P'
         return Response(response(value))
@@ -336,12 +336,14 @@ def test_batch_variables_cannot_bypass_symbol_contract(rig, monkeypatch, locally
     calls, provider, path = rich_calls(rig, monkeypatch)
     def complete(kind, prompt, schema, maximum):
         value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        if kind == 'select_t_roots': return Response(response(value))
         formula = {'op': 'predicate', 'name': 'F', 'terms': [{'kind': 'variable', 'name': 'x'}]}
         if locally_bound: formula = {'op': 'forall', 'variable': 'x', 'args': [formula]}
+        if kind == 'select_t_roots': return Response(response(value))
         for c in value['commitments']: c['formula'] = formula
         ids = [c['id'] for c in value['commitments']]
         value['new_symbols'] = [dict(name='F', kind='predicate', arity=1, definition='F(x)', evidence_ids=ids)]
-        value['bindings'] = [dict(name='F', evidence_ids=ids)]
+        value['alignments'] = []
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     if locally_bound:

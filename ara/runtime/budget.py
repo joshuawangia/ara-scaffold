@@ -99,13 +99,13 @@ class Budget:
         return sum((Decimal(str(e['cost_usd'])) for e in self.log.read()
                     if e['stage'] == 'extract_paper' and e['label'] == 'MODEL'), Decimal(0))
 
-    def before(self, usage: TokenUsage, stage: str) -> None:
-        if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage) > Decimal(str(
+    def before(self, usage: TokenUsage, stage: str, model: str | None = None) -> None:
+        if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(
                 self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
             self.stop('extraction cost cap: request reservation exceeds remaining cost', stage)
         if self.used_tokens + tokens(usage) > self.config['token_cap']:
             self.stop('token cap: request reservation exceeds remaining tokens', stage)
-        if self.used_cost + self.cost(usage) > Decimal(str(self.config['cost_cap_usd'])):
+        if self.used_cost + self.cost(usage, model=model) > Decimal(str(self.config['cost_cap_usd'])):
             self.stop('cost cap: request reservation exceeds remaining cost', stage)
 
     def charge(self, usage: TokenUsage, cost: Decimal) -> None:

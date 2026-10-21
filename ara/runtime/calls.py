@@ -15,7 +15,7 @@ from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical, digest
 from ara.runtime.logging import EventLog, now
 from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable
-from ara.runtime.providers import Provider, Response
+from ara.runtime.providers import Provider, Response, stage_settings
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
                        Tier1Repair, TokenUsage)
@@ -59,6 +59,9 @@ class ModelCalls:
         self.root, self.topic = Path(root), topic
         self.budget = Budget(config, log)
 
+    def requested_model(self, kind: str) -> str:
+        return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
+
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
         if kind != 'search_evidence':
@@ -100,14 +103,21 @@ class ModelCalls:
             completed = [e for e in events if e['label'] == 'MODEL']
             if not starts or completed:
                 raise
+            received = [json.loads(e['payload_json']) for e in events if e['stage'] == 'response_received']
+            if received:
+                receipt = received[-1]
+                self._event(kind, json.loads(starts[-1]['payload_json'])['prompt'], receipt['raw_response'],
+                            TokenUsage.from_dict(receipt['measured_usage']), receipt['measured_cost_usd'],
+                            started, False, 'rejected', type(exc).__name__, receipt['cache_key'], attempt=attempt)
+                self.budget.stop('post-response failure; measured usage retained', kind)
             # Any unrecorded dispatched result is incomplete. Do not serialize the
             # suspect raw response again, and replace any in-memory actual charge.
             admission = json.loads(starts[-1]['payload_json'])
             usage = TokenUsage.from_dict(admission['reserved_usage'])
-            cost = self.budget.cost(usage)
+            cost = self.budget.cost(usage, model=self.requested_model(kind))
             self.budget.used_tokens, self.budget.used_cost = before_tokens, before_cost
             self.budget.charge(usage, cost)
-            self.log.emit(RunEvent(now(), kind, 'MODEL', self.provider.model, None,
+            self.log.emit(RunEvent(now(), kind, 'MODEL', self.requested_model(kind), None,
                 admission['prompt'], None, usage, float(cost), time.monotonic() - started,
                 payload_json=canonical({'status': 'incomplete', 'attempt': attempt, 'reason': type(exc).__name__,
                     'cache_hit': False, 'cache_key': admission['cache_key'],
@@ -123,11 +133,12 @@ class ModelCalls:
         if kind == 'build_t_batch':
             maximum = self.config['extracted_build_t_max_output_tokens']
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
-                              'effort': self.config['effort'], 'maximum': maximum,
+                              'effort': stage_settings(self.config, kind)['effort'], 'maximum': maximum,
+                              'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                               'web_max': self.config['web_search_max_uses'],
                               'formula_depth': self.config.get('formula_output_depth', 2),
-                              'fallbacks': self.config.get('fallbacks', ['claude-opus-4-8'])})
-        key = cache_key(kind, template, identity, self.provider.model, schema or {})
+                              'fallbacks': stage_settings(self.config, kind).get('fallbacks', ['claude-opus-4-8'])})
+        key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
         saved = self.cache.get(key)
         start = time.monotonic()
         raw = None
@@ -143,8 +154,8 @@ class ModelCalls:
                 raw = saved['raw']
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
-                self.budget.before(estimate, kind)
-                self.log.record('call_start', kind=kind, attempt=attempt, model=self.provider.model, prompt=prompt,
+                self.budget.before(estimate, kind, model=self.requested_model(kind))
+                self.log.record('call_start', kind=kind, attempt=attempt, model=self.requested_model(kind), prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
                 dispatched = True
                 raw = self.provider.complete(kind, prompt, schema, maximum).raw
@@ -153,6 +164,10 @@ class ModelCalls:
                 cost = self.budget.response_cost(raw)
                 self.budget.charge(usage, cost)
                 charged = True
+                # Durable before parsing or follow-up token-counter/network validation.
+                self.log.record('response_received', kind=kind, cache_key=key,
+                                requested_model=self.requested_model(kind), raw_response=raw,
+                                measured_usage=usage.to_dict(), measured_cost_usd=float(cost))
             # Stop reason is checked BEFORE interpreting any content blocks.
             require(raw['stop_reason'] == 'end_turn', f'provider stop: {raw["stop_reason"]}')
             require(not any(isinstance(v, dict) and (v.get('is_error') or
@@ -173,25 +188,32 @@ class ModelCalls:
                                 item['formula'] = json.loads(item['formula'])
                             except json.JSONDecodeError as exc:
                                 raise Rejected('invalid encoded formula JSON') from exc
+                if kind == 'extract_paper' and isinstance(data, dict):
+                    for item in data.get('items', []):
+                        if isinstance(item, dict) and item.get('kind') != 'inference':
+                            for field, empty in (('premise_ids', []), ('conclusion_id', None),
+                                                 ('qualification_ids', []), ('inference_origin', None)):
+                                item.setdefault(field, empty)
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
-        except (BudgetStop, json.JSONDecodeError):
-            raise
         except Exception as exc:
-            if charged and not isinstance(exc, (Rejected, ValueError, ValidationError)):
+            if not charged and isinstance(exc, BudgetStop):
                 raise
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
             reason = str(exc) if isinstance(exc, (Rejected, UnpricedModel)) else type(exc).__name__
             unknown_usage = dispatched and not charged
             if unknown_usage:
-                usage, cost = estimate, self.budget.cost(estimate)
+                usage, cost = estimate, self.budget.cost(estimate, model=self.requested_model(kind))
                 self.budget.charge(usage, cost)
             self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
             if unknown_usage:
                 self.budget.after(kind)
                 self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
             self.budget.after(kind)
+            if charged and not isinstance(exc, (Rejected, ValueError, ValidationError)):
+                self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
+                raise
             if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': str(exc),
                     'rejected_response': Response(raw).text(),
@@ -206,13 +228,15 @@ class ModelCalls:
     def _event(self, kind: str, prompt: str, raw: dict | None, usage: TokenUsage,
                cost: Any, start: float, cached: bool, status: str, reason: str | None,
                key: str, unknown_usage: bool = False, *, attempt: int = 1) -> None:
-        self.log.emit(RunEvent(now(), kind, 'MODEL', self.provider.model,
+        self.log.emit(RunEvent(now(), kind, 'MODEL', self.requested_model(kind),
                               raw.get('model') if raw else None, prompt,
                               canonical(raw) if raw is not None else None, usage, float(cost),
                               time.monotonic() - start,
                               payload_json=canonical({'status': status, 'reason': reason, 'attempt': attempt,
                                                        'cache_hit': cached, 'cache_key': key,
-                                                       'requested_model': self.provider.model,
+                                                       'requested_model': self.requested_model(kind),
+                                                       'effort': stage_settings(self.config, kind)['effort'],
+                                                       'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                                                        **(Response(raw).routing() if raw else {}),
                                                        'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual'})))
 
@@ -287,7 +311,15 @@ class ModelCalls:
                     conclusion_id=mapped(item.conclusion_id) if item.conclusion_id else None,
                     qualification_ids=tuple(map(mapped, item.qualification_ids)),
                     applies_to=tuple(map(mapped, item.applies_to))) for item in items)
-                return PaperExtraction(paper.source_id, converted), data['unresolved_references']
+                obligations = inputs.get('obligations', [])
+                resolutions = data.get('resolutions', [])
+                resolved_ids = [r['obligation_id'] for r in resolutions]
+                require(len(resolved_ids) == len(set(resolved_ids)) and
+                        set(resolved_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
+                require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),
+                        'obligation resolution lacks accepted evidence')
+                ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
+                return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger)), data['unresolved_references']
             return self.call('extract_paper', inputs, check)
 
         unresolved = []
@@ -312,21 +344,32 @@ class ModelCalls:
                 mid = len(pages) // 2
                 segment(pages[:mid]); segment(pages[mid:])
                 return
+            obligations = [{'id': f'{paper.source_id}:{prefix}:obligation:{index}', 'range': prefix,
+                            'pages': [p.page for p in pages], 'description': description}
+                           for index, description in enumerate(pending)]
+            result = replace(result, obligations_json=canonical(obligations))
             ranges.append(result)
-            unresolved.extend(pending)
+            unresolved.extend(obligations)
             save_immutable(self.log.path.parent / f'{paper.source_id}.{prefix}.rich.json', canonical(result.to_dict()))
         segment(paper.readable_pages)
         items = tuple(item for result in ranges for item in result.items)
+        resolutions_json = '[]'
         if len(ranges) > 1 or unresolved:
             inputs = {'mode': 'reconcile_ranges', 'source_id': paper.source_id,
                       'pdf_sha256': paper.pdf_sha256, 'ranges': [r.to_dict() for r in ranges],
-                      'unresolved_references': unresolved}
+                      'obligations': unresolved,
+                      'pages': [dict(page=p.page, text=p.text) for p in paper.readable_pages] if unresolved else []}
             result, _ = run(inputs, paper.readable_pages, 'joined', existing=items)
             items += result.items
+            resolutions_json = result.resolutions_json
+            self.log.record('extraction_obligations_resolved', source_id=paper.source_id,
+                            obligations=unresolved, resolutions=json.loads(resolutions_json))
         require(len({item.id for item in items}) == len(items), 'duplicate merged extraction id')
+        result = PaperExtraction(paper.source_id, items, obligations_json=canonical(unresolved),
+                                 resolutions_json=resolutions_json)
         self.log.record('extraction_graph_merged', source_id=paper.source_id, ranges=len(ranges),
-                        items=len(items), graph_hash=digest(canonical(PaperExtraction(paper.source_id, items).to_dict())))
-        return PaperExtraction(paper.source_id, items)
+                        items=len(items), graph_hash=digest(canonical(result.to_dict())))
+        return result
 
     def build_t(self, literature: str, audience: str) -> CommitmentSet:
         allowed = citation_ids(literature)

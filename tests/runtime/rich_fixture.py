@@ -18,7 +18,8 @@ def graph(source='p', page=1):
 
 
 def batch_response(inputs):
-    from ara.runtime.construction import evidence_text
+    if 'closure' not in inputs:
+        return dict(roots=[i['id'] for p in inputs['papers'] for i in p['items']], relevance='P', omissions=[])
     symbols = {s['name'] for s in inputs['shared_symbols']}
     commitments = []
     uses = {}
@@ -35,7 +36,7 @@ def batch_response(inputs):
                 if f['op'] == 'atom': yield f['name']
                 for arg in f.get('args', []): yield from names(arg)
             for n in set(names(formula)): uses.setdefault(n, []).append(item['id'])
-            commitments.append(dict(id=item['id'], text=evidence_text(item), citation=item['citation'], formula=formula))
-    return dict(commitments=commitments, omitted=[],
+            commitments.append(dict(id=item['id'], formula=formula))
+    return dict(commitments=commitments,
         new_symbols=[dict(name=n, kind='atom', arity=0, definition=n, evidence_ids=ids) for n,ids in sorted(uses.items()) if n not in symbols],
-        bindings=[dict(name=n, evidence_ids=ids) for n,ids in sorted(uses.items())])
+        alignments=[dict(name=n, reason='P') for n in sorted(uses) if n in symbols])

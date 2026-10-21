@@ -997,3 +997,61 @@ the shared symbol catalogue and could alias unrelated values across batches.
 Quantified variables retain lexical scope; global values must be declared constant
 symbols with evidence bindings. The new boundary regression was red before the
 check, while its quantified control passed. No engine semantics were changed.
+
+GX20 (round-3 stage model). Extraction uses the separately scoped
+`stages.extraction` configuration: claude-sonnet-5-5, no fallback, high/adaptive.
+Other stages remain on the primary Opus configuration. Requested/served models,
+effort and thinking are retained in receipts and cache identity; reservations use
+the requested stage rate. Published pricing at
+https://platform.claude.com/docs/en/about-claude/pricing was checked 2026-10-21:
+Sonnet input/output USD2/10 per million, cache read/5m write/1h write USD0.10/2.50/4.
+The prior sample had negligible extraction thinking cost, so this round does not
+lower effort speculatively. The two-paper live gate measures acceptance/structure
+before any decision to process the corpus. A stage override must not mutate the
+primary model or inherit a more expensive fallback silently.
+
+GX21 (D2-B1). Pending extraction references become stable IDs with originating
+range and pages. Reconciliation receives counted original readable pages when
+obligations exist, adds only immutable evidence, and returns an exact resolution
+inventory mapping each obligation to nonempty accepted evidence/link IDs. Missing
+or unknown resolutions refuse complete extraction. The saved graph includes both
+obligation and resolution ledgers. This proves explicit obligations cannot vanish;
+semantic adequacy of a model's evidence mapping still requires source inspection.
+Full-source reconciliation may exceed context and explicitly refuse; no hidden
+retrieval, clipping or inferred resolution is introduced.
+
+GX22 (D2-B2/D2-S1, supersedes GX15 whole-component selection). Use the operator's
+ALT protocol: model roots/relevance and grouped omission decisions; deterministic
+versioned prerequisite closure; then model formalization of exactly that inventory.
+The `directional-prerequisites-v1` rule follows a conclusion to every stated link
+supporting it, links to premises/conclusion/qualifiers, and any item to applicable
+distinctions/qualifications. It never follows premises to other consequences or a
+shared qualifier to its other targets. Cycles terminate by visited-ID membership.
+Choosing a conclusion with multiple supporting inferences conservatively retains
+all its stated support. Root IDs, added IDs, graph hash, rule version and actual
+omissions are logged and included in the formalization request/cache identity.
+Code copies exact attributed text/citations and derives symbol occurrences;
+formulas, definitions and semantic reuse reasons remain model-authored. The new
+construction plan is v3; saved rich source remains v2. No previous rejected live
+formalization is reused or silently accepted under this changed policy.
+
+GX23 (D2-S2/D2-N1). Persist a response_received receipt with raw response, measured
+usage and cost before fallible validation, and write the terminal MODEL accounting
+receipt on failure as well as success. Operational post-response failures retain
+measured billing and are never cached or frozen. Receipt payloads avoid duplicate
+numeric charging. Methodology adds measured/reserved/accounted splits in aggregate,
+local, inherited and extraction scopes; existing numeric totals remain explicitly
+budget-accounted for compatibility. Campaign accounting still retains unknown
+reservations from earlier sibling runs; a new successful log cannot reconcile them.
+
+GX24 (round-3 cost scope). Extraction wire grammar separates inference from node
+fields; code supplies only empty structural defaults on non-inference nodes.
+The local rich schema remains authoritative. Fixed-inventory formalization removes
+model re-emission of exact source text/citations and syntactic bindings. A generic
+patch/reuse protocol for invalid formulas is deferred: retaining partly validated
+formulas safely requires item-level semantic alignment and receipt/cache lineage,
+which is not a cheap variant of generic retry. Live checks use one validation
+attempt and stop on the first failed phase as required. No lower output quota or
+semantic content pruning is used to fit cost. Whole-source packing and proportional
+working allowances still refuse oversized/skewed inputs explicitly. Full extraction
+is deferred to Delta's next review per the brain addendum, even if projections fit.

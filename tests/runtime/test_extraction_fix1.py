@@ -197,6 +197,9 @@ class CapacityServer:
             from rich_fixture import graph
             value = graph(inputs['source_id'])
             self.values[inputs['source_id']] = value
+        elif prompt.startswith('ROLE: select_t_roots'):
+            from rich_fixture import batch_response
+            value = batch_response(inputs)
         elif prompt.startswith('ROLE: build_t_batch'):
             from rich_fixture import batch_response
             assert request['max_tokens'] == 64000
@@ -211,7 +214,7 @@ class CapacityServer:
         elif prompt.startswith('ROLE: map_leaf'):
             value = {'t_id': 'open'}
         else: raise AssertionError(prompt[:40])
-        return SimpleNamespace(to_dict=lambda **kwargs: response(value))
+        return SimpleNamespace(to_dict=lambda **kwargs: {**response(value), 'model': request['model']})
 
     @contextmanager
     def stream(self, **request):

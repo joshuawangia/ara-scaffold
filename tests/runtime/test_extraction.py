@@ -254,7 +254,7 @@ def test_extract_cli_to_build_t_native_path(rig, tmp_path, monkeypatch):
         if kind == 'extract_paper':
             assert inputs['pages'] == [{'page': 1, 'text': 'P'}, {'page': 2, 'text': 'Q'}]
             value = VALUE
-        elif kind == 'build_t_batch':
+        elif kind in ('select_t_roots', 'build_t_batch'):
             from rich_fixture import batch_response
             assert inputs['papers'][0]['source_id'] == 'p'
             value = batch_response(inputs)
@@ -289,10 +289,10 @@ def test_build_t_cannot_cite_fallback_or_invented_page(rig, monkeypatch):
     path = extract(calls, papers)
     def complete(kind, prompt, schema, maximum):
         value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
-        value['commitments'][0]['citation'] = 'q:pdf:1'
+        if kind == 'build_t_batch': value['commitments'][0]['citation'] = 'q:pdf:1'
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
-    with pytest.raises(Rejected, match='T citation not in extracted literature'):
+    with pytest.raises(Rejected, match='ValidationError'):
         calls.build_t(path.read_text(), 'P')
 
 

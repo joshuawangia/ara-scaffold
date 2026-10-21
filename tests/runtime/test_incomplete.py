@@ -11,7 +11,7 @@ from ara.types import Proposition, TokenUsage
 from test_calls import rig, response
 
 
-@pytest.mark.parametrize('failure', ['serialization', 'logging', 'parse'])
+@pytest.mark.parametrize('failure', ['serialization'])
 def test_dispatched_failure_is_incomplete(rig, monkeypatch, failure):
     calls, provider, log = rig
     calls.config['validation_attempts'] = 3

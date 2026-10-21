@@ -57,14 +57,18 @@ def evidence_dependencies(items: dict[str, dict]) -> dict[str, set[str]]:
     return deps
 
 
-def formula_symbols(formula):
+def formula_symbols(formula, bound: frozenset[str] = frozenset()):
+    from ara.runtime.calls import require
+    if formula.op in ('forall', 'exists'):
+        bound = bound | {formula.variable}
     if formula.op in ('atom', 'predicate'):
         yield formula.name, formula.op, len(formula.terms)
     for term in formula.terms:
+        require(term.kind != 'variable' or term.name in bound, 'working T variables must be locally bound')
         if term.kind == 'constant':
             yield term.name, 'constant', 0
     for arg in formula.args:
-        yield from formula_symbols(arg)
+        yield from formula_symbols(arg, bound)
 
 
 def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSet:

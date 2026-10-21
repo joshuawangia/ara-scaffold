@@ -83,7 +83,7 @@ class MockProvider:
         return Response(json.loads(canonical(self.responses[key])))
 
 
-def structured_schema(schema: dict, depth: int = 2) -> dict:
+def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = False) -> dict:
     """Project unsupported constraints; local validation remains authoritative.
 
     Formula recursion becomes an acyclic chain of definitions with a finite depth.
@@ -92,6 +92,12 @@ def structured_schema(schema: dict, depth: int = 2) -> dict:
     """
     original = json.loads(canonical(schema))
     definitions = original.get('$defs', {})
+    if encoded_formulas:
+        # The larger batch grammar exceeds the service compiler's limit with AST alternatives.
+        # Only the wire is encoded; ModelCalls decodes and validates the complete local schema.
+        definitions['commitment']['properties']['formula'] = {'type': 'string'}
+        definitions.pop('formula')
+        definitions.pop('term')
     formula = definitions.pop('formula', None)
     if formula:
         # Two AST families avoid the per-operator grammar explosion while
@@ -153,7 +159,7 @@ class AnthropicProvider:
         output = {'effort': self.config['effort']}
         if schema is not None:
             output['format'] = {'type': 'json_schema', 'schema': structured_schema(
-                schema, self.config.get('formula_output_depth', 2))}
+                schema, self.config.get('formula_output_depth', 2), encoded_formulas=kind == 'build_t_batch')}
         request = {'model': self.model, 'max_tokens': maximum,
                    'thinking': {'type': 'adaptive'}, 'output_config': output,
                    'messages': [{'role': 'user', 'content': prompt}]}

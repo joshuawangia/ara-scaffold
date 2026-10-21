@@ -207,3 +207,14 @@ def test_rich_nullable_enum_matches_provider_grammar():
     Draft202012Validator(origin).validate(None)
     Draft202012Validator(origin).validate('paper_stated')
     with pytest.raises(ValidationError): Draft202012Validator(origin).validate('P')
+
+
+def test_batch_formula_wire_avoids_grammar_expansion(rig):
+    calls, _, _ = rig
+    schema = json.loads((ROOT / 'schemas/build_t_batch.json').read_text())
+    provider = AnthropicProvider(calls.config, client=object())
+    request = provider.request('build_t_batch', 'P', schema, 64000)
+    wire = request['output_config']['format']['schema']
+    assert wire['$defs']['commitment']['properties']['formula'] == {'type': 'string'}
+    assert not any(key.startswith('formula') for key in wire['$defs'])
+    assert schema['$defs']['commitment']['properties']['formula'] == {'$ref': '#/$defs/formula'}

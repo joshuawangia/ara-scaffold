@@ -166,6 +166,13 @@ class ModelCalls:
             else:
                 validating = True
                 data = json.loads(Response(raw).text())
+                if kind == 'build_t_batch' and isinstance(data, dict) and isinstance(data.get('commitments'), list):
+                    for item in data['commitments']:
+                        if isinstance(item, dict) and isinstance(item.get('formula'), str):
+                            try:
+                                item['formula'] = json.loads(item['formula'])
+                            except json.JSONDecodeError as exc:
+                                raise Rejected('invalid encoded formula JSON') from exc
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
         except (BudgetStop, json.JSONDecodeError):

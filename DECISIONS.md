@@ -977,3 +977,23 @@ the local accepted values. The raw provider request error and conservative unkno
 usage reservations remain in ignored live receipts. Add a projection regression
 and production schema mutation; do not weaken source validation or discard failed
 accounting. Subsequent authorized checks subtract those reservations from the cap.
+
+
+GX18. The live batch schema exceeded the provider's compiled-grammar limit even
+with the existing bounded AST projection. For build_t_batch only, the service
+format requests formula ASTs as JSON strings. Runtime decodes each formula and
+then applies the unchanged complete local response schema, immutable types,
+symbol/citation checks and engine contracts. This removes grammar expansion
+without reducing formula depth or accepting unchecked formulas. Raw wire strings
+remain in MODEL receipts; validated batch artifacts hold decoded ASTs. Malformed
+encoded JSON is a paid validation rejection, not unknown provider accounting.
+The live retry uses a 60000-token output ceiling within the remaining authorized
+budget after conservatively holding both failed batch reservations.
+
+
+GX19. Rich working-T formulas require locally bound variables. The solver treats
+free variables as global constants, so allowing an unbound variable would bypass
+the shared symbol catalogue and could alias unrelated values across batches.
+Quantified variables retain lexical scope; global values must be declared constant
+symbols with evidence bindings. The new boundary regression was red before the
+check, while its quantified control passed. No engine semantics were changed.

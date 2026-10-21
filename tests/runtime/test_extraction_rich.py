@@ -301,3 +301,51 @@ def test_cached_context_is_recounted(rig, monkeypatch):
     with pytest.raises(BudgetStop, match='formalise context bound'):
         calls.formalise(proposition)
     assert provider.calls == 1
+
+
+@pytest.mark.parametrize('valid', [True, False])
+def test_encoded_batch_formula_still_requires_local_validation(rig, monkeypatch, valid):
+    from ara.runtime.calls import Rejected
+    from ara.runtime.cache import canonical
+    from ara.runtime.providers import Response
+    from rich_fixture import batch_response
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    def complete(kind, prompt, schema, maximum):
+        value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        for c in value['commitments']:
+            c['formula'] = canonical(c['formula']) if valid else 'P'
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', complete)
+    if valid:
+        result = calls.build_t(path.read_text(), 'P')
+        assert len(result.commitments) == 8
+        assert sum(c.formula.op == 'implies' for c in result.commitments) == 2
+    else:
+        with pytest.raises(Rejected, match='encoded formula'):
+            calls.build_t(path.read_text(), 'P')
+        event = [e for e in calls.log.read() if e['label'] == 'MODEL'][-1]
+        assert json.loads(event['payload_json'])['status'] == 'rejected'
+        assert json.loads(event['payload_json'])['accounting'] == 'actual'
+
+
+@pytest.mark.parametrize('locally_bound', [True, False])
+def test_batch_variables_cannot_bypass_symbol_contract(rig, monkeypatch, locally_bound):
+    from ara.runtime.calls import Rejected
+    from ara.runtime.providers import Response
+    from rich_fixture import batch_response
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    def complete(kind, prompt, schema, maximum):
+        value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        formula = {'op': 'predicate', 'name': 'F', 'terms': [{'kind': 'variable', 'name': 'x'}]}
+        if locally_bound: formula = {'op': 'forall', 'variable': 'x', 'args': [formula]}
+        for c in value['commitments']: c['formula'] = formula
+        ids = [c['id'] for c in value['commitments']]
+        value['new_symbols'] = [dict(name='F', kind='predicate', arity=1, definition='F(x)', evidence_ids=ids)]
+        value['bindings'] = [dict(name='F', evidence_ids=ids)]
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', complete)
+    if locally_bound:
+        assert all(c.formula.op == 'forall' for c in calls.build_t(path.read_text(), 'P').commitments)
+    else:
+        with pytest.raises(Rejected, match='locally bound'):
+            calls.build_t(path.read_text(), 'P')

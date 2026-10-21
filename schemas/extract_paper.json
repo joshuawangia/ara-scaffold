@@ -15,13 +15,6 @@
     "coverage_complete": {
       "type": "boolean"
     },
-    "unresolved_references": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "items": {
       "type": "array",
       "items": {
@@ -198,13 +191,29 @@
         "evidence_ids"
       ],
       "additionalProperties": false
+    },
+    "new_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
     "schema_version",
     "source_id",
     "coverage_complete",
-    "unresolved_references",
+    "new_gaps",
     "items"
   ]
 }

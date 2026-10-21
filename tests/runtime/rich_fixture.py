@@ -13,7 +13,7 @@ def graph(source='p', page=1):
     items[5]['applies_to'] = ['f']
     items[6].update(premise_ids=['p','q'], conclusion_id='r', qualification_ids=['d'], inference_origin='paper_stated')
     items[7].update(premise_ids=['r'], conclusion_id='f', qualification_ids=['qual'], inference_origin='paper_stated')
-    return dict(schema_version=2, source_id=source, coverage_complete=True, unresolved_references=[], items=items)
+    return dict(schema_version=2, source_id=source, coverage_complete=True, new_gaps=[], items=items)
 
 
 

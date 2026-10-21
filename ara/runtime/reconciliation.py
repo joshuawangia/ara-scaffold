@@ -1,9 +1,10 @@
 """Bounded graph review and explicit obligation continuation over immutable evidence."""
+from collections import deque
 from dataclasses import asdict, replace
 import json
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.extraction import PaperExtraction, save_immutable
+from ara.runtime.extraction import PaperExtraction, save_immutable, record_new_obligations
 from ara.runtime.windows import counted_windows
 
 
@@ -12,6 +13,7 @@ def reconcile(calls, paper, ranges, run):
     items = tuple(item for result in ranges for item in result.items)
     obligations = [o for result in ranges for o in json.loads(result.obligations_json)]
     resolutions = []
+    queue = deque(obligations)
     if len(ranges) == 1 and not obligations:
         return items, obligations, resolutions
     pages = {p.page: p for p in paper.readable_pages}
@@ -48,33 +50,35 @@ def reconcile(calls, paper, ranges, run):
         calls.log.record('extraction_reconciliation_window', source_id=paper.source_id,
                          prefix=prefix, page_ids=list(ids), evidence_ids=[i.id for i in selected],
                          obligation_ids=[o['id'] for o in inputs['obligations']], input_hash=digest(canonical(inputs)))
-        result, pending, request = run(inputs, tuple(pages[p] for p in ids), prefix,
+        result, new_gaps, request = run(inputs, tuple(pages[p] for p in ids), prefix,
                                        existing=selected, allow_incomplete=True)
+        new_obligations = record_new_obligations(calls.log, paper.source_id, prefix, turn, ids, new_gaps)
+        obligations.extend(new_obligations)
+        queue.extend(new_obligations)
         items += result.items
-        result = replace(result, obligations_json=canonical(inputs['obligations']))
+        result = replace(result, obligations_json=canonical(inputs['obligations'] + new_obligations))
         save_immutable(calls.log.path.parent / f'{paper.source_id}.{prefix}.rich.json', canonical(result.to_dict()))
-        return result, pending, request
+        return result, request
 
     # When the initial ranges declared no missing references, review every graph
     # window once. Newly found gaps become stable obligations, never a discarded note.
     if not obligations:
-        for index, ids in enumerate(windows_for()):
-            result, pending, _ = execute(ids)
-            obligations.extend(dict(id=f'{paper.source_id}:review:{index}:{n}', range=f'review-{index}',
-                                    pages=list(ids), description=description)
-                               for n, description in enumerate(pending))
+        for ids in windows_for():
+            execute(ids)
 
-    save_immutable(calls.log.path.parent / f'{paper.source_id}.obligations.json', canonical(obligations))
-    for obligation in obligations:
+    while queue:
+        obligation = queue.popleft()
         resolved = False
         requests = set()
         for initial in windows_for(obligation):
             ids, evidence_ids, requested = initial, (), False
             while True:
-                result, _, request = execute(ids, obligation, evidence_ids, requested)
+                result, request = execute(ids, obligation, evidence_ids, requested)
                 ledger = json.loads(result.resolutions_json)
                 if ledger:
                     resolutions.extend(ledger)
+                    calls.log.record('extraction_obligation_resolved', source_id=paper.source_id,
+                                     resolutions=ledger)
                     resolved = True
                     break
                 if not request:
@@ -96,6 +100,7 @@ def reconcile(calls, paper, ranges, run):
         require(resolved, 'unresolved obligation inventory after all evidence windows')
     require({r['obligation_id'] for r in resolutions} == {o['id'] for o in obligations},
             'unresolved obligation inventory at merge')
+    save_immutable(calls.log.path.parent / f'{paper.source_id}.obligations.json', canonical(obligations))
     calls.log.record('extraction_obligations_resolved', source_id=paper.source_id,
                      obligations=obligations, resolutions=resolutions)
     return items, obligations, resolutions

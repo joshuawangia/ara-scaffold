@@ -14,7 +14,7 @@ from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical, digest
 from ara.runtime.logging import EventLog, now
-from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable, extraction_range_plan
+from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable, extraction_range_plan, record_new_obligations
 from ara.runtime.providers import Provider, Response, stage_settings
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
@@ -283,10 +283,13 @@ class ModelCalls:
                 require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
                 require(bool(data['items']) or inputs.get('mode') == 'reconcile_ranges' or
                         (bool(data.get('empty_reason', '').strip()) and data['coverage_complete'] and
-                         not data['unresolved_references']), 'empty extraction requires complete no-argument disposition')
+                         not data['new_gaps']), 'empty extraction requires complete no-argument disposition')
                 require(not data.get('empty_reason') or not data['items'], 'nonempty extraction has empty disposition')
-                require(data['coverage_complete'] or (allow_incomplete and bool(data['unresolved_references'])), 'extraction coverage incomplete')
-                require(not data['unresolved_references'] or allow_incomplete, 'unresolved extraction references')
+                pending_ids = data.get('pending_obligation_ids', [])
+                incomplete = bool(pending_ids or data['new_gaps'])
+                require(data['coverage_complete'] or (allow_incomplete and incomplete), 'extraction coverage incomplete')
+                require(not data['coverage_complete'] or not incomplete, 'unresolved obligation status mismatch')
+                require(all(gap['description'].strip() for gap in data['new_gaps']), 'blank new gap')
                 items = tuple(ExtractedItem(**item) for item in data['items'])
                 ids = [item.id for item in items]
                 require(len(ids) == len(set(ids)), 'duplicate extraction id')
@@ -313,7 +316,7 @@ class ModelCalls:
                     require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
                 by_id = {item.id: item for item in (*existing, *items)}
                 if self.config.get('extraction_require_inference', False) and (
-                        inputs.get('mode') != 'reconcile_ranges' and not data['unresolved_references'] and
+                        inputs.get('mode') != 'reconcile_ranges' and not data['new_gaps'] and
                         len(pages) == len(paper.readable_pages)):
                     require(any(item.kind == 'inference' for item in by_id.values()), 'extraction has no stated inference')
                 for item in items:
@@ -332,14 +335,9 @@ class ModelCalls:
                 obligations = inputs.get('obligations', [])
                 resolutions = data.get('resolutions', [])
                 resolved_ids = [r['obligation_id'] for r in resolutions]
-                pending_ids = data.get('pending_obligation_ids', [])
                 require(len(resolved_ids) == len(set(resolved_ids)) and
                         len(pending_ids) == len(set(pending_ids)) and not set(pending_ids) & set(resolved_ids) and
                         set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
-                require(not pending_ids or (allow_incomplete and not data['coverage_complete'] and
-                                           bool(data['unresolved_references'])), 'pending obligation requires incomplete coverage')
-                require(not obligations or bool(pending_ids) == bool(data['unresolved_references']),
-                        'unresolved obligation status mismatch')
                 request = data.get('context_request', {})
                 require(not request or (inputs.get('mode') == 'reconcile_ranges' and bool(pending_ids)),
                         'context request requires a pending obligation')
@@ -349,7 +347,7 @@ class ModelCalls:
                 dispositions = ([dict(pages=[p.page for p in pages], reason=data['empty_reason'])]
                                 if data.get('empty_reason') else [])
                 return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
-                                       dispositions_json=canonical(dispositions)), data['unresolved_references'], request
+                                       dispositions_json=canonical(dispositions)), data['new_gaps'], request
             if corrections is None:
                 return self.call('extract_paper', inputs, check)
             try:
@@ -391,7 +389,7 @@ class ModelCalls:
             self.log.record('extraction_range', source_id=paper.source_id, prefix=prefix,
                             pages=[p.page for p in pages], input_hash=digest(canonical(inputs)))
             try:
-                result, pending, _ = run(inputs, pages, prefix, allow_incomplete=True)
+                result, new_gaps, _ = run(inputs, pages, prefix, allow_incomplete=True)
             except Rejected as exc:
                 if not any(reason in str(exc) for reason in ('provider stop: max_tokens', 'extraction coverage incomplete')) or len(pages) == 1:
                     raise
@@ -399,9 +397,8 @@ class ModelCalls:
                 mid = len(pages) // 2
                 segment(pages[:mid]); segment(pages[mid:])
                 return
-            obligations = [{'id': f'{paper.source_id}:{prefix}:obligation:{index}', 'range': prefix,
-                            'pages': [p.page for p in pages], 'description': description}
-                           for index, description in enumerate(pending)]
+            obligations = record_new_obligations(self.log, paper.source_id, prefix, 1,
+                                                 [p.page for p in pages], new_gaps)
             result = replace(result, obligations_json=canonical(obligations))
             ranges.append(result)
             unresolved.extend(obligations)

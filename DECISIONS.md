@@ -1189,3 +1189,25 @@ of caps, semantic coverage, unread pages, or the complete downstream run.
 The full profile is available to both `extract` and native `run`; both preflight
 the same unset caps before provider creation. Construction therefore receives its
 32k catalogue and targeted policy through the native entrypoint.
+
+### GX28 — New gaps remain obligations throughout reconciliation
+
+The model protocol separates `pending_obligation_ids` from structured `new_gaps`.
+Every supplied obligation is resolved with accepted evidence IDs or explicitly
+pending. New gaps receive runtime-assigned source/window/turn/index identities;
+no description matching, merging or fuzzy equivalence occurs, even for identical
+text. Coverage cannot be complete while either field is nonempty.
+
+Accepted discoveries and resolutions append to the hash-chained event history.
+Immutable range and continuation snapshots retain their obligation inventories;
+the final cumulative ledger is written only after the queue drains. Every accepted
+continuation queues its new gaps, including responses resolving the current
+obligation and responses to earlier discovered gaps. Exhausted windows or existing
+context/budget limits refuse extraction with intermediate receipts preserved.
+Every continuation uses the counted model boundary. These checks establish exact
+inventory accounting, not semantic adequacy of model-selected evidence.
+
+The ambiguous `unresolved_references` wire field is removed, not heuristically
+translated. The changed prompt/schema invalidates old response cache keys; saved
+v2 literature artifacts keep their existing format and provenance. No prior
+artifacts are rewritten, and no paid completion or automatic resume is implied.

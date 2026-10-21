@@ -47,7 +47,7 @@ def test_unresolved_obligations_require_evidence(rig, monkeypatch, resolve):
             page = data['pages'][0]['page']
             value['items'] = [graph(page=page)['items'][0 if page == 1 else 1]]
             if page == 1:
-                value.update(coverage_complete=False, unresolved_references=['Q'])
+                value.update(coverage_complete=False, new_gaps=[{'description': 'Q'}])
         elif resolve:
             assert [p['text'] for p in data['pages']] == ['P', 'Q']
             obligation = data['obligations'][0]

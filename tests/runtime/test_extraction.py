@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ITEM = {'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim', 'attributed_to': 'P', 'text': 'P',
         'page_start': 1, 'page_end': 1, 'premise_ids': [], 'conclusion_id': None, 'qualification_ids': [],
         'applies_to': [], 'inference_origin': None}
-VALUE = {'schema_version': 2, 'source_id': 'p', 'coverage_complete': True, 'unresolved_references': [], 'items': [ITEM]}
+VALUE = {'schema_version': 2, 'source_id': 'p', 'coverage_complete': True, 'new_gaps': [], 'items': [ITEM]}
 
 
 def pdf(path, texts=('P', 'Q')):

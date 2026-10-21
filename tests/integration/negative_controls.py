@@ -88,7 +88,7 @@ CASES = [
     ('rich_id_unique', 'ara/runtime/calls.py', "require(len(ids) == len(set(ids)), 'duplicate extraction id')", "require(True, 'duplicate extraction id')", 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[id]'),
     ('rich_endpoint', 'ara/runtime/calls.py', 'require(set(refs) <= available,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[endpoint]'),
     ('rich_inference_origin', 'ara/runtime/calls.py', "item.inference_origin == 'paper_stated'", 'True', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[origin]'),
-    ('rich_coverage', 'ara/runtime/calls.py', "require(data['coverage_complete'] or (allow_incomplete and bool(data['unresolved_references'])),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[coverage]'),
+    ('rich_coverage', 'ara/runtime/calls.py', "require(data['coverage_complete'] or (allow_incomplete and incomplete),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[coverage]'),
     ('rich_no_summary_cap', 'schemas/extract_paper.json', '"text": {\n            "type": "string",', '"text": {\n            "maxLength": 400,\n            "type": "string",', 'tests/runtime/test_extraction_rich.py::test_no_compact_summary_limit'),
     ('rich_range_reconciliation', 'ara/runtime/reconciliation.py', 'if len(ranges) == 1 and not obligations:', 'if not obligations:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('strict_partial', 'ara/runtime/extraction.py', "if paper.affected_pages and missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction_rich.py::test_strict_partial_cli'),
@@ -172,7 +172,7 @@ CASES += [
     ('full_graph_closure', 'ara/runtime/construction.py', "prerequisite_closure(items, selection['roots'])", "prerequisite_closure(window_items, selection['roots'])", 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
     ('closure_size_admission', 'ara/runtime/construction.py', 'if closure_count.input_tokens > input_bound:', 'if False:', 'tests/runtime/test_evidence_windows.py::test_oversized_selected_closure_refuses_before_formalization'),
     ('requested_context', 'ara/runtime/reconciliation.py', "ids = tuple(sorted(request['pages']))", 'ids = ()', 'tests/runtime/test_evidence_windows.py::test_reconcile_over_context_with_requested_cross_window_evidence[True]'),
-    ('bounded_graph_review', 'ara/runtime/reconciliation.py', 'for index, ids in enumerate(windows_for()):', 'for index, ids in enumerate([tuple(pages)]):', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
+    ('bounded_graph_review', 'ara/runtime/reconciliation.py', 'for ids in windows_for():', 'for ids in [tuple(pages)]:', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
 ]
 
 CASES += [
@@ -180,7 +180,7 @@ CASES += [
 ]
 
 CASES += [
-    ('resolved_pending_status', 'ara/runtime/calls.py', "require(not obligations or bool(pending_ids) == bool(data['unresolved_references']),", 'require(True,', 'tests/runtime/test_evidence_windows.py::test_resolved_ledger_cannot_hide_remaining_reference'),
+    ('resolved_pending_status', 'ara/runtime/calls.py', "require(not data['coverage_complete'] or not incomplete,", 'require(True,', 'tests/runtime/test_evidence_windows.py::test_resolved_ledger_cannot_hide_remaining_reference'),
 ]
 
 CASES += [
@@ -197,6 +197,15 @@ CASES += [
 
 CASES += [
     ('root_measured_remaining_capacity', 'ara/runtime/construction.py', 'inputs_for(group, batch.index, max(0, available))', 'inputs_for(group, batch.index, batch.allowance)', 'tests/runtime/test_extraction_round4.py::test_two_rich_catalogues_share_global_capacity'),
+]
+
+CASES += [
+    ('new_gap_inventory', 'ara/runtime/reconciliation.py',
+     'ids, new_gaps)', 'ids, [])',
+     'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[False-2-R]'),
+    ('new_gap_queue', 'ara/runtime/reconciliation.py',
+     'queue.extend(new_obligations)', 'pass',
+     'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[True-2-R]'),
 ]
 
 def main():

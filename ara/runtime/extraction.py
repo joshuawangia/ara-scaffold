@@ -128,6 +128,17 @@ class PaperExtraction:
                 'items': [{**asdict(item), 'citation': item.citation} for item in self.items]}
 
 
+def record_new_obligations(log, source_id, window, turn, pages, gaps):
+    """Assign identities without comparing descriptions; retain discoveries on refusal."""
+    obligations = [dict(id=f'{source_id}:{window}:turn:{turn}:gap:{index}',
+                        source_id=source_id, range=window, turn=turn,
+                        pages=list(pages), description=gap['description'])
+                   for index, gap in enumerate(gaps)]
+    for obligation in obligations:
+        log.record('extraction_obligation_discovered', source_id=source_id, obligation=obligation)
+    return obligations
+
+
 def save_immutable(path: Path, value: str) -> None:
     if path.exists():
         if path.read_text() != value:

@@ -66,7 +66,7 @@ def test_reconcile_over_context_with_requested_cross_window_evidence(rig, monkey
         if inputs.get('mode') != 'reconcile_ranges':
             if 1 in pages:
                 value['items'].append(graph(page=1)['items'][0])
-                value.update(coverage_complete=False, unresolved_references=['Q'])
+                value.update(coverage_complete=False, new_gaps=[{'description': 'Q'}])
             if 6 in pages: value['items'].append(graph(page=6)['items'][1])
             if not value['items']: value['empty_reason'] = 'P'
         elif inputs['obligations']:
@@ -80,7 +80,7 @@ def test_reconcile_over_context_with_requested_cross_window_evidence(rig, monkey
                 value['items'] = [link]
                 value['resolutions'] = [dict(obligation_id=obligation, evidence_ids=['i', p, q])]
             else:
-                value.update(coverage_complete=False, unresolved_references=['Q'], pending_obligation_ids=[obligation])
+                value.update(coverage_complete=False, new_gaps=[], pending_obligation_ids=[obligation])
                 if resolve: value['context_request'] = {'pages': [1,6], 'evidence_ids': []}
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
@@ -148,12 +148,17 @@ def test_no_obligation_review_bounds_large_graph_union(rig, monkeypatch):
 
 def test_resolved_ledger_cannot_hide_remaining_reference(rig, monkeypatch):
     calls, provider, papers, *_ = rig
+    sent = []
     def complete(kind, prompt, schema, maximum):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        sent.append(inputs)
+        if len(sent) > 2:
+            pytest.fail('complete coverage with a new gap was accepted')
         value = graph()
-        value.update(coverage_complete=False, unresolved_references=['Q'])
+        value.update(coverage_complete=False, new_gaps=[{'description': 'Q'}])
         if inputs.get('mode') == 'reconcile_ranges':
             value['items'] = []
+            value['coverage_complete'] = True
             known = inputs['ranges'][0]['items'][0]['id']
             value['resolutions'] = [dict(obligation_id=inputs['obligations'][0]['id'], evidence_ids=[known])]
         return Response(response(value))

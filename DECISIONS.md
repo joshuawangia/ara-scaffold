@@ -1211,3 +1211,44 @@ The ambiguous `unresolved_references` wire field is removed, not heuristically
 translated. The changed prompt/schema invalidates old response cache keys; saved
 v2 literature artifacts keep their existing format and provenance. No prior
 artifacts are rewritten, and no paid completion or automatic resume is implied.
+
+### GX29 — Finite paper allowances cover every extraction continuation
+
+A paper has one count allowance and one USD allowance at the shared model-call
+boundary. Every request after its first counts as a continuation, including
+additional initial ranges, subdivision recovery, graph review, ordinary evidence
+windows, requested contexts, descendants, validation retries and targeted
+corrections. Cache reads consume count allowance with zero new USD reservation.
+Free planning/count calls do not consume attempts. Count and monetary admission
+precede dispatch; USD admission reserves the full counted next request against
+all paper charges, including the initial response, rejected attempts and held
+unknown-usage reservations. Measured usage is checked again after its receipt.
+Existing stage/run reservation and actual-usage checks remain enforced.
+
+The extraction-full profile sets 24 continuations and USD15 per paper. Papers
+with at least 300 physical pages receive 48 continuations and USD30. The saved
+free plan's smaller sources require at most four initial ranges plus one estimated
+review window: four continuations, leaving twenty under the ordinary count cap.
+Their largest full-output scenario is USD5.048850. The 358-page source requires
+16 initial ranges plus four estimated review windows: nineteen continuations,
+leaving twenty-nine under the large-paper count cap. Its expected-output scenario
+with review is USD15.570865; its full-output scenario is USD20.281665, which would
+already exceed USD15. USD30 leaves USD9.718335 beyond that scenario. At the full
+context bound, a 168k-input/32k-output request reserves about USD1.64 at the pinned
+stage rates; dollars can therefore bind before the count ceiling. These are
+finite experiment limits, not predictions of semantic completion or permission
+to spend. The enclosing profile caps remain unset until supplied by the operator.
+Profiles without explicit paper settings also use finite defaults of 24/USD15;
+the large-paper override is explicit in extraction-full. Invalid or nonfinite
+settings refuse before paper dispatch, including invalid unused overrides.
+
+Paper attempt receipts and source-linked MODEL charges prevent a same-paper
+re-entry from resetting its allowance. A different source has its own allowance;
+its costs still accumulate in the shared run/stage budgets. A local STOP records
+source ID, pending obligation IDs, attempt/continuation counts, measured/held paper
+cost and both limits in the event log and partial receipt. Global budget STOPs
+inside extraction receive the same paper inventory context. No gap is discarded,
+merged by description or marked complete to meet a cap. Earlier immutable evidence
+and all raw responses remain available; an unaccepted response is retained as a
+receipt rather than retroactively incorporated into the accepted ledger. This
+provides bounded refusal, not automatic collection resume or source fidelity.

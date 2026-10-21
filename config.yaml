@@ -106,6 +106,12 @@ extraction-full:
   extraction_require_inference: true
   extraction_targeted_corrections: 1
   extraction_planned_output_tokens_per_page: 1200
+  extraction_paper_continuation_limit: 24
+  extraction_paper_cost_cap_usd: 15.0
+  extraction_large_paper_limits:
+    min_pages: 300
+    continuation_limit: 48
+    cost_cap_usd: 30.0
   construction_targeted_corrections: 1
   validation_attempts: 1
   token_cap: null

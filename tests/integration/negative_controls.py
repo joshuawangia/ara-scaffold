@@ -208,6 +208,27 @@ CASES += [
      'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[True-2-R]'),
 ]
 
+CASES += [
+    ('paper_continuation_cap', 'ara/runtime/extraction_budget.py',
+     'if self.attempts > self.continuation_limit:', 'if False:',
+     'tests/runtime/test_extraction_round6.py::test_descendant_chain_stops_at_paper_count_with_budget_remaining'),
+    ('paper_reservation_cap', 'ara/runtime/extraction_budget.py',
+     'if self.spent + reserve > self.cost_cap:', 'if False:',
+     'tests/runtime/test_extraction_round6.py::test_paper_dollars_reserve_before_dispatch'),
+    ('paper_actual_cap', 'ara/runtime/extraction_budget.py',
+     'if self.spent > self.cost_cap:', 'if False:',
+     'tests/runtime/test_extraction_round6.py::test_paper_actual_cost_overrun_keeps_measured_response'),
+    ('paper_count_finite', 'ara/runtime/extraction_budget.py',
+     'if type(value) is not int or value < 0:', 'if False:',
+     'tests/runtime/test_extraction_round6.py::test_invalid_paper_limits_refuse_before_dispatch[extraction_paper_continuation_limit-inf]'),
+    ('paper_dollars_finite', 'ara/runtime/extraction_budget.py',
+     'if not result.is_finite() or result < 0:', 'if False:',
+     'tests/runtime/test_extraction_round6.py::test_invalid_paper_limits_refuse_before_dispatch[extraction_paper_cost_cap_usd-inf]'),
+    ('paper_boundary_cost', 'ara/runtime/extraction_budget.py',
+     'self.start_cost = calls.budget.used_cost', 'self.start_cost = Decimal(0)',
+     'tests/runtime/test_extraction_round6.py::test_multi_paper_allowances_reset_at_paper_boundary'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

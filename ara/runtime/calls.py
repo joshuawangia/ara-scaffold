@@ -72,6 +72,7 @@ class ModelCalls:
         self.config, self.provider, self.log, self.cache = config, provider, log, cache
         self.root, self.topic = Path(root), topic
         self.budget = Budget(config, log)
+        self._paper_budget = None
 
     def requested_model(self, kind: str) -> str:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
@@ -135,8 +136,9 @@ class ModelCalls:
                 admission['prompt'], None, usage, float(cost), time.monotonic() - started,
                 payload_json=canonical({'status': 'incomplete', 'attempt': attempt, 'reason': type(exc).__name__,
                     'cache_hit': False, 'cache_key': admission['cache_key'],
-                    'accounting': 'reservation_unknown_actual'})))
-            self.budget.after(kind)
+                    'accounting': 'reservation_unknown_actual',
+                    **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
+            self._after(kind)
             self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
 
     def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
@@ -164,11 +166,14 @@ class ModelCalls:
         estimate = TokenUsage()
         try:
             estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
+            if not cached:
+                self.budget.before(estimate, kind, model=self.requested_model(kind))
+            if kind == 'extract_paper' and self._paper_budget is not None:
+                self._paper_budget.before(estimate, cached=cached)
             if cached:
                 raw = saved['raw']
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
-                self.budget.before(estimate, kind, model=self.requested_model(kind))
                 self.log.record('call_start', kind=kind, attempt=attempt, model=self.requested_model(kind), prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
                 dispatched = True
@@ -218,9 +223,9 @@ class ModelCalls:
                 self.budget.charge(usage, cost)
             self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
             if unknown_usage:
-                self.budget.after(kind)
+                self._after(kind)
                 self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
-            self.budget.after(kind)
+            self._after(kind)
             if charged and not isinstance(exc, (Rejected, ValueError, ValidationError)):
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
@@ -230,10 +235,15 @@ class ModelCalls:
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
-        self.budget.after(kind)
+        self._after(kind)
         if not cached:
             self.cache.put(key, {'raw': raw})
         return result
+
+    def _after(self, kind):
+        self.budget.after(kind)
+        if kind == 'extract_paper' and self._paper_budget is not None:
+            self._paper_budget.after()
 
     def _event(self, kind: str, prompt: str, raw: dict | None, usage: TokenUsage,
                cost: Any, start: float, cached: bool, status: str, reason: str | None,
@@ -248,7 +258,8 @@ class ModelCalls:
                                                        'effort': stage_settings(self.config, kind)['effort'],
                                                        'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                                                        **(Response(raw).routing() if raw else {}),
-                                                       'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual'})))
+                                                       'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual',
+                                                       **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
 
     def count_request(self, kind: str, inputs: dict, *, maximum: int | None = None,
                       admission: bool = False) -> TokenUsage:
@@ -272,6 +283,19 @@ class ModelCalls:
         return estimate
 
     def extract_paper(self, paper: Paper) -> PaperExtraction:
+        from ara.runtime.extraction_budget import PaperAllowance
+        require(self._paper_budget is None, 'nested paper extraction')
+        allowance = self._paper_budget = PaperAllowance(self, paper)
+        try:
+            return self._extract_paper(paper)
+        except BudgetStop as exc:
+            if not allowance.stopped:
+                allowance.stop(str(exc))
+            raise
+        finally:
+            self._paper_budget = None
+
+    def _extract_paper(self, paper: Paper) -> PaperExtraction:
         ranges: list[PaperExtraction] = []
         corrections = self.config.get('extraction_targeted_corrections')
         if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):

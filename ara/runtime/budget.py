@@ -88,8 +88,8 @@ class Budget:
         tools = Response(raw).usage.server_tool_uses
         return result + self.cost(TokenUsage(server_tool_uses=tools), model=served_model)
 
-    def stop(self, reason: str, stage: str) -> None:
-        state = {'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
+    def stop(self, reason: str, stage: str, **details) -> None:
+        state = {**details, 'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
                  'cost_usd': float(self.used_cost), 'status': 'STOPPED'}
         self.log.record(stage, 'STOP', **{k: v for k, v in state.items() if k != 'stage'})
         (self.log.path.parent / 'partial.json').write_text(canonical(state))

@@ -37,6 +37,20 @@ def require(condition: bool, reason: str) -> None:
         raise Rejected(reason)
 
 
+def extraction_defaults(data: dict) -> dict:
+    """Fill only omitted empty structural fields; never repair model relations."""
+    for item in data.get('items', []):
+        if not isinstance(item, dict):
+            continue
+        if item.get('kind') not in ('distinction', 'qualification'):
+            item.setdefault('applies_to', [])
+        if item.get('kind') != 'inference':
+            for field, empty in (('premise_ids', []), ('conclusion_id', None),
+                                 ('qualification_ids', []), ('inference_origin', None)):
+                item.setdefault(field, empty)
+    return data
+
+
 def word_count(draft: dict) -> int:
     # Count every whitespace-delimited token in title and body, including markers.
     return len(re.findall(r'\S+', draft['title'] + '\n' + draft['body']))
@@ -189,11 +203,7 @@ class ModelCalls:
                             except json.JSONDecodeError as exc:
                                 raise Rejected('invalid encoded formula JSON') from exc
                 if kind == 'extract_paper' and isinstance(data, dict):
-                    for item in data.get('items', []):
-                        if isinstance(item, dict) and item.get('kind') != 'inference':
-                            for field, empty in (('premise_ids', []), ('conclusion_id', None),
-                                                 ('qualification_ids', []), ('inference_origin', None)):
-                                item.setdefault(field, empty)
+                    extraction_defaults(data)
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
         except Exception as exc:
@@ -263,10 +273,14 @@ class ModelCalls:
 
     def extract_paper(self, paper: Paper) -> PaperExtraction:
         ranges: list[PaperExtraction] = []
+        corrections = self.config.get('extraction_targeted_corrections')
+        if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
+            raise ValueError('extraction_targeted_corrections must be 0 or 1')
         maximum = self.config['extract_paper_max_output_tokens']
         limit = self.config['model_context_token_bound']
 
         def run(inputs, pages, prefix, existing=(), allow_incomplete=False):
+            nonlocal corrections
             known = {item.id for item in existing}
             def check(data):
                 require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
@@ -298,6 +312,9 @@ class ModelCalls:
                                 not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
                     require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
                 by_id = {item.id: item for item in (*existing, *items)}
+                if self.config.get('extraction_require_inference', False) and (
+                        inputs.get('mode') == 'reconcile_ranges' or len(pages) == len(paper.readable_pages)):
+                    require(any(item.kind == 'inference' for item in by_id.values()), 'extraction has no stated inference')
                 for item in items:
                     if item.kind == 'inference':
                         require(all(by_id[id].kind != 'inference' for id in (*item.premise_ids, item.conclusion_id)),
@@ -320,7 +337,39 @@ class ModelCalls:
                         'obligation resolution lacks accepted evidence')
                 ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
                 return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger)), data['unresolved_references']
-            return self.call('extract_paper', inputs, check)
+            if corrections is None:
+                return self.call('extract_paper', inputs, check)
+            try:
+                return self._call_once('extract_paper', inputs, check)
+            except InvalidOutput as exc:
+                if not corrections:
+                    raise
+                try:
+                    candidate = json.loads(exc.feedback['rejected_response'])
+                    old = {item['id']: item for item in candidate['items']}
+                    require(len(old) == len(candidate['items']), 'ambiguous correction inventory')
+                except (ValueError, KeyError, TypeError) as error:
+                    raise Rejected('candidate cannot support targeted correction') from error
+                corrections -= 1
+                request = {**inputs, 'mode': 'targeted_correction',
+                           'original_mode': inputs.get('mode'), 'candidate': candidate,
+                           'validation_error': exc.feedback['error']}
+                self.log.record('extraction_targeted_correction', source_id=paper.source_id,
+                                candidate_hash=digest(canonical(candidate)), reason=str(exc))
+                def corrected(patch):
+                    baseline = extraction_defaults(json.loads(canonical(candidate)))
+                    old = {item['id']: item for item in baseline['items']}
+                    ids = [item['id'] for item in patch['items']]
+                    require(len(ids) == len(set(ids)), 'duplicate correction id')
+                    require(all(item != old.get(item['id']) for item in patch['items']),
+                            'targeted correction repeats unchanged item')
+                    updates = {item['id']: item for item in patch['items']}
+                    merged = {**patch, 'items': [updates.pop(id, item) for id, item in old.items()]}
+                    merged['items'].extend(updates.values())
+                    schema = json.loads((self.root / 'schemas' / 'extract_paper.json').read_text())
+                    Draft202012Validator(schema).validate(merged)
+                    return check(merged)
+                return self._call_once('extract_paper', request, corrected, attempt=2)
 
         unresolved = []
         def segment(pages):

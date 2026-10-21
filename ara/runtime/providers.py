@@ -93,16 +93,25 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
     original = json.loads(canonical(schema))
     if original.get('title') == 'extract_paper_v2':
         item = original['properties']['items']['items']
-        node = json.loads(canonical(item))
-        link = json.loads(canonical(item))
-        node['properties']['kind']['enum'].remove('inference')
-        for field in ('premise_ids', 'conclusion_id', 'qualification_ids', 'inference_origin'):
-            del node['properties'][field]
-            node['required'].remove(field)
-        link['properties']['kind'] = {'type': 'string', 'enum': ['inference']}
-        link['properties']['conclusion_id'] = {'type': 'string'}
-        link['properties']['inference_origin'] = {'type': 'string', 'enum': ['paper_stated']}
-        original['properties']['items']['items'] = {'oneOf': [node, link]}
+        branches = []
+        families = (
+            (['premise', 'intermediate_conclusion', 'conclusion', 'reported_view', 'attacked_view'], []),
+            (['distinction', 'qualification'], ['applies_to']),
+            (['inference'], ['premise_ids', 'conclusion_id', 'qualification_ids', 'inference_origin']),
+        )
+        edge_fields = {'applies_to', 'premise_ids', 'conclusion_id', 'qualification_ids', 'inference_origin'}
+        for kinds, fields in families:
+            branch = json.loads(canonical(item))
+            branch['properties']['kind'] = {'type': 'string', 'enum': kinds}
+            for field in edge_fields - set(fields):
+                del branch['properties'][field]
+                branch['required'].remove(field)
+            if kinds == ['inference']:
+                branch['properties']['premise_ids']['minItems'] = 1
+                branch['properties']['conclusion_id'] = {'type': 'string'}
+                branch['properties']['inference_origin'] = {'type': 'string', 'enum': ['paper_stated']}
+            branches.append(branch)
+        original['properties']['items']['items'] = {'oneOf': branches}
     definitions = original.get('$defs', {})
     if encoded_formulas:
         # The larger batch grammar exceeds the service compiler's limit with AST alternatives.

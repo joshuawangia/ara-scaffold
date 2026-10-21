@@ -1055,3 +1055,31 @@ attempt and stop on the first failed phase as required. No lower output quota or
 semantic content pruning is used to fit cost. Whole-source packing and proportional
 working allowances still refuse oversized/skewed inputs explicitly. Full extraction
 is deferred to Delta's next review per the brain addendum, even if projections fit.
+
+
+## GX25 — Kind-specific extraction and bounded targeted correction
+
+The extraction provider wire has three disjoint kind families: proposition nodes,
+qualification/distinction nodes with applies_to, and inference links with explicit
+premise/conclusion/qualification edges. Empty omitted structural fields are filled
+before canonical local validation. Invalid supplied relations remain invalid; code
+never interprets them as edges. The prompt requires paper-stated inference nodes.
+A flat grammar size regression bounds the wire without weakening local guards.
+
+For bounded extraction checks, extraction_targeted_corrections=0 or 1 disables the
+generic full-response retry loop. One correction allowance belongs to the entire
+paper, including all ranges and reconciliation. A correction returns only changed
+or new items, retains every omitted item, rejects unchanged retransmissions, and
+revalidates the whole merged graph. It uses the same counted, reserved, logged,
+cache-keyed model boundary and extraction stage contract. Malformed or ambiguous
+candidate inventories cannot use the patch path. The extraction_require_inference
+acceptance setting refuses whole-paper or reconciled graphs with no stated links;
+it does not invent a link to satisfy the check. Neither setting changes historical
+artifact provenance. The bounded pilot enables both settings; all rejected charges
+and raw responses remain in the receipt.
+
+The round-3b live scope is two extraction retries and one construction lifecycle,
+using accepted prior evidence if either retry fails. Remaining extraction and
+construction allowances are independent; unknown prior usage remains reserved.
+The full-corpus phase remains deferred for independent review. Live receipts and
+source-model attribution are in the external report, never tracked fixtures.

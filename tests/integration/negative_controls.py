@@ -85,7 +85,7 @@ CASES = [
     ('build_t_retry_context', 'ara/runtime/calls.py', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)', "estimate = self.count_request(kind, inputs, maximum=maximum, admission='validation_feedback' not in inputs)", 'tests/runtime/test_extraction_fix1.py::test_build_t_retry_recounts_feedback'),
     ('extraction_import_idempotence', 'ara/runtime/extraction.py', "if any(e['stage'] == 'extraction_provenance_import' and", "if False and any(e['stage'] == 'extraction_provenance_import' and", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_partial_methodology', 'ara/runtime/export.py', "for p in outcomes if p['status'] == 'partial'", "for p in outcomes if p['status'] == 'extracted'", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
-    ('rich_id_unique', 'ara/runtime/calls.py', 'require(len(ids) == len(set(ids)),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[id]'),
+    ('rich_id_unique', 'ara/runtime/calls.py', "require(len(ids) == len(set(ids)), 'duplicate extraction id')", "require(True, 'duplicate extraction id')", 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[id]'),
     ('rich_endpoint', 'ara/runtime/calls.py', 'require(set(refs) <= available,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[endpoint]'),
     ('rich_inference_origin', 'ara/runtime/calls.py', "item.inference_origin == 'paper_stated'", 'True', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[origin]'),
     ('rich_coverage', 'ara/runtime/calls.py', "require(data['coverage_complete'] or (allow_incomplete and bool(data['unresolved_references'])),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[coverage]'),
@@ -141,6 +141,16 @@ CASES += [
 ]
 
 CASES.append(('reconciliation_resolution_evidence', 'ara/runtime/calls.py', "require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),", 'require(True,', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[unknown]'))
+
+CASES += [
+    ('kind_relation_wire', 'ara/runtime/providers.py', "edge_fields - set(fields)", "edge_fields - set(fields) - {'applies_to'}", 'tests/runtime/test_extraction_round3.py::test_extraction_wire_has_unambiguous_nodes'),
+    ('extraction_grammar_size', 'ara/runtime/providers.py', 'branches.append(branch)', 'branches.extend([branch] * 4)', 'tests/runtime/test_extraction_round3b.py::test_extraction_grammar_size'),
+    ('nonzero_inference_acceptance', 'ara/runtime/calls.py', "require(any(item.kind == 'inference' for item in by_id.values()),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_refused_without_correction'),
+    ('targeted_inventory_retained', 'ara/runtime/calls.py', "[updates.pop(id, item) for id, item in old.items()]", '[]', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-inferences]'),
+    ('targeted_unchanged_refusal', 'ara/runtime/calls.py', "require(all(item != old.get(item['id']) for item in patch['items']),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
+    ('targeted_per_paper_limit', 'ara/runtime/calls.py', 'corrections -= 1', 'pass', 'tests/runtime/test_extraction_round3b.py::test_correction_allowance_is_shared_across_ranges'),
+    ('qualification_local_guard', 'ara/runtime/calls.py', "require(not item.applies_to or item.kind in ('distinction', 'qualification'),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-relation]'),
+]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

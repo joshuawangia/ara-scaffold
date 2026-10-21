@@ -210,7 +210,12 @@ def test_extraction_wire_has_unambiguous_nodes(rig, monkeypatch):
     for item in value['items']:
         if item['kind'] != 'inference':
             for key in ('premise_ids', 'conclusion_id', 'qualification_ids', 'inference_origin'): del item[key]
+    for item in value['items']:
+        if item['kind'] not in ('distinction', 'qualification'): del item['applies_to']
     Draft202012Validator(wire).validate(value)
+    invalid_relation = copy.deepcopy(value)
+    invalid_relation['items'][0]['applies_to'] = ['q']
+    with pytest.raises(ValidationError): Draft202012Validator(wire).validate(invalid_relation)
     invalid = copy.deepcopy(value)
     invalid['items'][0]['inference_origin'] = 'paper_stated'
     with pytest.raises(ValidationError): Draft202012Validator(wire).validate(invalid)

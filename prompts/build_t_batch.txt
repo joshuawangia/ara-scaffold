@@ -4,3 +4,5 @@ Shared symbols are an accumulated semantic contract. Reuse an existing symbol ON
 WIRE ENCODING: Each formula field is a JSON-encoded STRING containing the AST, not an object. Runtime decodes it before enforcing LOCAL_RESPONSE_SCHEMA. Encode no other fields. Keep formulas concise and structurally faithful, without an arbitrary depth limit.
 
 In targeted_correction mode, fix validation_error in candidate. Return ONLY changed or missing entries in commitments (keyed by id), new_symbols and alignments (keyed by name); use empty arrays for unchanged sections. Every omitted entry is retained. Do not repeat unchanged entries. No entry deletion or wholesale regeneration is supported. The entire merged result is validated against the same fixed inventory and symbol contract. Formula strings still use the wire encoding above.
+
+working_token_allowance is the remaining measured global working capacity. new_symbol_token_allowance is the remaining counted catalogue capacity. Do not invent equivalence or remove required evidence to fit either limit.

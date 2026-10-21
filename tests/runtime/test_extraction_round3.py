@@ -189,7 +189,7 @@ def test_build_count_failure_preserves_measured_raw_receipt(rig, monkeypatch):
     calls, provider, path = rich_calls(rig, monkeypatch)
     original = provider.estimate
     def estimate(kind, *a):
-        if kind == 'propose_targets': raise OSError('P')
+        if kind == 'propose_targets' and any(e['stage'] == 'response_received' and json.loads(e['payload_json'])['kind'] == 'build_t_batch' for e in calls.log.read()): raise OSError('P')
         return original(kind, *a)
     monkeypatch.setattr(provider, 'estimate', estimate)
     with pytest.raises(OSError):

@@ -49,7 +49,7 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--paper-id', action='append', default=[])
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
-    extraction.add_argument('--profile', choices=('extraction',))
+    extraction.add_argument('--profile', choices=('extraction', 'extraction-full'))
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -87,6 +87,11 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             config = yaml.safe_load(args.config.read_text())
             if args.profile:
                 config.update(config[args.profile])
+            if args.profile == 'extraction-full':
+                missing_caps = [key for key in ('token_cap', 'cost_cap_usd', 'extraction_cost_cap_usd')
+                                if config.get(key) is None]
+                if missing_caps:
+                    raise ValueError('operator must set extraction-full caps: ' + ', '.join(missing_caps))
             config.setdefault('validation_attempts', 3)
             if args.provider:
                 config['provider'] = args.provider

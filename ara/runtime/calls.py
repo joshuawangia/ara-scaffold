@@ -284,7 +284,10 @@ class ModelCalls:
             known = {item.id for item in existing}
             def check(data):
                 require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
-                require(bool(data['items']) or inputs.get('mode') == 'reconcile_ranges', 'empty extraction')
+                require(bool(data['items']) or inputs.get('mode') == 'reconcile_ranges' or
+                        (bool(data.get('empty_reason', '').strip()) and data['coverage_complete'] and
+                         not data['unresolved_references']), 'empty extraction requires complete no-argument disposition')
+                require(not data.get('empty_reason') or not data['items'], 'nonempty extraction has empty disposition')
                 require(data['coverage_complete'] or (allow_incomplete and bool(data['unresolved_references'])), 'extraction coverage incomplete')
                 require(not data['unresolved_references'] or allow_incomplete, 'unresolved extraction references')
                 items = tuple(ExtractedItem(**item) for item in data['items'])
@@ -336,7 +339,10 @@ class ModelCalls:
                 require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),
                         'obligation resolution lacks accepted evidence')
                 ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
-                return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger)), data['unresolved_references']
+                dispositions = ([dict(pages=[p.page for p in pages], reason=data['empty_reason'])]
+                                if data.get('empty_reason') else [])
+                return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
+                                       dispositions_json=canonical(dispositions)), data['unresolved_references']
             if corrections is None:
                 return self.call('extract_paper', inputs, check)
             try:
@@ -414,8 +420,11 @@ class ModelCalls:
             self.log.record('extraction_obligations_resolved', source_id=paper.source_id,
                             obligations=unresolved, resolutions=json.loads(resolutions_json))
         require(len({item.id for item in items}) == len(items), 'duplicate merged extraction id')
+        if len(ranges) > 1 and self.config.get('extraction_require_inference', False):
+            require(any(item.kind == 'inference' for item in items), 'extraction has no stated inference')
         result = PaperExtraction(paper.source_id, items, obligations_json=canonical(unresolved),
-                                 resolutions_json=resolutions_json)
+                                 resolutions_json=resolutions_json, dispositions_json=canonical([
+                                     d for r in ranges for d in json.loads(r.dispositions_json)]))
         self.log.record('extraction_graph_merged', source_id=paper.source_id, ranges=len(ranges),
                         items=len(items), graph_hash=digest(canonical(result.to_dict())))
         return result

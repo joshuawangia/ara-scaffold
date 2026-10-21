@@ -93,3 +93,25 @@ extraction:
 build_t_batch_input_tokens: 70000
 working_t_token_budget: 100000
 working_t_symbol_token_budget: 16000
+
+# Full extraction is disabled until the operator supplies all three caps.
+extraction-full:
+  stages:
+    extraction:
+      model: claude-opus-5
+      fallbacks: []
+      effort: high
+      thinking: adaptive
+  fallbacks: []
+  extraction_require_inference: true
+  extraction_targeted_corrections: 1
+  construction_targeted_corrections: 1
+  validation_attempts: 1
+  token_cap: null
+  cost_cap_usd: null
+  extraction_cost_cap_usd: null
+  working_t_symbol_token_budget: 32000
+  working_t_symbol_growth_tokens_per_item: 256
+
+# Planning reservation, not a prediction of semantic symbol reuse.
+working_t_symbol_growth_tokens_per_item: 0

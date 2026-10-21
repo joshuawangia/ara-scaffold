@@ -119,9 +119,11 @@ class PaperExtraction:
     schema_version: int = EXTRACTION_VERSION
     obligations_json: str = '[]'
     resolutions_json: str = '[]'
+    dispositions_json: str = '[]'
 
     def to_dict(self) -> dict:
         return {'schema_version': self.schema_version, 'source_id': self.source_id,
+                'dispositions': json.loads(self.dispositions_json),
                 'obligations': json.loads(self.obligations_json), 'resolutions': json.loads(self.resolutions_json),
                 'items': [{**asdict(item), 'citation': item.citation} for item in self.items]}
 

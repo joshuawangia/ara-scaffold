@@ -1125,3 +1125,22 @@ a change to the ordinary 64000-token batch allowance. Refusal remains explicit
 when the counted reservation cannot fit. The sole freeze still follows accepted
 roots, exact-inventory formalization and merge. Full extraction and pilot execution
 remain outside this round; live receipts stay in the external report.
+
+### GX25 — Full extraction preflight and global construction capacity
+
+`extraction-full` selects its extraction model in one stage line, disables fallback,
+requires stated inference at aggregate acceptance and permits one targeted correction
+per paper. All enclosing/extraction caps are unset until the operator supplies them;
+profile preflight refuses generation before provider creation. Historical profiles
+retain their semantics. Empty readable ranges require a complete, obligation-free,
+model-authored disposition persisted with page IDs. Empty root selections must
+account for every group and skip formalization; an entirely empty T still refuses.
+
+Working capacity is cumulative and provider-counted, not proportional to input-node
+counts. Before formalization the runtime counts exact copied evidence in a minimal
+formula envelope and the existing catalogue, reserves configurable symbol growth,
+and logs remaining global capacity. These are planning measurements, not a promise
+about unknown formulas or symbol reuse. Accepted cumulative T and catalogue are
+measured again. Full profile catalogue capacity is 32k, informed by the prior live
+10,471-token catalogue; no semantic deduplication is performed to fit it. A preflight
+refusal retains root/closure receipts for an explicit subsequent selection decision.

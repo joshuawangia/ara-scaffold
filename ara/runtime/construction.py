@@ -168,11 +168,10 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     batches: list[Batch] = []
     pending = []
     pending_tokens = 0
-    total_nodes = len(all_items)
     def inputs_for(group, index, allowance):
         return {**base_inputs, 'batch_index': index, 'papers': group, 'working_token_allowance': allowance}
     def allowance_for(group):
-        return max(1, (metadata['working_t_token_budget'] - 8000) * sum(len(p['items']) for p in group) // total_nodes)
+        return metadata['working_t_token_budget']
     def count(group):
         return calls.count_request('build_t_batch', inputs_for(group, len(batches), allowance_for(group))).input_tokens
     for paper in usable:
@@ -213,7 +212,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
                          root_ids=root_ids, groups=selection_groups, graph_hash=digest(canonical(items)))
         def select(data):
             short_roots = data['roots']
-            require(bool(short_roots) and len(set(short_roots)) == len(short_roots) and
+            require(len(set(short_roots)) == len(short_roots) and
                     set(short_roots) <= set(root_ids), 'invalid selection roots')
             roots = [root_ids[id] for id in short_roots]
             require(bool(data['relevance'].strip()), 'empty selection reason')
@@ -237,6 +236,37 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
         calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
         inputs = {**inputs, 'closure': closure, 'papers': [
             {**paper, 'items': [i for i in paper['items'] if i['id'] in selected_ids]} for paper in group]}
+        if not selected_ids:
+            result = BatchResult(batch.index, CommitmentSet(()), canonical({'omitted': omitted, 'closure': closure}))
+            results.append(result)
+            calls.log.record('build_t_batch_skipped', plan_id=plan_id, index=batch.index, omitted=omitted)
+            save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
+            continue
+        prior = [c.to_dict() for r in results for c in r.commitments.commitments]
+        target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
+        current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})
+        available = metadata['working_t_token_budget'] - current.input_tokens
+        # Count exact copied evidence with a minimal formula envelope. Actual formulas
+        # remain model-authored; the cumulative accepted result is checked separately.
+        floor = [dict(id=id, text=evidence_text(items[id]), citation=items[id]['citation'],
+                      formula={'op': 'atom', 'name': 'P'}) for id in sorted(selected_ids)]
+        projected = calls.count_request('propose_targets', {**target_inputs,
+            'commitments': {'commitments': prior + floor}})
+        catalog_inputs = {**inputs, 'papers': []}
+        empty_catalog = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
+        current_catalog = calls.count_request('build_t_batch', catalog_inputs)
+        catalog_tokens = current_catalog.input_tokens - empty_catalog.input_tokens
+        growth = len(selected_ids) * calls.config.get('working_t_symbol_growth_tokens_per_item', 256)
+        calls.log.record('build_t_capacity_preflight', plan_id=plan_id, index=batch.index,
+                         working_input_tokens=current.input_tokens, working_available=available,
+                         closure_copy_input_tokens=projected.input_tokens, catalogue_tokens=catalog_tokens,
+                         catalogue_growth_reservation=growth, catalogue_limit=symbol_budget,
+                         note='Minimal formula envelope and configurable growth reservation; actual output rechecked.')
+        require(projected.input_tokens <= metadata['working_t_token_budget'], 'working T closure preflight exceeded')
+        require(catalog_tokens + growth <= symbol_budget, 'shared symbol token allowance preflight exceeded')
+        inputs = {**inputs, 'working_token_allowance': available,
+                  'new_symbol_token_allowance': symbol_budget - catalog_tokens}
+        calls.count_request('build_t_batch', inputs, admission=True)
         # The actual growing catalogue and plan identity are counted again, including retries.
         def check(data):
             ids = [c['id'] for c in data['commitments']]
@@ -269,9 +299,9 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
                 require(bool(symbol['definition'].strip()) and set(symbol['evidence_ids']) <= selected and
                         bool(symbol['evidence_ids']), 'symbol definition lacks evidence')
                 require(symbol['name'] in used, 'unused symbol definition')
-            blank = calls.count_request('propose_targets', {'commitments': {'commitments': []}, 'count': 1, 'named_position': None})
-            measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(), 'count': 1, 'named_position': None})
-            require(measured.input_tokens - blank.input_tokens <= batch.allowance, 'working T batch token allowance exceeded')
+            cumulative = calls.count_request('propose_targets', {**target_inputs,
+                'commitments': {'commitments': prior + commitments.to_dict()['commitments']}})
+            require(cumulative.input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
             catalog_inputs = {**inputs, 'papers': [], 'shared_symbols': symbols + data['new_symbols']}
             without = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
             with_catalog = calls.count_request('build_t_batch', catalog_inputs)
@@ -287,6 +317,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
                          evidence_ids=[c.id for c in result.commitments.commitments], omitted=data['omitted'])
         save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
     merged = merge_batches(tuple(results), len(batches))
+    require(bool(merged.commitments), 'empty working T after accounted omissions')
     measured = calls.count_request('propose_targets', {'commitments': merged.to_dict(),
         'count': calls.config['target_candidates'], 'named_position': None}, admission=True)
     if measured.input_tokens > metadata['working_t_token_budget']:

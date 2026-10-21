@@ -135,9 +135,16 @@ def test_counted_capacity_refuses_explicitly(rig, monkeypatch, case):
                 calls.propose_targets(t)
             assert provider.calls == before
         else:
-            calls.config['working_t_token_budget'] = 8001
+            original = provider.estimate
+            def oversized_formula(kind, prompt, schema, maximum):
+                data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+                entries = data.get('commitments', {}).get('commitments', [])
+                if kind == 'propose_targets' and any(c['formula']['op'] == 'implies' for c in entries):
+                    return TokenUsage(input_tokens=100001)
+                return original(kind, prompt, schema, maximum)
+            monkeypatch.setattr(provider, 'estimate', oversized_formula)
             from ara.runtime.calls import Rejected
-            with pytest.raises(Rejected, match='working T batch token allowance'):
+            with pytest.raises(Rejected, match='working T global token allowance'):
                 calls.build_t(path.read_text(), 'P')
     assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())
 
@@ -279,10 +286,11 @@ def test_construction_final_capacity_guard(rig, monkeypatch, case):
     if case == 'final_budget':
         estimate = provider.estimate
         monkeypatch.setattr(provider, 'estimate', lambda kind, *args: TokenUsage(input_tokens=100001)
-                            if kind == 'propose_targets' else estimate(kind, *args))
+                            if kind == 'propose_targets' and any(e['stage'] == 'build_t_batch_accepted' for e in calls.log.read()) else estimate(kind, *args))
         error, message = BudgetStop, 'working T downstream token budget'
     else:
         calls.config['working_t_symbol_token_budget'] = 1
+        calls.config['working_t_symbol_growth_tokens_per_item'] = 0
         error, message = Rejected, 'shared symbol token allowance'
     with pytest.raises(error, match=message):
         prepare_commitments(calls, load_bank(ROOT / 'bank'), path.read_text(), 'P')

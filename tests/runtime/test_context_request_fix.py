@@ -143,7 +143,7 @@ def test_terminal_failure_stops_corpus_and_pilot_import(rig, monkeypatch):
     outcomes = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_outcome']
     assert outcomes[-1]['status'] == 'failed'
     stopped = next(json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_stopped')
-    assert stopped['policy'] == 'stop-on-paper-failure' and stopped['not_attempted'] == ['q']
+    assert stopped['policy'] == 'continue-on-paper-failure' and stopped['max_failed_papers'] == 0 and stopped['not_attempted'] == ['q']
     assert accounting(calls.log)['extraction']['stops'] == [stopped]
     assert not (calls.log.path.parent/'literature.extracted.txt').exists()
     with pytest.raises(FileNotFoundError):

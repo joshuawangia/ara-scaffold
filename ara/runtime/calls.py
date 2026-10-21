@@ -152,7 +152,7 @@ class ModelCalls:
                     'cache_hit': False, 'cache_key': admission['cache_key'],
                     'accounting': 'reservation_unknown_actual',
                     **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
-            self._after(kind)
+            self.budget.after(kind)
             self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
 
     def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1) -> Any:
@@ -236,16 +236,18 @@ class ModelCalls:
                 self.budget.charge(usage, cost)
             self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
             if unknown_usage:
-                self._after(kind)
+                self.budget.after(kind)
                 self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
             self._after(kind)
-            if charged and not isinstance(exc, (Rejected, ValueError, ValidationError)):
+            if not isinstance(exc, (Rejected, ValueError, ValidationError)):
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
             if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
+            if not isinstance(exc, Rejected):
+                raise
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         self._after(kind)
@@ -292,7 +294,8 @@ class ModelCalls:
                         input_tokens=initial, output_tokens=maximum, limit=self.config['model_context_token_bound'],
                         decision='fits' if fits else 'refused', prompt=prompt)
         if admission and not fits:
-            self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind)
+            self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind,
+                             scope='paper' if kind == 'extract_paper' else 'run')
         return estimate
 
     def extract_paper(self, paper: Paper) -> PaperExtraction:
@@ -303,7 +306,7 @@ class ModelCalls:
             return self._extract_paper(paper)
         except BudgetStop as exc:
             if not allowance.stopped:
-                allowance.stop(str(exc))
+                allowance.stop(str(exc), scope=exc.scope)
             raise
         finally:
             self._paper_budget = None

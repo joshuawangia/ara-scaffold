@@ -2,6 +2,8 @@
 from decimal import Decimal, InvalidOperation
 import json
 
+from ara.runtime.provenance import batch_events
+
 
 def _count(value, name):
     if type(value) is not int or value < 0:
@@ -36,7 +38,7 @@ class PaperAllowance:
             cost = _dollars(large['cost_cap_usd'], 'large paper cost_cap_usd')
             if len(paper.pages) >= threshold:
                 self.continuation_limit, self.cost_cap = count, cost
-        events = calls.log.read()
+        events = batch_events(calls.log.read())
         self.attempts = sum(e['stage'] == 'extraction_paper_attempt' and
                             json.loads(e['payload_json'])['source_id'] == self.source_id for e in events)
         self.prior_cost = sum((Decimal(str(e['cost_usd'])) for e in events
@@ -56,9 +58,9 @@ class PaperAllowance:
                     paper_continuation_limit=self.continuation_limit,
                     paper_cost_usd=float(self.spent), paper_cost_cap_usd=float(self.cost_cap))
 
-    def stop(self, reason):
+    def stop(self, reason, *, scope='paper'):
         pending = set()
-        for event in self.calls.log.read():
+        for event in batch_events(self.calls.log.read()):
             data = json.loads(event['payload_json'])
             if data.get('source_id') != self.source_id:
                 continue
@@ -69,7 +71,7 @@ class PaperAllowance:
         pending = sorted(pending)
         self.stopped = True
         self.calls.budget.stop(f'{reason}; paper {self.source_id}; pending IDs {pending}',
-                               'extract_paper', **self.state(), pending_obligation_ids=pending)
+                               'extract_paper', scope=scope, **self.state(), pending_obligation_ids=pending)
 
     def before(self, estimate, *, cached):
         if self.attempts > self.continuation_limit:

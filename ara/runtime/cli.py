@@ -16,7 +16,7 @@ from ara.runtime.budget import BudgetStop
 from ara.runtime.cache import Cache
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
-from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance, MissingExtractionLineage
+from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance, MissingExtractionLineage, resume_papers, validate_failure_limit
 from ara.runtime.logging import EventLog, now
 from ara.runtime.orchestration import compose, native_engine, prepare, search_all
 from ara.runtime.providers import AnthropicProvider, MockProvider
@@ -49,6 +49,7 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--paper-id', action='append', default=[])
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
+    extraction.add_argument('--resume-from', type=Path, action='append', default=[])
     extraction.add_argument('--profile', choices=('extraction', 'extraction-full'))
     plan = sub.add_parser('plan-extraction')
     plan.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
@@ -118,11 +119,11 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 config.update(config[args.profile])
             validate_profile_caps(config, args.profile)
             config.setdefault('validation_attempts', 3)
+            validate_failure_limit(config)
             if args.provider:
                 config['provider'] = args.provider
             if args.run_dir.exists() and any(args.run_dir.iterdir()):
-                raise ValueError('extraction resume is unsupported; preserve accepted artifacts and receipts; '
-                                 'a new run cannot reuse partial evidence with valid provenance')
+                raise ValueError('extraction destination must be empty; use --resume-from with a new run directory')
             log = EventLog(args.run_dir / 'events.jsonl')
             log.human('extract', json.dumps(raw_args, ensure_ascii=False), argv=raw_args,
                       manifest=args.manifest.read_text(), reported_minutes=args.human_minutes)
@@ -131,8 +132,9 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                        missing_policy=args.missing, estimate_only=args.estimate_only,
                        tools=['pypdf', 'Anthropic Messages API', 'jsonschema'])
             papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
+            reused = resume_papers(log, papers, args.resume_from) if args.resume_from and not args.estimate_only else {}
             calls = calls_factory(config, log, '')
-            path = extract(calls, papers, missing=args.missing, estimate_only=args.estimate_only)
+            path = extract(calls, papers, missing=args.missing, estimate_only=args.estimate_only, reused=reused)
             if path:
                 print(str(path))
             return 0
@@ -162,7 +164,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 log.record('extraction_lineage_missing', reason=str(exc))
                 raise
             if provenance:
-                import_provenance(log, provenance)
+                import_provenance(log, provenance, json.loads(args.literature.with_suffix('.provenance.json').read_text()))
             log.human('run', args.topic if args.topic is not None else json.dumps(raw_args, ensure_ascii=False),
                       argv=raw_args, topic=args.topic,
                       literature=literature if args.literature is not None and not provenance else None,

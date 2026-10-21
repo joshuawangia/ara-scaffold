@@ -57,7 +57,7 @@ def offline(monkeypatch):
 @pytest.fixture
 def rig(tmp_path):
     config = yaml.safe_load((ROOT / 'config.yaml').read_text())
-    config.update(provider='mock', validation_attempts=1, cache_dir=str(tmp_path / 'cache'), target_candidates=1)
+    config.update(provider='mock', validation_attempts=1, extraction_max_failed_papers=0, cache_dir=str(tmp_path / 'cache'), target_candidates=1)
     config_path = tmp_path / 'config.yaml'
     config_path.write_text(yaml.safe_dump(config))
     manifest = tmp_path / 'manifest.yaml'
@@ -308,7 +308,7 @@ def test_estimate_only_never_dispatches(rig):
     calls, provider, papers, *_ = rig
     assert extract(calls, papers, estimate_only=True) is None
     assert provider.calls == 0
-    estimate = json.loads(calls.log.read()[0]['payload_json'])
+    estimate = next(json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_estimate')
     assert estimate['pages'] == 2
     assert estimate['input_tokens'] - len(calls.render('extract_paper', {})[1].encode()) >= 3000
     assert estimate['output_token_allowance'] == 32000

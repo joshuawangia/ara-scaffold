@@ -39,7 +39,7 @@ def reconcile(calls, paper, ranges, run):
         def count(ids):
             return calls.count_request('extract_paper', inputs_for(ids, obligation)[0]).input_tokens
         return counted_windows(tuple(pages), count, limit, lambda: calls.budget.stop(
-            'reconciliation indivisible evidence window exceeds context; obligations retained', 'extract_paper'))
+            'reconciliation indivisible evidence window exceeds context; obligations retained', 'extract_paper', scope='paper'))
 
     def execute(ids, obligation=None, evidence_ids=(), requested=False, requests=None):
         nonlocal items, turn

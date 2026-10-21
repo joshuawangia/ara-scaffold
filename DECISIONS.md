@@ -1299,3 +1299,47 @@ or replaying cross-run cache entries does not establish that provenance. Existin
 run directories therefore refuse before provider construction with an explicit
 resume limitation. Paid accepted evidence is preserved but not automatically reused;
 a fresh run can repay that work. No live extraction completion is claimed.
+
+
+### GX31 — Disclosed paper failures and completed-paper reuse
+
+Supersedes GX30's stop-on-first-paper-failure policy and its blanket resume
+deferral. Range restoration and completed-paper reuse are different scopes.
+Restoring a reconciliation queue is unnecessary when a completed, accepted graph
+already has a receipt. Rejecting all reuse unnecessarily repays successful work.
+The intended result is a usable pilot corpus within the aggregate extraction cap.
+
+Terminal validation/provider-output failures and paper-local allowance/context
+stops produce explicit failed outcomes with no evidence, a reason, detail and
+original log checkpoint. Extraction continues to the next paper. The configurable
+`extraction_max_failed_papers` defaults to 3 globally and in `extraction-full`;
+only exceeding it stops publication. Global budget exhaustion, unknown spend and
+unexpected operational/configuration errors stop immediately. Failed sources
+appear in completed literature and methodology but cannot enter construction or
+citations. All-failed literature still cannot construct a working commitment set.
+
+Repeatable `extract --resume-from` imports receipts into a fresh run before budget
+construction. Source PDF hash, bibliographic metadata, diagnostics and input hash
+bind reusable completed outcomes; older outcomes without an input hash retain
+PDF/metadata binding. An accepted merged-graph receipt is required. Completed
+papers from stopped runs can be reused. Changed, failed and missing papers need
+fresh extraction; conflicting matching completed outcomes refuse. A new batch
+selects current outcomes and resets paper-local allowances without resetting
+aggregate cost or token totals. Methodology preserves historical failures.
+
+Imports pin the original log path, record count and last hash. New source pins
+also verify the append checkpoint. Recursive origin validation detects missing,
+modified or truncated ancestors; copied events must match the pinned prefix.
+Original events retain timestamps, labels, usage and charges, with event identities
+deduplicating overlapping/transitive imports. Native pilot imports use the same
+origin-pinned path. Legacy prefix-only callers remain supported and validated.
+All original costs are retained, including failed attempts and unrelated papers
+in a supplied origin; use origins from the same extraction campaign. These local
+hash chains are integrity receipts, not external signatures.
+
+No partial-range restoration, in-place resume, live generation or paid verification
+is added. A failed paper may repay its accepted ranges, while completed papers do
+not incur another extraction dispatch. Preserve every origin log and checkpoint.
+Offline tests and production-wire mutation controls cover native extraction/pilot,
+threshold boundaries, evidence exclusion, receipt identity, changed inputs,
+transitive tamper detection, allowance reset and inherited aggregate caps.

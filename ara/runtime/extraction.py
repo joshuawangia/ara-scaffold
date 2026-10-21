@@ -14,7 +14,8 @@ import yaml
 
 from ara.runtime.cache import canonical, digest
 from ara.runtime.logging import EventLog, read_log
-from ara.types import RunEvent
+from ara.runtime.provenance import (checkpoint, read_checkpoint, import_receipts,
+                                    extraction_outcomes)
 
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
@@ -214,6 +215,11 @@ def literature_entry(outcome: dict) -> dict:
     entry['pdf_sha256'] = outcome.get('pdf_sha256')
     if outcome.get('reason'):
         entry['reason'] = outcome['reason']
+    if outcome['status'] == 'failed':
+        if outcome['items']:
+            raise ValueError('failed paper cannot supply evidence')
+        entry['failure_receipt'] = outcome['failure_receipt']
+        entry['failure_detail'] = outcome['failure_detail']
     if outcome.get('affected_pages'):
         entry['coverage'] = 'partial: unread visual pages excluded; retained encoding warnings require source inspection; see diagnostics'
     return entry
@@ -226,6 +232,7 @@ def assemble(outcomes: list[dict]) -> str:
         'use': 'Use extracted items only. Record-only entries supply no claims. Partial entries cover only '
                'readable pages. Preserve attribution; reported or attacked views are not author endorsements. '
                'Copy evidence identifiers and citations verbatim. Inferences describe paper-stated links, not engine licenses.',
+        **({'status': 'complete_with_disclosed_failures'} if any(e['status'] == 'failed' for e in entries) else {}),
         'papers': entries}) + '\n'
 
 
@@ -246,13 +253,23 @@ def extraction_range_plan(calls: ModelCalls, paper: Paper):
             return bound + 1
         return usage.input_tokens
     windows = counted_windows(paper.readable_pages, measure, bound, lambda: calls.budget.stop(
-        'extract_paper context bound or output planning bound: single page cannot fit; no truncation', 'extract_paper'))
+        'extract_paper context bound or output planning bound: single page cannot fit; no truncation', 'extract_paper', scope='paper'))
     return [(pages, counts[tuple(p.page for p in pages)]) for pages in windows]
 
 
 def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'record-only',
-            estimate_only: bool = False) -> Path | None:
+            estimate_only: bool = False, reused: dict | None = None) -> Path | None:
     from ara.types import TokenUsage
+    from ara.runtime.calls import Rejected
+    from ara.runtime.budget import BudgetStop
+
+    maximum_failures = validate_failure_limit(calls.config)
+    policy = dict(policy='continue-on-paper-failure', max_failed_papers=maximum_failures)
+    calls.log.record('extraction_batch_started', **policy, selected=[p.source_id for p in papers])
+    if not estimate_only:
+        calls.budget.after('extract_paper')
+    reused = reused or {}
+    failures = 0
 
     maximum = calls.config['extract_paper_max_output_tokens']
     per_page = calls.config['extraction_estimated_tokens_per_page']
@@ -293,7 +310,18 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         base = {'source_id': paper.source_id, 'record': json.loads(paper.record_json),
                 'pdf_sha256': paper.pdf_sha256, 'pages': len(paper.pages),
                 'page_diagnostics': [asdict(d) for d in paper.diagnostics],
-                'affected_pages': list(paper.affected_pages)}
+                'affected_pages': list(paper.affected_pages),
+                'input_sha256': digest(canonical(paper.inputs()))}
+        if paper.source_id in reused:
+            previous = reused[paper.source_id]
+            outcome = previous['outcome']
+            validate_reused_paper(paper, outcome)
+            calls.log.record('extraction_paper_reused', source_id=paper.source_id, origin=previous['origin'],
+                             outcome_hash=digest(canonical(outcome)))
+            calls.log.record('extraction_outcome', **outcome)
+            outcomes.append(outcome)
+            save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
+            continue
         if reason:
             outcome = {**base, 'status': 'record only, not extracted', 'reason': reason, 'items': []}
             calls.log.record('extraction_outcome', **outcome)
@@ -314,13 +342,23 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         try:
             result = calls.extract_paper(paper)
         except Exception as exc:
-            calls.log.record('extraction_outcome', **base, status='failed', reason=type(exc).__name__, items=[])
-            calls.log.record('extraction_stopped', policy='stop-on-paper-failure',
-                             failed_source_id=paper.source_id,
-                             completed=[o['source_id'] for o in outcomes],
-                             not_attempted=[p.source_id for p in papers[index + 1:]],
-                             reason=type(exc).__name__)
-            raise  # Validation, provider and budget failures are never bibliographic success.
+            receipt = checkpoint(calls.log.path)
+            outcome = {**base, 'status': 'failed', 'reason': type(exc).__name__, 'items': [],
+                       'failure_detail': str(exc) if isinstance(exc, (Rejected, BudgetStop)) else type(exc).__name__,
+                       'failure_receipt': receipt}
+            calls.log.record('extraction_outcome', **outcome)
+            outcomes.append(outcome)
+            save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
+            failures += 1
+            paper_failure = isinstance(exc, Rejected) or (isinstance(exc, BudgetStop) and exc.scope == 'paper')
+            if not paper_failure or failures > maximum_failures:
+                calls.log.record('extraction_stopped', **policy, failed_count=failures,
+                                 failed_source_id=paper.source_id,
+                                 completed=[o['source_id'] for o in outcomes if o['status'] != 'failed'],
+                                 not_attempted=[p.source_id for p in papers[index + 1:]],
+                                 reason='failed-paper threshold exceeded' if paper_failure else type(exc).__name__)
+                raise  # Run budgets, unknown accounting and excess failures refuse publication.
+            continue
         outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted', **result.to_dict()}
         calls.log.record('extraction_outcome', **outcome)
         outcomes.append(outcome)
@@ -333,7 +371,8 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
                          reason='cross-run extraction cache replay lacks origin receipt; import original extraction artifact')
     literature = assemble(outcomes)
     path = calls.log.path.parent / 'literature.extracted.txt'
-    calls.log.record('extraction_completed', literature_sha256=digest(literature), papers=len(outcomes))
+    calls.log.record('extraction_completed', literature_sha256=digest(literature), papers=len(outcomes),
+                     **policy, failed=[o['source_id'] for o in outcomes if o['status'] == 'failed'])
     # Pin the completed prefix. Later timing/export events may append without invalidating it.
     records = read_log(calls.log.path)
     path.with_suffix('.provenance.json').write_text(canonical({
@@ -349,13 +388,9 @@ def literature_provenance(path: Path, text: str) -> tuple[dict, ...]:
     if not text.startswith(HEADER):
         return ()
     provenance = json.loads(path.with_suffix('.provenance.json').read_text())
-    records = read_log(Path(provenance['source_log']))
-    count = provenance['records']
-    if type(count) is not int or count <= 0 or len(records) < count or records[count - 1]['hash'] != provenance['last_hash']:
-        raise ValueError('extraction provenance checkpoint mismatch')
-    events = tuple(row['event'] for row in records[:count])
+    events = read_checkpoint(provenance)
     complete = json.loads(events[-1]['payload_json'])
-    outcomes = [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome']
+    outcomes = extraction_outcomes(events)
     if events[-1]['stage'] != 'extraction_completed' or complete['literature_sha256'] != digest(text) or assemble(outcomes) != text:
         raise ValueError('extracted literature does not match logged output')
     if missing_lineage(events):
@@ -363,16 +398,64 @@ def literature_provenance(path: Path, text: str) -> tuple[dict, ...]:
     return events
 
 
-def import_provenance(log: EventLog, events: tuple[dict, ...]) -> None:
-    receipt_id = digest(canonical(events))
-    if any(e['stage'] == 'extraction_provenance_import' and
-           json.loads(e['payload_json']).get('receipt_id') == receipt_id for e in log.read()):
-        return
-    log.record('extraction_provenance_import', records=len(events), receipt_id=receipt_id,
-               note='Original event labels, timestamps and charges retained; upstream costs count in this run budget. '
-                    'These are reused receipts, not new provider dispatches.')
-    for event in events:
-        log.emit(RunEvent.from_dict(event))
+def import_provenance(log: EventLog, events: tuple[dict, ...], origin: dict | None = None) -> None:
+    import_receipts(log, events, origin)
+
+
+def validate_failure_limit(config):
+    value = config.get('extraction_max_failed_papers', 3)
+    if type(value) is not int or value < 0:
+        raise ValueError('extraction_max_failed_papers must be a nonnegative integer')
+    return value
+
+
+def validate_reused_paper(paper, outcome):
+    if outcome['status'] not in ('extracted', 'partial'):
+        raise ValueError('resume requires completed paper outcome')
+    expected = dict(source_id=paper.source_id, pdf_sha256=paper.pdf_sha256,
+                    record=json.loads(paper.record_json), pages=len(paper.pages),
+                    page_diagnostics=[asdict(d) for d in paper.diagnostics],
+                    affected_pages=list(paper.affected_pages))
+    if not paper.pdf_sha256 or any(outcome.get(k) != v for k, v in expected.items()):
+        raise ValueError('resume paper identity mismatch')
+    if outcome.get('input_sha256', digest(canonical(paper.inputs()))) != digest(canonical(paper.inputs())):
+        raise ValueError('resume paper input mismatch')
+
+
+def resume_papers(log, papers, sources):
+    """Import whole origin receipts; reuse only completed, matching paper outcomes."""
+    loaded = []
+    reused = {}
+    selected = {p.source_id: p for p in papers}
+    for directory in sources:
+        path = Path(directory) / 'events.jsonl'
+        origin = checkpoint(path)
+        events = read_checkpoint(origin)
+        if missing_lineage(events):
+            raise MissingExtractionLineage('resume origin lacks original extraction receipts')
+        for outcome in extraction_outcomes(events):
+            source = outcome['source_id']
+            if source not in selected or outcome['status'] not in ('extracted', 'partial'):
+                continue
+            paper = selected[source]
+            try:
+                validate_reused_paper(paper, outcome)
+            except ValueError:
+                # Changed or previously unavailable sources need fresh extraction.
+                continue
+            if source in reused and reused[source]['outcome'] != outcome:
+                raise ValueError(f'conflicting completed paper receipts: {source}')
+            graph = {k: outcome[k] for k in ('schema_version', 'source_id', 'items',
+                                            'obligations', 'resolutions', 'dispositions')}
+            if not any(e['stage'] == 'extraction_graph_merged' and
+                       json.loads(e['payload_json']).get('graph_hash') == digest(canonical(graph)) for e in events):
+                raise ValueError('completed paper lacks accepted graph receipt')
+            reused[source] = dict(outcome=outcome, origin=origin)
+        loaded.append((events, origin))
+    # Validate every origin before modifying the destination or constructing a provider.
+    for events, origin in loaded:
+        import_provenance(log, events, origin)
+    return reused
 
 
 def citation_ids(literature: str) -> set[str] | None:

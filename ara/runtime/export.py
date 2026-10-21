@@ -8,6 +8,7 @@ from pathlib import Path
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log
 from ara.runtime.extraction import missing_lineage
+from ara.runtime.provenance import extraction_outcomes
 
 
 def methodology(log_path: Path) -> str:
@@ -32,7 +33,7 @@ def methodology(log_path: Path) -> str:
     pending = max(0, sum(e['stage'] == 'call_start' for e in events) -
                   sum(not p.get('cache_hit') for e, p in routing))
     extraction_calls = [e for e in calls if e['stage'] == 'extract_paper']
-    outcomes = [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome']
+    outcomes = extraction_outcomes(events)
     lineage_missing = missing_lineage(events)
     lineage_incomplete = bool(lineage_missing) or any(e['stage'] == 'extraction_lineage_missing' for e in events)
     inherited_indices: set[int] = set()
@@ -79,6 +80,11 @@ def methodology(log_path: Path) -> str:
         'record_only': [{'source_id': p['source_id'], 'reason': p['reason']} for p in outcomes
                         if p['status'] == 'record only, not extracted'],
         'failed': [p['source_id'] for p in outcomes if p['status'] == 'failed'],
+        'failed_papers': [p for p in outcomes if p['status'] == 'failed'],
+        'failure_history': [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome'
+                            and json.loads(e['payload_json'])['status'] == 'failed'],
+        'failure_policy': next((json.loads(e['payload_json']) for e in reversed(events)
+                                if e['stage'] == 'extraction_batch_started'), None),
         'stops': [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_stopped'],
         'origin': 'SYSTEM/MODEL',
         'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),

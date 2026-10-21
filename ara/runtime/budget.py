@@ -15,7 +15,9 @@ class UnpricedModel(ValueError):
 
 
 class BudgetStop(RuntimeError):
-    pass
+    def __init__(self, reason, *, scope='run'):
+        super().__init__(reason)
+        self.scope = scope
 
 
 def tokens(usage: TokenUsage) -> int:
@@ -88,12 +90,12 @@ class Budget:
         tools = Response(raw).usage.server_tool_uses
         return result + self.cost(TokenUsage(server_tool_uses=tools), model=served_model)
 
-    def stop(self, reason: str, stage: str, **details) -> None:
-        state = {**details, 'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
+    def stop(self, reason: str, stage: str, *, scope='run', **details) -> None:
+        state = {**details, 'scope': scope, 'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
                  'cost_usd': float(self.used_cost), 'status': 'STOPPED'}
         self.log.record(stage, 'STOP', **{k: v for k, v in state.items() if k != 'stage'})
         (self.log.path.parent / 'partial.json').write_text(canonical(state))
-        raise BudgetStop(reason)
+        raise BudgetStop(reason, scope=scope)
 
     def extraction_cost(self) -> Decimal:
         return sum((Decimal(str(e['cost_usd'])) for e in self.log.read()

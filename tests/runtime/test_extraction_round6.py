@@ -16,7 +16,7 @@ def chain(rig, monkeypatch, *, finish=7, **limits):
     calls, provider, papers, *_ = rig
     calls.config.update(calls.config['extraction-full'])
     calls.config.update(token_cap=12000000, cost_cap_usd=125, extraction_cost_cap_usd=125,
-                        reconciliation_context_requests=0, **limits)
+                        reconciliation_context_requests=0, extraction_max_failed_papers=0, **limits)
     sent = []
     counts = Counter()
 

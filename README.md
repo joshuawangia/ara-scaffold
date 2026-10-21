@@ -368,14 +368,31 @@ Methodology exposes `measured_usage`, `unknown_usage_reservations` and
 numeric totals remain budget-accounted for compatibility; unknown usage is not a
 measured invoice, and sibling-run campaign reservations require separate accounting.
 
-Extraction stops on the first terminal paper failure. The log and methodology
-retain the failed source and the sources not attempted; no completed literature
-or provenance sidecar is published. Initial extraction and graph review report
-missing context as `new_gaps`; only continuation of a supplied obligation may
-request pages or evidence. Each mode's response schema enforces this distinction.
+Extraction continues after terminal paper-local failures. Each failed source is
+published with an empty evidence list, reason, and pinned failure receipt; the
+artifact is labelled `complete_with_disclosed_failures`. Pilot import accepts it,
+construction excludes failed sources, and methodology lists failures and the
+policy. `extraction_max_failed_papers` defaults to 3, including `extraction-full`:
+three failures may complete, while the fourth stops without a completed artifact.
+Global budget exhaustion, unknown provider spend and operational errors still stop
+immediately. Initial extraction and graph review report missing context as
+`new_gaps`; only continuation of a supplied obligation may request pages or evidence.
 
-Partial extraction resume is unsupported. Preserve the original run directory:
-accepted range files and charged receipts are evidence, but cannot yet be safely
-imported as completed literature or skipped on a new run. A rerun into that
-directory refuses before provider construction. A fresh run may repay prior work;
-cross-run cache hits without origin receipts are not valid production provenance.
+Reuse completed papers in a fresh destination with repeatable `--resume-from`:
+
+```sh
+uv run ara extract --config config.yaml --profile extraction-full --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --resume-from runs/extraction-old --run-dir runs/extraction-new
+```
+
+Set the full profile's operator caps before generation. Resume checks source
+identity and original log checkpoints, then reuses matching completed papers
+from completed or stopped runs. Failed, missing or changed papers are extracted
+again. Every original charge, including failed attempts, counts toward the new
+run's aggregate caps; overlapping and transitive origins are charged once.
+Retried papers get fresh paper-local allowances. Preserve all original logs and
+checkpoints: missing or changed origins refuse, including during later pilot
+import. Unknown or interrupted spend must be reconciled before reuse.
+
+Partial ranges within failed papers are not restored. The original run directory
+remains immutable; an occupied destination refuses before provider construction.
+Cross-run cache entries without original receipts remain invalid provenance.

@@ -19,7 +19,7 @@ def graph(source='p', page=1):
 
 def batch_response(inputs):
     if 'closure' not in inputs:
-        return dict(roots=[i['id'] for p in inputs['papers'] for i in p['items']], relevance='P', omissions=[])
+        return dict(roots=[i['root_id'] for p in inputs['papers'] for i in p['items']], relevance='P', omissions=[])
     symbols = {s['name'] for s in inputs['shared_symbols']}
     commitments = []
     uses = {}

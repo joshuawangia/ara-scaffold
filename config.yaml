@@ -81,6 +81,7 @@ extraction_estimated_tokens_per_page: 1500
 
 # Only generated extraction literature receives this build-T output allowance.
 extracted_build_t_max_output_tokens: 64000
+select_t_roots_max_output_tokens: 16384
 # Explicit batch profile; ordinary/default run caps remain unchanged.
 extraction:
   token_cap: 6000000

@@ -1083,3 +1083,45 @@ using accepted prior evidence if either retry fails. Remaining extraction and
 construction allowances are independent; unknown prior usage remains reserved.
 The full-corpus phase remains deferred for independent review. Live receipts and
 source-model attribution are in the external report, never tracked fixtures.
+
+
+## GX26 — Counted root-selection allowance and compact inventory decisions
+
+select_t_roots_max_output_tokens is 16384, independently of the general 8192
+allowance. The measured root-selection failure spent 6176 of 8192 output tokens
+on thinking. Doubling the allowance leaves 10208 tokens beyond that observed
+thinking usage for a complete response and variation; it is a bounded allowance,
+not a prediction or completeness guarantee. Existing stage-aware cache identity,
+provider request, context admission and monetary reservation all use this value.
+High/adaptive stays unchanged; extraction settings and behavior are outside scope.
+
+Root selection v2 emits short root ids and omission decisions keyed by supplied
+group ids. A deterministic catalogue maps every item to a short id and partitions
+items by source, kind, attribution and speaker. These are metadata groups, not
+inferred semantic equivalences. Full source items remain in the counted request;
+code never selects relevance or infers an argument grouping. Each omission reason
+is model-authored and applies to every non-root member of its group. Unknown or
+duplicate groups, unknown roots, blank reasons and incomplete inventories fail.
+The catalogue and its graph hash are logged, ids are expanded before the existing
+directional closure, and final per-item omissions retain their group reason.
+The plan version advances to rich-working-t-v4. Old source artifacts remain valid;
+root-selection responses use the new schema and cannot replay under old keys.
+
+construction_targeted_corrections=0 or 1 opts out of generic response regeneration.
+One correction allowance per stage is shared across the construction lifecycle.
+A parseable, unambiguous rejected candidate can receive keyed replacements or
+additions: omission groups for selection, and commitments/symbols/alignments for
+formalization. Selection returns its complete short root list and relevance.
+All other unchanged entries must be omitted and are retained. No deletion,
+truncation recovery, or invention of missing content is performed in code.
+Every patch is counted, reserved, logged and keyed normally; the full merged
+result must pass the original schema, inventory, symbol and capacity checks.
+Malformed inventories and transport stops are not patchable. A remaining token
+or dollar allowance is not permission to exceed the configured stage quota.
+
+The bounded live invocation may lower the formalization output ceiling to fit
+its independent remaining monetary cap; this is a per-run admission limit, not
+a change to the ordinary 64000-token batch allowance. Refusal remains explicit
+when the counted reservation cannot fit. The sole freeze still follows accepted
+roots, exact-inventory formalization and merge. Full extraction and pilot execution
+remain outside this round; live receipts stay in the external report.

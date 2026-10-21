@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "select_t_roots_v1",
+  "title": "select_t_roots_v2",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -22,14 +22,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "evidence_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "minItems": 1,
-            "uniqueItems": true
+          "group_id": {
+            "type": "string",
+            "minLength": 1
           },
           "reason": {
             "type": "string",
@@ -37,7 +32,7 @@
           }
         },
         "required": [
-          "evidence_ids",
+          "group_id",
           "reason"
         ],
         "additionalProperties": false

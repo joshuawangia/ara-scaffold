@@ -16,7 +16,7 @@ PAYLOADS = {
         'items': [{'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim',
         'attributed_to': 'P', 'text': 'P', 'page_start': 1, 'page_end': 1, 'premise_ids': [],
         'conclusion_id': None, 'qualification_ids': [], 'applies_to': [], 'inference_origin': None}]},
-    'select_t_roots': {'roots': ['p'], 'relevance': 'P', 'omissions': []},
+    'select_t_roots': {'roots': ['r1'], 'relevance': 'P', 'omissions': [{'group_id': 'g1', 'reason': 'Q'}]},
     'build_t_batch': {'commitments': [], 'new_symbols': [], 'alignments': []},
     'build_t': {'commitments': [{'id': 't1', 'text': 'P', 'citation': 'placeholder:1', 'formula': P}]},
     'propose_targets': {'targets': [PROPOSITION]},

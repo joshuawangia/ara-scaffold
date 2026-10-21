@@ -16,7 +16,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v3'
+PLAN_VERSION = 'rich-working-t-v4'
 CLOSURE_VERSION = 'directional-prerequisites-v1'
 
 
@@ -70,6 +70,19 @@ def prerequisite_closure(items: dict[str, dict], roots: list[str]) -> set[str]:
     return selected
 
 
+def selection_inventory(items: dict[str, dict]) -> tuple[dict[str, str], list[dict]]:
+    """Short IDs and metadata partitions; no semantic equivalence or relevance inference."""
+    aliases = {f'r{index}': id for index, id in enumerate(sorted(items), 1)}
+    partitions = {}
+    fields = ('source_id', 'kind', 'attribution', 'attributed_to')
+    for alias, id in aliases.items():
+        key = tuple(items[id][field] for field in fields)
+        partitions.setdefault(key, []).append(alias)
+    groups = [dict(group_id=f'g{index}', root_ids=partitions[key], **dict(zip(fields, key)))
+              for index, key in enumerate(sorted(partitions), 1)]
+    return aliases, groups
+
+
 def formula_symbols(formula, bound: frozenset[str] = frozenset()):
     from ara.runtime.calls import require
     if formula.op in ('forall', 'exists'):
@@ -84,8 +97,57 @@ def formula_symbols(formula, bound: frozenset[str] = frozenset()):
         yield from formula_symbols(arg, bound)
 
 
+def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaining: dict):
+    from ara.runtime.calls import InvalidOutput, Rejected, require
+    if remaining[kind] is None:
+        return calls.call(kind, inputs, check)
+    try:
+        return calls._call_once(kind, inputs, check)
+    except InvalidOutput as exc:
+        if not remaining[kind]:
+            raise
+        fields = {'omissions': 'group_id'} if kind == 'select_t_roots' else {
+            'commitments': 'id', 'new_symbols': 'name', 'alignments': 'name'}
+        try:
+            candidate = json.loads(exc.feedback['rejected_response'])
+            if kind == 'build_t_batch':
+                for item in candidate['commitments']:
+                    if isinstance(item['formula'], str):
+                        item['formula'] = json.loads(item['formula'])
+            baseline = {field: {item[key]: item for item in candidate[field]} for field, key in fields.items()}
+            require(all(len(baseline[field]) == len(candidate[field]) for field in fields),
+                    'ambiguous construction correction inventory')
+        except (ValueError, KeyError, TypeError) as error:
+            raise Rejected('candidate cannot support targeted construction correction') from error
+        remaining[kind] -= 1
+        request = {**inputs, 'mode': 'targeted_correction', 'candidate': candidate,
+                   'validation_error': exc.feedback['error']}
+        calls.log.record('construction_targeted_correction', kind=kind,
+                         candidate_hash=digest(canonical(candidate)), reason=str(exc))
+        def corrected(patch):
+            merged = {**candidate, **patch}
+            changed = any(patch[k] != candidate.get(k) for k in patch if k not in fields)
+            for field, key in fields.items():
+                updates = {item[key]: item for item in patch[field]}
+                require(len(updates) == len(patch[field]), 'duplicate construction correction id')
+                require(all(item != baseline[field].get(id) for id, item in updates.items()),
+                        'construction correction repeats unchanged item')
+                changed = changed or bool(updates)
+                merged[field] = list({**baseline[field], **updates}.values())
+            require(changed, 'empty construction correction')
+            from jsonschema import Draft202012Validator
+            schema = json.loads((calls.root / 'schemas' / f'{kind}.json').read_text())
+            Draft202012Validator(schema).validate(merged)
+            return check(merged)
+        return calls._call_once(kind, request, corrected, attempt=2)
+
+
 def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSet:
     from ara.runtime.calls import require
+    corrections = calls.config.get('construction_targeted_corrections')
+    if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
+        raise ValueError('construction_targeted_corrections must be 0 or 1')
+    remaining = dict(select_t_roots=corrections, build_t_batch=corrections)
     papers = sorted(json.loads(literature[len(HEADER):])['papers'], key=lambda p: p['source_id'])
     require(len({p['source_id'] for p in papers}) == len(papers), 'duplicate source id')
     usable = [p for p in papers if p['items']]
@@ -141,17 +203,31 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
         dependencies = evidence_dependencies(items)
         inputs = {**inputs_for(group, batch.index, batch.allowance), 'plan_id': plan_id,
                   'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
+        root_ids, selection_groups = selection_inventory(items)
+        aliases = {id: alias for alias, id in root_ids.items()}
+        groups_by_id = {g['group_id']: g for g in selection_groups}
+        selection_inputs = {**inputs, 'selection_groups': selection_groups, 'papers': [
+            {**paper, 'items': [{**item, 'root_id': aliases[item['id']]} for item in paper['items']]}
+            for paper in group]}
+        calls.log.record('build_t_selection_inventory', plan_id=plan_id, index=batch.index,
+                         root_ids=root_ids, groups=selection_groups, graph_hash=digest(canonical(items)))
         def select(data):
-            roots = data['roots']
-            require(bool(roots) and len(set(roots)) == len(roots) and set(roots) <= set(items), 'invalid selection roots')
+            short_roots = data['roots']
+            require(bool(short_roots) and len(set(short_roots)) == len(short_roots) and
+                    set(short_roots) <= set(root_ids), 'invalid selection roots')
+            roots = [root_ids[id] for id in short_roots]
             require(bool(data['relevance'].strip()), 'empty selection reason')
-            omitted = [dict(evidence_id=id, reason=group['reason']) for group in data['omissions'] for id in group['evidence_ids']]
+            omitted_groups = [g['group_id'] for g in data['omissions']]
+            require(len(omitted_groups) == len(set(omitted_groups)) and
+                    set(omitted_groups) <= set(groups_by_id), 'invalid omission group inventory')
+            require(all(g['reason'].strip() for g in data['omissions']), 'empty omission reason')
+            omitted = [dict(evidence_id=root_ids[id], reason=g['reason']) for g in data['omissions']
+                       for id in groups_by_id[g['group_id']]['root_ids'] if id not in short_roots]
             excluded = {o['evidence_id'] for o in omitted}
             require(len(omitted) == len(excluded), 'duplicate omission id')
             require(not set(roots) & excluded and set(roots) | excluded == set(items), 'working T evidence inventory mismatch')
-            require(all(o['reason'].strip() for o in omitted), 'empty omission reason')
-            return data, omitted
-        selection, omitted = calls.call('select_t_roots', inputs, select)
+            return {**data, 'roots': roots}, omitted
+        selection, omitted = construction_call(calls, 'select_t_roots', selection_inputs, select, remaining)
         selected_ids = prerequisite_closure(items, selection['roots'])
         require(all(dependencies[id] <= selected_ids for id in selected_ids), 'working T drops premise/link/qualification')
         omitted = [o for o in omitted if o['evidence_id'] not in selected_ids]
@@ -202,7 +278,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             require(with_catalog.input_tokens - without.input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
             return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
                 'bindings': bindings, 'omitted': omitted, 'closure': closure}))
-        result = calls.call('build_t_batch', inputs, check)
+        result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
         data = json.loads(result.receipt_json)
         symbols += data['new_symbols']
         results.append(result)

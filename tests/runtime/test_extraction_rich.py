@@ -67,12 +67,14 @@ def test_invalid_working_batch_refused_before_freeze(rig, monkeypatch, case):
     from rich_fixture import batch_response
     calls, provider, path = rich_calls(rig, monkeypatch)
     def complete(kind, prompt, schema, maximum):
-        value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        value = batch_response(inputs)
         if kind == 'select_t_roots':
-            if case == 'inventory': value['omissions'] = [dict(evidence_ids=['unknown'], reason='P')]
+            if case == 'inventory': value['roots'].pop()
             if case == 'omission_reason':
                 id = value['roots'].pop()
-                value['omissions'] = [dict(evidence_ids=[id], reason=' ')]
+                group = next(g for g in inputs['selection_groups'] if id in g['root_ids'])
+                value['omissions'] = [dict(group_id=group['group_id'], reason=' ')]
             return Response(response(value))
         if case == 'duplicate_id': value['commitments'].append(value['commitments'][0])
         if case == 'duplicate_symbol': value['new_symbols'].append(value['new_symbols'][0])
@@ -310,7 +312,8 @@ def test_encoded_batch_formula_still_requires_local_validation(rig, monkeypatch,
     from rich_fixture import batch_response
     calls, provider, path = rich_calls(rig, monkeypatch)
     def complete(kind, prompt, schema, maximum):
-        value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        value = batch_response(inputs)
         if kind == 'select_t_roots': return Response(response(value))
         for c in value['commitments']:
             c['formula'] = canonical(c['formula']) if valid else 'P'
@@ -335,7 +338,8 @@ def test_batch_variables_cannot_bypass_symbol_contract(rig, monkeypatch, locally
     from rich_fixture import batch_response
     calls, provider, path = rich_calls(rig, monkeypatch)
     def complete(kind, prompt, schema, maximum):
-        value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        value = batch_response(inputs)
         if kind == 'select_t_roots': return Response(response(value))
         formula = {'op': 'predicate', 'name': 'F', 'terms': [{'kind': 'variable', 'name': 'x'}]}
         if locally_bound: formula = {'op': 'forall', 'variable': 'x', 'args': [formula]}

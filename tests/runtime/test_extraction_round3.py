@@ -160,8 +160,8 @@ def test_fixed_inventory_boundary_has_no_freeze(rig, monkeypatch, corrupt):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         value = batch_response(inputs)
         if kind == 'select_t_roots':
-            root = next(id for id in value['roots'] if id.endswith(':f'))
-            value['omissions'] = [dict(evidence_ids=[id for id in value['roots'] if id != root], reason='Q')]
+            root = next(i['root_id'] for p in inputs['papers'] for i in p['items'] if i['id'].endswith(':f'))
+            value['omissions'] = [dict(group_id=g['group_id'], reason='Q') for g in inputs['selection_groups'] if set(g['root_ids']) - {root}]
             value['roots'] = [root]
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)

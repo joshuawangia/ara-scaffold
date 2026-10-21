@@ -98,7 +98,7 @@ CASES = [
     ('rich_symbol_unique', 'ara/runtime/construction.py', 'require(len(set(names)) == len(names),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[duplicate_symbol]'),
     ('rich_symbol_signature', 'ara/runtime/construction.py', "require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[symbol_arity]'),
     ('rich_symbol_alignment', 'ara/runtime/construction.py', 'require(valid_alignments,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[binding]'),
-    ('rich_omission_reason', 'ara/runtime/construction.py', "require(all(o['reason'].strip() for o in omitted),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[omission_reason]'),
+    ('rich_omission_reason', 'ara/runtime/construction.py', "require(all(g['reason'].strip() for g in data['omissions']),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[omission_reason]'),
     ('rich_working_allowance', 'ara/runtime/construction.py', 'require(measured.input_tokens - blank.input_tokens <= batch.allowance,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[working]'),
     ('rich_downstream_admission', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'propose_targets':", 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[downstream]'),
     ('rich_stable_merge', 'ara/runtime/construction.py', 'tuple(sorted(items, key=lambda c: c.id))', 'tuple(items)', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
@@ -150,6 +150,17 @@ CASES += [
     ('targeted_unchanged_refusal', 'ara/runtime/calls.py', "require(all(item != old.get(item['id']) for item in patch['items']),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
     ('targeted_per_paper_limit', 'ara/runtime/calls.py', 'corrections -= 1', 'pass', 'tests/runtime/test_extraction_round3b.py::test_correction_allowance_is_shared_across_ranges'),
     ('qualification_local_guard', 'ara/runtime/calls.py', "require(not item.applies_to or item.kind in ('distinction', 'qualification'),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-relation]'),
+]
+
+CASES += [
+    ('root_stage_allowance', 'config.yaml', 'select_t_roots_max_output_tokens: 16384', 'select_t_roots_max_output_tokens: 8192', 'tests/runtime/test_root_selection.py::test_root_allowance_is_counted_before_dispatch_and_cache'),
+    ('root_stage_reservation', 'config.yaml', 'select_t_roots_max_output_tokens: 16384', 'select_t_roots_max_output_tokens: 8192', 'tests/runtime/test_root_selection.py::test_root_reservation_uses_own_output_allowance'),
+    ('root_complete_groups', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(items),', 'require(True,', 'tests/runtime/test_root_selection.py::test_bad_selection_never_freezes[missing_group]'),
+    ('root_group_identity', 'ara/runtime/construction.py', 'set(omitted_groups) <= set(groups_by_id)', 'True', 'tests/runtime/test_root_selection.py::test_bad_selection_never_freezes[unknown_group]'),
+    ('root_group_expansion', 'ara/runtime/construction.py', "if id not in short_roots]", 'if True]', 'tests/runtime/test_root_selection.py::test_group_omission_excludes_selected_member'),
+    ('root_compact_groups', 'ara/runtime/construction.py', "key = tuple(items[id][field] for field in fields)", "key = tuple(items[id][field] for field in fields) + (id,)", 'tests/runtime/test_root_selection.py::test_grouped_omissions_bound_response_without_losing_items'),
+    ('construction_patch_retention', 'ara/runtime/construction.py', 'list({**baseline[field], **updates}.values())', 'list(updates.values())', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[valid-build_t_batch]'),
+    ('construction_patch_unchanged', 'ara/runtime/construction.py', 'require(all(item != baseline[field].get(id) for id, item in updates.items()),', 'require(True,', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[unchanged-build_t_batch]'),
 ]
 
 def main():

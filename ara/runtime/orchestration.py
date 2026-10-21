@@ -7,7 +7,8 @@ from typing import Protocol
 
 from ara.bank import Bank
 from ara.engine import AnalysisResult, Engine, EngineConfig
-from ara.runtime.cache import canonical
+from ara.runtime.cache import canonical, digest
+from ara.runtime.frozen import contract
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.extraction import save_immutable
@@ -39,21 +40,27 @@ def native_engine(bank: Bank, calls: ModelCalls) -> EngineAPI:
 
 def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience: str) -> CommitmentSet:
     """One construction lifecycle, one freeze. Search cannot observe provisional batches."""
-    if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
+    if any(e['stage'] in ('commitments_frozen', 'frozen_history_import') for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
     commitments = calls.build_t(literature, audience)
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())
-    calls.log.record('commitments_frozen', commitments=commitments.to_dict(), bank_version=bank.bank_version)
+    calls.log.record('commitments_frozen', commitments=commitments.to_dict(), bank_version=bank.bank_version,
+                     commitments_sha256=digest(commitments.to_json()), contract=contract(calls.root))
     return commitments
 
 
 def prepare(calls: ModelCalls, bank: Bank, literature: str, audience: str,
             named_position: str | None = None) -> tuple[CommitmentSet, tuple[Proposition, ...]]:
     commitments = prepare_commitments(calls, bank, literature, audience)
+    return commitments, prepare_targets(calls, commitments, named_position)
+
+
+def prepare_targets(calls: ModelCalls, commitments: CommitmentSet,
+                    named_position: str | None = None) -> tuple[Proposition, ...]:
     targets = calls.propose_targets(commitments, calls.config['target_candidates'], named_position)
     targets = tuple(p if p.formula else replace(p, formula=calls.formalise(p)) for p in targets)
     calls.log.record('candidates', candidates=[p.to_dict() for p in targets])
-    return commitments, targets
+    return targets
 
 
 def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,

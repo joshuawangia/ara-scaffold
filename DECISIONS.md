@@ -1343,3 +1343,36 @@ not incur another extraction dispatch. Preserve every origin log and checkpoint.
 Offline tests and production-wire mutation controls cover native extraction/pilot,
 threshold boundaries, evidence exclusion, receipt identity, changed inputs,
 transitive tamper detection, allowance reset and inherited aggregate caps.
+
+## Shared frozen T across independent candidate runs
+
+`run --from-frozen` reads a completed original builder without writing to it.
+Verification binds the freeze's canonical T to the file hash, checks the entire
+source chain/checkpoint, verifies extraction import digests and reconstructed
+literature, and checks construction origins, plans, batches and merge. Cached
+construction without its original measured receipt refuses. New freezes pin the
+T hash and type/bank/schema manifest. The `ba3a004` legacy freeze has equivalent
+canonical T bytes and logged schemas; a committed baseline manifest bounds that
+compatibility path without rewriting the live pilot. Configuration comparison
+fixes construction settings while allowing local caps and search/writer controls.
+
+Inherited chain rows and rich artifacts are nested, with original labels,
+timestamps and charges intact. They are audit history, not local model dispatches
+or provider memory. This avoids replaying builder lifecycle events and avoids
+charging inherited spend to a new cap. Methodology exposes inherited/local totals
+and source freeze identity. Campaign aggregation deduplicates canonical original
+MODEL receipts, including extraction receipts re-emitted by the native builder.
+A campaign is the supplied log set, not an implicit global directory scan.
+
+A candidate receives a fresh UUID cache identity and random engine seed. Both are
+recorded in its effective config and cache keys; resumed selection retains them.
+Provider calls remain stateless. Shared T supports independent searches, not
+independent commitment construction or a promise of statistically independent
+model outputs. Only offline placeholder proof is claimed in this change.
+
+The mandatory mutation run on CPython 3.15 exposed a pre-existing test weakness:
+`match='paper'` accepted a later JSON non-finite-value error because exception
+notes include the dictionary key. Invalid paper-limit tests now assert the primary
+admission error message, so serialization failure cannot stand in for validation.
+Both finite-count and finite-cost production mutations are detected after this
+change; extraction production behavior is unchanged.

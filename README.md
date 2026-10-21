@@ -396,3 +396,58 @@ import. Unknown or interrupted spend must be reconciled before reuse.
 Partial ranges within failed papers are not restored. The original run directory
 remains immutable; an occupied destination refuses before provider construction.
 Cross-run cache entries without original receipts remain invalid provenance.
+
+### Independent candidates sharing a frozen T
+
+After a builder run completes, start each candidate with the same topic and
+construction profile/configuration, an empty destination, and its own explicit caps:
+
+```sh
+uv run ara run --config config.yaml --topic 'P Q' --from-frozen runs/builder \
+  --run-dir runs/candidate-1 --cost-cap-usd 10 --token-cap 200000
+```
+
+Do not supply `--literature` with `--from-frozen`. Use the original builder,
+not another candidate. The source must have a completed native lifecycle,
+exactly one freeze, unchanged canonical `commitments.json`, intact log and anchor,
+and complete extraction/construction receipts (including rich batch artifacts).
+A source that only awaits route selection is incomplete; a successful later
+`ara select` final-draft event completes the native lifecycle.
+Missing cache origins, unknown construction charges, topic differences, or relevant
+configuration/schema drift refuse before candidate provider creation. Use the same
+profile flags as the builder; search/writer settings and candidate caps may differ.
+Construction model/settings remain fixed for compatibility. A candidate never
+reconstructs or re-freezes T; it starts at target proposal.
+
+Each candidate records a new UUID cache identity and a distinct random seed.
+The seed controls deterministic engine tie-breaking; it is not a provider sampling
+seed or a guarantee of distinct model answers. Runtime response cache entries
+cannot cross candidate boundaries. Within-run replay (including later `select`)
+is retained. Provider requests remain stateless; no previous candidate's search,
+writing, or feedback enters the new candidate's prompts. Shared items are the topic,
+frozen T, bank/configuration, and inherited extraction/construction audit history.
+Provider infrastructure and pretrained model knowledge are not isolated by this feature.
+
+`export/methodology.md` records the builder path, original freeze hash, T hash,
+candidate seed/cache identity, inherited versus local spend, and original labelled
+history. Inherited events are nested in `frozen_history_import`, rather than
+replayed as local lifecycle events. They never consume the candidate cap. The
+source directory is read only; the candidate stores an identical T and a snapshot
+of the original chain through the freeze, including rich construction artifacts.
+
+Campaign costs must deduplicate shared receipts, not sum inherited-plus-local
+figures. For scripts, the native log-derived aggregator accepts any combination
+of builder, extraction, and candidate logs and counts each MODEL receipt once:
+
+```python
+from pathlib import Path
+from ara.runtime.frozen import campaign_totals
+print(campaign_totals([Path('runs/builder/events.jsonl'),
+                       Path('runs/candidate-1/events.jsonl')]))
+```
+
+Legacy freezes from the `ba3a004` pilot are accepted using their embedded canonical
+T, logged prompt/schema contracts, and the pinned legacy type/bank/schema manifest.
+New freezes record the explicit T hash and contract manifest. Hash chains detect
+accidental modification; they are not cryptographic signatures against an actor
+who rewrites an entire history and its checkpoint.

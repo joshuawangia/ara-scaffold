@@ -25,7 +25,7 @@ dev = ["pytest>=8.3"]
 include = ["ara*"]
 
 [tool.setuptools.package-data]
-"ara.runtime" = ["legacy_frozen_contract.json"]
+"ara.runtime" = ["legacy_frozen_contract.json", "legacy_response_contracts.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -16,6 +16,7 @@ from ara.runtime.cache import Cache, cache_key, canonical, digest
 from ara.runtime.logging import EventLog, now
 from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable, extraction_range_plan, record_new_obligations
 from ara.runtime.providers import Provider, Response, stage_settings
+from ara.runtime.response_contracts import response_schema, response_template, RESPONSE_CONTRACT_VERSION
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
                        Tier1Repair, TokenUsage)
@@ -78,27 +79,10 @@ class ModelCalls:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
 
     def response_schema(self, kind: str, inputs: dict) -> dict | None:
-        if kind == 'search_evidence':
-            return None
-        schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
-        if kind == 'extract_paper':
-            mode = inputs.get('original_mode') if inputs.get('mode') == 'targeted_correction' else inputs.get('mode')
-            reconciliation = mode == 'reconcile_ranges'
-            if not reconciliation or not inputs.get('obligations'):
-                for field in ('context_request', 'pending_obligation_ids', 'resolutions'):
-                    del schema['properties'][field]
-            if reconciliation:
-                del schema['properties']['empty_reason']
-        return schema
+        return response_schema(self.root, kind, inputs)
 
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
-        template = (self.root / 'prompts' / f'{kind}.txt').read_text()
-        if kind != 'search_evidence':
-            # The service grammar is a compact projection. Show the model every
-            # local constraint as well; the same complete prompt is logged/keyed.
-            schema = self.response_schema(kind, inputs)
-            template += '\nLOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n' + canonical(schema)
-        # JSON input is data, never interpreted as a format template.
+        template = response_template(self.root, kind, inputs)
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
     def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
@@ -214,13 +198,9 @@ class ModelCalls:
             else:
                 validating = True
                 data = json.loads(Response(raw).text())
-                if kind == 'build_t_batch' and isinstance(data, dict) and isinstance(data.get('commitments'), list):
-                    for item in data['commitments']:
-                        if isinstance(item, dict) and isinstance(item.get('formula'), str):
-                            try:
-                                item['formula'] = json.loads(item['formula'])
-                            except json.JSONDecodeError as exc:
-                                raise Rejected('invalid encoded formula JSON') from exc
+                if kind == 'build_t_batch':
+                    from ara.runtime.construction import decode_batch_formulas
+                    decode_batch_formulas(data)
                 if kind == 'extract_paper' and isinstance(data, dict):
                     extraction_defaults(data)
                 Draft202012Validator(schema).validate(data)
@@ -270,6 +250,7 @@ class ModelCalls:
                               time.monotonic() - start,
                               payload_json=canonical({'status': status, 'reason': reason, 'attempt': attempt,
                                                        'cache_hit': cached, 'cache_key': key,
+                                                       'response_contract_version': RESPONSE_CONTRACT_VERSION,
                                                        'requested_model': self.requested_model(kind),
                                                        'effort': stage_settings(self.config, kind)['effort'],
                                                        'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),

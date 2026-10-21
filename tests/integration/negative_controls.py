@@ -24,7 +24,7 @@ CASES = [
     ('transition_allowed', 'ara/runtime/calls.py', "if item['asserts_premise_or_inference_not_in_outline']", "if item['asserts_premise_or_inference_not_in_outline'] or not item['node_ids']", 'tests/runtime/test_essay_outline.py::test_transition_without_new_premise_is_not_extra'),
     ('unknown_scheme_rejected', 'ara/runtime/calls.py', "require(entry is not None, 'outline inference has unknown bank entry')", 'entry = entry or bank.entries[0]', 'tests/runtime/test_essay_outline.py::test_unknown_scheme_name_is_not_invented'),
     ('compact_formula_projection', 'ara/runtime/providers.py', 'return project(original)', 'return schema', 'tests/runtime/test_provider.py::test_compact_formula_projection_keeps_local_operator_checks'),
-    ('full_schema_prompt', 'ara/runtime/calls.py', "if kind != 'search_evidence':", 'if False:', 'tests/runtime/test_calls.py::test_full_local_schema_reaches_provider_and_log'),
+    ('full_schema_prompt', 'ara/runtime/response_contracts.py', "if kind != 'search_evidence':", 'if False:', 'tests/runtime/test_calls.py::test_full_local_schema_reaches_provider_and_log'),
     ('compound_arguments', 'ara/runtime/providers.py', "result['minItems'] = min(1, value['minItems'])", 'pass', 'tests/runtime/test_provider.py::test_compound_generation_cannot_omit_all_arguments'),
     ('validation_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", 'attempts = 1', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[False]'),
     ('retry_admission', 'ara/runtime/budget.py', "if self.used_tokens + tokens(usage) > self.config['token_cap']:", 'if False:', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[True]'),
@@ -117,7 +117,7 @@ CASES += [
 
 CASES.append(('rich_nullable_provider_schema', 'schemas/extract_paper.json', '"type": "string",\n                "enum": [\n                  "paper_stated"', '"type": ["string", "null"],\n                "enum": [\n                  "paper_stated"', 'tests/runtime/test_provider.py::test_rich_nullable_enum_matches_provider_grammar'))
 
-CASES += [('batch_wire_grammar', 'ara/runtime/providers.py', "encoded_formulas=kind == 'build_t_batch'", 'encoded_formulas=False', 'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'), ('batch_wire_decode', 'ara/runtime/calls.py', "item['formula'] = json.loads(item['formula'])", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'), ('batch_wire_invalid_json', 'ara/runtime/calls.py', "raise Rejected('invalid encoded formula JSON') from exc", 'raise', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
+CASES += [('batch_wire_grammar', 'ara/runtime/providers.py', "encoded_formulas=kind == 'build_t_batch'", 'encoded_formulas=False', 'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'), ('batch_wire_decode', 'ara/runtime/construction.py', "item['formula'] = json.loads(item['formula'])", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'), ('batch_wire_invalid_json', 'ara/runtime/construction.py', "raise Rejected('invalid encoded formula JSON') from exc", 'raise', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
 
 CASES.append(('batch_bound_variables', 'ara/runtime/construction.py', "require(term.kind != 'variable' or term.name in bound,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_batch_variables_cannot_bypass_symbol_contract[False]'))
 
@@ -159,8 +159,8 @@ CASES += [
     ('root_group_identity', 'ara/runtime/construction.py', 'set(omitted_groups) <= set(groups_by_id)', 'True', 'tests/runtime/test_root_selection.py::test_bad_selection_never_freezes[unknown_group]'),
     ('root_group_expansion', 'ara/runtime/construction.py', "if id not in short_roots]", 'if True]', 'tests/runtime/test_root_selection.py::test_group_omission_excludes_selected_member'),
     ('root_compact_groups', 'ara/runtime/construction.py', "key = tuple(items[id][field] for field in fields)", "key = tuple(items[id][field] for field in fields) + (id,)", 'tests/runtime/test_root_selection.py::test_grouped_omissions_bound_response_without_losing_items'),
-    ('construction_patch_retention', 'ara/runtime/construction.py', 'list({**baseline[field], **updates}.values())', 'list(updates.values())', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[valid-build_t_batch]'),
-    ('construction_patch_unchanged', 'ara/runtime/construction.py', 'require(all(item != baseline[field].get(id) for id, item in updates.items()),', 'require(True,', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[unchanged-build_t_batch]'),
+    ('construction_patch_retention', 'ara/runtime/construction.py', 'list({**baseline, **updates}.values())', 'list(updates.values())', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[valid-build_t_batch]'),
+    ('construction_patch_unchanged', 'ara/runtime/construction.py', 'require(all(item != baseline.get(id) for id, item in updates.items()),', 'require(True,', 'tests/runtime/test_root_selection.py::test_targeted_stage_correction_preserves_inventory[unchanged-build_t_batch]'),
 ]
 
 CASES += [
@@ -230,8 +230,8 @@ CASES += [
 ]
 
 CASES += [
-    ('mode_specific_context_wire', 'ara/runtime/calls.py',
-     "            if not reconciliation or not inputs.get('obligations'):", '            if False:',
+    ('mode_specific_context_wire', 'ara/runtime/response_contracts.py',
+     "        if not reconciliation or not inputs.get('obligations'):", '        if False:',
      'tests/runtime/test_context_request_fix.py::test_mode_contract_reaches_counter_prompt_and_wire'),
     ('context_validation_before_acceptance', 'ara/runtime/calls.py',
      '                        validate_context(request)', '                        pass',
@@ -331,17 +331,45 @@ CASES += [
 ('shared_schema', 'ara/runtime/frozen.py', 'require(expected_contract == contract(root),', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[schema-schema-version drift]'),
 ('shared_receipts', 'ara/runtime/frozen.py', 'require(bool(builds),', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[provenance-missing construction receipts]'),
 ('shared_cache_origin', 'ara/runtime/frozen.py', "require(not payload['cache_hit'] or key in origins,", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[cache_origin-missing construction/extraction cache origin]'),
-('shared_prompt', 'ara/runtime/frozen.py', "require(event['prompt'].startswith(prefix + '\\nINPUT_JSON\\n'), 'schema/prompt version drift: ' + kind)", "require(True, 'schema/prompt version drift: ' + kind)", 'tests/integration/test_shared_frozen.py::test_refusals[prompt-schema/prompt version drift]'),
+('shared_prompt', 'ara/runtime/frozen.py', "require(compatible_prompt(root, kind, event['prompt'], payload.get('response_contract_version')),", "require(True,", 'tests/integration/test_shared_frozen.py::test_refusals[prompt-schema/prompt version drift]'),
 ('shared_campaign', 'ara/runtime/frozen.py', 'charges[digest(canonical(e))] = e', 'charges[str(len(charges))] = e', 'tests/integration/test_shared_frozen.py::test_legacy_freeze_and_budget_campaign'),
 ('shared_cache_identity', 'ara/runtime/calls.py', "if 'cache_identity' in self.config else {}", 'if False else {}', 'tests/integration/test_shared_frozen.py::test_shared_candidates'),
 ('shared_local_budget', 'ara/runtime/frozen.py', "    commitments = CommitmentSet.from_dict(history['commitments'])", "    from ara.types import RunEvent\n    for row in history['records']:\n        if row['event']['label'] == 'MODEL': log.emit(RunEvent.from_dict(row['event']))\n    commitments = CommitmentSet.from_dict(history['commitments'])", 'tests/integration/test_shared_frozen.py::test_legacy_freeze_and_budget_campaign'),
 ]
 
-CASES += [('shared_complete', 'ara/runtime/frozen.py', "require(completed, 'source run is not complete')", 'pass', 'tests/integration/test_shared_frozen.py::test_refusals[incomplete-not complete]'), ('shared_anchor', 'ara/runtime/frozen.py', "require(path.with_suffix('.anchor').read_text().splitlines() == [r['hash'] for r in records],", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[anchor-checkpoint mismatch]'), ('shared_bank', 'ara/runtime/frozen.py', "require(frozen['bank_version'] == bank_version,", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[bank-bank version drift]'), ('shared_response', 'ara/runtime/frozen.py', 'require(CommitmentSet.from_dict(data) == commitments,', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[response-does not match frozen T]'), ('shared_batch', 'ara/runtime/frozen.py', "require(digest(text) == batch['output_hash'],", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[batch]'), ('shared_extraction', 'ara/runtime/frozen.py', "require(len(block) == count and digest(canonical(block)) == payload['receipt_id'],", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[extraction]')]
+CASES += [('shared_complete', 'ara/runtime/frozen.py', "require(completed, 'source run is not complete')", 'pass', 'tests/integration/test_shared_frozen.py::test_refusals[incomplete-not complete]'), ('shared_anchor', 'ara/runtime/frozen.py', "require(path.with_suffix('.anchor').read_text().splitlines() == [r['hash'] for r in records],", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[anchor-checkpoint mismatch]'), ('shared_bank', 'ara/runtime/frozen.py', "require(frozen['bank_version'] == bank_version,", 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[bank-bank version drift]'), ('shared_response', 'ara/runtime/frozen.py', 'require(CommitmentSet.from_dict(data) == commitments,', 'require(True,', 'tests/integration/test_shared_frozen.py::test_refusals[response-does not match frozen T]'), ('shared_batch', 'ara/runtime/frozen.py', "require(digest(text) == batch['output_hash'],", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[batch]'), ('shared_extraction', 'ara/runtime/frozen.py', "        verify_imports(events)", "        pass", 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[extraction]')]
 
 CASES += [('shared_chain', 'ara/runtime/logging.py', 'digest(canonical(row)) != checksum', 'False', 'tests/integration/test_shared_frozen.py::test_refusals[chain-invalid or modified log]'), ('shared_plan', 'ara/runtime/frozen.py', "require(plan_path.read_text() == canonical(plan['plan']),", 'require(True,', 'tests/runtime/test_shared_frozen_rich.py::test_broken_rich_provenance[plan]')]
 
 CASES += [('shared_manifest_presence', 'ara/runtime/frozen.py', "frozen['contract'] if 'contract' in frozen else json.loads(", "frozen.get('contract') or json.loads(", 'tests/integration/test_shared_frozen.py::test_refusals[schema_empty-schema-version drift]')]
+
+CASES += [
+    ('shared_rich_response', 'ara/runtime/frozen.py',
+     "require(all(accepted[(batch['plan_id'], batch['index'])][key] == saved[key]\n                    for key in ('commitments', 'new_symbols', 'alignments')),", 'require(True,',
+     'tests/runtime/test_shared_frozen_rich.py::test_rich_model_response_disagrees_with_artifact'),
+    ('shared_correction_origin', 'ara/runtime/frozen.py',
+     "require(candidate == inputs['candidate'],", 'require(True,',
+     'tests/runtime/test_shared_frozen_rich.py::test_rich_correction_origin_disagreement'),
+    ('shared_current_outcomes', 'ara/runtime/frozen.py',
+     'outcomes = extraction_outcomes(prefix)',
+     "outcomes = [json.loads(e['payload_json']) for e in prefix if e['stage'] == 'extraction_outcome']",
+     'tests/runtime/test_shared_frozen_theta.py::test_native_shared_theta_builder[True-True]'),
+    ('shared_transitive_origin', 'ara/runtime/frozen.py',
+     '        verify_imports(events)', '        pass',
+     'tests/runtime/test_shared_frozen_theta.py::test_native_shared_requires_pinned_ancestors'),
+    ('shared_writer_settings', 'ara/runtime/frozen.py',
+     "return {'stages': stages,", "return {'all_stages': config.get('stages'), 'stages': stages,",
+     'tests/integration/test_shared_frozen.py::test_writer_stage_change_allowed'),
+    ('shared_extraction_settings', 'ara/runtime/frozen.py',
+     'for settings in [stage_settings(config, kind)]', 'for settings in [config]',
+     'tests/integration/test_shared_frozen.py::test_effective_extraction_settings'),
+    ('shared_failure_disclosure', 'ara/runtime/export.py',
+     'extraction_events = inherited_history + events', 'extraction_events = events',
+     'tests/runtime/test_shared_frozen_theta.py::test_native_shared_theta_builder[True-True]'),
+    ('shared_legacy_attempts', 'ara/runtime/response_contracts.py',
+     'digest(template) in historical.get(kind, [])', 'False',
+     'tests/runtime/test_shared_frozen_theta.py::test_retained_legacy_accepted_and_rejected_attempts[None]'),
+]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

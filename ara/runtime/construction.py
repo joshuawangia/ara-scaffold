@@ -98,6 +98,42 @@ def formula_symbols(formula, bound: frozenset[str] = frozenset()):
         yield from formula_symbols(arg, bound)
 
 
+def decode_batch_formulas(data):
+    """Normalize the provider's encoded formula AST at both live and audit boundaries."""
+    from ara.runtime.calls import Rejected
+    if isinstance(data, dict) and isinstance(data.get('commitments'), list):
+        for item in data['commitments']:
+            if isinstance(item, dict) and isinstance(item.get('formula'), str):
+                try:
+                    item['formula'] = json.loads(item['formula'])
+                except json.JSONDecodeError as exc:
+                    raise Rejected('invalid encoded formula JSON') from exc
+    return data
+
+
+def normalize_commitments(data, items):
+    return CommitmentSet.from_dict({'commitments': [
+        {**c, 'text': evidence_text(items[c['id']]), 'citation': items[c['id']]['citation']}
+        for c in data['commitments']]})
+
+
+def merge_correction(candidate, patch, fields):
+    from ara.runtime.calls import require
+    merged = {**candidate, **patch}
+    changed = any(patch[k] != candidate.get(k) for k in patch if k not in fields)
+    for field, key in fields.items():
+        baseline = {item[key]: item for item in candidate[field]}
+        updates = {item[key]: item for item in patch[field]}
+        require(len(baseline) == len(candidate[field]), 'ambiguous construction correction inventory')
+        require(len(updates) == len(patch[field]), 'duplicate construction correction id')
+        require(all(item != baseline.get(id) for id, item in updates.items()),
+                'construction correction repeats unchanged item')
+        changed = changed or bool(updates)
+        merged[field] = list({**baseline, **updates}.values())
+    require(changed, 'empty construction correction')
+    return merged
+
+
 def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaining: dict):
     from ara.runtime.calls import InvalidOutput, Rejected, require
     if remaining[kind] is None:
@@ -112,9 +148,7 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
         try:
             candidate = json.loads(exc.feedback['rejected_response'])
             if kind == 'build_t_batch':
-                for item in candidate['commitments']:
-                    if isinstance(item['formula'], str):
-                        item['formula'] = json.loads(item['formula'])
+                decode_batch_formulas(candidate)
             baseline = {field: {item[key]: item for item in candidate[field]} for field, key in fields.items()}
             require(all(len(baseline[field]) == len(candidate[field]) for field in fields),
                     'ambiguous construction correction inventory')
@@ -126,16 +160,7 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
         calls.log.record('construction_targeted_correction', kind=kind,
                          candidate_hash=digest(canonical(candidate)), reason=str(exc))
         def corrected(patch):
-            merged = {**candidate, **patch}
-            changed = any(patch[k] != candidate.get(k) for k in patch if k not in fields)
-            for field, key in fields.items():
-                updates = {item[key]: item for item in patch[field]}
-                require(len(updates) == len(patch[field]), 'duplicate construction correction id')
-                require(all(item != baseline[field].get(id) for id, item in updates.items()),
-                        'construction correction repeats unchanged item')
-                changed = changed or bool(updates)
-                merged[field] = list({**baseline[field], **updates}.values())
-            require(changed, 'empty construction correction')
+            merged = merge_correction(candidate, patch, fields)
             from jsonschema import Draft202012Validator
             schema = json.loads((calls.root / 'schemas' / f'{kind}.json').read_text())
             Draft202012Validator(schema).validate(merged)
@@ -281,9 +306,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
         def check(data):
             ids = [c['id'] for c in data['commitments']]
             require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
-            commitments = CommitmentSet.from_dict({'commitments': [
-                {**c, 'text': evidence_text(items[c['id']]), 'citation': items[c['id']]['citation']}
-                for c in data['commitments']]})
+            commitments = normalize_commitments(data, items)
             selected = {c.id for c in commitments.commitments}
             for c in commitments.commitments:
                 require(c.citation == items[c.id]['citation'], 'T citation not in extracted literature')

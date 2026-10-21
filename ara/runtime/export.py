@@ -32,10 +32,13 @@ def methodology(log_path: Path) -> str:
     unknown = [e for e, p in routing if p.get('accounting') == 'reservation_unknown_actual']
     pending = max(0, sum(e['stage'] == 'call_start' for e in events) -
                   sum(not p.get('cache_hit') for e, p in routing))
-    extraction_calls = [e for e in calls if e['stage'] == 'extract_paper']
-    outcomes = extraction_outcomes(events)
-    lineage_missing = missing_lineage(events)
-    lineage_incomplete = bool(lineage_missing) or any(e['stage'] == 'extraction_lineage_missing' for e in events)
+    shared = [json.loads(e['payload_json']) for e in events if e['stage'] == 'frozen_history_import']
+    inherited_history = [r['event'] for p in shared for r in p['records']]
+    extraction_events = inherited_history + events
+    extraction_calls = [e for e in extraction_events if e['label'] == 'MODEL' and e['stage'] == 'extract_paper']
+    outcomes = extraction_outcomes(extraction_events)
+    lineage_missing = missing_lineage(extraction_events)
+    lineage_incomplete = bool(lineage_missing) or any(e['stage'] == 'extraction_lineage_missing' for e in extraction_events)
     inherited_indices: set[int] = set()
     receipt_ids = []
     for i, event in enumerate(events):
@@ -62,7 +65,7 @@ def methodology(log_path: Path) -> str:
         'schema_versions': sorted({p.get('schema_version', 1) for p in outcomes if p.get('items')}),
         'item_counts_by_kind': {kind: sum(item['kind'] == kind for p in outcomes for item in p['items'])
                                 for kind in sorted({item['kind'] for p in outcomes for item in p['items']})},
-        'range_calls': sum(e['stage'] == 'extraction_range' for e in events),
+        'range_calls': sum(e['stage'] == 'extraction_range' for e in extraction_events),
         'production_lineage_complete': not lineage_incomplete,
         'missing_origin_cache_keys': lineage_missing,
         'partial': [{'source_id': p['source_id'], 'affected_pages': p['affected_pages'],
@@ -75,23 +78,23 @@ def methodology(log_path: Path) -> str:
         'tokens': {k: sum(e['usage'][k] for e in extraction_calls) for k in (
             'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
         'cost_usd': round(sum(e['cost_usd'] for e in extraction_calls), 10),
-        'models': served_by_kind.get('extract_paper', []),
+        'models': sorted({json.loads(e['payload_json']).get('served_model') or e['model_version']
+                          for e in extraction_calls if json.loads(e['payload_json']).get('served_model') or e['model_version']}),
         'extracted': [p['source_id'] for p in outcomes if p['status'] == 'extracted'],
         'record_only': [{'source_id': p['source_id'], 'reason': p['reason']} for p in outcomes
                         if p['status'] == 'record only, not extracted'],
         'failed': [p['source_id'] for p in outcomes if p['status'] == 'failed'],
         'failed_papers': [p for p in outcomes if p['status'] == 'failed'],
-        'failure_history': [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome'
+        'failure_history': [json.loads(e['payload_json']) for e in extraction_events if e['stage'] == 'extraction_outcome'
                             and json.loads(e['payload_json'])['status'] == 'failed'],
-        'failure_policy': next((json.loads(e['payload_json']) for e in reversed(events)
+        'failure_policy': next((json.loads(e['payload_json']) for e in reversed(extraction_events)
                                 if e['stage'] == 'extraction_batch_started'), None),
-        'stops': [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_stopped'],
+        'stops': [json.loads(e['payload_json']) for e in extraction_events if e['stage'] == 'extraction_stopped'],
         'origin': 'SYSTEM/MODEL',
-        'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),
+        'scope': 'inherited frozen builder and local extraction' if shared else 'run extraction',
+        'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in extraction_events),
     }
-    shared = [json.loads(e['payload_json']) for e in events if e['stage'] == 'frozen_history_import']
     receipt_ids.extend(p['freeze_hash'] for p in shared)
-    inherited_history = [r['event'] for p in shared for r in p['records']]
     summary = {
         **split_totals(events),
         'extraction': extraction_summary,

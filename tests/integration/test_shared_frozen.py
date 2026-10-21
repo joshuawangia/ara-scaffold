@@ -211,3 +211,21 @@ def test_completed_via_later_select(tmp_path):
                  if e['stage'] == 'route' and json.loads(e['payload_json'])['graph']['status'] == 'CLOSED')
     assert main(['select', '--run-dir', str(directory), '--route', route]) == 0
     assert candidate((directory, path), tmp_path / 'candidate') == 0
+
+
+def test_writer_stage_change_allowed(source, tmp_path):
+    _, path = source
+    config = yaml.safe_load(path.read_text())
+    config.setdefault('stages', {})['write_essay'] = {'effort': 'low'}
+    path.write_text(yaml.safe_dump(config))
+    assert candidate(source, tmp_path / 'writer') == 0
+
+
+def test_effective_extraction_settings():
+    from ara.runtime.frozen import construction_config
+    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    same = json.loads(json.dumps(config))
+    same['stages']['extraction']['max_output_tokens'] = config['max_output_tokens']
+    assert construction_config(config) == construction_config(same)
+    same['stages']['extraction']['effort'] = 'low'
+    assert construction_config(config) != construction_config(same)

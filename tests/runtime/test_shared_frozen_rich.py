@@ -17,8 +17,11 @@ from ara.runtime.export import methodology
 
 
 @pytest.fixture
-def rich_builder(rig, tmp_path, monkeypatch):
+def rich_builder(rig, tmp_path, monkeypatch, request):
     extraction, provider, papers, *_ = rig
+    mode = getattr(request, 'param', 'plain')
+    if mode == 'corrected':
+        extraction.config['construction_targeted_corrections'] = 1
     register(extraction, provider, papers[0], graph())
     literature = extract(extraction, (papers[0],))
     directory = tmp_path / 'builder'
@@ -30,7 +33,19 @@ def rich_builder(rig, tmp_path, monkeypatch):
     calls = ModelCalls(extraction.config, provider, log, Cache(tmp_path / 'builder-cache'), ROOT, 'P Q')
     def complete(kind, prompt, schema, maximum):
         assert kind in ('select_t_roots', 'build_t_batch')
-        return Response(response(batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))))
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        value = batch_response(inputs)
+        if kind == 'build_t_batch':
+            if mode == 'corrected':
+                if inputs.get('mode') == 'targeted_correction':
+                    value = dict(commitments=[], new_symbols=value['new_symbols'], alignments=[])
+                else:
+                    for symbol in value['new_symbols']:
+                        symbol['definition'] = ''
+            if mode in ('encoded', 'corrected'):
+                for c in value['commitments']:
+                    c['formula'] = json.dumps(c['formula'])
+        return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     prepare_commitments(calls, bank, literature.read_text(), 'P')
     log.record('run_finished', state='complete')
@@ -76,4 +91,48 @@ def test_broken_rich_provenance(rich_builder, case):
                 e['payload_json'] = json.dumps(payload)
             calls.log.emit(RunEvent.from_dict(e))
     with pytest.raises(ValueError, match='broken'):
+        load_frozen(directory, 'P Q', calls.config, load_bank(ROOT / 'bank').bank_version, ROOT)
+
+
+def test_rich_model_response_disagrees_with_artifact(rich_builder):
+    from ara.types import RunEvent
+    directory, calls, _ = rich_builder
+    events = calls.log.read()
+    calls.log.path.unlink()
+    calls.log.anchor.unlink()
+    for e in events:
+        if e['label'] == 'MODEL' and e['stage'] == 'build_t_batch':
+            raw = json.loads(e['response'])
+            data = json.loads(raw['content'][0]['text'])
+            data['commitments'][0]['formula'] = {'op': 'atom', 'name': 'S'}
+            raw['content'][0]['text'] = json.dumps(data)
+            e['response'] = json.dumps(raw)
+        calls.log.emit(RunEvent.from_dict(e))
+    with pytest.raises(ValueError, match='construction response does not match batch'):
+        load_frozen(directory, 'P Q', calls.config, load_bank(ROOT / 'bank').bank_version, ROOT)
+
+
+@pytest.mark.parametrize('rich_builder', ['encoded', 'corrected'], indirect=True)
+def test_rich_encoded_and_corrected_receipts(rich_builder):
+    directory, calls, _ = rich_builder
+    history = load_frozen(directory, 'P Q', calls.config, load_bank(ROOT / 'bank').bank_version, ROOT)
+    assert history['commitments']['commitments']
+
+
+@pytest.mark.parametrize('rich_builder', ['corrected'], indirect=True)
+def test_rich_correction_origin_disagreement(rich_builder):
+    from ara.types import RunEvent
+    directory, calls, _ = rich_builder
+    events = calls.log.read()
+    calls.log.path.unlink()
+    calls.log.anchor.unlink()
+    for e in events:
+        if e['label'] == 'MODEL' and e['stage'] == 'build_t_batch' and json.loads(e['payload_json'])['status'] == 'rejected':
+            raw = json.loads(e['response'])
+            data = json.loads(raw['content'][0]['text'])
+            data['commitments'][0]['formula'] = {'op': 'atom', 'name': 'S'}
+            raw['content'][0]['text'] = json.dumps(data)
+            e['response'] = json.dumps(raw)
+        calls.log.emit(RunEvent.from_dict(e))
+    with pytest.raises(ValueError, match='construction correction candidate mismatch'):
         load_frozen(directory, 'P Q', calls.config, load_bank(ROOT / 'bank').bank_version, ROOT)

@@ -481,3 +481,13 @@ T, logged prompt/schema contracts, and the pinned legacy type/bank/schema manife
 New freezes record the explicit T hash and contract manifest. Hash chains detect
 accidental modification; they are not cryptographic signatures against an actor
 who rewrites an entire history and its checkpoint.
+
+Shared-T provenance verification also supports native completed-paper resumes:
+retain every pinned ancestor log. Accepted and rejected historical extraction
+attempts must match a supported, pinned prompt/schema contract. Rich construction
+responses, including encoded formulas and targeted patches, are checked against
+the saved batch artifacts before import. Candidate methodology includes inherited
+partial coverage, current failures, historical failures and failure policy under
+its labelled extraction scope; local and inherited spending remain separate.
+Only effective construction/extraction stage settings constrain compatibility;
+writer/search-only stage entries do not invalidate the shared table.

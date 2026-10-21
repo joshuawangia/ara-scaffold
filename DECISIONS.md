@@ -1410,3 +1410,30 @@ notes include the dictionary key. Invalid paper-limit tests now assert the prima
 admission error message, so serialization failure cannot stand in for validation.
 Both finite-count and finite-cost production mutations are detected after this
 change; extraction production behavior is unchanged.
+
+### Shared frozen T round 2 — Native provenance and accepted construction responses
+
+Frozen imports use the extraction owner's pinned/transitive verifier and current
+batch outcome selector. Prompt/schema rendering is shared with the model boundary
+and records response-contract version 2. The exact pre-mode-specific extraction
+prompt/schema digest is retained for historical accepted and rejected receipts;
+unknown versions and changed prompts still refuse. Historical compatibility does
+not dispatch old schemas or rewrite source logs. All pinned ancestor logs must
+remain available.
+
+Rich batches reconstruct model-authored commitments from accepted responses using
+the live encoded-formula decoder, correction merger and immutable evidence
+normalization. Targeted patches bind to their original rejected candidate before
+reconstruction. Reconstructed commitments, symbols and alignments must agree with
+the saved batch; the existing batch/hash/merge checks bind that artifact to T.
+
+Compatibility compares effective construction/extraction provider settings with
+runtime defaults resolved, excluding unrelated stage-map entries. Candidate
+search/writer configuration can differ; the inherited builder configuration stays
+verbatim in its nested history. This does not add new provider stage overrides.
+
+Methodology derives extraction coverage, current and historical failures, failure
+policy and extraction usage from inherited and local extraction evidence. Its
+scope label makes that inclusion explicit. Inherited events remain nested and
+excluded from local lifecycle, charges and caps. Campaign aggregation still needs
+the complete supplied log set, including post-freeze builder work.

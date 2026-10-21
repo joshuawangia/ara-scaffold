@@ -115,6 +115,8 @@ CASES += [
     ('rich_cached_context', 'ara/runtime/calls.py', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=not cached)', 'tests/runtime/test_extraction_rich.py::test_cached_context_is_recounted'),
 ]
 
+CASES.append(('rich_nullable_provider_schema', 'schemas/extract_paper.json', '"type": "string",\n                "enum": [\n                  "paper_stated"', '"type": ["string", "null"],\n                "enum": [\n                  "paper_stated"', 'tests/runtime/test_provider.py::test_rich_nullable_enum_matches_provider_grammar'))
+
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

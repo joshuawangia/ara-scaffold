@@ -105,13 +105,16 @@
             "uniqueItems": true
           },
           "inference_origin": {
-            "enum": [
-              "paper_stated",
-              null
-            ],
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "paper_stated"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },

@@ -968,3 +968,12 @@ Private-use glyphs are a visible encoding warning but do not erase otherwise
 readable pages; strict mode refuses those too. No OCR or speculative glyph repair.
 Legacy v1 artifacts are refused instead of being mislabelled as human literature.
 Original log lineage and imported-cost accounting remain required.
+
+
+GX17. The live provider rejected inference_origin's nullable enum despite its
+valid local JSON Schema: the service grammar does not accept enum with a union
+of primitive types. Use explicit string-enum and null branches, preserving exactly
+the local accepted values. The raw provider request error and conservative unknown
+usage reservations remain in ignored live receipts. Add a projection regression
+and production schema mutation; do not weaken source validation or discard failed
+accounting. Subsequent authorized checks subtract those reservations from the cap.

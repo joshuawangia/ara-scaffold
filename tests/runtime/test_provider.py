@@ -188,3 +188,22 @@ def test_web_admission_counts_initial_request_and_bounds_search_iterations(rig, 
     estimate = provider.estimate('search_evidence', 'P', None, 32)
     assert estimate == TokenUsage(123 + searches * calls.config['model_context_token_bound'],
                                   32 * (searches + 1), server_tool_uses=searches)
+
+
+def test_rich_nullable_enum_matches_provider_grammar():
+    # Observed service rejection: enum + a union-valued type is not accepted.
+    from ara.runtime.providers import structured_schema
+    schema = json.loads((ROOT / 'schemas/extract_paper.json').read_text())
+    projected = structured_schema(schema)
+    def visit(value):
+        if isinstance(value, dict):
+            assert not ('enum' in value and isinstance(value.get('type'), list))
+            for child in value.values(): visit(child)
+        elif isinstance(value, list):
+            for child in value: visit(child)
+    visit(projected)
+    origin = schema['properties']['items']['items']['properties']['inference_origin']
+    from jsonschema import Draft202012Validator, ValidationError
+    Draft202012Validator(origin).validate(None)
+    Draft202012Validator(origin).validate('paper_stated')
+    with pytest.raises(ValidationError): Draft202012Validator(origin).validate('P')

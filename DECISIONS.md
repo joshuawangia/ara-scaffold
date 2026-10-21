@@ -1343,3 +1343,37 @@ not incur another extraction dispatch. Preserve every origin log and checkpoint.
 Offline tests and production-wire mutation controls cover native extraction/pilot,
 threshold boundaries, evidence exclusion, receipt identity, changed inputs,
 transitive tamper detection, allowance reset and inherited aggregate caps.
+
+### GX32 — Acceptance-bound reuse and a separate ancestry inventory
+
+Iota T-B1 demonstrated that identical source inputs could bypass a newly required
+inference through resume. Each newly completed outcome now records a versioned
+acceptance identity. Reuse compares the effective inference policy, extraction
+model/effort/thinking/fallback settings, provider, prompt hash and schema hash.
+The explicit interpretation version covers validation, normalization and schema
+specialization changes. Changed or unknown identities return the paper to native
+extraction/validation; original model/configuration receipts and charges remain
+intact. No legacy policy is inferred from absent metadata. This narrows GX31's
+legacy reuse eligibility without invalidating existing literature provenance.
+
+Spending caps, token/output allowances, planning bounds, failure thresholds and
+recovery allowances do not define the accepted graph and are excluded. Unrelated
+stage changes and overridden global settings do not invalidate an unchanged
+effective extraction stage. This prevents unnecessary re-extraction when only
+campaign budget or recovery policy changes. The execution boundary rechecks the
+identity in case configuration changes after the reuse index was prepared.
+Strict source coverage (`--missing refuse`) is checked before the reuse branch,
+so a formerly accepted partial paper cannot bypass a stricter source policy.
+
+Iota T-S1 showed that latest-batch publication and reusable ancestry are different
+inventories. Resume now indexes all retained verified outcome candidates, then
+applies source/acceptance matching and merged-graph receipt validation. An ancestor
+success remains available when an intermediate descendant stops before emitting
+its reused outcome. Distinct compatible successes for the same source refuse
+explicitly. Latest-batch selection remains unchanged for literature and current
+failure disclosure; historical failures and inherited charges remain visible.
+
+README documents the required config/root arguments on resume and the shared
+pinned-import verifier and outcome selectors for downstream integration. T-N1's
+limits remain: whole-paper reuse only, retain original logs, no semantic quality
+or full-corpus budget guarantee. No prompt/schema or live provider change is made.

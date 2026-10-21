@@ -15,13 +15,33 @@ import yaml
 from ara.runtime.cache import canonical, digest
 from ara.runtime.logging import EventLog, read_log
 from ara.runtime.provenance import (checkpoint, read_checkpoint, import_receipts,
-                                    extraction_outcomes)
+                                    extraction_outcomes, historical_extraction_outcomes)
 
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
 HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
+# Bump when validation, normalization, mode schemas or graph interpretation change.
+EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v1'
+
+
+def extraction_acceptance_identity(config: dict, root: Path) -> dict:
+    """Effective reusable-paper contract; budgets and recovery allowances are excluded."""
+    from ara.runtime.providers import stage_settings
+    stage = stage_settings(config, 'extract_paper')
+    fallbacks = stage.get('fallbacks', ['claude-opus-4-8'])
+    return {
+        'version': EXTRACTION_ACCEPTANCE_VERSION,
+        'require_inference': bool(config.get('extraction_require_inference', False)),
+        'provider': config['provider'],
+        'stage': {'model': stage['model'], 'effort': stage['effort'],
+                  'thinking': stage.get('thinking', 'adaptive'),
+                  'fallbacks': [] if fallbacks == 'off' else list(fallbacks)},
+        'prompt_sha256': digest((Path(root)/'prompts/extract_paper.txt').read_text()),
+        'schema_sha256': digest(canonical(json.loads((Path(root)/'schemas/extract_paper.json').read_text()))),
+    }
+
 
 
 @dataclass(frozen=True)
@@ -263,6 +283,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     from ara.runtime.calls import Rejected
     from ara.runtime.budget import BudgetStop
 
+    acceptance = extraction_acceptance_identity(calls.config, calls.root)
     maximum_failures = validate_failure_limit(calls.config)
     policy = dict(policy='continue-on-paper-failure', max_failed_papers=maximum_failures)
     calls.log.record('extraction_batch_started', **policy, selected=[p.source_id for p in papers])
@@ -312,10 +333,13 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
                 'page_diagnostics': [asdict(d) for d in paper.diagnostics],
                 'affected_pages': list(paper.affected_pages),
                 'input_sha256': digest(canonical(paper.inputs()))}
+        if paper.affected_pages and missing == 'refuse':
+            calls.log.record('extraction_outcome', **base, status='partial', reason='strict_incomplete_coverage', items=[])
+            raise ValueError(f'{paper.source_id}: extraction refused: partial text coverage')
         if paper.source_id in reused:
             previous = reused[paper.source_id]
             outcome = previous['outcome']
-            validate_reused_paper(paper, outcome)
+            validate_reused_paper(paper, outcome, acceptance)
             calls.log.record('extraction_paper_reused', source_id=paper.source_id, origin=previous['origin'],
                              outcome_hash=digest(canonical(outcome)))
             calls.log.record('extraction_outcome', **outcome)
@@ -330,9 +354,6 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
             if missing == 'refuse':
                 raise ValueError(f'{paper.source_id}: extraction refused: {reason}')
             continue
-        if paper.affected_pages and missing == 'refuse':
-            calls.log.record('extraction_outcome', **base, status='partial', reason='strict_incomplete_coverage', items=[])
-            raise ValueError(f'{paper.source_id}: extraction refused: partial text coverage')
         if not paper.readable_pages and paper.affected_pages:
             outcome = {**base, 'status': 'partial', 'reason': 'no_readable_pages', 'items': []}
             calls.log.record('extraction_outcome', **outcome)
@@ -359,7 +380,8 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
                                  reason='failed-paper threshold exceeded' if paper_failure else type(exc).__name__)
                 raise  # Run budgets, unknown accounting and excess failures refuse publication.
             continue
-        outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted', **result.to_dict()}
+        outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted',
+                   'acceptance_identity': acceptance, **result.to_dict()}
         calls.log.record('extraction_outcome', **outcome)
         outcomes.append(outcome)
         save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
@@ -409,7 +431,9 @@ def validate_failure_limit(config):
     return value
 
 
-def validate_reused_paper(paper, outcome):
+def validate_reused_paper(paper, outcome, acceptance):
+    if not acceptance or outcome.get('acceptance_identity') != acceptance:
+        raise ValueError('resume extraction acceptance identity mismatch')
     if outcome['status'] not in ('extracted', 'partial'):
         raise ValueError('resume requires completed paper outcome')
     expected = dict(source_id=paper.source_id, pdf_sha256=paper.pdf_sha256,
@@ -422,8 +446,14 @@ def validate_reused_paper(paper, outcome):
         raise ValueError('resume paper input mismatch')
 
 
-def resume_papers(log, papers, sources):
-    """Import whole origin receipts; reuse only completed, matching paper outcomes."""
+def resume_papers(log, papers, sources, config: dict, root: Path):
+    """Verify all ancestry before import; index compatible successes across every batch.
+
+    config must be the effective (profile-applied) configuration, root the contract
+    directory. Missing or incompatible acceptance identities require extraction.
+    Publication still uses extraction_outcomes(), which selects only the last batch.
+    """
+    acceptance = extraction_acceptance_identity(config, root)
     loaded = []
     reused = {}
     selected = {p.source_id: p for p in papers}
@@ -433,15 +463,15 @@ def resume_papers(log, papers, sources):
         events = read_checkpoint(origin)
         if missing_lineage(events):
             raise MissingExtractionLineage('resume origin lacks original extraction receipts')
-        for outcome in extraction_outcomes(events):
+        for outcome in historical_extraction_outcomes(events):
             source = outcome['source_id']
             if source not in selected or outcome['status'] not in ('extracted', 'partial'):
                 continue
             paper = selected[source]
             try:
-                validate_reused_paper(paper, outcome)
+                validate_reused_paper(paper, outcome, acceptance)
             except ValueError:
-                # Changed or previously unavailable sources need fresh extraction.
+                # Changed sources or incompatible/unknown acceptance policies need extraction.
                 continue
             if source in reused and reused[source]['outcome'] != outcome:
                 raise ValueError(f'conflicting completed paper receipts: {source}')

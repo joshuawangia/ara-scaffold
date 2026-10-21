@@ -72,7 +72,7 @@ CASES = [
     ('build_t_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'build_t':", 'tests/runtime/test_extraction_fix1.py::test_build_t_counted_context_refusal'),
     ('extraction_blank_pages', 'ara/runtime/extraction.py', "unavailable = 'empty_pdf' if not pages else None", "unavailable = 'empty_pdf' if not pages or any(d.reason == 'blank_page' for d in diagnostics) else None", 'tests/runtime/test_extraction_fix1.py::test_blank_pages_retained_without_rejecting_paper'),
     ('extraction_page_numbers', 'ara/runtime/extraction.py', 'pages.append(PageText(i, text))', 'pages.append(PageText(len([p for p in pages if p.text.strip()]) + 1, text))', 'tests/runtime/test_extraction_fix1.py::test_blank_pages_retained_without_rejecting_paper'),
-    ('extraction_partial_status', 'ara/runtime/extraction.py', "outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted', **result.to_dict()}", "outcome = {**base, 'status': 'extracted', **result.to_dict()}", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
+    ('extraction_partial_status', 'ara/runtime/extraction.py', "'status': 'partial' if paper.affected_pages else 'extracted',", "'status': 'extracted',", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_unread_page_citation', 'ara/runtime/calls.py', 'require(item.page_start in readable and item.page_end in readable and', 'require(True or item.page_start in readable and item.page_end in readable and', 'tests/runtime/test_extraction_fix1.py::test_extraction_cannot_cite_unread_image_page'),
     ('extraction_blank_stream_detection', 'ara/runtime/extraction.py', 'contents.operations if contents is not None else []', 'contents.operations if contents else []', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_counted_not_bytes', 'ara/runtime/extraction.py', "if prompt_bytes + maximum > calls.config['model_context_token_bound']:", "if prompt_bytes + maximum > calls.config['model_context_token_bound']:\n            calls.budget.stop('byte bound', 'extract_paper')", 'tests/runtime/test_extraction_fix1.py::test_large_bytes_use_counted_tokens'),
@@ -292,8 +292,35 @@ CASES += [
      "if anchor.read_text().splitlines() != [r['hash'] for r in records]:", 'if False:',
      'tests/runtime/test_paper_recovery.py::test_fresh_origin_checkpoint_refuses_truncated_log'),
     ('resume_cli_wiring', 'ara/runtime/cli.py',
-     'reused = resume_papers(log, papers, args.resume_from) if args.resume_from and not args.estimate_only else {}', 'reused = {}',
+     'reused = resume_papers(log, papers, args.resume_from, config, ROOT) if args.resume_from and not args.estimate_only else {}', 'reused = {}',
      'tests/runtime/test_paper_recovery.py::test_native_cli_resume_and_pilot_import'),
+]
+
+CASES += [
+    ('resume_acceptance_policy', 'ara/runtime/extraction.py',
+     "if not acceptance or outcome.get('acceptance_identity') != acceptance:", 'if False:',
+     'tests/runtime/test_resume_policy.py::test_changed_acceptance_matches_fresh_extraction'),
+    ('resume_acceptance_model', 'ara/runtime/extraction.py',
+     "'stage': {'model': stage['model'], 'effort': stage['effort'],", "'stage': {'model': None, 'effort': stage['effort'],",
+     'tests/runtime/test_resume_policy.py::test_acceptance_contract_drift_reextracts[model]'),
+    ('resume_acceptance_version', 'ara/runtime/extraction.py',
+     "'version': EXTRACTION_ACCEPTANCE_VERSION,", "'version': None,",
+     'tests/runtime/test_resume_policy.py::test_acceptance_contract_drift_reextracts[version]'),
+    ('resume_ancestor_inventory', 'ara/runtime/extraction.py',
+     'for outcome in historical_extraction_outcomes(events):', 'for outcome in extraction_outcomes(events):',
+     'tests/runtime/test_resume_policy.py::test_stopped_descendant_reuses_unreached_ancestor_success'),
+    ('resume_ancestor_conflict', 'ara/runtime/extraction.py',
+     "if source in reused and reused[source]['outcome'] != outcome:", 'if False:',
+     'tests/runtime/test_resume_policy.py::test_conflicting_compatible_ancestor_successes_refuse'),
+    ('resume_execution_policy', 'ara/runtime/extraction.py',
+     '            validate_reused_paper(paper, outcome, acceptance)\n            calls.log.record', '            calls.log.record',
+     'tests/runtime/test_resume_policy.py::test_execution_rechecks_reuse_policy'),
+]
+
+CASES += [
+    ('resume_strict_coverage', 'ara/runtime/extraction.py',
+     "if paper.affected_pages and missing == 'refuse':", 'if False:',
+     'tests/runtime/test_resume_policy.py::test_strict_coverage_refuses_reused_partial_paper'),
 ]
 
 def main():

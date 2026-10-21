@@ -132,7 +132,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                        missing_policy=args.missing, estimate_only=args.estimate_only,
                        tools=['pypdf', 'Anthropic Messages API', 'jsonschema'])
             papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
-            reused = resume_papers(log, papers, args.resume_from) if args.resume_from and not args.estimate_only else {}
+            reused = resume_papers(log, papers, args.resume_from, config, ROOT) if args.resume_from and not args.estimate_only else {}
             calls = calls_factory(config, log, '')
             path = extract(calls, papers, missing=args.missing, estimate_only=args.estimate_only, reused=reused)
             if path:

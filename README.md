@@ -396,3 +396,33 @@ import. Unknown or interrupted spend must be reconciled before reuse.
 Partial ranges within failed papers are not restored. The original run directory
 remains immutable; an occupied destination refuses before provider construction.
 Cross-run cache entries without original receipts remain invalid provenance.
+
+Resume eligibility also binds the completed outcome's versioned
+`acceptance_identity`: inference policy, effective extraction model/effort/thinking/
+fallback settings, provider, prompt hash and schema hash. Changed or missing
+identities require the native extraction/validation path again; old receipts and
+costs are still imported. Dollar/token caps, paper/recovery allowances and unrelated
+stage settings can change without invalidating compatible completed papers.
+`--missing refuse` also rejects reused partial sources before publication.
+Ancestor successes remain reusable if an intermediate run stops before reaching
+those papers. Conflicting compatible successes refuse instead of selecting one.
+
+The extraction/provenance API for downstream consumers is:
+
+| API | Contract |
+| --- | --- |
+| `extraction.extraction_acceptance_identity(config, root)` | Returns the active acceptance contract using the effective, profile-applied configuration. Bump `EXTRACTION_ACCEPTANCE_VERSION` when validation, normalization, mode-schema rules or graph interpretation change. |
+| `extraction.resume_papers(log, papers, sources, config, root)` | Verifies all supplied origins before importing; indexes matching successful outcomes across retained ancestry. Config and contract root are required. Returns entries for `extract(..., reused=...)`, which rechecks compatibility. |
+| `provenance.read_checkpoint(origin)` | Reads the pinned log prefix, validates its chain and recursive imports, and returns original events. Missing or altered origins refuse. |
+| `provenance.verify_imports(events)` | Validates origin-pinned imported blocks against original prefixes, including deduplication. Does not replace verification of the containing log chain. A native import's `receipt_id` hashes the full original prefix, not just the copied block. |
+| `extraction.import_provenance(log, events, origin)` | Copies verified original receipts with deduplication. Pass the pin for native/transitive imports. Original timestamps, configuration, model receipts and charges remain unchanged. |
+| `provenance.extraction_outcomes(events)` | Selects only the latest batch for final literature/current failure disclosure. |
+| `provenance.historical_extraction_outcomes(events)` | Returns all retained outcome candidates. It is not a verifier or compatibility check; resume validates source, acceptance identity and merged-graph receipt before indexing successes. |
+| `extraction.literature_provenance(path, text)` | Verifies an existing literature artifact against pinned imports and current-batch reconstruction. It does not relabel historical extraction as accepted under today's policy. |
+
+`ModelCalls.response_schema(kind, inputs)` remains the active mode-specific schema
+entrypoint used by rendering, counting and validation. The acceptance identity
+belongs to completed outcomes; retained historical attempts, including rejected
+responses, keep their original contracts and must not be rewritten as today's
+prompt/schema. Existing historical literature can still be verified and imported;
+unknown acceptance identities disqualify automatic completed-paper reuse only.

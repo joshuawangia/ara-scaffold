@@ -113,7 +113,7 @@ def test_invalid_failure_threshold_refuses_before_dispatch(rig, monkeypatch, val
 def resumed(calls, provider, papers, directory, sources):
     from ara.runtime.extraction import resume_papers
     log = EventLog(directory/'events.jsonl')
-    reused = resume_papers(log, papers, sources)
+    reused = resume_papers(log, papers, sources, calls.config, ROOT)
     follow = ModelCalls(calls.config, provider, log, Cache(directory/'cache'), ROOT, '')
     return follow, extract(follow, papers, reused=reused)
 
@@ -306,7 +306,7 @@ def test_fresh_origin_checkpoint_refuses_truncated_log(rig, monkeypatch, tmp_pat
     calls.log.path.write_text(''.join(rows[:-1]))
     destination = EventLog(tmp_path/'follow/events.jsonl')
     with pytest.raises(ValueError, match='checkpoint'):
-        resume_papers(destination, papers[:1], [calls.log.path.parent])
+        resume_papers(destination, papers[:1], [calls.log.path.parent], calls.config, ROOT)
     assert destination.read() == []
 
 

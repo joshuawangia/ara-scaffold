@@ -96,5 +96,15 @@ def batch_events(events):
     return events[start:]
 
 
+def historical_extraction_outcomes(events):
+    """All retained outcomes, including ancestors; caller must verify imports first.
+
+    This is a candidate inventory, not proof of compatibility or completion.
+    resume_papers applies source/policy checks and accepted-graph receipts.
+    """
+    return [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome']
+
+
 def extraction_outcomes(events):
-    return [json.loads(e['payload_json']) for e in batch_events(events) if e['stage'] == 'extraction_outcome']
+    """Current published corpus only; never use this as the reusable-success index."""
+    return historical_extraction_outcomes(batch_events(events))

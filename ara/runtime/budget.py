@@ -32,6 +32,9 @@ class Budget:
                     raise ValueError('pricing must be finite and nonnegative')
         if not Decimal(str(config['cost_cap_usd'])).is_finite() or config['cost_cap_usd'] < 0:
             raise ValueError('cost cap must be finite and nonnegative')
+        extraction_cap = Decimal(str(config.get('extraction_cost_cap_usd', config['cost_cap_usd'])))
+        if not extraction_cap.is_finite() or extraction_cap < 0:
+            raise ValueError('extraction cost cap must be finite and nonnegative')
         if type(config['token_cap']) is not int or config['token_cap'] < 0:
             raise ValueError('token cap must be a nonnegative integer')
         self.used_tokens = sum(tokens(TokenUsage.from_dict(e['usage'])) for e in log.read())
@@ -92,7 +95,14 @@ class Budget:
         (self.log.path.parent / 'partial.json').write_text(canonical(state))
         raise BudgetStop(reason)
 
+    def extraction_cost(self) -> Decimal:
+        return sum((Decimal(str(e['cost_usd'])) for e in self.log.read()
+                    if e['stage'] == 'extract_paper' and e['label'] == 'MODEL'), Decimal(0))
+
     def before(self, usage: TokenUsage, stage: str) -> None:
+        if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage) > Decimal(str(
+                self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
+            self.stop('extraction cost cap: request reservation exceeds remaining cost', stage)
         if self.used_tokens + tokens(usage) > self.config['token_cap']:
             self.stop('token cap: request reservation exceeds remaining tokens', stage)
         if self.used_cost + self.cost(usage) > Decimal(str(self.config['cost_cap_usd'])):
@@ -103,6 +113,9 @@ class Budget:
         self.used_cost += cost
 
     def after(self, stage: str) -> None:
+        if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(
+                self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
+            self.stop('extraction cost cap exceeded by actual usage', stage)
         if self.used_tokens > self.config['token_cap']:
             self.stop('token cap exceeded by actual usage', stage)
         if self.used_cost > Decimal(str(self.config['cost_cap_usd'])):

@@ -12,6 +12,8 @@ PROPOSITION = {'id': 'p', 'text': 'P', 'formula': P}
 PROPOSAL = {'bank_id': 'modus_ponens', 'premises': [
     {'slot': 'antecedent', 'text': 'P', 't_id': 't1', 'scope_id': None}], 'conclusion_text': 'Q'}
 PAYLOADS = {
+    'extract_paper': {'source_id': 'p', 'items': [{'source_id': 'p', 'kind': 'claim',
+        'attribution': 'author_claim', 'text': 'P', 'page_start': 1, 'page_end': 1}]},
     'build_t': {'commitments': [{'id': 't1', 'text': 'P', 'citation': 'placeholder:1', 'formula': P}]},
     'propose_targets': {'targets': [PROPOSITION]},
     'propose_cuts': {'proposals': [PROPOSAL]},

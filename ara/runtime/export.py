@@ -30,7 +30,25 @@ def methodology(log_path: Path) -> str:
     unknown = [e for e, p in routing if p.get('accounting') == 'reservation_unknown_actual']
     pending = max(0, sum(e['stage'] == 'call_start' for e in events) -
                   sum(not p.get('cache_hit') for e, p in routing))
+    extraction_calls = [e for e in calls if e['stage'] == 'extract_paper']
+    outcomes = [json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_outcome']
+    extraction_summary = {
+        'call_count': len(extraction_calls),
+        'dispatch_count': sum(not json.loads(e['payload_json']).get('cache_hit') for e in extraction_calls),
+        'cache_replays': sum(bool(json.loads(e['payload_json']).get('cache_hit')) for e in extraction_calls),
+        'tokens': {k: sum(e['usage'][k] for e in extraction_calls) for k in (
+            'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
+        'cost_usd': round(sum(e['cost_usd'] for e in extraction_calls), 10),
+        'models': served_by_kind.get('extract_paper', []),
+        'extracted': [p['source_id'] for p in outcomes if p['status'] == 'extracted'],
+        'record_only': [{'source_id': p['source_id'], 'reason': p['reason']} for p in outcomes
+                        if p['status'] == 'record only, not extracted'],
+        'failed': [p['source_id'] for p in outcomes if p['status'] == 'failed'],
+        'origin': 'SYSTEM/MODEL',
+        'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),
+    }
     summary = {
+        'extraction': extraction_summary,
         'accounting_complete': not unknown and not pending,
         'incomplete_calls': len(unknown) + pending,
         'unresolved_dispatches': pending,

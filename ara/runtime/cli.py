@@ -16,6 +16,7 @@ from ara.runtime.budget import BudgetStop
 from ara.runtime.cache import Cache
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
+from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance
 from ara.runtime.logging import EventLog, now
 from ara.runtime.orchestration import compose, native_engine, prepare, search_all
 from ara.runtime.providers import AnthropicProvider, MockProvider
@@ -39,6 +40,15 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--audience', default='runtime audience')
     run.add_argument('--named-position')
     run.add_argument('--route')
+    extraction = sub.add_parser('extract')
+    extraction.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
+    extraction.add_argument('--manifest', type=Path, required=True)
+    extraction.add_argument('--fulltext-dir', type=Path, required=True)
+    extraction.add_argument('--run-dir', type=Path, required=True)
+    extraction.add_argument('--provider', choices=('anthropic', 'mock'))
+    extraction.add_argument('--paper-id', action='append', default=[])
+    extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
+    extraction.add_argument('--estimate-only', action='store_true')
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -72,6 +82,26 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'extract':
+            config = yaml.safe_load(args.config.read_text())
+            config.setdefault('validation_attempts', 3)
+            if args.provider:
+                config['provider'] = args.provider
+            if args.run_dir.exists() and any(args.run_dir.iterdir()):
+                raise ValueError('new extraction directory must be empty; reuse the cache with a new directory')
+            log = EventLog(args.run_dir / 'events.jsonl')
+            log.human('extract', json.dumps(raw_args, ensure_ascii=False), argv=raw_args,
+                      manifest=args.manifest.read_text(), reported_minutes=args.human_minutes)
+            log.record('extraction_started', config=config, manifest=str(args.manifest.resolve()),
+                       fulltext_dir=str(args.fulltext_dir.resolve()), selected=args.paper_id,
+                       missing_policy=args.missing, estimate_only=args.estimate_only,
+                       tools=['pypdf', 'Anthropic Messages API', 'jsonschema'])
+            papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
+            calls = calls_factory(config, log, '')
+            path = extract(calls, papers, missing=args.missing, estimate_only=args.estimate_only)
+            if path:
+                print(str(path))
+            return 0
         if args.command == 'run':
             config = yaml.safe_load(args.config.read_text())
             selected_profile = 'smoke' if args.smoke else args.profile
@@ -91,13 +121,16 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if directory.exists() and any(directory.iterdir()):
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')
             log = EventLog(directory / 'events.jsonl')
+            provenance = literature_provenance(args.literature, literature) if args.literature else ()
+            if provenance:
+                import_provenance(log, provenance)
             log.human('run', args.topic if args.topic is not None else json.dumps(raw_args, ensure_ascii=False),
                       argv=raw_args, topic=args.topic,
-                      literature=literature if args.literature is not None else None,
+                      literature=literature if args.literature is not None and not provenance else None,
                       named_position=args.named_position, reported_minutes=args.human_minutes)
             bank = load_bank(ROOT / 'bank')
             log.record('run_started', config=config, topic=topic, literature=literature, audience=args.audience,
-                       literature_source='human_file' if args.literature is not None else 'smoke_fixture',
+                       literature_source='model_extraction' if provenance else ('human_file' if args.literature is not None else 'smoke_fixture'),
                        bank_version=bank.bank_version,
                        architecture='L: versioned bank; T: frozen commitments; H: model cut proposer; '
                        'deterministic engine: licensing, search, conflicts; runtime: effects',

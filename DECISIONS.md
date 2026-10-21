@@ -779,3 +779,61 @@ acceptance interval. Required propositions and markers must remain present.
 Fixture request hashes change, response bodies do not. Offline tests cannot
 establish instruction compliance; the failed series and its cost remain recorded,
 and a new five-run live series on this commit supplies the required evidence.
+
+## Round 3 gamma: logged per-paper extraction
+
+GX1. Add a native `ara extract` stage and `ModelCalls.extract_paper`, using the
+same provider, schema projection/local validator, retry, cache, budget and MODEL
+log boundary as other calls. Each selected paper is one request, with up to the
+configured validation attempts (extract defaults to three). Refusal, output stop,
+transport failure and budget STOP retain existing finality. No extraction failure
+is converted into successful model output. Frozen Paper/PageText and
+PaperExtraction/ExtractedItem contracts separate intake and accepted output.
+
+GX2. Choose local pypdf (locked dependency) instead of PDF document upload. This
+keeps the existing text-only provider protocol and exact prompt/cache logging,
+preserves physical page indices, and permits offline inspection and counting.
+The tradeoff is no OCR, image interpretation or layout-faithfulness guarantee.
+An encrypted, malformed, empty or partially textless PDF is explicitly unavailable;
+even a blank page refuses extraction rather than silently losing source material.
+Missing/unreadable PDFs default to a logged `record only, not extracted` outcome;
+`--missing refuse` stops without publishing the assembled file. Oversize inputs
+use the same explicit unavailable outcome (or strict refusal), never truncation.
+Local UTF-8 request bytes plus schema bytes and the output allowance conservatively
+bound context; this can refuse a paper that would fit under an exact tokenizer.
+The provider token estimate checks context again on every dispatched attempt,
+including correction feedback. The configured context bound remains 200000.
+
+GX3. The topic-neutral prompt requests only claims/arguments as stated in one
+paper, with author_claim/reported_view/attacked_view labels and inclusive physical
+PDF page ranges. Strict schema and local source/page/whitespace checks precede
+cache admission. Citation ids are generated as `<id>:pdf:<start>[-<end>]`, explicitly
+not printed folios. Build-T accepts only supplied extracted citation ids; record-only
+entries cannot license commitments and an entirely record-only input stops before
+build-T dispatch. These checks establish structure and source references, not
+semantic fidelity, completeness, correctness of attribution or actual support on
+a valid page. The model still owns those assessments; no human summary is supplied.
+
+GX4. The assembled `literature.extracted.txt` is SYSTEM/MODEL output. Its sidecar
+pins a completed hash-chained extraction-log prefix; CLI intake checks the hash,
+reconstructs the file from logged outcomes, and imports original events with
+labels/timestamps/costs preserved. The source log must remain available. Later
+appends do not invalidate the pinned prefix. AI text is excluded from HUMAN input
+events; the operator's command/manifest selections remain HUMAN. Imported usage
+counts against the downstream run budget. Methodology discloses receipt import,
+extracted/fallback/failed papers, calls/cache replays, models, tokens and cost.
+A receipt reused by two runs appears in each methodology; aggregate spend must
+deduplicate upstream receipts rather than sum both exports. This extends the
+existing log-only exporter without a separate unaccounted intake pipeline.
+
+GX5. Extraction has an additional USD30 configurable cap, subordinate to existing
+run cost/token caps (ordinary defaults remain USD10/200000). Both reservation
+and actual usage enforce it, including rejected attempts. Planning output before
+dispatch uses pages * 1500 tokens/page, prompt overhead and 8192 output tokens per
+readable paper, priced from config. This is an assumption, excludes retries and
+server fallbacks, and is not admission or a promise of completion. `--estimate-only`
+never dispatches; use `--provider mock` for credential-free local estimates.
+`--paper-id` restricts the selection. Full-batch execution remains operator-owned.
+Generated PDFs, extraction JSON, assembled text, provenance, logs and cache are
+ignored. Tests generate placeholder PDFs at runtime; no real source output enters
+tracked content. Work is isolated from other live runs in its own checkout/cache.

@@ -58,3 +58,8 @@ pilot:
   token_cap: 10000000
   cost_cap_usd: 100.0
   validation_attempts: 3
+
+# Extraction is also subject to the enclosing per-run token/cost caps.
+extraction_cost_cap_usd: 30.0
+extract_paper_max_output_tokens: 8192
+extraction_estimated_tokens_per_page: 1500

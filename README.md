@@ -134,6 +134,54 @@ the short automatic-selection profile and cannot be combined with `--profile`.
 The pilot path and streaming request are tested offline; no live pilot completion
 is claimed.
 
+## Extract literature from PDFs
+
+Place manifest-listed PDFs in `literature/fulltext/`, then inspect a local estimate:
+
+```sh
+uv run ara extract --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --provider mock --estimate-only --run-dir runs/extraction-estimate
+```
+
+With credentials configured, extract selected papers through the normal logged,
+cached model boundary. Omit `--paper-id p` only when ready for the entire manifest;
+`p` below is a placeholder source id to replace with an existing manifest id.
+
+```sh
+uv run ara extract --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction
+uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot-extracted
+```
+
+Extraction prints pages × estimated tokens and projected cost before dispatch.
+`extraction_cost_cap_usd` defaults to USD30; the enclosing `cost_cap_usd` and
+`token_cap` still apply (ordinary defaults USD10/200000). Supply `--config` to
+adjust caps for a planned batch. Estimates include full output allowances, but
+exclude retries/fallbacks. Each actual attempt reserves budget separately.
+`extract_paper_max_output_tokens` defaults to 8192; validation uses up to three
+attempts unless `validation_attempts` is explicitly configured. Keep separate
+cache paths for concurrent paid workers.
+
+Each accepted paper produces `<id>.extraction.json`. Claims/arguments carry source
+ids, author/reported/attacked attribution and physical PDF page ranges. Citation
+ids such as `p:pdf:1-2` refer to physical pages, not printed page labels. Local
+pypdf extraction does not perform OCR: malformed/encrypted PDFs or any page without
+extractable text yield an explicit `record only, not extracted` entry by default.
+Oversize papers also fall back with a logged context-bound refusal; no truncation.
+`--missing refuse` instead stops without publishing a literature file. Model,
+validation or budget failures always stop and retain methodology. A record-only
+entry supplies no claims to T, and an all-record-only file cannot build T.
+
+Keep `literature.extracted.txt`, its `.provenance.json` sidecar, and the original
+extraction log together and available at the recorded path. The run loader verifies
+the artifact against the pinned log and imports extraction receipts before build-T;
+AI output remains SYSTEM/MODEL, with models, calls, tokens, cost and fallback ids
+in methodology. Imported extraction costs count against the downstream run cap.
+They are reused receipts: do not sum multiple downstream methodologies as if each
+paid for the same upstream extraction. Copying only the text file is insufficient.
+Repeated extraction with a new empty run directory reuses validated cache entries
+without another provider call. Changed PDF bytes invalidate the cache even when
+the extracted text is identical. Generated artifacts and PDFs remain gitignored.
+Page bounds/schema checks do not establish semantic fidelity or exhaustive coverage.
+
 ## Topic, literature, selection and feedback
 
 The following reproducible example uses placeholders. Replace the topic and file

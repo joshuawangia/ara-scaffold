@@ -13,6 +13,7 @@ from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical
 from ara.runtime.logging import EventLog, now
+from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids
 from ara.runtime.providers import Provider, Response
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
@@ -139,6 +140,8 @@ class ModelCalls:
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
                 estimate = self.provider.estimate(kind, prompt, schema, maximum)
+                if kind == 'extract_paper' and estimate.input_tokens + maximum > self.config['model_context_token_bound']:
+                    self.budget.stop('extraction context bound exceeded; no truncation', kind)
                 self.budget.before(estimate, kind)
                 self.log.record('call_start', kind=kind, attempt=attempt, model=self.provider.model, prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
@@ -205,8 +208,27 @@ class ModelCalls:
                                                        **(Response(raw).routing() if raw else {}),
                                                        'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual'})))
 
+    def extract_paper(self, paper: Paper) -> PaperExtraction:
+        def check(data):
+            require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
+            items = tuple(ExtractedItem(**item) for item in data['items'])
+            for item in items:
+                require(item.source_id == paper.source_id, 'extraction item source id mismatch')
+                require(1 <= item.page_start <= item.page_end <= len(paper.pages), 'extraction page outside paper')
+                require(bool(item.text.strip()), 'extraction text is blank')
+            return PaperExtraction(paper.source_id, items)
+        return self.call('extract_paper', paper.inputs(), check)
+
     def build_t(self, literature: str, audience: str) -> CommitmentSet:
-        return self.call('build_t', {'literature': literature, 'audience': audience}, CommitmentSet.from_dict)
+        allowed = citation_ids(literature)
+        if allowed is not None:
+            require(bool(allowed), 'no extracted claims available to build T')
+        def check(data):
+            result = CommitmentSet.from_dict(data)
+            if allowed is not None:
+                require(all(c.citation in allowed for c in result.commitments), 'T citation not in extracted literature')
+            return result
+        return self.call('build_t', {'literature': literature, 'audience': audience}, check)
 
     def propose_targets(self, commitments: CommitmentSet, count: int = 10,
                         named_position: str | None = None) -> tuple[Proposition, ...]:

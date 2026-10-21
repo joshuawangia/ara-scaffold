@@ -51,6 +51,31 @@ def extraction_defaults(data: dict) -> dict:
     return data
 
 
+def normalize_extraction(data: dict) -> list[dict]:
+    """Remove only a content-free optional disposition; retain every item."""
+    changes = []
+    if 'empty_reason' in data and data['empty_reason'] in ('', None):
+        del data['empty_reason']
+        changes.append({'path': '/empty_reason', 'operation': 'remove_empty_optional'})
+    return changes
+
+
+def merge_extraction_patch(candidate: dict, patch: dict) -> dict:
+    """A patch replaces named items, preserves omitted items, and adds new IDs."""
+    def inventory(data):
+        require(isinstance(data, dict) and isinstance(data.get('items'), list),
+                'candidate cannot support targeted correction')
+        require(all(isinstance(item, dict) and isinstance(item.get('id'), str) and item['id']
+                    for item in data['items']), 'ambiguous correction inventory')
+        ids = [item['id'] for item in data['items']]
+        require(len(ids) == len(set(ids)), 'duplicate correction id')
+        return {item['id']: item for item in data['items']}
+    old, updates = inventory(candidate), inventory(patch)
+    merged = {**patch, 'items': [updates.pop(id, item) for id, item in old.items()]}
+    merged['items'].extend(updates.values())
+    return merged
+
+
 def word_count(draft: dict) -> int:
     # Count every whitespace-delimited token in title and body, including markers.
     return len(re.findall(r'\S+', draft['title'] + '\n' + draft['body']))
@@ -89,6 +114,19 @@ class ModelCalls:
                     del schema['properties'][field]
             if reconciliation:
                 del schema['properties']['empty_reason']
+            elif inputs.get('mode') == 'targeted_correction':
+                # Patch items may be empty while the resulting graph is nonempty.
+                if inputs.get('candidate', {}).get('items'):
+                    schema['properties']['empty_reason'] = {'type': 'null'}
+            else:
+                # The provider projection preserves these disjoint alternatives.
+                # Empty arrays are represented without unsupported maxItems=0.
+                schema['oneOf'] = [
+                    {'properties': {'items': {'minItems': 1}, 'empty_reason': {'type': 'null'}}},
+                    {'properties': {'items': {'items': {'type': 'null'}},
+                                    'empty_reason': {'type': 'string', 'minLength': 1}},
+                     'required': ['empty_reason']},
+                ]
         return schema
 
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
@@ -221,6 +259,10 @@ class ModelCalls:
                             except json.JSONDecodeError as exc:
                                 raise Rejected('invalid encoded formula JSON') from exc
                 if kind == 'extract_paper' and isinstance(data, dict):
+                    changes = normalize_extraction(data)
+                    if changes:
+                        self.log.record('extraction_normalized', cache_key=key, changes=changes,
+                                        source_id=inputs.get('source_id'), attempt=attempt)
                     extraction_defaults(data)
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
@@ -230,6 +272,12 @@ class ModelCalls:
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
             reason = str(exc) if isinstance(exc, (Rejected, UnpricedModel)) else type(exc).__name__
+            if kind == 'extract_paper' and isinstance(exc, ValidationError):
+                reason = f'ValidationError at /{"/".join(map(str, exc.absolute_path))}: {exc.validator} constraint failed'
+                if exc.context:
+                    reason += '; ' + '; '.join(
+                        f'/{"/".join(map(str, error.absolute_path))}: {error.validator}'
+                        for error in exc.context)
             unknown_usage = dispatched and not charged
             if unknown_usage:
                 usage, cost = estimate, self.budget.cost(estimate, model=self.requested_model(kind))
@@ -243,7 +291,7 @@ class ModelCalls:
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
             if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
-                raise InvalidOutput(reason, {'error': str(exc),
+                raise InvalidOutput(reason, {'error': reason if kind == 'extract_paper' else str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             if not isinstance(exc, Rejected):
@@ -311,118 +359,127 @@ class ModelCalls:
         finally:
             self._paper_budget = None
 
-    def _extract_paper(self, paper: Paper) -> PaperExtraction:
-        ranges: list[PaperExtraction] = []
+    def _extraction_response(self, paper, inputs, pages, prefix, existing=(),
+                             allow_incomplete=False, validate_context=None):
         corrections = self.config.get('extraction_targeted_corrections')
-        if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
-            raise ValueError('extraction_targeted_corrections must be 0 or 1')
-        def run(inputs, pages, prefix, existing=(), allow_incomplete=False, validate_context=None):
-            known = {item.id for item in existing}
-            def check(data):
-                require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
-                require(bool(data['items']) or inputs.get('mode') == 'reconcile_ranges' or
-                        (bool(data.get('empty_reason', '').strip()) and data['coverage_complete'] and
-                         not data['new_gaps']), 'empty extraction requires complete no-argument disposition')
-                require(not data.get('empty_reason') or not data['items'], 'nonempty extraction has empty disposition')
-                pending_ids = data.get('pending_obligation_ids', [])
-                incomplete = bool(pending_ids or data['new_gaps'])
-                require(data['coverage_complete'] or (allow_incomplete and incomplete), 'extraction coverage incomplete')
-                require(not data['coverage_complete'] or not incomplete, 'unresolved obligation status mismatch')
-                require(all(gap['description'].strip() for gap in data['new_gaps']), 'blank new gap')
-                items = tuple(ExtractedItem(**item) for item in data['items'])
-                ids = [item.id for item in items]
-                require(len(ids) == len(set(ids)), 'duplicate extraction id')
-                require(not set(ids) & known, 'extraction redeclares immutable evidence')
-                mapping = {id: f'{paper.source_id}:{prefix}:{id}' for id in ids}
-                available = set(ids) | known
-                for item in items:
-                    require(item.source_id == paper.source_id, 'extraction item source id mismatch')
-                    require(1 <= item.page_start <= item.page_end <= len(paper.pages), 'extraction page outside paper')
-                    require(bool(item.text.strip()) and bool(item.attributed_to.strip()), 'extraction text is blank')
-                    readable = {page.page for page in pages}
-                    require(item.page_start in readable and item.page_end in readable and
-                            not any(item.page_start <= page <= item.page_end for page in paper.unread_pages),
-                            'extraction cites unread page')
-                    refs = (*item.premise_ids, *item.qualification_ids, *item.applies_to,
-                            *((item.conclusion_id,) if item.conclusion_id else ()))
-                    require(set(refs) <= available, 'extraction link has unknown endpoint')
-                    if item.kind == 'inference':
-                        require(bool(item.premise_ids) and bool(item.conclusion_id) and
-                                item.inference_origin == 'paper_stated', 'invalid stated inference')
-                    else:
-                        require(not item.premise_ids and item.conclusion_id is None and
-                                not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
-                    require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
-                by_id = {item.id: item for item in (*existing, *items)}
-                if self.config.get('extraction_require_inference', False) and (
-                        inputs.get('mode') != 'reconcile_ranges' and not data['new_gaps'] and
-                        len(pages) == len(paper.readable_pages)):
-                    require(any(item.kind == 'inference' for item in by_id.values()), 'extraction has no stated inference')
-                for item in items:
-                    if item.kind == 'inference':
-                        require(all(by_id[id].kind != 'inference' for id in (*item.premise_ids, item.conclusion_id)),
-                                'inference endpoint must be a proposition')
-                        require(all(by_id[id].kind in ('distinction', 'qualification') for id in item.qualification_ids),
-                                'inference qualification has wrong kind')
-                def mapped(id):
-                    return mapping.get(id, id)
-                converted = tuple(replace(item, id=mapped(item.id),
-                    premise_ids=tuple(map(mapped, item.premise_ids)),
-                    conclusion_id=mapped(item.conclusion_id) if item.conclusion_id else None,
-                    qualification_ids=tuple(map(mapped, item.qualification_ids)),
-                    applies_to=tuple(map(mapped, item.applies_to))) for item in items)
-                obligations = inputs.get('obligations', [])
-                resolutions = data.get('resolutions', [])
-                resolved_ids = [r['obligation_id'] for r in resolutions]
-                require(len(resolved_ids) == len(set(resolved_ids)) and
-                        len(pending_ids) == len(set(pending_ids)) and not set(pending_ids) & set(resolved_ids) and
-                        set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
-                request = data.get('context_request', {})
-                require(not request or (inputs.get('mode') == 'reconcile_ranges' and bool(pending_ids)),
-                        'context request requires a pending obligation')
-                if request:
-                    require(bool(request['pages'] or request['evidence_ids']), 'unresolved obligation empty context request')
-                    if validate_context is not None:
-                        validate_context(request)
-                require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),
-                        'obligation resolution lacks accepted evidence')
-                ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
-                dispositions = ([dict(pages=[p.page for p in pages], reason=data['empty_reason'])]
-                                if data.get('empty_reason') else [])
-                return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
-                                       dispositions_json=canonical(dispositions)), data['new_gaps'], request
-            if corrections is None:
-                return self.call('extract_paper', inputs, check)
+        if corrections is not None and (type(corrections) is not int or corrections not in (0, 1, 2)):
+            raise ValueError('extraction_targeted_corrections must be 0, 1 or 2')
+        known = {item.id for item in existing}
+        def check(data):
+            require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
+            require(bool(data['items']) or inputs.get('mode') == 'reconcile_ranges' or
+                    (bool(data.get('empty_reason', '').strip()) and data['coverage_complete'] and
+                     not data['new_gaps']), 'empty extraction requires complete no-argument disposition')
+            require(not data.get('empty_reason') or not data['items'], 'nonempty extraction has empty disposition')
+            pending_ids = data.get('pending_obligation_ids', [])
+            incomplete = bool(pending_ids or data['new_gaps'])
+            require(data['coverage_complete'] or (allow_incomplete and incomplete), 'extraction coverage incomplete')
+            require(not data['coverage_complete'] or not incomplete, 'unresolved obligation status mismatch')
+            require(all(gap['description'].strip() for gap in data['new_gaps']), 'blank new gap')
+            items = tuple(ExtractedItem(**item) for item in data['items'])
+            ids = [item.id for item in items]
+            require(len(ids) == len(set(ids)), 'duplicate extraction id')
+            require(not set(ids) & known, 'extraction redeclares immutable evidence')
+            mapping = {id: f'{paper.source_id}:{prefix}:{id}' for id in ids}
+            available = set(ids) | known
+            for item in items:
+                require(item.source_id == paper.source_id, 'extraction item source id mismatch')
+                require(1 <= item.page_start <= item.page_end <= len(paper.pages),
+                        f'extraction page outside paper: {item.id} cites {item.page_start}-{item.page_end}; '
+                        f'valid physical bounds 1-{len(paper.pages)}')
+                require(bool(item.text.strip()) and bool(item.attributed_to.strip()), 'extraction text is blank')
+                readable = {page.page for page in pages}
+                require(item.page_start in readable and item.page_end in readable and
+                        not any(item.page_start <= page <= item.page_end for page in paper.unread_pages),
+                        'extraction cites unread page')
+                refs = (*item.premise_ids, *item.qualification_ids, *item.applies_to,
+                        *((item.conclusion_id,) if item.conclusion_id else ()))
+                require(set(refs) <= available, 'extraction link has unknown endpoint')
+                if item.kind == 'inference':
+                    require(bool(item.premise_ids) and bool(item.conclusion_id) and
+                            item.inference_origin == 'paper_stated', 'invalid stated inference')
+                else:
+                    require(not item.premise_ids and item.conclusion_id is None and
+                            not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
+                require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
+            by_id = {item.id: item for item in (*existing, *items)}
+            if self.config.get('extraction_require_inference', False) and (
+                    inputs.get('mode') != 'reconcile_ranges' and not data['new_gaps'] and
+                    len(pages) == len(paper.readable_pages)):
+                require(any(item.kind == 'inference' for item in by_id.values()), 'extraction has no stated inference')
+            for item in items:
+                if item.kind == 'inference':
+                    require(all(by_id[id].kind != 'inference' for id in (*item.premise_ids, item.conclusion_id)),
+                            'inference endpoint must be a proposition')
+                    require(all(by_id[id].kind in ('distinction', 'qualification') for id in item.qualification_ids),
+                            'inference qualification has wrong kind')
+            def mapped(id):
+                return mapping.get(id, id)
+            converted = tuple(replace(item, id=mapped(item.id),
+                premise_ids=tuple(map(mapped, item.premise_ids)),
+                conclusion_id=mapped(item.conclusion_id) if item.conclusion_id else None,
+                qualification_ids=tuple(map(mapped, item.qualification_ids)),
+                applies_to=tuple(map(mapped, item.applies_to))) for item in items)
+            obligations = inputs.get('obligations', [])
+            resolutions = data.get('resolutions', [])
+            resolved_ids = [r['obligation_id'] for r in resolutions]
+            require(len(resolved_ids) == len(set(resolved_ids)) and
+                    len(pending_ids) == len(set(pending_ids)) and not set(pending_ids) & set(resolved_ids) and
+                    set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}, 'unresolved obligation inventory')
+            request = data.get('context_request', {})
+            require(not request or (inputs.get('mode') == 'reconcile_ranges' and bool(pending_ids)),
+                    'context request requires a pending obligation')
+            if request:
+                require(bool(request['pages'] or request['evidence_ids']), 'unresolved obligation empty context request')
+                if validate_context is not None:
+                    validate_context(request)
+            require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),
+                    'obligation resolution lacks accepted evidence')
+            ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
+            dispositions = ([dict(pages=[p.page for p in pages], reason=data['empty_reason'])]
+                            if data.get('empty_reason') else [])
+            return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
+                                   dispositions_json=canonical(dispositions)), data['new_gaps'], request
+        if corrections is None:
+            return self.call('extract_paper', inputs, check)
+        candidate = None
+        request = inputs
+        for correction in range(corrections + 1):
+            def corrected(patch):
+                merged = merge_extraction_patch(candidate, patch)
+                extraction_defaults(merged)
+                schema = self.response_schema('extract_paper', inputs)
+                Draft202012Validator(schema).validate(merged)
+                return check(merged)
             try:
-                return self._call_once('extract_paper', inputs, check)
+                return self._call_once('extract_paper', request,
+                                       check if correction == 0 else corrected, attempt=correction + 1)
             except InvalidOutput as exc:
-                if not corrections:
+                if correction == corrections:
                     raise
                 try:
-                    candidate = json.loads(exc.feedback['rejected_response'])
-                    old = {item['id']: item for item in candidate['items']}
-                    require(len(old) == len(candidate['items']), 'ambiguous correction inventory')
+                    rejected = json.loads(exc.feedback['rejected_response'])
+                    # Keep changes/additions from a failed patch visible to the
+                    # next correction; never restart from a truncated inventory.
+                    candidate = merge_extraction_patch(candidate or rejected, rejected)
                 except (ValueError, KeyError, TypeError) as error:
                     raise Rejected('candidate cannot support targeted correction') from error
                 request = {**inputs, 'mode': 'targeted_correction',
                            'original_mode': inputs.get('mode'), 'candidate': candidate,
-                           'validation_error': exc.feedback['error']}
+                           'validation_error': exc.feedback['error'],
+                           'valid_page_bounds': {'paper_start': 1, 'paper_end': len(paper.pages),
+                                                 'readable_pages': [p.page for p in pages]}}
                 self.log.record('extraction_targeted_correction', source_id=paper.source_id,
-                                candidate_hash=digest(canonical(candidate)), reason=str(exc))
-                def corrected(patch):
-                    baseline = extraction_defaults(json.loads(canonical(candidate)))
-                    old = {item['id']: item for item in baseline['items']}
-                    ids = [item['id'] for item in patch['items']]
-                    require(len(ids) == len(set(ids)), 'duplicate correction id')
-                    require(all(item != old.get(item['id']) for item in patch['items']),
-                            'targeted correction repeats unchanged item')
-                    updates = {item['id']: item for item in patch['items']}
-                    merged = {**patch, 'items': [updates.pop(id, item) for id, item in old.items()]}
-                    merged['items'].extend(updates.values())
-                    schema = self.response_schema('extract_paper', inputs)
-                    Draft202012Validator(schema).validate(merged)
-                    return check(merged)
-                return self._call_once('extract_paper', request, corrected, attempt=2)
+                                candidate_hash=digest(canonical(candidate)), reason=exc.feedback['error'],
+                                correction=correction + 1, correction_limit=corrections,
+                                valid_page_bounds=request['valid_page_bounds'])
+        raise AssertionError('unreachable')
+
+    def _extract_paper(self, paper: Paper) -> PaperExtraction:
+        ranges: list[PaperExtraction] = []
+        def run(inputs, pages, prefix, existing=(), allow_incomplete=False, validate_context=None):
+            return self._extraction_response(paper, inputs, pages, prefix, existing,
+                                             allow_incomplete, validate_context)
 
         unresolved = []
         def segment(pages):

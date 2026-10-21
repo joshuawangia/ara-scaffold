@@ -166,7 +166,7 @@ and account separately. Use an isolated cache for the planned extraction run.
 
 For a full-run plan, use the separate `extraction-full` profile. It selects Opus
 in `stages.extraction.model`, disables fallbacks, requires a stated inference in
-an accepted aggregate paper, and allows one targeted correction per range or reconciliation response, within the
+an accepted aggregate paper, and allows up to two targeted corrections per range or reconciliation response, within the
 shared paper-wide count and cost limits.
 Its enclosing token/cost caps and extraction cost cap are `null`: the operator
 must set all three before generation. The same profile is accepted by native `ara run --profile extraction-full` so its
@@ -426,3 +426,29 @@ belongs to completed outcomes; retained historical attempts, including rejected
 responses, keep their original contracts and must not be rewritten as today's
 prompt/schema. Existing historical literature can still be verified and imported;
 unknown acceptance identities disqualify automatic completed-paper reuse only.
+
+
+Extraction corrections are ID-based patches. Omitted items remain, unchanged
+items may be repeated, and a second patch sees the cumulative candidate, including
+new items from a rejected first patch. `extraction_targeted_corrections` accepts
+0, 1 or 2; every dispatch remains subject to the paper and run allowances.
+Feedback includes physical paper bounds and the readable pages of the current
+window. Blank attribution, invalid references, unsupported inference structure,
+and substantive empty dispositions alongside items remain errors. Only an empty
+or null optional `empty_reason` is removed deterministically, with an
+`extraction_normalized` event; original responses remain in the receipt.
+
+Offline historical-response replay uses the same native response boundary:
+
+```sh
+uv run python tools/replay_extraction.py --log runs/previous/events.jsonl \
+  --output runs/replay --corrections 2
+```
+
+Inputs must be gitignored and output must be a fresh directory under `runs/`.
+The harness forbids sockets, deduplicates copied receipts, and reports each
+response as accepted, normalized, needing a new correction, requiring native
+subdivision, or terminal. It tests each recorded candidate/patch against its
+original source window; it does not generate corrections, replay the complete
+obligation traversal, prove live admission, or certify completed-paper fidelity.
+Historical spend is not a new charge; replay receipts are offline artifacts.

@@ -147,8 +147,8 @@ CASES += [
     ('extraction_grammar_size', 'ara/runtime/providers.py', 'branches.append(branch)', 'branches.extend([branch] * 4)', 'tests/runtime/test_extraction_round3b.py::test_extraction_grammar_size'),
     ('nonzero_inference_acceptance', 'ara/runtime/calls.py', "require(any(item.kind == 'inference' for item in by_id.values()),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_refused_without_correction'),
     ('targeted_inventory_retained', 'ara/runtime/calls.py', "[updates.pop(id, item) for id, item in old.items()]", '[]', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-inferences]'),
-    ('targeted_unchanged_refusal', 'ara/runtime/calls.py', "require(all(item != old.get(item['id']) for item in patch['items']),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
-    ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if not corrections:', "                if not corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
+    ('targeted_unchanged_allowed', 'ara/runtime/calls.py', "old, updates = inventory(candidate), inventory(patch)", "old, updates = inventory(candidate), inventory(patch)\n    require(all(item != old.get(item['id']) for item in patch['items']), 'unchanged')", 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
+    ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if correction == corrections:', "                if correction == corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
     ('qualification_local_guard', 'ara/runtime/calls.py', "require(not item.applies_to or item.kind in ('distinction', 'qualification'),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-relation]'),
 ]
 
@@ -165,7 +165,7 @@ CASES += [
 
 CASES += [
     ('full_profile_caps', 'ara/runtime/cli.py', 'if missing_caps:', 'if False:', 'tests/runtime/test_extraction_round4.py::test_full_profile_refuses_unset_caps_before_provider'),
-    ('empty_range_disposition', 'ara/runtime/calls.py', "bool(data.get('empty_reason', '').strip())", 'True', 'tests/runtime/test_extraction_round4.py::test_empty_range_requires_disposition_and_preserves_aggregate[None]'),
+    ('empty_range_disposition', 'ara/runtime/calls.py', "bool(data.get('empty_reason', '').strip())", 'True', 'tests/runtime/test_extraction_round4.py::test_empty_range_requires_disposition_and_preserves_aggregate[ ]'),
     ('empty_root_accounting', 'ara/runtime/construction.py', "require(bool(merged.commitments), 'empty working T after accounted omissions')", 'pass', 'tests/runtime/test_extraction_round4.py::test_zero_roots_accounted_without_formalization'),
     ('closure_preflight', 'ara/runtime/construction.py', "require(projected.input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_closure_preflight_before_formalization'),
     ('window_inventory', 'ara/runtime/windows.py', 'values[:middle]', 'values[1:middle]', 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
@@ -234,7 +234,7 @@ CASES += [
      "            if not reconciliation or not inputs.get('obligations'):", '            if False:',
      'tests/runtime/test_context_request_fix.py::test_mode_contract_reaches_counter_prompt_and_wire'),
     ('context_validation_before_acceptance', 'ara/runtime/calls.py',
-     '                        validate_context(request)', '                        pass',
+     '                    validate_context(request)', '                    pass',
      'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance'),
     ('correction_paper_limit', 'ara/runtime/extraction_budget.py',
      'if self.attempts > self.continuation_limit:', 'if False:',
@@ -323,6 +323,21 @@ CASES += [
      'tests/runtime/test_resume_policy.py::test_strict_coverage_refuses_reused_partial_paper'),
 ]
 
+CASES += [
+    ('empty_optional_normalization', 'ara/runtime/calls.py',
+     "if 'empty_reason' in data and data['empty_reason'] in ('', None):", 'if False:',
+     'tests/runtime/test_extraction_acceptance.py::test_empty_optional_normalization_is_logged_without_content_change'),
+    ('correction_second_attempt', 'ara/runtime/calls.py',
+     'for correction in range(corrections + 1):', 'for correction in range(min(corrections, 1) + 1):',
+     'tests/runtime/test_extraction_acceptance.py::test_two_patches_keep_all_items_and_specific_page_feedback'),
+    ('correction_accumulated_inventory', 'ara/runtime/calls.py',
+     'candidate = merge_extraction_patch(candidate or rejected, rejected)', 'candidate = rejected',
+     'tests/runtime/test_extraction_acceptance.py::test_two_patches_keep_all_items_and_specific_page_feedback'),
+    ('disposition_wire_separation', 'ara/runtime/calls.py',
+     "schema['oneOf'] = [", "schema['ignored_alternatives'] = [",
+     'tests/runtime/test_extraction_acceptance.py::test_provider_wire_cannot_mix_disposition_and_content'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'
@@ -332,7 +347,7 @@ def main():
     for name, filename, old, new, target in CASES:
         path = ROOT / filename
         original = path.read_bytes()
-        assert original.decode().count(old) == 1
+        assert original.decode().count(old) == 1, (name, 'mutation anchor must occur exactly once')
         for pyc in (ROOT / 'ara/runtime/__pycache__').glob('*.pyc'):
             pyc.unlink()
         try:

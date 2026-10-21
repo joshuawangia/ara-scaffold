@@ -1377,3 +1377,46 @@ README documents the required config/root arguments on resume and the shared
 pinned-import verifier and outcome selectors for downstream integration. T-N1's
 limits remain: whole-paper reuse only, retain original logs, no semantic quality
 or full-corpus budget guarantee. No prompt/schema or live provider change is made.
+
+
+## Kappa: extraction response acceptance and bounded correction
+
+- **Native replay boundary.** Extract the existing per-response closure into
+  `ModelCalls._extraction_response`, called by both range extraction and
+  reconciliation. The offline replay tool uses that same boundary, the original
+  source windows, and recorded rejected candidates for patches. It refuses
+  tracked inputs, writes only under ignored runs, disables network, and
+  deduplicates copied ancestor receipts by event identity. Replay evaluates
+  response acceptance; it does not claim successful new corrections, full
+  traversal of context requests, completed-paper coverage, or semantic fidelity.
+- **Wire shape and normalization.** Keep kind-specific provider alternatives and
+  mode-specific reconciliation fields. Add disjoint initial-range alternatives:
+  nonempty items permit only absent/null disposition; empty ranges require a
+  substantive disposition. Nonempty-candidate patches cannot carry a substantive
+  empty disposition, even when their item delta is empty. Optional empty/null
+  disposition is the only new normalization and is logged before validation,
+  while the raw response stays immutable. Empty attribution is content-bearing
+  missing evidence and is never filled, inferred, or normalized away.
+- **Cumulative patches.** Repeating an unchanged item is harmless under ID-based
+  patch semantics, so remove that rejection. Preserve all omitted items and
+  retain additions/changes from a schema- or semantics-rejected patch for the
+  next correction. Duplicate or unusable IDs are ambiguous and still refuse;
+  no inventory is silently dropped. Each merged candidate undergoes the full
+  schema, page, attribution, link, inference, coverage, and obligation checks.
+- **Bounded recovery.** Full extraction defaults to two targeted corrections per
+  response, configurable to zero or one. Generic retry counts do not multiply
+  this allowance. Each correction is logged with its ordinal, candidate hash,
+  exact failed constraint, paper bounds and supplied readable pages. Native
+  context counting, paper continuation/cost admission and campaign accounting
+  apply to every dispatch. Exhausted output retains native subdivision; no
+  page locator, source text, attribution, or inference is repaired in code.
+- **Reuse.** Bump the acceptance identity to v2 because envelope validation,
+  normalization and patch acceptance changed. Old campaign costs remain
+  importable, but old completed graphs cannot silently satisfy the new policy.
+- **Proof.** Placeholder tests exercise two cumulative patches, repeated unchanged
+  items, optional normalization with original receipt retention, wire envelope
+  alternatives, semantic refusal, and paper-limit exhaustion. Production-wire
+  controls remove each new load-bearing behavior and require a red test followed
+  by a restored green test. Real-response and paid evidence belongs only in
+  ignored runs and the external execution report. Non-author review follows
+  local delivery; no push is authorized here.

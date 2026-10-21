@@ -155,7 +155,10 @@
       }
     },
     "empty_reason": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "minLength": 1
     },
     "pending_obligation_ids": {

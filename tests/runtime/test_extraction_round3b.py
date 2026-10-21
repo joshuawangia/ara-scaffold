@@ -48,7 +48,7 @@ def test_targeted_correction_preserves_inventory_and_is_bounded(rig, monkeypatch
         assert data['pages'] and data['validation_error']
         return Response(response(correction))
     monkeypatch.setattr(provider, 'complete', complete)
-    if patch == 'valid':
+    if patch in ('valid', 'unchanged'):
         result = calls.extract_paper(papers[0])
         assert len(result.items) == len(graph()['items'])
         assert sum(i.kind == 'inference' for i in result.items) == 2

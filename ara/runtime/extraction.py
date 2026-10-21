@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
 # Bump when validation, normalization, mode schemas or graph interpretation change.
-EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v1'
+EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v2'
 
 
 def extraction_acceptance_identity(config: dict, root: Path) -> dict:

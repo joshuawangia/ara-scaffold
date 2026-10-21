@@ -21,9 +21,10 @@ from ara.runtime.logging import EventLog
 from ara.runtime.providers import MockProvider, Response, mock_key
 
 ROOT = Path(__file__).resolve().parents[2]
-ITEM = {'source_id': 'p', 'kind': 'claim', 'attribution': 'author_claim', 'text': 'P',
-        'page_start': 1, 'page_end': 1}
-VALUE = {'source_id': 'p', 'items': [ITEM]}
+ITEM = {'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim', 'attributed_to': 'P', 'text': 'P',
+        'page_start': 1, 'page_end': 1, 'premise_ids': [], 'conclusion_id': None, 'qualification_ids': [],
+        'applies_to': [], 'inference_origin': None}
+VALUE = {'schema_version': 2, 'source_id': 'p', 'coverage_complete': True, 'unresolved_references': [], 'items': [ITEM]}
 
 
 def pdf(path, texts=('P', 'Q')):
@@ -85,7 +86,7 @@ def test_page_text_and_immutable_contract(rig):
     assert [p.text for p in papers[0].pages] == ['P', 'Q']
     register(calls, provider, papers[0])
     result = calls.extract_paper(papers[0])
-    assert result.items[0].citation == 'p:pdf:1'
+    assert result.items[0].citation == 'p:pdf:1#p:r1-2:p'
     with pytest.raises(FrozenInstanceError):
         result.items[0].text = 'Q'
 
@@ -133,7 +134,7 @@ def test_missing_fallback_and_methodology(rig, capsys):
     data = json.loads(path.read_text()[len(HEADER):])
     assert data['papers'][1]['status'] == 'record only, not extracted'
     assert data['papers'][1]['reason'] == 'missing_pdf' and data['papers'][1]['items'] == []
-    assert data['papers'][0]['items'][0]['citation'] == 'p:pdf:1'
+    assert data['papers'][0]['items'][0]['citation'] == 'p:pdf:1#p:r1-2:p'
     output = capsys.readouterr().out
     assert 'before dispatch' in output and 'record only, not extracted' in output
     report = accounting(calls.log)
@@ -185,7 +186,7 @@ def test_provider_context_bound_rechecked(rig, monkeypatch):
     calls, provider, papers, *_ = rig
     monkeypatch.setattr(provider, 'estimate', lambda *args: TokenUsage(input_tokens=200001))
     with pytest.raises(BudgetStop, match='context bound'):
-        calls.extract_paper(papers[0])
+        calls.call('extract_paper', papers[0].inputs())
     assert provider.calls == 0
 
 
@@ -201,7 +202,7 @@ def test_extraction_budget_admission(rig, cap):
 
 def test_extraction_actual_cost_cap(rig):
     calls, provider, papers, *_ = rig
-    calls.config['extraction_cost_cap_usd'] = .5
+    calls.config['extraction_cost_cap_usd'] = 1.0
     register(calls, provider, papers[0], usage={'input_tokens': 200000, 'output_tokens': 20000})
     with pytest.raises(BudgetStop, match='extraction cost cap exceeded'):
         extract(calls, (papers[0],))
@@ -253,9 +254,10 @@ def test_extract_cli_to_build_t_native_path(rig, tmp_path, monkeypatch):
         if kind == 'extract_paper':
             assert inputs['pages'] == [{'page': 1, 'text': 'P'}, {'page': 2, 'text': 'Q'}]
             value = VALUE
-        elif kind == 'build_t':
-            assert inputs['literature'] == artifact.read_text()
-            value = {'commitments': [{'id': 't1', 'text': 'P', 'citation': 'p:pdf:1', 'formula': {'op': 'atom', 'name': 'P'}}]}
+        elif kind == 'build_t_batch':
+            from rich_fixture import batch_response
+            assert inputs['papers'][0]['source_id'] == 'p'
+            value = batch_response(inputs)
         elif kind == 'propose_targets':
             value = {'targets': [{'id': 'p', 'text': 'P', 'formula': {'op': 'atom', 'name': 'P'}}]}
         elif kind == 'propose_cuts': value = {'proposals': []}
@@ -270,8 +272,8 @@ def test_extract_cli_to_build_t_native_path(rig, tmp_path, monkeypatch):
     run = tmp_path / 'native'
     assert main(['run', '--config', str(config_path), '--topic', 'P', '--literature', str(artifact),
                  '--run-dir', str(run)], calls_factory=factory) == 0
-    assert any(kind == 'build_t' for kind, _ in observed)
-    assert json.loads((run / 'commitments.json').read_text())['commitments'][0]['citation'] == 'p:pdf:1'
+    assert any(kind == 'build_t_batch' for kind, _ in observed)
+    assert json.loads((run / 'commitments.json').read_text())['commitments'][0]['citation'] == 'p:pdf:1#p:r1-2:p'
     log = EventLog(run / 'events.jsonl')
     assert accounting(log)['extraction']['extracted'] == ['p']
     assert accounting(log)['extraction']['cost_usd'] == .00175
@@ -280,13 +282,16 @@ def test_extract_cli_to_build_t_native_path(rig, tmp_path, monkeypatch):
     assert json.loads(start['payload_json'])['literature_source'] == 'model_extraction'
 
 
-def test_build_t_cannot_cite_fallback_or_invented_page(rig):
+def test_build_t_cannot_cite_fallback_or_invented_page(rig, monkeypatch):
+    from rich_fixture import batch_response
     calls, provider, papers, *_ = rig
     register(calls, provider, papers[0])
     path = extract(calls, papers)
-    inputs = {'literature': path.read_text(), 'audience': 'P'}
-    value = {'commitments': [{'id': 't1', 'text': 'P', 'citation': 'q:pdf:1', 'formula': {'op': 'atom', 'name': 'P'}}]}
-    provider.responses[mock_key('build_t', calls.render('build_t', inputs)[1])] = response(value)
+    def complete(kind, prompt, schema, maximum):
+        value = batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))
+        value['commitments'][0]['citation'] = 'q:pdf:1'
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', complete)
     with pytest.raises(Rejected, match='T citation not in extracted literature'):
         calls.build_t(path.read_text(), 'P')
 
@@ -304,8 +309,9 @@ def test_estimate_only_never_dispatches(rig):
     assert extract(calls, papers, estimate_only=True) is None
     assert provider.calls == 0
     estimate = json.loads(calls.log.read()[0]['payload_json'])
-    assert estimate['pages'] == 2 and estimate['input_tokens'] >= 3000
-    assert estimate['output_token_allowance'] == 8192
+    assert estimate['pages'] == 2
+    assert estimate['input_tokens'] - len(calls.render('extract_paper', {})[1].encode()) >= 3000
+    assert estimate['output_token_allowance'] == 32000
     assert estimate['estimated_usd'] > .2
 
 
@@ -313,7 +319,7 @@ def test_retry_requires_remaining_extraction_budget(rig, monkeypatch):
     calls, provider, papers, *_ = rig
     calls.config['validation_attempts'] = 2
     schema = json.loads((ROOT / 'schemas/extract_paper.json').read_text())
-    estimate = provider.estimate('extract_paper', calls.render('extract_paper', papers[0].inputs())[1], schema, 8192)
+    estimate = provider.estimate('extract_paper', calls.render('extract_paper', papers[0].inputs())[1], schema, calls.config['extract_paper_max_output_tokens'])
     calls.config['extraction_cost_cap_usd'] = float(calls.budget.cost(estimate)) + .00001
     register(calls, provider, papers[0], {**VALUE, 'source_id': 'q'})
     with pytest.raises(BudgetStop, match='extraction cost cap'):

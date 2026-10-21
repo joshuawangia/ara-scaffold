@@ -5,15 +5,16 @@ import json
 import re
 import time
 from pathlib import Path
+from dataclasses import replace
 from typing import Callable, Any
 
 from jsonschema import Draft202012Validator, ValidationError
 
 from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
-from ara.runtime.cache import Cache, cache_key, canonical
+from ara.runtime.cache import Cache, cache_key, canonical, digest
 from ara.runtime.logging import EventLog, now
-from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, literature_entry, entry_size, ENTRY_BYTES
+from ara.runtime.extraction import Paper, PaperExtraction, ExtractedItem, citation_ids, save_immutable
 from ara.runtime.providers import Provider, Response
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
@@ -119,7 +120,7 @@ class ModelCalls:
         schema = None if kind == 'search_evidence' else json.loads(
             (self.root / 'schemas' / f'{kind}.json').read_text())
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
-        if kind == 'build_t' and citation_ids(inputs['literature']) is not None:
+        if kind == 'build_t_batch':
             maximum = self.config['extracted_build_t_max_output_tokens']
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               'effort': self.config['effort'], 'maximum': maximum,
@@ -137,18 +138,11 @@ class ModelCalls:
         charged = False
         estimate = TokenUsage()
         try:
+            estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
             if cached:
                 raw = saved['raw']
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
-                estimate = self.provider.estimate(kind, prompt, schema, maximum)
-                if kind in ('extract_paper', 'build_t'):
-                    fits = estimate.input_tokens + maximum <= self.config['model_context_token_bound']
-                    self.log.record('context_admission', kind=kind, input_tokens=estimate.input_tokens,
-                                    output_tokens=maximum, limit=self.config['model_context_token_bound'],
-                                    decision='fits' if fits else 'refused', prompt=prompt)
-                    if not fits:
-                        self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind)
                 self.budget.before(estimate, kind)
                 self.log.record('call_start', kind=kind, attempt=attempt, model=self.provider.model, prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
@@ -215,35 +209,125 @@ class ModelCalls:
                                                        **(Response(raw).routing() if raw else {}),
                                                        'accounting': 'reservation_unknown_actual' if unknown_usage else 'actual'})))
 
+    def count_request(self, kind: str, inputs: dict, *, maximum: int | None = None,
+                      admission: bool = False) -> TokenUsage:
+        if maximum is None:
+            maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
+            if kind == 'build_t_batch':
+                maximum = self.config['extracted_build_t_max_output_tokens']
+        prompt = self.render(kind, inputs)[1]
+        schema = None if kind == 'search_evidence' else json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+        estimate = self.provider.estimate(kind, prompt, schema, maximum)
+        # The search reservation includes future tool iterations. Admission concerns
+        # the counted initial context; each iteration is separately bounded by the service.
+        initial = estimate.input_tokens - (self.config['model_context_token_bound'] * estimate.server_tool_uses
+                                           if kind == 'search_evidence' else 0)
+        fits = initial + maximum <= self.config['model_context_token_bound']
+        self.log.record('context_admission' if admission else 'context_plan', kind=kind,
+                        input_tokens=initial, output_tokens=maximum, limit=self.config['model_context_token_bound'],
+                        decision='fits' if fits else 'refused', prompt=prompt)
+        if admission and not fits:
+            self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind)
+        return estimate
+
     def extract_paper(self, paper: Paper) -> PaperExtraction:
-        def check(data):
-            require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
-            items = tuple(ExtractedItem(**item) for item in data['items'])
-            for item in items:
-                require(item.source_id == paper.source_id, 'extraction item source id mismatch')
-                require(1 <= item.page_start <= item.page_end <= len(paper.pages), 'extraction page outside paper')
-                require(bool(item.text.strip()), 'extraction text is blank')
-                readable = {page.page for page in paper.readable_pages}
-                require(item.page_start in readable and item.page_end in readable and
-                        not any(item.page_start <= page <= item.page_end for page in paper.affected_pages),
-                        'extraction cites unread page')
-            result = PaperExtraction(paper.source_id, items)
-            entry = literature_entry({**result.to_dict(), 'status': 'partial' if paper.affected_pages else 'extracted',
-                                      'affected_pages': paper.affected_pages})
-            require(entry_size(entry) <= ENTRY_BYTES, 'extraction serialized entry exceeds 2200-byte budget; shorten item text')
-            return result
-        return self.call('extract_paper', paper.inputs(), check)
+        ranges: list[PaperExtraction] = []
+        maximum = self.config['extract_paper_max_output_tokens']
+        limit = self.config['model_context_token_bound']
+
+        def run(inputs, pages, prefix, existing=(), allow_incomplete=False):
+            known = {item.id for item in existing}
+            def check(data):
+                require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
+                require(bool(data['items']) or inputs.get('mode') == 'reconcile_ranges', 'empty extraction')
+                require(data['coverage_complete'] or (allow_incomplete and bool(data['unresolved_references'])), 'extraction coverage incomplete')
+                require(not data['unresolved_references'] or allow_incomplete, 'unresolved extraction references')
+                items = tuple(ExtractedItem(**item) for item in data['items'])
+                ids = [item.id for item in items]
+                require(len(ids) == len(set(ids)), 'duplicate extraction id')
+                require(not set(ids) & known, 'extraction redeclares immutable evidence')
+                mapping = {id: f'{paper.source_id}:{prefix}:{id}' for id in ids}
+                available = set(ids) | known
+                for item in items:
+                    require(item.source_id == paper.source_id, 'extraction item source id mismatch')
+                    require(1 <= item.page_start <= item.page_end <= len(paper.pages), 'extraction page outside paper')
+                    require(bool(item.text.strip()) and bool(item.attributed_to.strip()), 'extraction text is blank')
+                    readable = {page.page for page in pages}
+                    require(item.page_start in readable and item.page_end in readable and
+                            not any(item.page_start <= page <= item.page_end for page in paper.unread_pages),
+                            'extraction cites unread page')
+                    refs = (*item.premise_ids, *item.qualification_ids, *item.applies_to,
+                            *((item.conclusion_id,) if item.conclusion_id else ()))
+                    require(set(refs) <= available, 'extraction link has unknown endpoint')
+                    if item.kind == 'inference':
+                        require(bool(item.premise_ids) and bool(item.conclusion_id) and
+                                item.inference_origin == 'paper_stated', 'invalid stated inference')
+                    else:
+                        require(not item.premise_ids and item.conclusion_id is None and
+                                not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
+                    require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
+                by_id = {item.id: item for item in (*existing, *items)}
+                for item in items:
+                    if item.kind == 'inference':
+                        require(all(by_id[id].kind != 'inference' for id in (*item.premise_ids, item.conclusion_id)),
+                                'inference endpoint must be a proposition')
+                        require(all(by_id[id].kind in ('distinction', 'qualification') for id in item.qualification_ids),
+                                'inference qualification has wrong kind')
+                def mapped(id):
+                    return mapping.get(id, id)
+                converted = tuple(replace(item, id=mapped(item.id),
+                    premise_ids=tuple(map(mapped, item.premise_ids)),
+                    conclusion_id=mapped(item.conclusion_id) if item.conclusion_id else None,
+                    qualification_ids=tuple(map(mapped, item.qualification_ids)),
+                    applies_to=tuple(map(mapped, item.applies_to))) for item in items)
+                return PaperExtraction(paper.source_id, converted), data['unresolved_references']
+            return self.call('extract_paper', inputs, check)
+
+        unresolved = []
+        def segment(pages):
+            inputs = {**paper.inputs(), 'pages': [dict(page=p.page, text=p.text) for p in pages]}
+            estimate = self.count_request('extract_paper', inputs)
+            if estimate.input_tokens + maximum > limit:
+                if len(pages) == 1:
+                    self.budget.stop('extract_paper context bound: single page cannot fit; no truncation', 'extract_paper')
+                mid = len(pages) // 2
+                segment(pages[:mid]); segment(pages[mid:])
+                return
+            prefix = f'r{pages[0].page}-{pages[-1].page}'
+            self.log.record('extraction_range', source_id=paper.source_id, prefix=prefix,
+                            pages=[p.page for p in pages], input_hash=digest(canonical(inputs)))
+            try:
+                result, pending = run(inputs, pages, prefix, allow_incomplete=True)
+            except Rejected as exc:
+                if not any(reason in str(exc) for reason in ('provider stop: max_tokens', 'extraction coverage incomplete')) or len(pages) == 1:
+                    raise
+                self.log.record('extraction_range_split', source_id=paper.source_id, prefix=prefix, reason=str(exc))
+                mid = len(pages) // 2
+                segment(pages[:mid]); segment(pages[mid:])
+                return
+            ranges.append(result)
+            unresolved.extend(pending)
+            save_immutable(self.log.path.parent / f'{paper.source_id}.{prefix}.rich.json', canonical(result.to_dict()))
+        segment(paper.readable_pages)
+        items = tuple(item for result in ranges for item in result.items)
+        if len(ranges) > 1 or unresolved:
+            inputs = {'mode': 'reconcile_ranges', 'source_id': paper.source_id,
+                      'pdf_sha256': paper.pdf_sha256, 'ranges': [r.to_dict() for r in ranges],
+                      'unresolved_references': unresolved}
+            result, _ = run(inputs, paper.readable_pages, 'joined', existing=items)
+            items += result.items
+        require(len({item.id for item in items}) == len(items), 'duplicate merged extraction id')
+        self.log.record('extraction_graph_merged', source_id=paper.source_id, ranges=len(ranges),
+                        items=len(items), graph_hash=digest(canonical(PaperExtraction(paper.source_id, items).to_dict())))
+        return PaperExtraction(paper.source_id, items)
 
     def build_t(self, literature: str, audience: str) -> CommitmentSet:
         allowed = citation_ids(literature)
         if allowed is not None:
             require(bool(allowed), 'no extracted claims available to build T')
-        def check(data):
-            result = CommitmentSet.from_dict(data)
-            if allowed is not None:
-                require(all(c.citation in allowed for c in result.commitments), 'T citation not in extracted literature')
-            return result
-        return self.call('build_t', {'literature': literature, 'audience': audience}, check)
+            from ara.runtime.construction import construct
+            return construct(self, literature, audience)
+        return self.call('build_t', {'literature': literature, 'audience': audience}, CommitmentSet.from_dict)
 
     def propose_targets(self, commitments: CommitmentSet, count: int = 10,
                         named_position: str | None = None) -> tuple[Proposition, ...]:

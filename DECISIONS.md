@@ -918,3 +918,53 @@ without guaranteeing retries fit. Preflight explicitly prints and logs
 `planned batch exceeds enclosing caps` when either enclosing limit is insufficient.
 Downstream pilot retains its existing larger caps and counts inherited extraction
 charges; extraction-profile caps are not an authorization to run the batch.
+
+
+## Gamma round 2: rich evidence and working T
+
+GX12 supersedes GX6's compact summary. Rich v2 records preserve individually cited
+premises, intermediate/final conclusions, stated inference links, qualifications,
+distinctions and attributed reported/attacked views. Inference origin is always
+paper_stated; this is source evidence, never a bank license. No per-item text or
+item-count ceiling is imposed. 32000 output tokens per extraction call replaces
+8192: at roughly 250 tokens per serialized node/link this permits approximately
+100 entries plus 7000 tokens for thinking/variance. This is an allowance, not a
+completeness proof. Actual live usage belongs in the external round-2 report.
+
+GX13. Count full page requests. Oversize context or exhausted output splits the
+physical readable-page range; save each accepted graph unchanged. A counted,
+logged reconciliation can add cross-range links referencing immutable ids. It
+cannot rewrite/delete range evidence. Refuse a single-page overflow, incomplete
+coverage or unresolvable/oversized reconciliation; preserve attempted receipts.
+No silent truncation. Source fidelity is still model-assessed, not proved by JSON.
+
+GX14. Counted deterministic packing uses sorted source IDs/content hashes, plan
+version, topic, audience and all capacity inputs in cache identity. Default input
+packing is 70000 tokens plus a 16000-symbol reserve and 64000 output within 200000.
+Each batch is a ModelCalls request. Model-produced symbol reuse is explicit in
+bindings against an accumulated shared catalogue: names/signatures/evidence are
+validated, not inferred. Batch dispatch order is deterministic because the shared
+catalogue grows; final merge order is independent of completion order. Repeated
+formulas and contradictions retain separate evidence ids/citations. No formula
+union or implicit aliasing. A single source exceeding the construction allowance
+fails explicitly; increase its counted allowance rather than squeeze its evidence.
+
+GX15. The model selects a topic/audience-relevant working T. Every source item is
+selected or explicitly omitted with a reason. Bidirectional graph closure prevents
+losing a needed premise, stated link or qualification. Attributed source text is
+copied exactly and engine formalisation remains model output. The 100000-token
+working context budget reserves 8000 wrapper tokens and proportionally allocates
+the remainder by evidence count; selection can vary by relevance inside these
+explicit allocations. This conservative allocation may refuse a skewed corpus;
+raising the counted budget is explicit, never an automatic source summary.
+Every model request, cache replay and retry is counted; source context is never
+implicitly fetched. Search uses only working T, with full graphs inspectable.
+One construction lifecycle, one freeze replaces the one-provider-call reading of
+built-once. prepare_commitments owns that freeze and rejects a second freeze.
+
+GX16 (R1). Strict missing policy refuses every partial paper, including no-readable
+and mixed-readable/visual cases. Default mode keeps explicit partial records.
+Private-use glyphs are a visible encoding warning but do not erase otherwise
+readable pages; strict mode refuses those too. No OCR or speculative glyph repair.
+Legacy v1 artifacts are refused instead of being mislabelled as human literature.
+Original log lineage and imported-cost accounting remain required.

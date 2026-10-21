@@ -116,3 +116,11 @@ for USD 1.058455; all calls were served by Opus 5, with no fallback hop reported
 The placeholder evidence stage did not invoke a web search. No live fallback
 hop or external-source retrieval is claimed. See B9/D13/D14 in DECISIONS.md and
 the external delta report for final reproduction and accounting receipts.
+
+## Rich source construction
+
+Generated v2 literature preserves full page-linked argument graphs. Runtime
+performs one construction lifecycle, one freeze, using counted source batches
+and logged model symbol bindings. Search sees only the final bounded working T.
+Offline graph/capacity controls and the bounded live checks are recorded in the
+external gamma report; no full-corpus live run is implied.

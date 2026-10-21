@@ -19,9 +19,8 @@ from ara.types import RunEvent
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-HEADER = '# ARA extracted literature v1\n'
-# Bound the representation actually embedded in build-T INPUT_JSON, including escaping.
-ENTRY_BYTES = 2200
+HEADER = '# ARA extracted literature v2\n'
+EXTRACTION_VERSION = 2
 
 
 @dataclass(frozen=True)
@@ -73,8 +72,12 @@ class Paper:
         return tuple(d.page for d in self.diagnostics if d.reason != 'blank_page')
 
     @property
+    def unread_pages(self) -> tuple[int, ...]:
+        return tuple(d.page for d in self.diagnostics if d.reason not in ('blank_page', 'private_use_glyphs'))
+
+    @property
     def readable_pages(self) -> tuple[PageText, ...]:
-        return tuple(p for p in self.pages if p.text.strip() and p.page not in self.affected_pages)
+        return tuple(p for p in self.pages if p.text.strip() and p.page not in self.unread_pages)
 
     def inputs(self) -> dict:
         return {'source_id': self.source_id, 'record': json.loads(self.record_json),
@@ -84,27 +87,48 @@ class Paper:
 
 @dataclass(frozen=True)
 class ExtractedItem:
+    id: str
     source_id: str
-    kind: Literal['claim', 'argument']
+    kind: Literal['premise', 'inference', 'intermediate_conclusion', 'conclusion',
+                  'distinction', 'qualification', 'reported_view', 'attacked_view']
     attribution: Literal['author_claim', 'reported_view', 'attacked_view']
+    attributed_to: str
     text: str
     page_start: int
     page_end: int
+    premise_ids: tuple[str, ...]
+    conclusion_id: str | None
+    qualification_ids: tuple[str, ...]
+    applies_to: tuple[str, ...]
+    inference_origin: Literal['paper_stated'] | None
+
+    def __post_init__(self):
+        for key in ('premise_ids', 'qualification_ids', 'applies_to'):
+            object.__setattr__(self, key, tuple(getattr(self, key)))
 
     @property
     def citation(self) -> str:
         end = f'-{self.page_end}' if self.page_end != self.page_start else ''
-        return f'{self.source_id}:pdf:{self.page_start}{end}'
+        return f'{self.source_id}:pdf:{self.page_start}{end}#{self.id}'
 
 
 @dataclass(frozen=True)
 class PaperExtraction:
     source_id: str
     items: tuple[ExtractedItem, ...]
+    schema_version: int = EXTRACTION_VERSION
 
     def to_dict(self) -> dict:
-        return {'source_id': self.source_id,
+        return {'schema_version': self.schema_version, 'source_id': self.source_id,
                 'items': [{**asdict(item), 'citation': item.citation} for item in self.items]}
+
+
+def save_immutable(path: Path, value: str) -> None:
+    if path.exists():
+        if path.read_text() != value:
+            raise ValueError(f'immutable artifact already exists: {path.name}')
+    else:
+        path.write_text(value)
 
 
 def load_papers(manifest: Path, fulltext_dir: Path, selected: tuple[str, ...] = ()) -> tuple[Paper, ...]:
@@ -151,6 +175,9 @@ def load_papers(manifest: Path, fulltext_dir: Path, selected: tuple[str, ...] = 
                     reason = 'nontext_visual_content' if painted else 'blank_page'
                 if reason:
                     diagnostics.append(PageDiagnostic(i, reason, chars))
+                if any(0xE000 <= ord(c) <= 0xF8FF or 0xF0000 <= ord(c) <= 0xFFFFD or
+                       0x100000 <= ord(c) <= 0x10FFFD for c in text):
+                    diagnostics.append(PageDiagnostic(i, 'private_use_glyphs', chars))
                 pages.append(PageText(i, text))
             unavailable = 'empty_pdf' if not pages else None
             paper = Paper(record['id'], canonical(record), checksum, tuple(pages), unavailable, tuple(diagnostics))
@@ -166,29 +193,23 @@ def load_papers(manifest: Path, fulltext_dir: Path, selected: tuple[str, ...] = 
 
 
 def literature_entry(outcome: dict) -> dict:
-    # Full bibliography, PDF hashes and page diagnostics remain in per-paper artifacts/logs.
-    # Only material needed for build-T enters its bounded context.
     entry = {key: outcome[key] for key in ('source_id', 'status', 'items')}
+    entry['schema_version'] = EXTRACTION_VERSION
+    entry['pdf_sha256'] = outcome.get('pdf_sha256')
     if outcome.get('reason'):
         entry['reason'] = outcome['reason']
     if outcome.get('affected_pages'):
-        entry['coverage'] = 'partial: unread visual pages excluded; see extraction log for page diagnostics'
+        entry['coverage'] = 'partial: unread visual pages excluded; retained encoding warnings require source inspection; see diagnostics'
     return entry
-
-
-def entry_size(entry: dict) -> int:
-    return len(canonical(canonical(entry)).encode())
 
 
 def assemble(outcomes: list[dict]) -> str:
     entries = [literature_entry(outcome) for outcome in outcomes]
-    if any(entry_size(entry) > ENTRY_BYTES for entry in entries):
-        raise ValueError('extracted literature entry exceeds serialized budget')
     return HEADER + canonical({
         'origin': 'SYSTEM/MODEL', 'locator_convention': 'one-based physical PDF pages, not printed folios',
         'use': 'Use extracted items only. Record-only entries supply no claims. Partial entries cover only '
                'readable pages. Preserve attribution; reported or attacked views are not author endorsements. '
-               'Copy citation identifiers verbatim. This is a bounded selection of central material, not exhaustive extraction.',
+               'Copy evidence identifiers and citations verbatim. Inferences describe paper-stated links, not engine licenses.',
         'papers': entries}) + '\n'
 
 
@@ -244,6 +265,9 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
             if missing == 'refuse':
                 raise ValueError(f'{paper.source_id}: extraction refused: {reason}')
             continue
+        if paper.affected_pages and missing == 'refuse':
+            calls.log.record('extraction_outcome', **base, status='partial', reason='strict_incomplete_coverage', items=[])
+            raise ValueError(f'{paper.source_id}: extraction refused: partial text coverage')
         if not paper.readable_pages and paper.affected_pages:
             outcome = {**base, 'status': 'partial', 'reason': 'no_readable_pages', 'items': []}
             calls.log.record('extraction_outcome', **outcome)
@@ -258,7 +282,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted', **result.to_dict()}
         calls.log.record('extraction_outcome', **outcome)
         outcomes.append(outcome)
-        (calls.log.path.parent / f'{paper.source_id}.extraction.json').write_text(canonical(outcome))
+        save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
     if estimate_only:
         return None
     lineage_missing = missing_lineage(calls.log.read())
@@ -272,12 +296,14 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     records = read_log(calls.log.path)
     path.with_suffix('.provenance.json').write_text(canonical({
         'source_log': str(calls.log.path.resolve()), 'records': len(records), 'last_hash': records[-1]['hash']}))
-    path.write_text(literature)
+    save_immutable(path, literature)
     return path
 
 
 def literature_provenance(path: Path, text: str) -> tuple[dict, ...]:
     """Validate the generated artifact against its pinned source-log prefix."""
+    if text.startswith('# ARA extracted literature') and not text.startswith(HEADER):
+        raise ValueError('unsupported extraction artifact version; regenerate rich v2 evidence')
     if not text.startswith(HEADER):
         return ()
     provenance = json.loads(path.with_suffix('.provenance.json').read_text())

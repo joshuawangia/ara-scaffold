@@ -61,7 +61,7 @@ pilot:
 
 # Extraction is also subject to the enclosing per-run token/cost caps.
 extraction_cost_cap_usd: 30.0
-extract_paper_max_output_tokens: 8192
+extract_paper_max_output_tokens: 32000
 extraction_estimated_tokens_per_page: 1500
 
 # Only generated extraction literature receives this build-T output allowance.
@@ -72,3 +72,8 @@ extraction:
   cost_cap_usd: 30.0
   extraction_cost_cap_usd: 30.0
   validation_attempts: 3
+
+# Counted rich-source construction and downstream working context, independently bounded.
+build_t_batch_input_tokens: 70000
+working_t_token_budget: 100000
+working_t_symbol_token_budget: 16000

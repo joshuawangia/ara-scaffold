@@ -50,6 +50,10 @@ def methodology(log_path: Path) -> str:
                 'human_reported_minutes': sum(json.loads(e['payload_json']).get('reported_minutes', 0)
                                               for e in selected if e['label'] == 'HUMAN')}
     extraction_summary = {
+        'schema_versions': sorted({p.get('schema_version', 1) for p in outcomes if p.get('items')}),
+        'item_counts_by_kind': {kind: sum(item['kind'] == kind for p in outcomes for item in p['items'])
+                                for kind in sorted({item['kind'] for p in outcomes for item in p['items']})},
+        'range_calls': sum(e['stage'] == 'extraction_range' for e in events),
         'production_lineage_complete': not lineage_incomplete,
         'missing_origin_cache_keys': lineage_missing,
         'partial': [{'source_id': p['source_id'], 'affected_pages': p['affected_pages'],
@@ -72,6 +76,9 @@ def methodology(log_path: Path) -> str:
     }
     summary = {
         'extraction': extraction_summary,
+        'construction': {'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
+                         'batches': sum(e['stage'] == 'build_t_batch_accepted' for e in events),
+                         'freezes': sum(e['stage'] == 'commitments_frozen' for e in events)},
         'accounting_complete': not unknown and not pending and not lineage_incomplete,
         'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),
         'inherited_totals': totals([e for i, e in enumerate(events) if i in inherited_indices]),

@@ -9,7 +9,8 @@ slots and critical-question templates, never filled real-world examples.
 A step is licensed only by instantiating a versioned bank entry. There is no
 fallback license. The deterministic engine imports shared types and ports, makes
 no provider calls, and checks both rule shape and Z3 entailment for deductions.
-T is built once, cited, and frozen before search. Model output enters only after
+T has one construction lifecycle, one freeze: cited working commitments are
+frozen before search; rich source evidence remains immutable. Model output enters only after
 schema validation through cached, logged runtime calls.
 
 Every run has append-only JSONL: timestamp, stage, model id/version, full prompt,

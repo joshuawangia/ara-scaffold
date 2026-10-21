@@ -16,24 +16,11 @@ from ara.runtime.cache import Cache, canonical
 from ara.runtime.calls import ModelCalls, Rejected
 from ara.runtime.cli import main
 from ara.runtime.extraction import (load_papers, extract, Paper, PageText, PaperExtraction, ExtractedItem,
-    literature_entry, entry_size, ENTRY_BYTES, HEADER, literature_provenance, import_provenance,
+    HEADER, literature_provenance, import_provenance,
     MissingExtractionLineage)
 from ara.runtime.logging import EventLog
 from ara.runtime.providers import AnthropicProvider, MockProvider, Response
 from ara.types import TokenUsage
-
-
-@pytest.mark.parametrize('case', ['items', 'text', 'serialized'])
-def test_extraction_output_budget(rig, case):
-    calls, provider, papers, *_ = rig
-    value = copy.deepcopy(VALUE)
-    if case == 'items': value['items'] *= 5
-    if case == 'text': value['items'][0]['text'] = 'P' * 401
-    if case == 'serialized': value['items'] = [{**ITEM, 'text': 'P' * 400} for _ in range(4)]
-    register(calls, provider, papers[0], value)
-    with pytest.raises(Rejected): calls.extract_paper(papers[0])
-    assert not list(calls.cache.path.glob('*.json'))
-    assert accounting(calls.log)['extraction']['cost_usd'] == .00175
 
 
 def test_build_t_counted_context_refusal(rig, monkeypatch):
@@ -69,7 +56,7 @@ def test_blank_pages_retained_without_rejecting_paper(rig):
     assert paper.unavailable is None and not paper.affected_pages
     assert paper.inputs()['pages'] == [{'page': 2, 'text': 'P'}]
     assert [(d.page, d.reason) for d in paper.diagnostics] == [(1, 'blank_page'), (3, 'blank_page')]
-    value = {'source_id': 'p', 'items': [{**ITEM, 'page_start': 2, 'page_end': 2}]}
+    value = {**VALUE, 'items': [{**ITEM, 'page_start': 2, 'page_end': 2}]}
     register(calls, provider, paper, value)
     path = extract(calls, (paper,))
     assert 'p:pdf:2' in path.read_text()
@@ -120,7 +107,7 @@ def test_extraction_cannot_cite_unread_image_page(rig):
     calls, provider, _, manifest, fulltext, _ = rig
     add_image(fulltext / 'p.pdf', 1)
     paper = load_papers(manifest, fulltext, ('p',))[0]
-    register(calls, provider, paper, {'source_id': 'p', 'items': [{**ITEM, 'page_end': 2}]})
+    register(calls, provider, paper, {**VALUE, 'items': [{**ITEM, 'page_end': 2}]})
     with pytest.raises(Rejected, match='unread page'): calls.extract_paper(paper)
 
 
@@ -189,18 +176,6 @@ def test_preflight_flags_caps_and_profile_is_explicit(rig, tmp_path, capsys):
     assert defaults['cost_cap_usd'] == 10 and defaults['token_cap'] == 200000
 
 
-def maximum_value(source_id):
-    value = {'source_id': source_id, 'items': [{**ITEM, 'source_id': source_id} for _ in range(4)]}
-    def size():
-        result = PaperExtraction(source_id, tuple(ExtractedItem(**item) for item in value['items']))
-        return entry_size(literature_entry({**result.to_dict(), 'status': 'extracted'}))
-    for item in value['items']:
-        while len(item['text']) < 400 and size() < ENTRY_BYTES:
-            item['text'] += 'P'
-    assert size() == ENTRY_BYTES
-    return value
-
-
 class CapacityServer:
     """Offline SDK surface: count the complete UTF-8 request conservatively, never tokenize remotely."""
     def __init__(self):
@@ -212,24 +187,22 @@ class CapacityServer:
 
     def count_tokens(self, **request):
         self.counted.append(request)
-        return SimpleNamespace(input_tokens=len(request['messages'][0]['content'].encode()) + 32)
+        return SimpleNamespace(input_tokens=(len(request['messages'][0]['content'].encode()) + 1) // 2 + 32)
 
     def create(self, **request):
         self.requests.append(request)
         prompt = request['messages'][0]['content']
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         if prompt.startswith('ROLE: extract_paper'):
-            value = maximum_value(inputs['source_id'])
+            from rich_fixture import graph
+            value = graph(inputs['source_id'])
             self.values[inputs['source_id']] = value
-        elif prompt.startswith('ROLE: build_t'):
+        elif prompt.startswith('ROLE: build_t_batch'):
+            from rich_fixture import batch_response
             assert request['max_tokens'] == 64000
-            entries = json.loads(inputs['literature'][len(HEADER):])['papers']
-            assert len(entries) == 53 and all(entry_size(entry) == ENTRY_BYTES for entry in entries)
-            value = {'commitments': [
-                {'id': f't{n}_{i}', 'text': item['text'], 'citation': item['citation'], 'formula': {'op': 'atom', 'name': 'P'}}
-                for n, entry in enumerate(entries) for i, item in enumerate(entry['items'])]}
+            value = batch_response(inputs)
         elif prompt.startswith('ROLE: propose_targets'):
-            value = {'targets': [{'id': 'q', 'text': 'Q', 'formula': {'op': 'atom', 'name': 'Q'}}]}
+            value = {'targets': [{'id': 'q', 'text': 'F(x)', 'formula': {'op': 'predicate', 'name': 'F', 'terms': [{'kind': 'variable', 'name': 'x'}]}}]}
         elif prompt.startswith('ROLE: propose_cuts'):
             value = {'proposals': []}
         elif prompt.startswith('ROLE: map_leaf'):
@@ -244,7 +217,7 @@ class CapacityServer:
 
 def test_capacity53_maximum_through_cli(rig, tmp_path):
     calls, _, _, manifest, fulltext, config_path = rig
-    records = [{'id': f'p{i:02}' + 'P' * 61, 'title': 'P', 'fulltext': f'fulltext/p{i:02}' + 'P' * 61 + '.pdf'}
+    records = [{'id': f'p{i:02}' + 'P' * 3, 'title': 'P', 'fulltext': f'fulltext/p{i:02}' + 'P' * 3 + '.pdf'}
                for i in range(53)]
     manifest.write_text(yaml.safe_dump(records))
     for record in records: pdf(fulltext / (record['id'] + '.pdf'), ('P',))
@@ -258,28 +231,38 @@ def test_capacity53_maximum_through_cli(rig, tmp_path):
     downstream = tmp_path / 'capacity-t'
     config = yaml.safe_load(config_path.read_text())
     config.update(config['extraction'])
+    config['build_t_batch_input_tokens'] = 28000
+    config.update(forward_pass_depth=0, depth_cap=1, node_cap=8)
     config_path.write_text(yaml.safe_dump(config))
     assert main(['run', '--config', str(config_path), '--topic', 'P', '--literature', str(artifact),
                  '--run-dir', str(downstream)], calls_factory=factory) == 0
     commitments = json.loads((downstream / 'commitments.json').read_text())['commitments']
-    assert len(commitments) == 212
+    assert len(commitments) == 424
     assert {c['citation'].split(':')[0] for c in commitments} == {r['id'] for r in records}
     log = EventLog(downstream / 'events.jsonl')
-    admission = next(json.loads(e['payload_json']) for e in log.read()
-                     if e['stage'] == 'context_admission' and json.loads(e['payload_json'])['kind'] == 'build_t')
-    assert admission['decision'] == 'fits'
-    assert admission['input_tokens'] + admission['output_tokens'] < 190000
-    counted = next(r for r in server.counted if r['messages'][0]['content'].startswith('ROLE: build_t'))
-    prompt = counted['messages'][0]['content']
-    tail = prompt.split('\nINPUT_JSON\n')[1]
-    inputs, end = json.JSONDecoder().raw_decode(tail)
-    assert inputs['literature'] == artifact.read_text()
-    assert json.loads(tail[end:]) == json.loads((ROOT / 'schemas/build_t.json').read_text())
-    assert 'LOCAL_RESPONSE_SCHEMA' in prompt and all(record['id'] in prompt for record in records)
+    admissions = [json.loads(e['payload_json']) for e in log.read()
+                  if e['stage'] == 'context_admission' and json.loads(e['payload_json'])['kind'] == 'build_t_batch']
+    assert len(admissions) > 1 and all(a['decision'] == 'fits' for a in admissions)
+    assert all(a['input_tokens'] + a['output_tokens'] <= 200000 for a in admissions)
+    assert sum(e['stage'] == 'commitments_frozen' for e in log.read()) == 1
+    assert any(e['label'] == 'HUMAN' for e in log.read())
+    assert any(e['stage'] == 'build_t_batch' and e['label'] == 'MODEL' for e in log.read())
+    from ara.runtime.construction import BatchResult, merge_batches
+    from ara.types import CommitmentSet
+    plan = next(json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'build_t_plan')
+    results = []
+    for b in plan['plan']['batches']:
+        raw = json.loads((downstream / f"build-t-{plan['plan_id']}-{b['index']}.json").read_text())
+        results.append(BatchResult(b['index'], CommitmentSet.from_dict({'commitments': raw['commitments']}), canonical(raw)))
+    assert merge_batches(tuple(reversed(results)), len(results)).to_dict()['commitments'] == commitments
+    before = len(server.requests)
+    replay = factory(config, log, 'P').build_t(artifact.read_text(), 'runtime audience')
+    assert replay.to_dict()['commitments'] == commitments and len(server.requests) == before
+    assert sum(e['stage'] == 'commitments_frozen' for e in log.read()) == 1
     report = accounting(log)
     assert report['extraction']['call_count'] == 53 and report['accounting_complete']
     assert report['inherited_totals']['model_calls'] == 53
-    print('CAPACITY53 ' + canonical({k: admission[k] for k in ('input_tokens', 'output_tokens', 'limit', 'decision')}))
+    print('CAPACITY53 ' + canonical({'batches': len(admissions), 'max_counted_input': max(a['input_tokens'] for a in admissions), 'commitments': len(commitments)}))
 
 
 def test_build_t_retry_recounts_feedback(rig, monkeypatch):

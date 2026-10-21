@@ -158,32 +158,53 @@ input-token estimate plus prompt overhead and output allowances exceed those
 limits. Estimates exclude retries and server fallbacks; actual requests reserve
 and account separately. Use an isolated cache for the planned extraction run.
 
-Each paper supplies at most four central claim/argument items, each at most 400
-characters, with author/reported/attacked attribution. The escaped assembled entry
-is additionally limited to 2200 UTF-8 bytes. Validation retries shorten model
-output; code never slices text or silently drops a paper. This is a bounded central
-selection, not an exhaustive inventory. Full bibliography and page diagnostics
-remain in `<id>.extraction.json` and the log; the literature file carries compact
-source-id/items/status entries. Citation ids such as `p:pdf:1-2` use physical PDF
-pages, not printed page labels.
+Rich v2 extractions preserve page-linked premises, intermediate conclusions,
+conclusions, paper-stated inference links, distinctions, qualifications and
+reported/attacked views, with explicit attribution. There is no four-item or
+character cap. Each call allows 32000 output tokens (including thinking); actual
+output and coverage must be inspected. Context overflow or output exhaustion
+subdivides readable physical page ranges. Each range is saved immutably; a logged,
+counted reconciliation links ranges without rewriting their evidence. An oversized
+single page or reconciliation stops explicitly rather than truncating evidence.
+Full graphs remain in `<id>.extraction.json`, range artifacts and log-backed v2
+literature. Item-level citations such as `p:pdf:1-2#p:r1-2:p` disambiguate separate
+items on the same pages. Folio labels are not physical page indices.
 
-A 53-paper maximum-size offline CLI fixture uses 124441 conservative input
-byte-tokens including instructions and schemas. The generated-literature build-T
-output allowance is 64000 tokens, sized for up to 212 commitments; total 188441
-fits the 200000 context with margin. `extracted_build_t_max_output_tokens` controls
-this allowance; it does not change ordinary build-T. Every actual build-T and
-extraction dispatch counts the full request via the provider and refuses a context
-overflow with a logged STOP. Long custom topic/audience text or validation feedback
-can still exceed context. PDF input bytes are warnings only, never a hard refusal.
+Generated literature uses one construction lifecycle, one freeze. Source IDs are
+sorted, content hashes pinned, and batches packed using provider-counted requests,
+not a fixed paper count. Defaults allow 70000 batch input tokens, 64000 output
+and a 16000-token shared-symbol reserve. Plans and their inputs partition caches.
+Each batch selects topic/audience-relevant complete connected arguments for a
+working T: selected premises, links and qualifications cannot be separated.
+Every omitted item needs a logged reason. Exact attributed evidence text and
+citations survive into T; identical or contradictory formulas are not deduplicated.
+Shared symbol definitions and model-produced reuse bindings are logged and
+validated. Code never invents equivalences. Faithful formalisation and semantic
+alignment remain model judgments requiring source inspection.
+
+The working T has a 100000-token counted downstream-input limit, with 8000 reserved
+for wrappers. Batches receive proportional allowances by evidence count; this is a
+selection budget, not a source-extraction cap. A complete relevant argument that
+cannot fit is refused, never silently pruned. Full rich records remain available
+for inspection; current search uses only the selected working T. Every request,
+including downstream requests, retries and cache replay, is counted with its full
+prompt/schema before admission. Larger goals/banks/feedback can still produce an
+explicit STOP. Searching beyond working T requires a new construction with revised
+topic/audience/budget, not mutation after freeze. The 53-paper offline fixture
+exercises rich graphs, multiple batches, native search, cache replay and one freeze;
+its deterministic transport counter is a test proxy, not a real tokenizer forecast.
 
 pypdf does not perform OCR. Blank pages are recorded and preserve numbering while
 readable pages proceed. Image/form pages with fewer than 200 text characters, and
 painted pages with no text, are flagged and excluded from claim support. Their
 papers are explicitly `partial`, with affected page numbers in outcomes, logs and
 methodology. An entirely visual paper is partial with no items and no model call.
-This heuristic cannot prove text completeness or correct reading order.
+Private-use glyphs flag encoding warnings: their text is retained and the paper
+remains partial. No automatic glyph substitution is performed. These heuristics
+cannot prove text completeness or correct reading order.
 Missing/unreadable PDFs default to `record only, not extracted`; `--missing refuse`
-stops instead. Model/validation/budget/context failures always stop and preserve
+stops for missing/unreadable files and for ANY partial coverage, including wholly
+visual, mixed readable/visual, and encoding-warning papers. Model/validation/budget/context failures always stop and preserve
 methodology. Record-only entries supply no commitments, and an all-record-only
 collection cannot build T. Partial entries supply only their readable-page items.
 
@@ -193,7 +214,7 @@ and imports its receipts with SYSTEM/MODEL labels. Cross-run cached re-extractio
 without original receipts is explicitly marked incomplete and refused at import;
 zero new spend is not complete production accounting. Same-log replay with its
 original receipt remains usable. Do not strip the provenance header to bypass a
-refusal. Artifacts predating this bounded projection must be regenerated.
+refusal. Legacy v1 artifacts are refused and must be regenerated as rich v2.
 
 Methodology separates local and inherited usage/cost/human time and gives imported
 receipts stable ids. Re-importing the same receipt within a log is idempotent;

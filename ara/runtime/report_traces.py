@@ -17,22 +17,24 @@ def new_trace(begin_seq, data, authenticated=True, source=None):
                 complete=False, authenticated=authenticated, source=source, issues=[])
 
 
+def expand_proposal(ref, reference):
+    if ref is None:
+        return None
+    value = reference('proposal', ref)
+    return dict(bank_id=value['bank_id'], conclusion_text=reference('text', value['conclusion_text_id']),
+                premises=[dict(slot=p['slot'], text=reference('text', p['text_id']),
+                               t_id=p['t_id'], scope_id=p['scope_id']) for p in value['premises']])
+
+
 def expand_graph(graph, reference):
     """Resolve an explicitly complete graph; never infer missing state history."""
-    def proposal(ref):
-        if ref is None:
-            return None
-        value = reference('proposal', ref)
-        return dict(bank_id=value['bank_id'], conclusion_text=reference('text', value['conclusion_text_id']),
-                    premises=[dict(slot=p['slot'], text=reference('text', p['text_id']),
-                                   t_id=p['t_id'], scope_id=p['scope_id']) for p in value['premises']])
     nodes = []
     for node in graph['nodes']:
         p = node['proposition']
         nodes.append({**{k: v for k, v in node.items() if k != 'proposal_id'},
                       'proposition': dict(id=p['id'], text=reference('text', p['text_id']),
                                           formula=reference('formula', p['formula_id'])),
-                      'proposal': proposal(node['proposal_id'])})
+                      'proposal': expand_proposal(node['proposal_id'], reference)})
     return {**graph, 'nodes': nodes}
 
 
@@ -197,6 +199,7 @@ def validate_trace(trace):
                 reference('text', value.get('conclusion_text_id'))
                 for premise in value.get('premises', []):
                     reference('text', premise.get('text_id'))
+        dispositions = Counter()
         for row in rows:
             action = row.get('action')
             if action in ('visit', 'expand', 'proposal', 'prune') and row.get('state_id') not in states:
@@ -207,15 +210,32 @@ def validate_trace(trace):
                 reference('proposal', row.get('proposal_id'))
             if action == 'prune' and ((row.get('state_id'), row.get('proposal_index')) not in proposals or not row.get('reason')):
                 issue('prune lacks a recorded proposal or reason')
+            if action == 'prune':
+                key = (row.get('state_id'), row.get('proposal_index'))
+                dispositions[key] += 1
+                if row.get('node_id') != proposals.get(key, {}).get('node_id'):
+                    issue('prune node differs from proposal')
         for state in states.values():
             if state.get('transition') != 'root' and state.get('node_id') not in nodes:
                 issue('state delta references an absent proof node')
             if state.get('transition') == 'inference':
-                candidate = proposals.get((state.get('parent_state_id'), state.get('proposal_index')))
+                key = (state.get('parent_state_id'), state.get('proposal_index'))
+                dispositions[key] += 1
+                candidate = proposals.get(key)
                 if candidate is None or state.get('node_id') not in nodes or any(n not in nodes for n in state.get('children', [])):
                     issue('inference delta lacks its proposal or proof nodes')
                 elif (reference('proposal', candidate.get('proposal_id')) or {}).get('bank_id') != state.get('bank_id'):
                     issue('inference delta rule differs from proposal')
+                if candidate is not None and candidate.get('node_id') != state.get('node_id'):
+                    issue('inference node differs from proposal')
+                parent = nodes.get(state.get('node_id'), {})
+                for child_id in state.get('children', []):
+                    child = nodes.get(child_id, {})
+                    if (child.get('parent_node_id') != state.get('node_id') or
+                            type(parent.get('depth')) is not int or child.get('depth') != parent['depth'] + 1):
+                        issue('inference child parent/depth differs from node definition')
+        if any(dispositions[key] != 1 for key in proposals):
+            issue('proposal must have exactly one admission or prune')
         if 'n0' not in nodes or sum(n.get('parent_node_id') is None for n in nodes.values()) != 1:
             issue('proof root inventory mismatch')
         if len(ends) == 1 and ends[0].get('nodes_created') != len(nodes):
@@ -256,6 +276,9 @@ def validate_trace(trace):
                     issue('terminal proposition differs from its node definition')
                 inference = inferences.get(node.get('id'))
                 if inference is not None:
+                    candidate = proposals.get((inference.get('parent_state_id'), inference.get('proposal_index')), {})
+                    if node.get('proposal') != expand_proposal(candidate.get('proposal_id'), reference):
+                        issue('terminal proposal differs from selected proposal')
                     if (node.get('kind') != 'inference' or node.get('children') != inference.get('children') or
                             node.get('cq_answers') != inference.get('cq_answers') or
                             (node.get('proposal') or {}).get('bank_id') != inference.get('bank_id')):

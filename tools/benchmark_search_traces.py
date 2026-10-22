@@ -47,6 +47,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', required=True, type=Path)
     parser.add_argument('--base', default='0eb8592')
+    parser.add_argument('--scenarios', nargs='+', type=int, choices=range(5), default=list(range(5)))
     args = parser.parse_args()
     out = args.out.resolve()
     if not out.is_relative_to(ROOT / 'runs'):
@@ -58,7 +59,8 @@ def main():
     bank = load_bank(ROOT / 'bank')
     results = []
     scenarios = [(1, 0, 'sign'), (1, 1000, 'sign'), (3, 0, 'sign'), (3, 1000, 'sign'), (1, 0, 'expert_opinion')]
-    for index, (width, padding, rule) in enumerate(scenarios):
+    for index in args.scenarios:
+        width, padding, rule = scenarios[index]
         runs = []
         for traced in (False, True):
             log = EventLog(out / str(index) / ('traced' if traced else 'baseline') / 'events.jsonl')

@@ -116,6 +116,8 @@ def trace_html(trace, anchor_prefix='trace'):
     def link(sid):
         return '<a href="#' + anchor_prefix + '-state-' + escape(str(sid), quote=True) + '">' + escape(str(sid)) + '</a>'
     pieces = ['<p>State history is shown in recorded order. Parent and child links retain ancestry without deeply nesting the page.</p>']
+    completed = {r.get('state_id'): r.get('graph') for r in trace.get('completed_routes', [])
+                 if type(r.get('state_id')) is int}
     for index, state in enumerate(trace['states']):
         sid, parent = state.get('state_id'), state.get('parent_state_id')
         title = f"State {sid} ← {parent} · {state.get('transition')} · {state.get('bank_id') or state.get('reason', '')}"
@@ -125,10 +127,9 @@ def trace_html(trace, anchor_prefix='trace'):
             body += '<p>Children: ' + ', '.join(link(child) for child in children[sid]) + '</p>'
         body += pre({k: v for k, v in state.items() if k != 'graph'})
         if type(sid) is int:
-            for receipt in receipts[sid]:
-                terminal = receipt['payload'].get('graph')
-                if terminal and not trace.get('issues'):
-                    body += route_html(terminal)
+            terminal = completed.get(sid)
+            if terminal and not trace.get('issues'):
+                body += route_html(terminal)
             body += details('Branch receipts and decisions', pre(receipts[sid] + decisions[sid]))
         pieces.append(details(title, body, index == 0) + '</div>')
     if trace.get('issues'):

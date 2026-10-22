@@ -50,7 +50,12 @@ def test_trace_branches_rejections_and_completed_graphs():
     assert all('graph' not in r for r in positive if r['action'] != 'complete')
     assert {r['reason'] for r in positive if r['action'] == 'prune'} == {'DUPLICATE_PROPOSAL', 'UNKNOWN_BANK_ID'}
     terminal = next(r for r in positive if r['action'] == 'complete')
-    assert terminal['graph'] == result.target.routes[0].to_dict()
+    from ara.runtime.report_traces import new_trace, validate_trace
+    trace = new_trace(0, begins[0])
+    trace.update(states=list(states.values()), receipts=[dict(payload=r) for r in positive])
+    validate_trace(trace)
+    assert trace['complete'], trace['issues']
+    assert trace['completed_routes'][0]['graph'] == result.target.routes[0].to_dict()
     assert terminal['reason'] == 'ROUTE_CLOSED'
     assert {n['t_id'] for n in terminal['graph']['nodes'] if n['kind'] == 'leaf'} == {'t0', 't1'}
 
@@ -224,6 +229,7 @@ def test_native_500_state_trace_full_report(tmp_path, monkeypatch):
     ('cycle', 'cyclic ancestry'),
     ('fields', 'invalid terminal graph fields'),
     ('action', 'unsupported trace action'),
+    ('node_reference', 'transition references an absent proof node'),
 ])
 def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypatch, fault, expected):
     import hashlib
@@ -245,6 +251,7 @@ def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypat
     if fault == 'cycle': terminal['graph']['nodes'][0]['children'].append('n0')
     if fault == 'fields': terminal['graph']['nodes'][0]['proposition'] = None
     if fault == 'action': rows.insert(-1, dict(action='future'))
+    if fault == 'node_reference': next(r for r in rows if r['action'] == 'expand')['node_id'] = 'absent'
     for index, row in enumerate(rows): row['seq'] = index
     raw = ''.join(canonical(row) + '\n' for row in rows).encode()
     path.write_bytes(raw)
@@ -257,3 +264,27 @@ def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypat
     assert not trace['complete']
     assert any(expected in issue for issue in trace['issues']), trace['issues']
     assert len(trace['receipts']) == len(rows)
+
+
+def test_padded_cap_trace_stays_below_pilot_limit_and_preserves_every_route(tmp_path):
+    from dataclasses import replace
+    from test_search import R
+    from ara.runtime.report import build_run
+    e, ports = engine(table(), depth_cap=6, node_cap=500)
+    def propose(goal, commitments, entries):
+        cuts = []
+        for atom in (P, Q, R):
+            child = Formula('and', (goal.formula, atom))
+            cut = proposal('sign', goal.formula, sign_relation=child, observed_sign=child)
+            cuts.append(replace(cut, premises=tuple(replace(p, text=p.text + ' ' * 1000) for p in cut.premises)))
+        return tuple(cuts)
+    ports.propose_cuts = propose
+    log = EventLog(tmp_path/'run/events.jsonl')
+    e.traces = SearchTraceFiles(log)
+    result = e.search(prop(P))
+    assert result.nodes_created == 499 and len(result.routes) == 167
+    trace_bytes = sum(p.stat().st_size for p in log.path.parent.glob('search-traces/*.jsonl'))
+    assert 20 * (trace_bytes + log.path.stat().st_size + log.anchor.stat().st_size) < 100_000_000
+    trace = build_run(log.path.parent)['search']['traces'][0]
+    assert trace['complete'], trace['issues']
+    assert [r['graph'] for r in trace['completed_routes']] == [r.to_dict() for r in result.routes]

@@ -478,6 +478,12 @@ class ModelCalls:
                     raise
                 try:
                     rejected = json.loads(exc.feedback['rejected_response'])
+                    if isinstance(rejected, dict):
+                        changes = normalize_extraction(rejected)
+                        if changes:
+                            self.log.record('extraction_normalized', phase='correction_candidate',
+                                            source_id=paper.source_id, attempt=correction + 1,
+                                            changes=changes)
                     # Keep changes/additions from a failed patch visible to the
                     # next correction; never restart from a truncated inventory.
                     candidate = merge_extraction_patch(candidate or rejected, rejected)

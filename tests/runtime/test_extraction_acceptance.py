@@ -149,3 +149,42 @@ def test_null_empty_inventory_normalized_with_original_preserved(rig, monkeypatc
     assert json.loads(json.loads(models[0]['response'])['content'][0]['text'])['items'] is None
     events = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_normalized']
     assert events[0]['changes'] == [{'path': '/items', 'operation': 'null_empty_inventory_to_array'}]
+
+
+@pytest.mark.parametrize('failed_patches', [0, 1, 2])
+def test_rejected_null_inventory_recovers_within_correction_limit(rig, monkeypatch, failed_patches):
+    calls, provider, papers, *_ = rig
+    calls.config.update(extraction_targeted_corrections=2, extraction_require_inference=True)
+    empty = {**graph(), 'items': None, 'empty_reason': ''}
+    bad = graph(); bad['items'][0]['page_end'] = 3
+    sent = sequence(monkeypatch, provider, [empty] + [bad] * failed_patches + [graph()])
+    if failed_patches == 2:
+        with pytest.raises(Rejected):
+            calls.extract_paper(papers[0])
+        assert len(sent) == 3
+    else:
+        result = calls.extract_paper(papers[0])
+        assert len(result.items) == len(graph()['items'])
+        assert len(sent) == 2 + failed_patches
+    assert sent[1]['candidate']['items'] == []
+    assert 'empty_reason' not in sent[1]['candidate']
+    models = [e for e in calls.log.read() if e['label'] == 'MODEL']
+    assert json.loads(json.loads(models[0]['response'])['content'][0]['text']) == empty
+    events = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_normalized']
+    recovery = [e for e in events if e.get('phase') == 'correction_candidate']
+    assert recovery[0]['changes'] == [
+        {'path': '/items', 'operation': 'null_empty_inventory_to_array'},
+        {'path': '/empty_reason', 'operation': 'remove_empty_optional'}]
+    assert recovery[0]['attempt'] == 1
+
+
+@pytest.mark.parametrize('identity', [None, '', 1, 'duplicate'])
+def test_rejected_candidate_ambiguous_ids_still_refuse(rig, monkeypatch, identity):
+    calls, provider, papers, *_ = rig
+    calls.config.update(extraction_targeted_corrections=2)
+    bad = graph()
+    bad['items'][0]['id'] = bad['items'][1]['id'] if identity == 'duplicate' else identity
+    sent = sequence(monkeypatch, provider, [bad, graph()])
+    with pytest.raises(Rejected):
+        calls.extract_paper(papers[0])
+    assert len(sent) == 1

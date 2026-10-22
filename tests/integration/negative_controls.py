@@ -366,6 +366,36 @@ CASES += [
      'tests/runtime/test_schema_preflight.py::test_schema_gate_native_wires_and_cost'),
 ]
 
+CASES += [
+    ('diagnostic_suppression', 'ara/runtime/providers.py',
+     "message = 'Provider diagnostic suppressed.'", "message = error.get('message')",
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_suppresses_unrecognized_text'),
+    ('diagnostic_status_validation', 'ara/runtime/providers.py',
+     'type(status) is int and 400 <= status <= 599', 'True',
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_validates_metadata'),
+    ('diagnostic_type_validation', 'ara/runtime/providers.py',
+     'isinstance(error_type, str) and error_type in allowed_types', 'True',
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_validates_metadata'),
+    ('diagnostic_request_id_validation', 'ara/runtime/providers.py',
+     "re.fullmatch(r'req_[A-Za-z0-9]{1,128}', request_id)", 'True',
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_validates_metadata'),
+    ('diagnostic_schema_recognition', 'ara/runtime/providers.py',
+     'if match:', 'if False:',
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_retains_recognized_schema_compiler_error'),
+    ('diagnostic_cli_counter_boundary', 'ara/runtime/cli.py',
+     'evidence = provider_error_evidence(exc)', "evidence = {'message': str(exc)}",
+     'tests/runtime/test_schema_preflight.py::test_cli_token_counter_suppresses_request_echo'),
+    ('diagnostic_compiler_keywords', 'ara/runtime/providers.py',
+     'all(k in allowed_keywords for k in keywords)', 'True',
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_suppresses_unrecognized_text'),
+    ('diagnostic_compiler_full_sentence', 'ara/runtime/providers.py',
+     'match = re.fullmatch(', 'match = re.match(',
+     'tests/runtime/test_schema_preflight.py::test_provider_diagnostic_suppresses_unrecognized_text'),
+    ('rejected_candidate_normalization', 'ara/runtime/calls.py',
+     'changes = normalize_extraction(rejected)', 'changes = []',
+     'tests/runtime/test_extraction_acceptance.py::test_rejected_null_inventory_recovers_within_correction_limit'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

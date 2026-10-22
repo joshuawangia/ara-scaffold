@@ -248,27 +248,39 @@ class AnthropicProvider:
 
 
 def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
-    """Allowlisted error fields only; never serialize an exception/request object."""
-    import os
+    """Validate metadata; emit only parsed compiler diagnostics, never free text.
+
+    Prompt knowledge is deliberately unnecessary, including for token-counter
+    failures. Substring redaction cannot safely recognize partial request echoes.
+    """
     import re
     body = getattr(exc, 'body', None)
     error = body.get('error', body) if isinstance(body, dict) else {}
     error = error if isinstance(error, dict) else {}
-    def scrub(value):
-        text = value if isinstance(value, str) else ''
-        # Error services sometimes append an echoed request after the diagnostic.
-        text = re.split(r'(?i)(?:request[ _-]*body|messages|prompt)\s*[:=]', text)[0]
-        for key, secret in os.environ.items():
-            if len(secret) >= 4 and re.search(r'(?i)key|token|secret|password|credential', key):
-                text = text.replace(secret, '[REDACTED]')
-        for part in [prompt, *prompt.splitlines()]:
-            if len(part) >= 8:
-                text = text.replace(part, '[REQUEST REDACTED]')
-        text = re.sub(r'(?i)(?:authorization|x-api-key)\s*:[^\n]*', '[REDACTED]', text)
-        text = re.sub(r'(?i)bearer\s+\S+|sk-[A-Za-z0-9_-]+|https?://\S+', '[REDACTED]', text)
-        text = re.sub(r'[\{\[].*', '[STRUCTURED ECHO REDACTED]', text, flags=re.S)
-        return text[:2000]
-    return {'http_status': getattr(exc, 'status_code', None),
-            'error_type': scrub(error.get('type') or type(exc).__name__),
-            'message': scrub(error.get('message') or 'Provider failure; no structured diagnostic.'),
-            'request_id': scrub(getattr(exc, 'request_id', None)) or None}
+    status = getattr(exc, 'status_code', None)
+    status = status if type(status) is int and 400 <= status <= 599 else None
+    error_type = error.get('type')
+    allowed_types = ('invalid_request_error', 'authentication_error', 'permission_error',
+                     'not_found_error', 'request_too_large', 'rate_limit_error',
+                     'api_error', 'overloaded_error')
+    error_type = error_type if isinstance(error_type, str) and error_type in allowed_types else None
+    request_id = getattr(exc, 'request_id', None)
+    request_id = (request_id if isinstance(request_id, str) and
+                  re.fullmatch(r'req_[A-Za-z0-9]{1,128}', request_id) else None)
+    message = 'Provider diagnostic suppressed.'
+    diagnostic = error.get('message')
+    if status == 400 and error_type == 'invalid_request_error' and isinstance(diagnostic, str):
+        # Recognize the compiler's sibling-constraint diagnostic as a complete
+        # sentence. Every variable token must be a known schema keyword; emit a
+        # canonical sentence so no arbitrary captured provider text crosses out.
+        match = re.fullmatch(
+            r"output_config\.format\.schema: For 'anyOf', '([A-Za-z, ]{1,100})' is not supported",
+            diagnostic)
+        if match:
+            keywords = match[1].split(', ')
+            allowed_keywords = ('additionalProperties', 'properties', 'required', 'type')
+            if len(keywords) == len(set(keywords)) and all(k in allowed_keywords for k in keywords):
+                names = ', '.join(k for k in allowed_keywords if k in keywords)
+                message = f"output_config.format.schema: For 'anyOf', '{names}' is not supported"
+    return {'http_status': status, 'error_type': error_type,
+            'message': message, 'request_id': request_id}

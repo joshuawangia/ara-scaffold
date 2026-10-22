@@ -1478,3 +1478,42 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
 - Regression tests assert standalone alternatives, disjoint nonempty/empty wire
   values, and logged null normalization with immutable originals. Two additional
   production-wire controls break the new projection and normalization seams.
+
+## Kappa round 3: conservative diagnostics and normalized recovery
+
+- **F1 diagnostic boundary.** Supersede the round-two substring-scrubbing claim.
+  Arbitrary provider prose can contain partial or escaped request echoes and is
+  now suppressed, including native CLI token-counter failures. Keep only integer
+  HTTP error statuses (400–599), enumerated provider error types, and bounded
+  alphanumeric `req_` request IDs. Unknown metadata becomes null. Message text
+  survives only the full-string parser for the recognized `anyOf` sibling-schema
+  constraint diagnostic; every variable token is an allowlisted schema keyword
+  and output is reconstructed canonically. Unknown compiler messages are also
+  suppressed until explicitly supported. No prompt knowledge is needed.
+- **F2 rejected-candidate recovery.** Re-decoded rejected responses pass through
+  the same content-free normalization as validation before ID-based patch merge.
+  Original MODEL receipts remain intact; a separate normalization event records
+  the correction-candidate phase, attempt and transformations. Null inventory
+  with an invalid disposition can reach a valid correction. Initial plus at most
+  two corrections remains the limit, with paper/budget limits still enforced.
+  Malformed or duplicate item IDs still refuse; normalization does not repair
+  substantive content or ambiguous identities.
+- **F3 scope decision.** The guarantee is item-inventory preservation across
+  corrections and accepted-obligation accounting. It does not retain rejected
+  candidates' declared gaps and does not establish semantic fidelity. A patch
+  can replace coverage metadata and `new_gaps`, so a rejected gap may disappear
+  without an explicit evidence-backed resolution. The requested stronger rule
+  exceeds the round-three approximately two-hour scope: stable gap identities
+  must exist before acceptance; resolution/dismissal evidence must be defined
+  across correction, subdivision and failed ranges; prompts, schemas and
+  acceptance identity/reuse need coordinated changes and controls. Leave that
+  behavior unchanged under the brief's explicit deferral allowance. A union of
+  descriptions alone would strand false discoveries without valid dismissal.
+- **Acceptance and proof.** Keep v4: F1 changes diagnostics only; F2 applies the
+  existing v4 normalization consistently on a recovery path without changing
+  accepted graph validation, prompts, schemas or model policy. Existing accepted
+  evidence remains immutable. Adversarial placeholder tests cover dotted paths,
+  partial/escaped echoes, invalid metadata and native CLI counter errors;
+  extraction regressions cover null recovery, exhaustion and unusable IDs.
+  Production-wire controls exercise these boundaries. Wire schemas are unchanged,
+  so this round requires offline comparison, not another paid schema gate.

@@ -1517,3 +1517,16 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   extraction regressions cover null recovery, exhaustion and unusable IDs.
   Production-wire controls exercise these boundaries. Wire schemas are unchanged,
   so this round requires offline comparison, not another paid schema gate.
+
+## Search trace receipts
+
+The engine now emits versioned `search_trace` SYSTEM events through its existing
+EventSink: begin, queued state with parent and graph/depth snapshot, visit,
+expansion, proposed alternative, rejected alternative, completed route, and end.
+A begin receipt scopes search IDs; state IDs are unique within that search.
+This preserves best-first order and alternatives without changing route IDs,
+licensing, caps, provider behavior or the returned analysis. Missing end means
+an interrupted trace, not a completed search. Older decision-only logs cannot
+recover state ancestry or unambiguously attach prunes to both polarities.
+The extra snapshot receipts increase log size; this is an additive logging patch
+that can be cherry-picked independently of the offline report command.

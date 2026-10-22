@@ -25,7 +25,7 @@ def test_tier1_marks_same_premises_and_requests_repair():
     assert {p.formula.canonical() for p in conflict.conclusions} == {Q.canonical(), Q.negated().canonical()}
     assert conflict.repair.action == 'unresolved'
     assert len(ports.repairs) == 1
-    assert any(ev.decision.reason_code == 'TIER1_CONFLICT' for ev in ports.events)
+    assert any(ev.decision and ev.decision.reason_code == 'TIER1_CONFLICT' for ev in ports.events)
 
 
 def test_tier2_records_first_flagged_consequence():
@@ -73,7 +73,7 @@ def test_forward_cap_is_explicit():
     result = forward_pass((P, Q), e.commitments, e.licenser, 2, node_cap=1)
     assert result.truncated
     assert len(result.consequences) == 1
-    assert any(ev.decision.reason_code == 'FORWARD_CAP' for ev in ports.events)
+    assert any(ev.decision and ev.decision.reason_code == 'FORWARD_CAP' for ev in ports.events)
 
 
 def test_forward_quantifier_instances():

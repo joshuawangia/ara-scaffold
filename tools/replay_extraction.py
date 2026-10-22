@@ -70,6 +70,7 @@ def replay(log_paths, destination, corrections=None):
     destination.relative_to(ROOT / 'runs')
     destination.mkdir(parents=True, exist_ok=False)
     rows = []
+    excluded = []
     seen = set()
     for path in log_paths:
         path = path.resolve()
@@ -79,7 +80,8 @@ def replay(log_paths, destination, corrections=None):
         start = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'extraction_started')
         config = start['config']
         selected = tuple({json.loads(e['prompt'].split('\nINPUT_JSON\n')[1])['source_id']
-                          for e in events if e['stage'] == 'extract_paper' and e['label'] == 'MODEL'})
+                          for e in events if e['stage'] == 'extract_paper' and e['label'] == 'MODEL'
+                          and '\nINPUT_JSON\n' in e['prompt']})
         papers = {p.source_id: p for p in load_papers(Path(start['manifest']), Path(start['fulltext_dir']), selected)}
         for index, event in enumerate(events):
             if event['stage'] != 'extract_paper' or event['label'] != 'MODEL':
@@ -88,6 +90,11 @@ def replay(log_paths, destination, corrections=None):
             if identity in seen:
                 continue
             seen.add(identity)
+            if '\nINPUT_JSON\n' not in event['prompt'] or event['response'] is None:
+                excluded.append(dict(log=str(path), event=index,
+                                     reason='schema_preflight' if '\nINPUT_JSON\n' not in event['prompt']
+                                     else 'no_provider_response'))
+                continue
             request = json.loads(event['prompt'].split('\nINPUT_JSON\n')[1])
             paper = papers[request['source_id']]
             if paper.pdf_sha256 != request.get('pdf_sha256'):
@@ -145,7 +152,7 @@ def replay(log_paths, destination, corrections=None):
             rows.append(row)
     counts = {kind: sum(r['outcome'] == kind for r in rows) for kind in
               ('accepted', 'normalized', 'correction', 'subdivision', 'terminal')}
-    result = dict(responses=len(rows), counts=counts, rows=rows)
+    result = dict(responses=len(rows), counts=counts, rows=rows, excluded=excluded)
     (destination/'summary.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps(dict(responses=len(rows), counts=counts)))
     return result

@@ -80,7 +80,7 @@ def test_second_correction_respects_paper_allowance(rig, monkeypatch):
     assert len(sent) == 2
 
 
-@pytest.mark.parametrize('limit', [-1, True, 3, 1.5])
+@pytest.mark.parametrize('limit', [-1, True, 4, 1.5])
 def test_invalid_correction_limit_refuses_before_dispatch(rig, monkeypatch, limit):
     calls, provider, papers, *_ = rig
     calls.config['extraction_targeted_corrections'] = limit

@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
 # Bump when validation, normalization, mode schemas or graph interpretation change.
-EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v4'
+EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v5'
+# The one reviewed predecessor; unknown contracts never migrate by version alone.
+V4_PROMPT_SHA256 = '6fdc1d8a71ded072a99d9190245bd3380e8ae003ee7cdce7f614e611158bbe22'
+V4_SCHEMA_SHA256 = '7d2778f90a78b5040dc3e9d7975f33b216d96652f3ca134e9d7ce568b72fd9cf'
 
 
 def extraction_acceptance_identity(config: dict, root: Path) -> dict:
@@ -121,7 +124,7 @@ class ExtractedItem:
     conclusion_id: str | None
     qualification_ids: tuple[str, ...]
     applies_to: tuple[str, ...]
-    inference_origin: Literal['paper_stated'] | None
+    inference_origin: Literal['paper_stated', 'reconstructed'] | None
 
     def __post_init__(self):
         for key in ('premise_ids', 'qualification_ids', 'applies_to'):
@@ -432,7 +435,14 @@ def validate_failure_limit(config):
 
 
 def validate_reused_paper(paper, outcome, acceptance):
-    if not acceptance or outcome.get('acceptance_identity') != acceptance:
+    previous = outcome.get('acceptance_identity')
+    compatible_v4 = bool(previous and acceptance and
+        previous.get('version') == 'rich-paper-acceptance-v4' and
+        acceptance.get('version') == 'rich-paper-acceptance-v5' and
+        previous.get('prompt_sha256') == V4_PROMPT_SHA256 and
+        previous.get('schema_sha256') == V4_SCHEMA_SHA256 and
+        all(previous.get(k) == acceptance.get(k) for k in ('provider', 'stage', 'require_inference')))
+    if not acceptance or (previous != acceptance and not compatible_v4):
         raise ValueError('resume extraction acceptance identity mismatch')
     if outcome['status'] not in ('extracted', 'partial'):
         raise ValueError('resume requires completed paper outcome')
@@ -444,6 +454,52 @@ def validate_reused_paper(paper, outcome, acceptance):
         raise ValueError('resume paper identity mismatch')
     if outcome.get('input_sha256', digest(canonical(paper.inputs()))) != digest(canonical(paper.inputs())):
         raise ValueError('resume paper input mismatch')
+    if compatible_v4:
+        revalidate_v4_graph(paper, outcome, acceptance)
+
+
+def revalidate_v4_graph(paper, outcome, acceptance):
+    """Offline migration checks the actual graph, never relabels an old receipt."""
+    from jsonschema import Draft202012Validator
+    schema = json.loads((Path(__file__).resolve().parents[2] / 'schemas/extract_paper.json').read_text())
+    items = [{k: v for k, v in item.items() if k != 'citation'} for item in outcome['items']]
+    Draft202012Validator(schema).validate(dict(schema_version=2, source_id=paper.source_id,
+        coverage_complete=True, new_gaps=[], items=items))
+    by_id = {i['id']: i for i in items}
+    if len(by_id) != len(items):
+        raise ValueError('resume duplicate graph id')
+    readable = {p.page for p in paper.readable_pages}
+    for item, original in zip(items, outcome['items'], strict=True):
+        if (item['source_id'] != paper.source_id or not item['text'].strip() or
+                not item['attributed_to'].strip() or
+                not 1 <= item['page_start'] <= item['page_end'] <= len(paper.pages) or
+                item['page_start'] not in readable or item['page_end'] not in readable or
+                any(item['page_start'] <= p <= item['page_end'] for p in paper.unread_pages)):
+            raise ValueError('resume invalid graph source evidence')
+        refs = (*item['premise_ids'], *item['qualification_ids'], *item['applies_to'],
+                *((item['conclusion_id'],) if item['conclusion_id'] else ()))
+        if not set(refs) <= by_id.keys():
+            raise ValueError('resume unknown graph reference')
+        if item['kind'] == 'inference':
+            if (not item['premise_ids'] or not item['conclusion_id'] or
+                    item['inference_origin'] not in ('paper_stated', 'reconstructed') or
+                    any(by_id[r]['kind'] == 'inference' for r in (*item['premise_ids'], item['conclusion_id'])) or
+                    any(by_id[r]['kind'] not in ('distinction', 'qualification') for r in item['qualification_ids'])):
+                raise ValueError('resume invalid inference')
+        elif item['premise_ids'] or item['conclusion_id'] or item['qualification_ids'] or item['inference_origin']:
+            raise ValueError('resume node contains inference fields')
+        if item['applies_to'] and item['kind'] not in ('distinction', 'qualification'):
+            raise ValueError('resume invalid qualification relation')
+        if original.get('citation') != ExtractedItem(**item).citation:
+            raise ValueError('resume invalid citation')
+    if acceptance['require_inference'] and not any(i['kind'] == 'inference' for i in items):
+        raise ValueError('resume missing inference disposition')
+    obligations = [o['id'] for o in outcome['obligations']]
+    resolutions = [r['obligation_id'] for r in outcome['resolutions']]
+    if (len(set(obligations)) != len(obligations) or len(set(resolutions)) != len(resolutions) or
+            set(obligations) != set(resolutions) or any(not r['evidence_ids'] or
+            not set(r['evidence_ids']) <= by_id.keys() for r in outcome['resolutions'])):
+        raise ValueError('resume unresolved graph obligations')
 
 
 def resume_papers(log, papers, sources, config: dict, root: Path):
@@ -485,6 +541,11 @@ def resume_papers(log, papers, sources, config: dict, root: Path):
     # Validate every origin before modifying the destination or constructing a provider.
     for events, origin in loaded:
         import_provenance(log, events, origin)
+    for source, entry in reused.items():
+        if entry['outcome']['acceptance_identity'] != acceptance:
+            log.record('extraction_acceptance_revalidated', source_id=source,
+                       from_identity=entry['outcome']['acceptance_identity'], to_identity=acceptance,
+                       outcome_hash=digest(canonical(entry['outcome'])))
     return reused
 
 

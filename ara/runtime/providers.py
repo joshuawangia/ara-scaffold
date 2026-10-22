@@ -109,7 +109,7 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
             if kinds == ['inference']:
                 branch['properties']['premise_ids']['minItems'] = 1
                 branch['properties']['conclusion_id'] = {'type': 'string'}
-                branch['properties']['inference_origin'] = {'type': 'string', 'enum': ['paper_stated']}
+                branch['properties']['inference_origin'] = {'type': 'string', 'enum': ['paper_stated', 'reconstructed']}
             branches.append(branch)
         original['properties']['items']['items'] = {'oneOf': branches}
         # The service rejects object constraints alongside anyOf. Each alternative

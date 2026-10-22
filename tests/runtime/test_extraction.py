@@ -91,7 +91,7 @@ def test_page_text_and_immutable_contract(rig):
         result.items[0].text = 'Q'
 
 
-@pytest.mark.parametrize('change', ['extra', 'empty', 'attribution', 'source', 'item_source', 'page', 'reversed', 'blank'])
+@pytest.mark.parametrize('change', ['extra', 'empty', 'attribution', 'source', 'item_source', 'page', 'blank'])
 def test_schema_and_reference_rejection(rig, change):
     calls, provider, papers, *_ = rig
     invalid = copy.deepcopy(VALUE)
@@ -101,7 +101,6 @@ def test_schema_and_reference_rejection(rig, change):
     if change == 'source': invalid['source_id'] = 'q'
     if change == 'item_source': invalid['items'][0]['source_id'] = 'q'
     if change == 'page': invalid['items'][0]['page_end'] = 3
-    if change == 'reversed': invalid['items'][0].update(page_start=2, page_end=1)
     if change == 'blank': invalid['items'][0]['text'] = ' '
     register(calls, provider, papers[0], invalid)
     with pytest.raises(Rejected): calls.extract_paper(papers[0])

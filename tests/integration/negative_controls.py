@@ -49,7 +49,7 @@ CASES = [
     ('extraction_attribution', 'schemas/extract_paper.json', '"author_claim",', '"P", "author_claim",', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[attribution]'),
     ('extraction_source', 'ara/runtime/calls.py', "require(data['source_id'] == paper.source_id,", 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[source]'),
     ('extraction_item_source', 'ara/runtime/calls.py', 'require(item.source_id == paper.source_id,', 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[item_source]'),
-    ('extraction_page_bounds', 'ara/runtime/calls.py', 'require(1 <= item.page_start <= item.page_end <= len(paper.pages),', 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[reversed]'),
+    ('extraction_page_bounds', 'ara/runtime/calls.py', 'require(1 <= item.page_start <= item.page_end <= len(paper.pages),', 'require(True,', 'tests/runtime/test_extraction_v5.py::test_reversed_pages_repaired_logged_and_out_of_bounds_refused'),
     ('extraction_pdf_pages', 'ara/runtime/extraction.py', "page.extract_text() or ''", "'R'", 'tests/runtime/test_extraction.py::test_page_text_and_immutable_contract'),
     ('extraction_sparse_image_detection', 'ara/runtime/extraction.py', 'if image_or_form and chars < 200:', 'if False:', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_fallback_marker', 'ara/runtime/extraction.py', "outcome = {**base, 'status': 'record only, not extracted'", "outcome = {**base, 'status': 'extracted'", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
@@ -87,7 +87,7 @@ CASES = [
     ('extraction_partial_methodology', 'ara/runtime/export.py', "for p in outcomes if p['status'] == 'partial'", "for p in outcomes if p['status'] == 'extracted'", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('rich_id_unique', 'ara/runtime/calls.py', "require(len(ids) == len(set(ids)), 'duplicate extraction id')", "require(True, 'duplicate extraction id')", 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[id]'),
     ('rich_endpoint', 'ara/runtime/calls.py', 'require(set(refs) <= available,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[endpoint]'),
-    ('rich_inference_origin', 'ara/runtime/calls.py', "item.inference_origin == 'paper_stated'", 'True', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[origin]'),
+    ('rich_inference_origin', 'ara/runtime/calls.py', "item.inference_origin in ('paper_stated', 'reconstructed')", 'True', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[origin]'),
     ('rich_coverage', 'ara/runtime/calls.py', "require(data['coverage_complete'] or (allow_incomplete and incomplete),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[coverage]'),
     ('rich_no_summary_cap', 'schemas/extract_paper.json', '"text": {\n            "type": "string",', '"text": {\n            "maxLength": 400,\n            "type": "string",', 'tests/runtime/test_extraction_rich.py::test_no_compact_summary_limit'),
     ('rich_range_reconciliation', 'ara/runtime/reconciliation.py', 'if len(ranges) == 1 and not obligations:', 'if not obligations:', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
@@ -145,7 +145,7 @@ CASES.append(('reconciliation_resolution_evidence', 'ara/runtime/calls.py', "req
 CASES += [
     ('kind_relation_wire', 'ara/runtime/providers.py', "edge_fields - set(fields)", "edge_fields - set(fields) - {'applies_to'}", 'tests/runtime/test_extraction_round3.py::test_extraction_wire_has_unambiguous_nodes'),
     ('extraction_grammar_size', 'ara/runtime/providers.py', 'branches.append(branch)', 'branches.extend([branch] * 4)', 'tests/runtime/test_extraction_round3b.py::test_extraction_grammar_size'),
-    ('nonzero_inference_acceptance', 'ara/runtime/calls.py', "require(any(item.kind == 'inference' for item in by_id.values()),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_refused_without_correction'),
+    ('nonzero_inference_acceptance', 'ara/runtime/calls.py', "require(any(item.kind == 'inference' for item in by_id.values()) or", 'require(True or', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_refused_without_correction'),
     ('targeted_inventory_retained', 'ara/runtime/calls.py', "[updates.pop(id, item) for id, item in old.items()]", '[]', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-inferences]'),
     ('targeted_unchanged_allowed', 'ara/runtime/calls.py', "old, updates = inventory(candidate), inventory(patch)", "old, updates = inventory(candidate), inventory(patch)\n    require(all(item != old.get(item['id']) for item in patch['items']), 'unchanged')", 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
     ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if correction == corrections:', "                if correction == corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
@@ -298,7 +298,7 @@ CASES += [
 
 CASES += [
     ('resume_acceptance_policy', 'ara/runtime/extraction.py',
-     "if not acceptance or outcome.get('acceptance_identity') != acceptance:", 'if False:',
+     "if not acceptance or (previous != acceptance and not compatible_v4):", 'if False:',
      'tests/runtime/test_resume_policy.py::test_changed_acceptance_matches_fresh_extraction'),
     ('resume_acceptance_model', 'ara/runtime/extraction.py',
      "'stage': {'model': stage['model'], 'effort': stage['effort'],", "'stage': {'model': None, 'effort': stage['effort'],",
@@ -394,6 +394,33 @@ CASES += [
     ('rejected_candidate_normalization', 'ara/runtime/calls.py',
      'changes = normalize_extraction(rejected)', 'changes = []',
      'tests/runtime/test_extraction_acceptance.py::test_rejected_null_inventory_recovers_within_correction_limit'),
+]
+
+CASES += [
+    ('v5_reversed_pages', 'ara/runtime/calls.py',
+     "if type(start) is int and type(end) is int and start > end:", 'if False:',
+     'tests/runtime/test_extraction_v5.py::test_reversed_pages_repaired_logged_and_out_of_bounds_refused'),
+    ('v5_duplicate_patch', 'ara/runtime/calls.py',
+     "changes += normalize_patch_ids(data, inputs['candidate'])", 'pass',
+     'tests/runtime/test_extraction_v5.py::test_duplicate_patch_retains_items_and_references'),
+    ('v5_third_correction', 'ara/runtime/calls.py',
+     'for correction in range(corrections + 1):', 'for correction in range(min(corrections, 2) + 1):',
+     'tests/runtime/test_extraction_v5.py::test_third_correction_preserves_inventory'),
+    ('v5_reuse_revalidation', 'ara/runtime/extraction.py',
+     '        revalidate_v4_graph(paper, outcome, acceptance)', '        pass',
+     'tests/runtime/test_extraction_v5.py::test_v4_graph_revalidated_offline[page]'),
+    ('v5_disposition_required', 'ara/runtime/calls.py',
+     "bool(data.get('no_inference_reason', '').strip()),", 'True,',
+     'tests/runtime/test_extraction_v5.py::test_no_inference_requires_explicit_disposition[None]'),
+]
+
+CASES += [
+    ('v5_duplicate_stability', 'ara/runtime/calls.py',
+     'if fresh not in patch_ids and fresh in previous and previous[fresh] == normalized:', 'if False:',
+     'tests/runtime/test_extraction_v5.py::test_duplicate_repair_is_stable_after_failed_patch'),
+    ('v5_duplicate_ambiguity', 'ara/runtime/calls.py',
+     'require(old not in referenced or item == first[old],', 'require(True,',
+     'tests/runtime/test_extraction_v5.py::test_ambiguous_duplicate_reference_is_not_guessed'),
 ]
 
 def main():

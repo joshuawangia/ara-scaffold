@@ -60,6 +60,65 @@ def normalize_extraction(data: dict) -> list[dict]:
     if 'empty_reason' in data and data['empty_reason'] in ('', None):
         del data['empty_reason']
         changes.append({'path': '/empty_reason', 'operation': 'remove_empty_optional'})
+    for index, item in enumerate(data.get('items', [])):
+        if not isinstance(item, dict):
+            continue
+        start, end = item.get('page_start'), item.get('page_end')
+        if type(start) is int and type(end) is int and start > end:
+            item['page_start'], item['page_end'] = end, start
+            changes.append({'path': f'/items/{index}', 'operation': 'order_page_range',
+                            'before': [start, end], 'after': [end, start]})
+    return changes
+
+
+def normalize_patch_ids(patch: dict, candidate: dict) -> list[dict]:
+    """Preserve duplicate items; never guess the referent of a distinct duplicate."""
+    items = patch.get('items')
+    if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
+        return []
+    prior = candidate.get('items', [])
+    prior = prior if isinstance(prior, list) else []
+    all_items = items + prior
+    if not all(isinstance(i, dict) and isinstance(i.get('id'), str) for i in all_items):
+        return []  # Schema/inventory validation supplies the specific feedback.
+    occupied = {i['id'] for i in all_items}
+    patch_ids = {i['id'] for i in items}
+    previous = {i['id']: i for i in prior}
+    referenced = set()
+    for item in all_items:
+        for field in ('premise_ids', 'qualification_ids', 'applies_to', 'evidence_ids'):
+            if isinstance(item.get(field), list):
+                referenced.update(r for r in item[field] if isinstance(r, str))
+        if isinstance(item.get('conclusion_id'), str):
+            referenced.add(item['conclusion_id'])
+    resolutions = patch.get('resolutions', [])
+    if isinstance(resolutions, list):
+        for resolution in resolutions:
+            if isinstance(resolution, dict) and isinstance(resolution.get('evidence_ids'), list):
+                referenced.update(r for r in resolution['evidence_ids'] if isinstance(r, str))
+    first, changes = {}, []
+    for index, item in enumerate(items):
+        old = item.get('id')
+        if not isinstance(old, str) or not old:
+            continue
+        if old not in first:
+            first[old] = item
+            continue
+        require(old not in referenced or item == first[old],
+                f'ambiguous duplicate correction id {old}; give each distinct item a unique id and explicit references')
+        serial = 2
+        fresh = f'{old}__duplicate_{serial}'
+        while fresh in occupied:
+            normalized = extraction_defaults({'items': [{**item, 'id': fresh}]})['items'][0]
+            if fresh not in patch_ids and fresh in previous and previous[fresh] == normalized:
+                break  # Replaying the same failed patch retains the same ID.
+            serial += 1
+            fresh = f'{old}__duplicate_{serial}'
+        item['id'] = fresh
+        occupied.add(fresh)
+        patch_ids.add(fresh)
+        changes.append({'path': f'/items/{index}/id', 'operation': 'rename_duplicate_id',
+                        'before': old, 'after': fresh, 'references': 'first_occurrence'})
     return changes
 
 
@@ -276,6 +335,8 @@ class ModelCalls:
                                 raise Rejected('invalid encoded formula JSON') from exc
                 if kind == 'extract_paper' and isinstance(data, dict):
                     changes = normalize_extraction(data)
+                    if inputs.get('mode') == 'targeted_correction':
+                        changes += normalize_patch_ids(data, inputs['candidate'])
                     if changes:
                         self.log.record('extraction_normalized', cache_key=key, changes=changes,
                                         source_id=inputs.get('source_id'), attempt=attempt)
@@ -381,8 +442,8 @@ class ModelCalls:
     def _extraction_response(self, paper, inputs, pages, prefix, existing=(),
                              allow_incomplete=False, validate_context=None):
         corrections = self.config.get('extraction_targeted_corrections')
-        if corrections is not None and (type(corrections) is not int or corrections not in (0, 1, 2)):
-            raise ValueError('extraction_targeted_corrections must be 0, 1 or 2')
+        if corrections is not None and (type(corrections) is not int or corrections not in (0, 1, 2, 3)):
+            raise ValueError('extraction_targeted_corrections must be 0, 1, 2 or 3')
         known = {item.id for item in existing}
         def check(data):
             require(data['source_id'] == paper.source_id, 'extraction source id mismatch')
@@ -416,16 +477,23 @@ class ModelCalls:
                 require(set(refs) <= available, 'extraction link has unknown endpoint')
                 if item.kind == 'inference':
                     require(bool(item.premise_ids) and bool(item.conclusion_id) and
-                            item.inference_origin == 'paper_stated', 'invalid stated inference')
+                            item.inference_origin in ('paper_stated', 'reconstructed'), 'invalid stated inference')
                 else:
                     require(not item.premise_ids and item.conclusion_id is None and
                             not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
                 require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
             by_id = {item.id: item for item in (*existing, *items)}
             if self.config.get('extraction_require_inference', False) and (
-                    inputs.get('mode') != 'reconcile_ranges' and not data['new_gaps'] and
+                    (inputs.get('mode') != 'reconcile_ranges' or inputs.get('paper_level')) and not data['new_gaps'] and
                     len(pages) == len(paper.readable_pages)):
-                require(any(item.kind == 'inference' for item in by_id.values()), 'extraction has no stated inference')
+                require(any(item.kind == 'inference' for item in by_id.values()) or
+                        bool(data.get('no_inference_reason', '').strip()),
+                        'extraction has no stated inference: add supported paper_stated or reconstructed links, '
+                        'or disclose no explicit inferential structure in no_inference_reason')
+            if data.get('no_inference_reason') is not None:
+                require(bool(data['no_inference_reason'].strip()), 'blank no-inference disposition')
+                require(not any(i.kind == 'inference' for i in by_id.values()),
+                        'no-inference disposition conflicts with inference evidence')
             for item in items:
                 if item.kind == 'inference':
                     require(all(by_id[id].kind != 'inference' for id in (*item.premise_ids, item.conclusion_id)),
@@ -457,6 +525,10 @@ class ModelCalls:
             ledger = [{**r, 'evidence_ids': [mapped(id) for id in r['evidence_ids']]} for r in resolutions]
             dispositions = ([dict(pages=[p.page for p in pages], reason=data['empty_reason'])]
                             if data.get('empty_reason') else [])
+            if data.get('no_inference_reason'):
+                dispositions.append(dict(pages=[p.page for p in pages],
+                                         kind='no_explicit_inferential_structure',
+                                         reason=data['no_inference_reason']))
             return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
                                    dispositions_json=canonical(dispositions)), data['new_gaps'], request
         if corrections is None:
@@ -480,6 +552,8 @@ class ModelCalls:
                     rejected = json.loads(exc.feedback['rejected_response'])
                     if isinstance(rejected, dict):
                         changes = normalize_extraction(rejected)
+                        if candidate is not None:
+                            changes += normalize_patch_ids(rejected, candidate)
                         if changes:
                             self.log.record('extraction_normalized', phase='correction_candidate',
                                             source_id=paper.source_id, attempt=correction + 1,
@@ -533,11 +607,25 @@ class ModelCalls:
         items, unresolved, resolutions = reconcile(self, paper, ranges, run)
         resolutions_json = canonical(resolutions)
         require(len({item.id for item in items}) == len(items), 'duplicate merged extraction id')
-        if (len(ranges) > 1 or unresolved) and self.config.get('extraction_require_inference', False):
-            require(any(item.kind == 'inference' for item in items), 'extraction has no stated inference')
+        dispositions = [d for r in ranges for d in json.loads(r.dispositions_json)]
+        if self.config.get('extraction_require_inference', False) and not any(i.kind == 'inference' for i in items):
+            covered = {p for d in dispositions if d.get('kind') == 'no_explicit_inferential_structure'
+                       for p in d['pages']}
+            if covered != {p.page for p in paper.readable_pages}:
+                # A paper-level review can add cross-range links or explicitly
+                # disclose absence. Full context is counted, never truncated.
+                inputs = {**paper.inputs(), 'mode': 'reconcile_ranges', 'paper_level': True,
+                          'ranges': [PaperExtraction(paper.source_id, items).to_dict()], 'obligations': []}
+                self.count_request('extract_paper', inputs, admission=True)
+                review, gaps, _ = run(inputs, paper.readable_pages, 'inference-review', existing=items)
+                require(not gaps, 'paper inference review has unresolved gaps')
+                items += review.items
+                dispositions.extend(json.loads(review.dispositions_json))
+                require(any(i.kind == 'inference' for i in items) or any(
+                    d.get('kind') == 'no_explicit_inferential_structure' for d in json.loads(review.dispositions_json)),
+                    'extraction has no stated inference or explicit no-inference disposition')
         result = PaperExtraction(paper.source_id, items, obligations_json=canonical(unresolved),
-                                 resolutions_json=resolutions_json, dispositions_json=canonical([
-                                     d for r in ranges for d in json.loads(r.dispositions_json)]))
+                                 resolutions_json=resolutions_json, dispositions_json=canonical(dispositions))
         self.log.record('extraction_graph_merged', source_id=paper.source_id, ranges=len(ranges),
                         items=len(items), graph_hash=digest(canonical(result.to_dict())))
         return result

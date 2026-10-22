@@ -1517,3 +1517,30 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   extraction regressions cover null recovery, exhaustion and unusable IDs.
   Production-wire controls exercise these boundaries. Wire schemas are unchanged,
   so this round requires offline comparison, not another paid schema gate.
+
+## M1 — Relaxed paper acceptance with preserved evidence
+
+Acceptance v5 admits disclosed reconstructed inference links. Inference coverage
+is a paper-level requirement: zero-link papers require an explicit source-based
+no-inference disposition covering all readable pages. Ranges have no link quota;
+a counted whole-paper review obtains missing links or the disposition when needed.
+Full evidence must fit that review; context overflow refuses rather than truncates.
+Dispositions and origins remain in the immutable graph supplied downstream.
+
+Reversed physical page endpoints are ordered and logged before validation; bounds
+and unread-page checks still apply. Correction patches may rename repeated IDs
+stably without deleting items. Identical repeated definitions keep references to
+the first occurrence. A reference to distinct repeated definitions is ambiguous
+and refuses rather than guessing. Three targeted corrections are permitted; all
+responses and normalizations retain native accounting and original receipts.
+
+The exact reviewed v4 prompt/schema identity may migrate offline under the same
+source and extraction profile. Schema, graph references, attribution, physical
+citations and obligation closure are revalidated, original outcomes remain v4,
+and a separate migration receipt records the v5 check. Unknown identities still
+require extraction. This is structural validation, not proof of semantic fidelity.
+
+The offline replay tool explicitly inventories imported grammar-only receipts
+and missing provider bodies instead of crashing or treating them as paper graphs.
+Production PDF extraction stays unchanged: the separately pinned comparison did
+not demonstrate that a replacement improves the affected source passages.

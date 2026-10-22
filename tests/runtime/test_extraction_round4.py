@@ -31,7 +31,7 @@ def test_full_profile_refuses_unset_caps_before_provider(rig, capsys):
     assert profile['stages']['extraction']['model'] == 'claude-opus-5'
     assert profile['stages']['extraction']['fallbacks'] == []
     assert profile['extraction_require_inference'] is True
-    assert profile['extraction_targeted_corrections'] == 2
+    assert profile['extraction_targeted_corrections'] == 3
     assert all(profile[k] is None for k in ('token_cap', 'cost_cap_usd', 'extraction_cost_cap_usd'))
 
 

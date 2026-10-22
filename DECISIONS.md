@@ -1644,7 +1644,7 @@ second resume preserve original identities, item bodies and receipts. Current
 usage text permits paper-stated or reconstructed links; neither licenses an
 engine step. No prompt/schema or grounding-threshold change is made this round.
 
-## Search trace receipts
+## Search trace receipts (version 1, superseded below)
 
 The engine now emits versioned `search_trace` SYSTEM events through its existing
 EventSink: begin, queued state with parent and graph/depth snapshot, visit,
@@ -1673,3 +1673,30 @@ Current source files cannot establish a historic run's revision. Artifacts have
 separate trust labels and cannot override chain records. Existing tail checkpoints
 are checked read-only; missing anchors/origins are visible limits, not silent
 verification passes. A mismatched available receipt refuses report generation.
+
+
+## Search trace version 2 and report validation
+
+Round-two review found full graph snapshots amplified the native event writer's
+prefix verification cost. The engine now depends on a filesystem-free trace port;
+native orchestration supplies append-only per-search JSONL sidecars. Content-addressed
+formula, text and proposal definitions accompany node and state deltas. Only completed
+routes contain full graphs in the trace. The existing non-trace route artifacts and
+analysis contract remain unchanged. Each successful search writes one chained receipt
+with relative path, count and SHA-256 after flushing and fsyncing its sidecar. Exceptions
+leave unsealed partial files. Chain verification is unchanged.
+
+The offline reader authenticates sidecars before interpreting them. Completeness also
+requires supported versions, root/state/node inventories, acyclic recorded parents,
+resolved references and terminal route coverage. Legacy receipts stay visible with
+validation gaps. State history rendering is iterative and uses explicit links so proof
+depth does not bound or overflow state-history rendering. Final proof trees retain their
+nested presentation. Original engine decisions remain in the chained appendix; version-2
+sidecars carry explicit branch reasons rather than inferred decision associations.
+
+Every available direct origin is pinned and compared before walking its ancestry.
+Unavailable transitive ancestors reduce only that scope of verification. Measured
+charges require the explicit actual marker; missing/future markers stay unclassified
+with their costs, tokens and timeline entries. Unfinalized measured response receipts
+remain separate from finalized MODEL charges. Benchmark tooling uses the real EventLog,
+all five placeholder cap-scale scenarios, and a read-only base-engine differential.

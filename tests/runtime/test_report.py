@@ -233,3 +233,76 @@ def test_imported_evidence_and_literature_projection_keep_source_counts(tmp_path
     assert len(run['construction']['commitments'][0]['source_evidence']) == 2
     assert run['construction']['by_source'] == {'paper-p': 1}
     assert run['construction']['by_kind'] == {'claim': 1}
+
+
+def test_missing_ancestor_does_not_hide_available_origin_mismatch(tmp_path):
+    a = EventLog(tmp_path/'a/events.jsonl')
+    call(a, 1)
+    b = EventLog(tmp_path/'b/events.jsonl')
+    import_receipts(b, tuple(a.read()), checkpoint(a.path))
+    call(b, 2)
+    c = EventLog(tmp_path/'c/events.jsonl')
+    import_receipts(c, tuple(b.read()), checkpoint(b.path))
+    a.path.unlink()
+    run = build_run(c.path.parent)
+    assert run['accounting']['measured']['cost_usd'] == 3
+    warnings = [g for g in run['gaps'] if 'Origin unavailable' in g]
+    assert len(warnings) == 1 and str(a.path) in warnings[0] and str(b.path) not in warnings[0]
+    events = c.read()
+    c.path.unlink()
+    c.anchor.unlink()
+    for event in events:
+        if event['cost_usd'] == 2:
+            event['cost_usd'] = 102
+        c.emit(RunEvent.from_dict(event))
+    with pytest.raises(ValueError, match='import does not match pinned events'):
+        build_run(c.path.parent)
+
+
+@pytest.mark.parametrize('marker', [None, 'future'])
+def test_unclassified_incomplete_receipts_are_not_measured(tmp_path, marker):
+    log = EventLog(tmp_path/'run/events.jsonl')
+    data = dict(status='incomplete', cache_hit=False)
+    if marker is not None:
+        data['accounting'] = marker
+    log.emit(RunEvent('2026-01-01T00:00:01Z', 'extract_paper', 'MODEL', cost_usd=3,
+                      usage=TokenUsage(input_tokens=7), payload_json=canonical(data)))
+    run = build_run(log.path.parent)
+    a = run['accounting']
+    assert a['measured']['cost_usd'] == 0
+    assert a['unclassified']['cost_usd'] == 3
+    assert a['unclassified']['tokens']['input_tokens'] == 7
+    assert a['timeline'][0]['classification'] == 'unclassified'
+    assert a['timeline'][0]['unclassified_cumulative_usd'] == 3
+    assert a['timeline'][0]['recorded_accounting'] == marker
+    assert any('unclassified' in g.lower() for g in run['gaps'])
+
+
+@pytest.mark.parametrize('fault', ['empty', 'version', 'orphan', 'cycle', 'duplicate', 'terminal', 'target', 'reason'])
+def test_invalid_trace_is_partial_and_still_renders(tmp_path, fault, monkeypatch):
+    import ara.runtime.report_render as rendering
+    monkeypatch.setattr(rendering.shutil, 'which', lambda _: None)
+    log = fixture(tmp_path/'run')
+    rows = [dict(action='begin', target={'id': 'P'}),
+            dict(action='state', state_id=0, parent_state_id=None, transition='root'),
+            dict(action='state', state_id=1, parent_state_id=0, transition='block', reason='P'),
+            dict(action='end', routes=['P'])]
+    if fault == 'empty': rows = [rows[0], rows[-1]]
+    if fault == 'orphan': rows[2]['parent_state_id'] = 99
+    if fault == 'cycle': rows[2]['parent_state_id'] = 1
+    if fault == 'duplicate': rows[2]['state_id'] = 0
+    if fault == 'target': rows[0]['target'] = 'P'
+    if fault == 'reason': rows.insert(-1, dict(action='prune', state_id=1))
+    for row in rows:
+        log.record('search_trace', version=99 if fault == 'version' else 1, search_id='P', **row)
+    generate_report([log.path.parent], tmp_path/'out')
+    run = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]
+    assert not run['search']['traces'][0]['complete']
+    assert any('PARTIAL SEARCH TRACE' in g for g in run['gaps'])
+    assert len(run['search']['traces'][0]['receipts']) == len(rows)
+    expected = {'empty': 'root state inventory', 'version': 'unsupported trace version',
+                'orphan': 'state parent absent', 'cycle': 'state parent absent',
+                'duplicate': 'duplicate state ID', 'terminal': 'terminal state completion coverage',
+                'target': 'invalid target inventory'}
+    if fault in expected:
+        assert any(expected[fault] in issue for issue in run['search']['traces'][0]['issues'])

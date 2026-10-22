@@ -27,6 +27,23 @@ class TraceRecorder:
             self.sink.record('definition', kind=kind, ref=ref, value=value)
         return ref
 
+    def proposal_ref(self, proposal):
+        value = dict(bank_id=proposal.bank_id,
+                     conclusion_text_id=self.define('text', proposal.conclusion_text),
+                     premises=[dict(slot=p.slot, text_id=self.define('text', p.text),
+                                    t_id=p.t_id, scope_id=p.scope_id) for p in proposal.premises])
+        return self.define('proposal', value)
+
+    def graph(self, graph):
+        result = graph.to_dict()
+        for node, encoded_node in zip(graph.nodes, result['nodes']):
+            encoded_node['proposition'] = dict(id=node.proposition.id,
+                formula_id=self.define('formula', node.proposition.formula.to_dict()),
+                text_id=self.define('text', node.proposition.text))
+            del encoded_node['proposal']
+            encoded_node['proposal_id'] = self.proposal_ref(node.proposal) if node.proposal else None
+        return result
+
     def __call__(self, action, **data):
         if self.sink is None:
             return
@@ -45,14 +62,10 @@ class TraceRecorder:
                         text_id=self.define('text', node.proposition.text),
                         status='closed' if node.t_id != 'open' or node.kind == 'assumption' else 'open')
         elif action == 'proposal':
-            proposal = data.pop('proposal')
-            value = dict(bank_id=proposal.bank_id,
-                         conclusion_text_id=self.define('text', proposal.conclusion_text),
-                         premises=[dict(slot=p.slot, text_id=self.define('text', p.text),
-                                        t_id=p.t_id, scope_id=p.scope_id) for p in proposal.premises])
-            data['proposal_id'] = self.define('proposal', value)
+            data['proposal_id'] = self.proposal_ref(data.pop('proposal'))
         elif action == 'complete':
-            data['graph'] = data['graph'].to_dict()
+            data['graph'] = self.graph(data['graph'])
+            data['graph_encoding'] = 'references-v1'
             data['status'] = 'route'
         elif action == 'prune':
             data['status'] = 'pruned'

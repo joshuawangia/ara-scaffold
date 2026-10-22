@@ -17,6 +17,25 @@ def new_trace(begin_seq, data, authenticated=True, source=None):
                 complete=False, authenticated=authenticated, source=source, issues=[])
 
 
+def expand_graph(graph, reference):
+    """Resolve an explicitly complete graph; never infer missing state history."""
+    def proposal(ref):
+        if ref is None:
+            return None
+        value = reference('proposal', ref)
+        return dict(bank_id=value['bank_id'], conclusion_text=reference('text', value['conclusion_text_id']),
+                    premises=[dict(slot=p['slot'], text=reference('text', p['text_id']),
+                                   t_id=p['t_id'], scope_id=p['scope_id']) for p in value['premises']])
+    nodes = []
+    for node in graph['nodes']:
+        p = node['proposition']
+        nodes.append({**{k: v for k, v in node.items() if k != 'proposal_id'},
+                      'proposition': dict(id=p['id'], text=reference('text', p['text_id']),
+                                          formula=reference('formula', p['formula_id'])),
+                      'proposal': proposal(node['proposal_id'])})
+    return {**graph, 'nodes': nodes}
+
+
 def validate_trace(trace):
     rows = [r['payload'] for r in trace['receipts']]
     issues = trace['issues']
@@ -57,7 +76,37 @@ def validate_trace(trace):
             issue('blocked state lacks reason')
     if roots != [0] or not states:
         issue('root state inventory must contain exactly state 0')
+    definitions = {}
+    if version == 2:
+        for row in rows:
+            action = row.get('action')
+            if action == 'definition':
+                key = (row.get('kind'), row.get('ref'))
+                if any(not isinstance(v, str) for v in key):
+                    issue('invalid definition reference')
+                    continue
+                if key in definitions or row['ref'] != digest(canonical(row.get('value'))):
+                    issue('duplicate or invalid content-addressed definition')
+                definitions[key] = row.get('value')
+    def reference(kind, ref):
+        if not isinstance(ref, str) or (kind, ref) not in definitions:
+            issue('unresolved ' + kind + ' reference')
+            return None
+        return definitions[kind, ref]
+
     terminals = [r for r in rows if r.get('action') == 'complete']
+    if version == 2:
+        expanded = []
+        for row in terminals:
+            try:
+                if row.get('graph_encoding') != 'references-v1':
+                    raise ValueError('unsupported terminal graph encoding')
+                expanded.append({**row, 'graph': expand_graph(row['graph'], reference)})
+            except (KeyError, TypeError, ValueError, AttributeError):
+                issue('invalid terminal graph fields or references')
+                expanded.append(row)
+        terminals = expanded
+    trace['completed_routes'] = terminals
     terminal_states = [r.get('state_id') for r in terminals]
     if any(type(s) is not int for s in terminal_states):
         issue('invalid completion state ID')
@@ -107,7 +156,7 @@ def validate_trace(trace):
         issue('declared routes differ from completed routes')
 
     if version == 2:
-        definitions, nodes, proposals = {}, {}, {}
+        nodes, proposals = {}, {}
         for row in rows:
             action = row.get('action')
             if action == 'state' and row.get('status') != ('blocked' if row.get('transition') == 'block' else 'open'):
@@ -118,15 +167,7 @@ def validate_trace(trace):
                 issue('prune lacks pruned status')
             if action not in ('begin', 'definition', 'node', 'proposal', 'state', 'visit', 'expand', 'prune', 'complete', 'end'):
                 issue('unsupported trace action')
-            if action == 'definition':
-                key = (row.get('kind'), row.get('ref'))
-                if any(not isinstance(v, str) for v in key):
-                    issue('invalid definition reference')
-                    continue
-                if key in definitions or row['ref'] != digest(canonical(row.get('value'))):
-                    issue('duplicate or invalid content-addressed definition')
-                definitions[key] = row.get('value')
-            elif action == 'node':
+            if action == 'node':
                 nid = row.get('node_id')
                 if not isinstance(nid, str) or nid in nodes:
                     issue('duplicate or invalid proof node ID')
@@ -145,11 +186,6 @@ def validate_trace(trace):
                     issue('duplicate or invalid proposal identity')
                 else:
                     proposals[key] = row
-        def reference(kind, ref):
-            if not isinstance(ref, str) or (kind, ref) not in definitions:
-                issue('unresolved ' + kind + ' reference')
-                return None
-            return definitions[kind, ref]
         for node in nodes.values():
             reference('formula', node.get('formula_id'))
             reference('text', node.get('text_id'))
@@ -165,11 +201,15 @@ def validate_trace(trace):
             action = row.get('action')
             if action in ('visit', 'expand', 'proposal', 'prune') and row.get('state_id') not in states:
                 issue('transition references an absent state')
+            if action in ('expand', 'proposal', 'prune') and row.get('node_id') not in nodes:
+                issue('transition references an absent proof node')
             if action == 'proposal':
                 reference('proposal', row.get('proposal_id'))
             if action == 'prune' and ((row.get('state_id'), row.get('proposal_index')) not in proposals or not row.get('reason')):
                 issue('prune lacks a recorded proposal or reason')
         for state in states.values():
+            if state.get('transition') != 'root' and state.get('node_id') not in nodes:
+                issue('state delta references an absent proof node')
             if state.get('transition') == 'inference':
                 candidate = proposals.get((state.get('parent_state_id'), state.get('proposal_index')))
                 if candidate is None or state.get('node_id') not in nodes or any(n not in nodes for n in state.get('children', [])):

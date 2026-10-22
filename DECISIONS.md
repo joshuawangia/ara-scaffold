@@ -1700,3 +1700,9 @@ charges require the explicit actual marker; missing/future markers stay unclassi
 with their costs, tokens and timeline entries. Unfinalized measured response receipts
 remain separate from finalized MODEL charges. Benchmark tooling uses the real EventLog,
 all five placeholder cap-scale scenarios, and a read-only base-engine differential.
+
+Completed trace graphs retain every node and edge, with proposition and proposal
+payloads referenced through the same interned definitions as state deltas. The
+report resolves those references only after authentication and preserves the raw
+receipts alongside the expanded terminal graphs. This keeps long repeated premise
+text from multiplying across alternative routes; it does not omit any route.

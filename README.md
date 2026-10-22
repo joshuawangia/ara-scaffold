@@ -533,3 +533,9 @@ identify only the unavailable path and scope. Current non-trace route artifacts 
 analysis persistence remain unchanged; the once-per-route rule applies to tracing.
 Run code revisions, source-page mappings, route summaries and audit associations
 are not guessed when absent.
+
+Completed trace graphs retain every node and edge, with proposition and proposal
+payloads referenced through the same interned definitions as state deltas. The
+report resolves those references only after authentication and preserves the raw
+receipts alongside the expanded terminal graphs. This keeps long repeated premise
+text from multiplying across alternative routes; it does not omit any route.

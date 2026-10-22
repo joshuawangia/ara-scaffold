@@ -506,15 +506,30 @@ unauthenticated unless matched to logged evidence; no artifact overrides the log
 
 Combined accounting deduplicates identical original receipts across input runs.
 Per-run local and inherited totals remain separate. Measured usage and unknown
-actual usage charged at reservation are separate in every grouping and timeline;
-only the explicitly named budget-accounted column combines them. Unresolved
+actual usage charged at reservation are separate in every grouping and timeline.
+Only `accounting="actual"` is measured; missing/future markers retain their cost
+and tokens in an unclassified bucket with a gap. The explicitly named
+budget-accounted column combines all recorded charges. Unresolved
 dispatches and unattributed paper calls remain visible. Extraction history is not
 silently substituted for an unattempted paper in the latest batch.
 
 Old logs provide final proof graphs, not a faithful search-state tree. Reports
 retain those graphs and unassigned engine decisions while declaring the missing
-ancestry/prune context. Version-1 `search_trace` receipts enable nested alternative
-states, proposal rejection reasons, state depths, commitments, and terminal route
-links for each search and its negation. A trace without an end receipt is partial.
+ancestry/prune context. Legacy version-1 traces remain readable. Native version-2
+searches write append-only `search-traces/*.jsonl` sidecars containing state/node
+deltas, interned formula/text/proposal references, and one full graph per completed
+route. One final chained receipt seals each search with path, line count and SHA-256.
+The report verifies the seal before interpreting content, then checks versions,
+references, ancestry, root inventories and terminal coverage. A missing, unsealed,
+unsupported or inconsistent trace is partial; a mismatched seal refuses the report.
+State history uses bounded collapsible blocks with explicit parent/child links;
+proof trees remain nested. Original ENGINE decisions stay in the chained appendix.
+
+Copy `search-traces/` with `events.jsonl` and its checkpoint when relocating runs.
+Imported seals can use their recorded origin path when the sidecar is not local;
+an unavailable sidecar is an explicit gap. Available immediate origin prefixes and
+copied receipts are checked even when a more distant ancestor is missing. Warnings
+identify only the unavailable path and scope. Current non-trace route artifacts and
+analysis persistence remain unchanged; the once-per-route rule applies to tracing.
 Run code revisions, source-page mappings, route summaries and audit associations
-are not guessed when absent. Trace logging is a separate additive commit.
+are not guessed when absent.

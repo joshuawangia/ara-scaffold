@@ -37,24 +37,24 @@ def node_title(node, depth):
 
 def route_html(graph):
     nodes = {n['id']: n for n in graph['nodes']}
-    def visit(nid, depth=0, ancestors=frozenset()):
-        if nid in ancestors:
-            return '<p>Cycle reference: ' + escape(nid) + '</p>'
-        if nid not in nodes:
-            return '<p>Missing node: ' + escape(nid) + '</p>'
-        node = nodes[nid]
-        return details(node_title(node, depth), pre(node) + ''.join(
-            visit(child, depth + 1, ancestors | {nid}) for child in node.get('children', [])), depth < 1)
-    reachable = set()
-    stack = [graph['root_id']]
+    pieces, visited = [], set()
+    stack = [('node', graph['root_id'], 0)]
     while stack:
-        nid = stack.pop()
-        if nid in reachable or nid not in nodes:
+        action, nid, depth = stack.pop()
+        if action == 'close':
+            pieces.append('</details>')
             continue
-        reachable.add(nid)
-        stack.extend(nodes[nid].get('children', []))
-    return visit(graph['root_id']) + ''.join(details('Unreachable recorded node ' + nid, pre(node))
-                                            for nid, node in nodes.items() if nid not in reachable)
+        if nid in visited or nid not in nodes:
+            pieces.append('<p>Repeated or missing node reference: ' + escape(nid) + '</p>')
+            continue
+        visited.add(nid)
+        node = nodes[nid]
+        pieces.append('<details' + (' open' if depth == 0 else '') + '><summary>' +
+                      escape(node_title(node, depth)) + '</summary>' + pre(node))
+        stack.append(('close', nid, depth))
+        stack.extend(('node', child, depth + 1) for child in reversed(node.get('children', [])))
+    pieces.extend(details('Unreachable recorded node ' + nid, pre(node)) for nid, node in nodes.items() if nid not in visited)
+    return ''.join(pieces)
 
 
 def route_dot(graph):
@@ -79,39 +79,61 @@ def route_dot(graph):
 
 
 def trace_dot(trace):
-    ids = {s['state_id']: f's{i}' for i, s in enumerate(trace['states'])}
+    states = [s for s in trace['states'] if type(s.get('state_id')) is int]
+    ids = {s['state_id']: f's{i}' for i, s in enumerate(states)}
     lines = ['digraph search {', 'rankdir=TB;', 'node [shape=box];']
-    for state in trace['states']:
-        label = f"state {state['state_id']}\n{state['transition']}\n{state.get('reason', '')}"
+    for state in states:
+        label = f"state {state['state_id']}\n{state.get('transition')}\n{state.get('reason', '')}"
         lines.append(f'{ids[state["state_id"]]} [label={json.dumps(label, ensure_ascii=False)}];')
-        parent = state['parent_state_id']
-        if parent in ids:
-            step = state.get('bank_id') or state.get('reason') or state['transition']
+        parent = state.get('parent_state_id')
+        if type(parent) is int and parent in ids:
+            step = state.get('bank_id') or state.get('reason') or state.get('transition', 'unknown')
             lines.append(f'{ids[parent]} -> {ids[state["state_id"]]} [label={json.dumps(step, ensure_ascii=False)}];')
     for index, receipt in enumerate(trace['receipts']):
         p = receipt['payload']
-        if p['action'] in ('prune', 'complete') and p.get('state_id') in ids:
-            lines.append(f'p{index} [label={json.dumps(p["reason"], ensure_ascii=False)},shape=ellipse];')
+        if p.get('action') in ('prune', 'complete') and type(p.get('state_id')) is int and p['state_id'] in ids:
+            lines.append(f'p{index} [label={json.dumps(p.get("reason", "missing reason"), ensure_ascii=False)},shape=ellipse];')
             lines.append(f'{ids[p["state_id"]]} -> p{index};')
     return '\n'.join(lines + ['}']) + '\n'
 
 
-def trace_html(trace):
-    children = {}
+def trace_html(trace, anchor_prefix='trace'):
+    """One collapsible block per state with explicit links; no recursive history."""
+    from collections import defaultdict
+    receipts, decisions, children = defaultdict(list), defaultdict(list), defaultdict(list)
+    for receipt in trace['receipts']:
+        state = receipt['payload'].get('state_id')
+        if type(state) is int and receipt['payload'].get('action') != 'state':
+            receipts[state].append(receipt)
+    for decision in trace['decisions']:
+        state = decision['context'].get('state_id')
+        if type(state) is int:
+            decisions[state].append(decision)
     for state in trace['states']:
-        children.setdefault(state['parent_state_id'], []).append(state)
-    def visit(state, ancestors=frozenset()):
-        sid = state['state_id']
-        if sid in ancestors:
-            return '<p>Cycle in recorded state ancestry.</p>'
-        receipts = [r for r in trace['receipts'] if r['payload'].get('state_id') == sid and r['payload']['action'] != 'state']
-        decisions = [r for r in trace['decisions'] if r['context'].get('state_id') == sid]
-        title = f"State {sid} ← {state['parent_state_id']} · {state['transition']} · {state.get('bank_id') or state.get('reason', '')}"
-        body = pre({k: v for k, v in state.items() if k != 'graph'})
-        body += route_html(state['graph']) + details('Branch receipts and decisions', pre(receipts + decisions))
-        body += ''.join(visit(child, ancestors | {sid}) for child in children.get(sid, []))
-        return details(title, body, state['parent_state_id'] is None)
-    return ''.join(visit(state) for state in children.get(None, []))
+        parent = state.get('parent_state_id')
+        if type(parent) is int:
+            children[parent].append(state.get('state_id'))
+    def link(sid):
+        return '<a href="#' + anchor_prefix + '-state-' + escape(str(sid), quote=True) + '">' + escape(str(sid)) + '</a>'
+    pieces = ['<p>State history is shown in recorded order. Parent and child links retain ancestry without deeply nesting the page.</p>']
+    for index, state in enumerate(trace['states']):
+        sid, parent = state.get('state_id'), state.get('parent_state_id')
+        title = f"State {sid} ← {parent} · {state.get('transition')} · {state.get('bank_id') or state.get('reason', '')}"
+        pieces.append('<div id="' + anchor_prefix + '-state-' + escape(str(sid), quote=True) + '">')
+        body = '<p>Parent: ' + (link(parent) if parent is not None else 'root') + '</p>'
+        if type(sid) is int:
+            body += '<p>Children: ' + ', '.join(link(child) for child in children[sid]) + '</p>'
+        body += pre({k: v for k, v in state.items() if k != 'graph'})
+        if type(sid) is int:
+            for receipt in receipts[sid]:
+                terminal = receipt['payload'].get('graph')
+                if terminal and not trace.get('issues'):
+                    body += route_html(terminal)
+            body += details('Branch receipts and decisions', pre(receipts[sid] + decisions[sid]))
+        pieces.append(details(title, body, index == 0) + '</div>')
+    if trace.get('issues'):
+        pieces.append(details('Trace gaps and retained receipts', pre(dict(issues=trace['issues'], receipts=trace['receipts']))))
+    return ''.join(pieces)
 
 
 def graph_export(source, stem, destination, graphviz):
@@ -172,12 +194,12 @@ def render(report, destination: Path):
         html.extend('<p class="gap">' + escape(g) + '</p>' for g in run['gaps'])
         section('1. Run identity', run['identity'], prefix + '-identity')
         ex = run['extraction']
-        table = '<table><thead><tr><th>Paper</th><th>Status</th><th>Pages</th><th>Items</th><th>Measured USD</th><th>Reserved unknown USD</th></tr></thead><tbody>'
+        table = '<table><thead><tr><th>Paper</th><th>Status</th><th>Pages</th><th>Items</th><th>Measured USD</th><th>Reserved unknown USD</th><th>Unclassified USD</th></tr></thead><tbody>'
         for paper in ex['papers']:
             outcome = paper['outcome'] or {}
             cells = [paper['source_id'], paper['status'], outcome.get('pages', 'unknown'),
                      sum(paper['item_counts_by_kind'].values()), paper['accounting']['measured']['cost_usd'],
-                     paper['accounting']['unknown_at_reservation']['cost_usd']]
+                     paper['accounting']['unknown_at_reservation']['cost_usd'], paper['accounting']['unclassified']['cost_usd']]
             table += '<tr>' + ''.join('<td>' + escape(str(v)) + '</td>' for v in cells) + '</tr>'
         table += '</tbody></table>'
         table += ''.join(details(p['source_id'] + ' · ' + p['status'], pre(p)) for p in ex['papers'])
@@ -188,7 +210,11 @@ def render(report, destination: Path):
         for ti, trace in enumerate(run['search']['traces']):
             export, svg = graph_export(trace_dot(trace), f'{prefix}-search-{ti}', destination, graphviz)
             trees.append(dict(kind='search', begin_seq=trace['begin_seq'], **export))
-            body += details(f"Search {trace['target']['id']} · {trace['search_id']} · {'complete' if trace['complete'] else 'interrupted'}", trace_html(trace) + svg)
+            target = trace['target']
+            target_id = target.get('id', '(unknown)') if isinstance(target, dict) else '(invalid target)'
+            status = 'complete' if trace['complete'] else 'partial'
+            body += details(f"Search {target_id} · {trace['search_id']} · {status}",
+                            trace_html(trace, f'{prefix}-search-{ti}') + svg)
         for ri, route in enumerate(run['routes']):
             graph = route['graph']
             export, svg = graph_export(route_dot(graph), f'{prefix}-route-{ri}', destination, graphviz)

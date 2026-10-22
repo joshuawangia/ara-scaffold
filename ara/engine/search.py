@@ -4,17 +4,17 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import hashlib
 import heapq
-import json
-from datetime import datetime, timezone
+from contextlib import nullcontext
 import random
 from typing import Mapping, TYPE_CHECKING
 
 from ara.bank import Bank
-from ara.ports import CQAnswerer, CutProposer, EventSink, Formaliser, LeafMapper, Tier1Repairer
-from ara.types import CommitmentSet, ProofScope, Proposal, Proposition, Record, RouteGraph, RouteNode, RunEvent
+from ara.ports import CQAnswerer, CutProposer, EventSink, Formaliser, LeafMapper, Tier1Repairer, SearchTraceFactory
+from ara.types import CommitmentSet, ProofScope, Proposal, Proposition, Record, RouteGraph, RouteNode
 from ara.engine.licensing import Licenser, License, emit
 from ara.engine.routes import cq_supported, dialectical_cost, finish, independent_count
 from ara.engine.terminus import check_terminus, is_terminus
+from ara.engine.tracing import TraceRecorder
 
 if TYPE_CHECKING:
     from ara.engine.conflicts import AnalysisResult
@@ -59,13 +59,15 @@ class _State:
 class Engine:
     def __init__(self, bank: Bank, commitments: CommitmentSet, proposer: CutProposer,
                  formaliser: Formaliser, leaf_mapper: LeafMapper, cq_answerer: CQAnswerer,
-                 repairer: Tier1Repairer, sink: EventSink, config: EngineConfig | None = None):
+                 repairer: Tier1Repairer, sink: EventSink, config: EngineConfig | None = None,
+                 traces: SearchTraceFactory | None = None):
         self.bank, self.commitments, self.proposer = bank, commitments, proposer
         self.formaliser, self.leaf_mapper, self.cq_answerer = formaliser, leaf_mapper, cq_answerer
         self.repairer, self.sink, self.config = repairer, sink, config or EngineConfig()
         self.licenser = Licenser(bank, formaliser, sink, self.config.solver_timeout_ms)
         self._licenses: list[tuple[Proposal, License]] = []
         self._search_serial = 0
+        self.traces = traces
 
     def _leaf(self, node_id: str, p: Proposition, t_id: str, context) -> RouteNode:
         p = replace(p, id=node_id)
@@ -85,13 +87,15 @@ class Engine:
         search_id = f'{prefix}:{self._search_serial}'
         self._search_serial += 1
 
-        def trace(action, **payload):
-            self.sink.emit(RunEvent(datetime.now(timezone.utc).isoformat(), 'search_trace', 'SYSTEM',
-                                   payload_json=json.dumps(dict(version=1, search_id=search_id,
-                                                                action=action, **payload))))
+        context = self.traces.open_search(search_id) if self.traces else nullcontext(None)
+        with context as sink:
+            return self._search(target, prefix, search_id, TraceRecorder(sink))
 
-        trace('begin', target=target.to_dict(), config=self.config.to_dict())
+    def _search(self, target, prefix, search_id, trace):
+        trace('begin', search_id=search_id, target=target, config=self.config.to_dict(),
+              bank_version=self.bank.bank_version)
         root = self._leaf('n0', target, 'open', ())
+        trace('node', node=root, parent_node_id=None, depth=0)
         graph = RouteGraph(prefix, root.id, (root,))
         queue, completed = [], []
         rng = random.Random(self.config.seed)
@@ -100,7 +104,7 @@ class Engine:
         def push(state: _State, parent=None, action="root", **edge):
             nonlocal serial
             trace('state', state_id=serial, parent_state_id=parent, transition=action,
-                  graph=state.graph.to_dict(), depths=state.depths, blocked=sorted(state.blocked), **edge)
+                  status='blocked' if action == 'block' else 'open', **edge)
             cost = dialectical_cost(state.graph.nodes, self.commitments)
             heapq.heappush(queue, (float('inf') if cost is None else cost, rng.random(), serial, state))
             serial += 1
@@ -113,7 +117,7 @@ class Engine:
                           and not is_terminus(n.proposition, n.t_id, self.commitments)]
             if not candidates:
                 completed.append(finish(replace(state.graph, id=f'{prefix}:r{len(completed)}'), self.commitments, self.bank))
-                trace('complete', state_id=state_id, graph=completed[-1].to_dict(),
+                trace('complete', state_id=state_id, graph=completed[-1],
                       reason='ROUTE_' + completed[-1].status)
                 continue
             node = candidates[0]
@@ -134,7 +138,7 @@ class Engine:
             produced, seen = False, set()
             for proposal_index, proposal in enumerate(proposals):
                 trace('proposal', state_id=state_id, node_id=node.id,
-                      proposal_index=proposal_index, proposal=proposal.to_dict())
+                      proposal_index=proposal_index, proposal=proposal)
                 if proposal.to_json() in seen:
                     emit(self.sink, 'discarded', 'DUPLICATE_PROPOSAL', bank_id=proposal.bank_id, node_id=node.id)
                     trace('prune', state_id=state_id, node_id=node.id, proposal_index=proposal_index,
@@ -176,6 +180,7 @@ class Engine:
                     children.append(self._leaf(nid, p, fills[p.id].t_id, context))
                     contexts[nid] = context
                     depths[nid] = state.depths[node.id] + 1
+                    trace('node', node=children[-1], parent_node_id=node.id, depth=depths[nid])
                     ancestors[nid] = state.ancestors[node.id] + (node.proposition.formula.canonical(),)
                 answers = tuple(self.cq_answerer.answer_cq(q, proposal, self.commitments)
                                 for q in entry.critical_questions)
@@ -187,7 +192,11 @@ class Engine:
                                     children=tuple(c.id for c in children), cq_answers=answers)
                 nodes = tuple(inference if n.id == node.id else n for n in state.graph.nodes) + tuple(children)
                 push(_State(replace(state.graph, nodes=nodes, scopes=tuple(scopes)), depths, contexts, ancestors, state.blocked),
-                     state_id, 'inference', node_id=node.id, proposal_index=proposal_index, bank_id=entry.id)
+                     state_id, 'inference', node_id=node.id, proposal_index=proposal_index, bank_id=entry.id,
+                     children=[c.id for c in children], commitment_ids=sorted({c.t_id for c in children if c.t_id != 'open'} |
+                         {tid for a in answers for tid in a.supporting_t_ids}),
+                     cq_answers=[a.to_dict() for a in answers],
+                     scopes=[s.to_dict() for s in scopes[len(state.graph.scopes):]])
                 produced = True
             if not produced:
                 push(replace(state, blocked=state.blocked | {node.id}), state_id, 'block',

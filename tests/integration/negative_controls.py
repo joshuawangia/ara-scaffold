@@ -427,6 +427,31 @@ CASES += [
      'tests/engine/test_search_trace.py::test_trace_branches_rejections_and_completed_graphs'),
 ]
 
+CASES += [
+    ('report_available_origin', 'ara/runtime/report.py',
+     "if digest(canonical(original)) != data['receipt_id'] or list(copied) != unique_events(original, seen):", 'if False:',
+     'tests/runtime/test_report.py::test_missing_ancestor_does_not_hide_available_origin_mismatch'),
+    ('report_explicit_actual', 'ara/runtime/report.py',
+     "measured = [e for e in events if payload(e).get('accounting') == 'actual']",
+     "measured = [e for e in events if payload(e).get('accounting') != 'reservation_unknown_actual']",
+     'tests/runtime/test_report.py::test_unclassified_incomplete_receipts_are_not_measured'),
+    ('trace_seal_hash', 'ara/runtime/report_traces.py',
+     "if hashlib.sha256(raw).hexdigest() != receipt['sha256']:", 'if False:',
+     'tests/engine/test_search_trace.py::test_sidecar_seal_is_required_and_checked_before_use'),
+    ('trace_semantic_completeness', 'ara/runtime/report_traces.py',
+     "trace['complete'] = not issues", "trace['complete'] = True",
+     'tests/runtime/test_report.py::test_invalid_trace_is_partial_and_still_renders[empty]'),
+    ('trace_formula_reference', 'ara/runtime/report_traces.py',
+     "issue('unresolved ' + kind + ' reference')", 'pass',
+     'tests/engine/test_search_trace.py::test_invalid_sealed_references_and_line_counts'),
+    ('trace_line_count', 'ara/runtime/report_traces.py',
+     "if len(lines) != receipt['line_count'] or any(not line.endswith(b'\\n') for line in lines):", 'if False:',
+     'tests/engine/test_search_trace.py::test_invalid_sealed_references_and_line_counts'),
+    ('trace_all_state_rendering', 'ara/runtime/report_render.py',
+     "for index, state in enumerate(trace['states']):", "for index, state in enumerate(trace['states'][:499]):",
+     'tests/engine/test_search_trace.py::test_native_500_state_trace_full_report'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

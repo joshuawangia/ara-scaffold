@@ -12,6 +12,7 @@ from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.extraction import save_immutable
 from ara.runtime.render import save_route
+from ara.runtime.search_traces import SearchTraceFiles
 from ara.types import CommitmentSet, Proposition, RouteGraph
 
 
@@ -29,7 +30,7 @@ class NativeEngine:
         engine = Engine(bank=self.bank, commitments=commitments, proposer=calls,
                         formaliser=calls, leaf_mapper=calls, cq_answerer=calls,
                         repairer=calls, sink=calls.log,
-                        config=EngineConfig.from_mapping(calls.config))
+                        config=EngineConfig.from_mapping(calls.config), traces=SearchTraceFiles(calls.log))
         return engine.analyse(target)
 
 

@@ -40,3 +40,14 @@ class Tier1Repairer(Protocol):
 
 class EventSink(Protocol):
     def emit(self, event: RunEvent) -> None: ...
+
+
+class SearchTraceSink(Protocol):
+    """Append one JSON-compatible search delta; persistence belongs to runtime."""
+    def record(self, action: str, **payload) -> None: ...
+
+
+class SearchTraceFactory(Protocol):
+    def open_search(self, search_id: str):
+        """Return a context manager yielding a SearchTraceSink."""
+        ...

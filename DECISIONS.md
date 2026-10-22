@@ -1613,10 +1613,33 @@ resolve. An all-discarded no-content candidate can return the empty disposition.
 Accepted history is quarantined, never silently deleted. Changing the prompt
 is a hypothesis about model behavior; the offline gate is the enforced boundary.
 
-Offline `--salvage-only` can use the latest verified paper snapshot, including
+Offline `--salvage-only` can use a verified monotonic paper snapshot, including
 thin/partial coverage, without paying for retries. It revalidates grounding on
 every retained item. A historical ungated artifact must be republished offline
 before it can supply T; schema validity alone is insufficient. No extra anchor
 field is added: historical items have no verbatim anchors, and adding one would
 not improve their offline check. The changed correction grammar requires the
 bounded live schema preflight; it does not authorize new extraction.
+
+## M4 — Monotonic snapshot reuse and versioned gap publication
+
+The current acceptance identity remains v6: v5 relaxed structural admission;
+v6 additionally restricts evidence eligibility through deterministic quarantine.
+Reviewed v4/v5 identities and receipts remain unchanged on reuse. V6 is not a
+strict relaxation of v4 evidence eligibility.
+
+Offline salvage may replace a verified completed snapshot only when every
+previously accepted item ID and body is retained exactly. A smaller, disjoint or
+conflicting inventory refuses explicitly before any provenance import. Growing
+snapshots remain reusable; input order cannot silently delete accepted evidence.
+Ordinary resume retains its stricter differing-outcome refusal. Grounding and
+publication metadata upgrades alone do not create evidence conflicts.
+
+New publication records carry quarantine-aware-v1. Revalidated legacy outcomes
+use this marker to disclose dispositions and all unresolved obligations, including
+resolutions reopened by quarantined evidence. Methodology uses the same scope.
+Unmarked historical outcomes retain their original serialization, so existing
+artifact hashes and pinned provenance remain verifiable. Republishing and a
+second resume preserve original identities, item bodies and receipts. Current
+usage text permits paper-stated or reconstructed links; neither licenses an
+engine step. No prompt/schema or grounding-threshold change is made this round.

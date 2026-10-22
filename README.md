@@ -191,7 +191,7 @@ symbol reuse cannot be known before extraction. `fits` concerns initial readable
 ranges only. Inspect unread/glyph-warning counts separately.
 
 Rich v2 extractions preserve page-linked premises, intermediate conclusions,
-conclusions, paper-stated inference links, distinctions, qualifications and
+conclusions, paper-stated or reconstructed inference links, distinctions, qualifications and
 reported/attacked views, with explicit attribution. There is no four-item or
 character cap. Each call allows 32000 output tokens (including thinking); actual
 output and coverage must be inspected. Context overflow or output exhaustion
@@ -431,7 +431,7 @@ unknown acceptance identities disqualify automatic completed-paper reuse only.
 Extraction corrections are ID-based patches. Omitted items remain, unchanged
 items may be repeated, and a second patch sees the cumulative candidate, including
 new items from a rejected first patch. `extraction_targeted_corrections` accepts
-0, 1 or 2; every dispatch remains subject to the paper and run allowances.
+0, 1, 2 or 3; every dispatch remains subject to the paper and run allowances.
 Feedback includes physical paper bounds and the readable pages of the current
 window. Blank attribution, invalid references, unsupported inference structure,
 and substantive empty dispositions alongside items remain errors. Only an empty

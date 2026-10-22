@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
+PUBLICATION_POLICY = 'quarantine-aware-v1'
 # Bump when validation, normalization, mode schemas or graph interpretation change.
 EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v6'
 V5_UNION_PROMPT_SHA256 = '7f653b3126df705c7fe2ccd8fb806f0c864146dfee63f12d4b907beb6492e537'
@@ -246,7 +247,7 @@ def literature_entry(outcome: dict) -> dict:
             raise ValueError('failed paper cannot supply evidence')
         entry['failure_receipt'] = outcome['failure_receipt']
         entry['failure_detail'] = outcome['failure_detail']
-    if outcome.get('range_union_policy'):
+    if outcome.get('range_union_policy') or outcome.get('publication_policy') == PUBLICATION_POLICY:
         blocked = {q['item_id'] for q in outcome.get('quarantined', [])}
         resolved = {r['obligation_id'] for r in outcome.get('resolutions', []) if not blocked.intersection(r['evidence_ids'])}
         entry['open_gaps'] = [o for o in outcome.get('obligations', []) if o['id'] not in resolved]
@@ -267,11 +268,15 @@ def publication_roster(outcomes):
 
 def assemble(outcomes: list[dict]) -> str:
     entries = [literature_entry(outcome) for outcome in outcomes]
+    # Unmarked outcomes retain their historical serialization for hash verification.
+    current = any(o.get('publication_policy') == PUBLICATION_POLICY for o in outcomes)
     return HEADER + canonical({
         'origin': 'SYSTEM/MODEL', 'locator_convention': 'one-based physical PDF pages, not printed folios',
         'use': 'Use extracted items only. Record-only entries supply no claims. Partial entries cover only '
                'readable pages. Preserve attribution; reported or attacked views are not author endorsements. '
-               'Copy evidence identifiers and citations verbatim. Inferences describe paper-stated links, not engine licenses.',
+               'Copy evidence identifiers and citations verbatim. ' +
+               ('Inferences describe paper-stated or reconstructed links, not engine licenses.' if current else
+                'Inferences describe paper-stated links, not engine licenses.'),
         **({'status': 'complete_with_disclosed_failures'} if any(e['status'] == 'failed' for e in entries) else {}),
         'papers': entries,
         **({'grounding_note': 'Items retain the original inventory for audit. Entries listed in quarantined are not evidence and must never enter T. Only grounding-accepted items may be used; lexical overlap is not semantic entailment.'} if any('grounding' in o for o in outcomes) else {}),
@@ -352,7 +357,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         if estimate_only:
             calls.log.record('extraction_preflight', source_id=paper.source_id, pages=len(paper.pages), reason=reason)
             continue
-        base = {'range_union_policy': True, 'source_id': paper.source_id, 'record': json.loads(paper.record_json),
+        base = {'publication_policy': PUBLICATION_POLICY, 'range_union_policy': True, 'source_id': paper.source_id, 'record': json.loads(paper.record_json),
                 'pdf_sha256': paper.pdf_sha256, 'pages': len(paper.pages),
                 'page_diagnostics': [asdict(d) for d in paper.diagnostics],
                 'affected_pages': list(paper.affected_pages),
@@ -372,6 +377,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
             calls.log.record('extraction_paper_reused', source_id=paper.source_id, origin=previous['origin'],
                              outcome_hash=digest(canonical(outcome)))
             outcome = ground_outcome(paper, outcome, calls.log)
+            outcome = {**outcome, 'publication_policy': PUBLICATION_POLICY}
             calls.log.record('extraction_outcome', **outcome)
             outcomes.append(outcome)
             save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
@@ -552,7 +558,7 @@ def resume_papers(log, papers, sources, config: dict, root: Path, *, revalidate_
     Publication still uses extraction_outcomes(), which selects only the last batch.
     """
     def retained(value):
-        return {k: v for k, v in value.items() if k not in ('grounding', 'quarantined')}
+        return {k: v for k, v in value.items() if k not in ('grounding', 'quarantined', 'publication_policy')}
     acceptance = extraction_acceptance_identity(config, root)
     loaded = []
     reused = {}
@@ -575,8 +581,13 @@ def resume_papers(log, papers, sources, config: dict, root: Path, *, revalidate_
             except ValueError:
                 # Changed sources or incompatible/unknown acceptance policies need extraction.
                 continue
-            if not revalidate_only and source in reused and retained(reused[source]['outcome']) != retained(outcome):
-                raise ValueError(f'conflicting completed paper receipts: {source}')
+            if source in reused and retained(reused[source]['outcome']) != retained(outcome):
+                if not revalidate_only:
+                    raise ValueError(f'conflicting completed paper receipts: {source}')
+                previous_items = {i['id']: i for i in reused[source]['outcome']['items']}
+                next_items = {i['id']: i for i in outcome['items']}
+                if any(next_items.get(id) != item for id, item in previous_items.items()):
+                    raise ValueError(f'non-monotonic completed paper replacement: {source}; accepted item IDs and bodies must be retained')
             graph = {k: outcome[k] for k in ('schema_version', 'source_id', 'items',
                                             'obligations', 'resolutions', 'dispositions')}
             if not any(e['stage'] == 'extraction_graph_merged' and

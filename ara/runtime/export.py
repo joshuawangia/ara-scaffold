@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log
-from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry
+from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry, PUBLICATION_POLICY
 from ara.runtime.provenance import extraction_outcomes
 from ara.runtime.grounding import evidence_items
 
@@ -62,7 +62,7 @@ def methodology(log_path: Path) -> str:
         **split_totals(extraction_calls),
         'acceptance_note': 'Accepted range union; reconciliation is one best-effort pass. Open gaps and thin ranges are not completeness guarantees.',
         'publication_roster': publication_roster(outcomes),
-        'limitations': [dict(source_id=p['source_id'], open_gaps=literature_entry(p).get('open_gaps', []), dispositions=p.get('dispositions', [])) for p in outcomes if p.get('range_union_policy')],
+        'limitations': [dict(source_id=p['source_id'], open_gaps=literature_entry(p).get('open_gaps', []), dispositions=p.get('dispositions', [])) for p in outcomes if p.get('range_union_policy') or p.get('publication_policy') == PUBLICATION_POLICY],
         'grounding': [dict(source_id=p['source_id'], **p['grounding'], quarantined=len(p['quarantined'])) for p in outcomes if 'grounding' in p],
         'quarantined': [dict(source_id=p['source_id'], entries=p['quarantined']) for p in outcomes if p.get('quarantined')],
         'grounded_item_counts_by_kind': {kind: sum(item['kind'] == kind for p in outcomes if 'grounding' in p for item in evidence_items(p))

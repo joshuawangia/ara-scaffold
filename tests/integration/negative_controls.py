@@ -289,7 +289,7 @@ CASES += [
      'for outcome in historical_extraction_outcomes(events):', 'for outcome in extraction_outcomes(events):',
      'tests/runtime/test_resume_policy.py::test_stopped_descendant_reuses_unreached_ancestor_success'),
     ('resume_ancestor_conflict', 'ara/runtime/extraction.py',
-     "if not revalidate_only and source in reused and retained(reused[source]['outcome']) != retained(outcome):", 'if False:',
+     "if source in reused and retained(reused[source]['outcome']) != retained(outcome):", 'if False:',
      'tests/runtime/test_resume_policy.py::test_conflicting_compatible_ancestor_successes_refuse'),
     ('resume_execution_policy', 'ara/runtime/extraction.py',
      '            validate_reused_paper(paper, outcome, acceptance)\n            calls.log.record', '            calls.log.record',
@@ -460,6 +460,21 @@ CASES += [
      "if id not in ids]", 'if True]',
      'tests/runtime/test_grounding.py::test_correction_can_discard_unsupported_rejected_items'),
 ]
+
+CASES += [
+    ('offline_snapshot_retention', 'ara/runtime/extraction.py',
+     "if any(next_items.get(id) != item for id, item in previous_items.items()):", 'if False:',
+     'tests/runtime/test_republication.py::test_offline_snapshot_replacement_preserves_accepted_inventory'),
+    ('legacy_gap_publication', 'ara/runtime/extraction.py',
+     "if outcome.get('range_union_policy') or outcome.get('publication_policy') == PUBLICATION_POLICY:",
+     "if outcome.get('range_union_policy'):",
+     'tests/runtime/test_republication.py::test_legacy_republication_reopens_gaps_and_resumes_again'),
+    ('legacy_gap_methodology', 'ara/runtime/export.py',
+     "for p in outcomes if p.get('range_union_policy') or p.get('publication_policy') == PUBLICATION_POLICY]",
+     "for p in outcomes if p.get('range_union_policy')]",
+     'tests/runtime/test_republication.py::test_legacy_republication_reopens_gaps_and_resumes_again'),
+]
+
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

@@ -19,33 +19,29 @@ def snapshot_id(outcome):
 def unite(entries, acceptance):
     """Input entries are unique original snapshots with verified origin pins.
 
-    Conflicting IDs and their reverse-reference closure stay snapshot-qualified.
+    Conflicting bodies and native prerequisite contexts stay snapshot-qualified.
     Identical text with distinct original IDs is never deduplicated. An identical
     referring item must also remain separate when its endpoints differ by snapshot.
     """
     from ara.runtime.extraction import ExtractedItem
+    from ara.runtime.construction import evidence_dependencies
     snapshots = sorted(entries)
     source = entries[snapshots[0]]['outcome']['source_id']
-    variants, dependencies, incoming_contexts = {}, {}, {}
+    variants, dependencies, contexts = {}, {}, {}
     for entry in entries.values():
         by_id = {i['id']: i for i in entry['outcome']['items']}
-        incoming = {id: set() for id, item in by_id.items() if item['kind'] == 'inference'}
         for item in by_id.values():
             refs = references(item)
             if not refs <= by_id.keys():
                 raise ValueError('snapshot union unknown item reference')
             dependencies.setdefault(item['id'], set()).update(refs)
-            # Incoming qualifiers constrain an inference even without a reciprocal edge.
-            for target in refs:
-                if by_id[target]['kind'] == 'inference':
-                    dependencies.setdefault(target, set()).add(item['id'])
-                    incoming[target].add(item['id'])
             variants.setdefault(item['id'], set()).add(canonical(item))
-        for id, refs in incoming.items():
-            incoming_contexts.setdefault(id, set()).add(frozenset(refs))
+        for id, refs in evidence_dependencies(by_id).items():
+            dependencies[id].update(refs)
+            contexts.setdefault(id, set()).add(frozenset(refs))
     qualified = {id for id, bodies in variants.items() if len(bodies) > 1}
     # A qualifier present in only one snapshot must not constrain shared evidence.
-    qualified.update(id for id, contexts in incoming_contexts.items() if len(contexts) > 1)
+    qualified.update(id for id, values in contexts.items() if len(values) > 1)
     while True:
         added = {id for id, refs in dependencies.items() if refs & qualified} - qualified
         if not added:

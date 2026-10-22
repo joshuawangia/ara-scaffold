@@ -1752,3 +1752,23 @@ refusal, accepts the retained ranges and continues to the next paper. Keep one
 bounded pass. Splitting would require a new cross-window obligation and evidence
 contract and extra calls; it is not a cheap substitute for the complete review.
 A native two-paper regression and production-wire control verify continuation.
+
+## M6 — Snapshot context follows native prerequisites
+
+M5's inference-only incoming context was incomplete. Union identity now uses the
+same prerequisite function as construction: incoming applies_to on every target
+kind and inference-to-conclusion relationships count as context. Different
+prerequisite inventories or item bodies require snapshot-qualified IDs. Propagate
+that separation through both native prerequisites and explicit references until
+stable; shared conclusions must not reconnect separated inference contexts.
+Preserve all original bodies, pins and mapped references, and recompute grounding
+with the existing policy. This changes no prompt, acceptance or grounding rule.
+
+The v1 representation is unchanged. Previously published unions whose graphs and
+provenance reproduce remain reusable. A union affected by the earlier defect
+fails the existing reconstruction check before import; republish it from its
+original snapshot runs. Never accept a stale derived graph as an original.
+Native publication regressions compare every original root's exact prerequisite
+closure after mapping, for four qualifier target kinds and an added inference,
+in both source orders and after a second resume. The production-wire control
+replaces native prerequisites with outgoing references and must fail.

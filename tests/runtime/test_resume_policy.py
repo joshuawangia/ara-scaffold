@@ -145,7 +145,7 @@ def test_conflicting_compatible_ancestor_successes_union(rig, monkeypatch, tmp_p
     destination = EventLog(tmp_path/'destination/events.jsonl')
     reused = resume_papers(destination, papers[:1], [calls.log.path.parent, other.log.path.parent], calls.config, ROOT)
     outcome = reused['p']['outcome']
-    assert len(outcome['items']) == 10
+    assert len(outcome['items']) == 15
     assert len(outcome['snapshot_union']['snapshots']) == 2
     assert set(outcome['item_provenance']) == {i['id'] for i in outcome['items']}
 

@@ -6,8 +6,11 @@ import pytest
 
 from ara.runtime.cache import Cache, canonical, digest
 from ara.runtime.calls import ModelCalls
+from ara.runtime.construction import prerequisite_closure
 from ara.runtime.extraction import HEADER, extract, literature_provenance, resume_papers
+from ara.runtime.grounding import evidence_items
 from ara.runtime.logging import EventLog
+from ara.runtime.snapshot_union import snapshot_id
 from rich_fixture import graph
 from test_extraction import ROOT, accounting, offline, register, rig
 
@@ -76,7 +79,7 @@ def test_offline_snapshot_replacement_preserves_accepted_inventory(rig, tmp_path
         path = extract(follow, papers[:1], reused=reused, salvage_only=True)
         paper = json.loads(path.read_text()[len(HEADER):])['papers'][0]
         assert_snapshot_retention(paper, originals)
-        assert len(paper['items']) == {'smaller': 8, 'larger': 8, 'conflicting': 10, 'qualifier': 10, 'new_qualifier': 10, 'disjoint': 9}[change]
+        assert len(paper['items']) == {'smaller': 8, 'larger': 8, 'conflicting': 15, 'qualifier': 14, 'new_qualifier': 15, 'disjoint': 9}[change]
         if change in ('conflicting', 'qualifier', 'new_qualifier'):
             assert len(paper['quarantined']) == 2  # only this snapshot's premise and dependent inference
         projection = {k: paper[k] for k in ('items', 'item_provenance', 'open_gaps', 'quarantined')}
@@ -93,6 +96,54 @@ def test_offline_snapshot_replacement_preserves_accepted_inventory(rig, tmp_path
     assert {k: paper[k] for k in previous} == previous
     assert_snapshot_retention(paper, originals)
     literature_provenance(path, path.read_text())
+
+
+@pytest.mark.parametrize('target', ['i', 'p', 'r', 'f', 'inference_conclusion'])
+def test_native_closure_retains_snapshot_context(rig, tmp_path, monkeypatch, target):
+    calls, provider, papers, *_ = rig
+    first, second = graph(), graph()
+    if target == 'inference_conclusion':
+        first['items'] = [i for i in first['items'] if i['id'] != 'j']
+    else:
+        second['items'].append(dict(second['items'][4], id='new', text='P Q', applies_to=[target]))
+    originals, paths = [], []
+    for n, value in enumerate((first, second)):
+        current = ModelCalls(calls.config, provider, EventLog(tmp_path/f'original{n}/events.jsonl'),
+                             Cache(tmp_path/f'original{n}/cache'), ROOT, '')
+        register(current, provider, papers[0], value)
+        paths.append(extract(current, papers[:1]))
+        originals.append(json.loads((paths[-1].parent/'p.extraction.json').read_text()))
+        literature_provenance(paths[-1], paths[-1].read_text())
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('completed snapshots must not dispatch')
+    monkeypatch.setattr(provider, 'complete', forbidden)
+    previous = None
+    for n in range(3):
+        sources = [p.parent for p in (paths if n == 0 else reversed(paths))] if n < 2 else [path.parent]
+        log = EventLog(tmp_path/f'union{n}/events.jsonl')
+        reuse = resume_papers(log, papers[:1], sources, calls.config, ROOT)
+        follow = ModelCalls(calls.config, provider, log, Cache(tmp_path/f'union{n}/cache'), ROOT, '')
+        path = extract(follow, papers[:1], reused=reuse, salvage_only=True)
+        literature_provenance(path, path.read_text())
+        union = json.loads(path.read_text()[len(HEADER):])['papers'][0]
+        assert_snapshot_retention(union, [o['items'] for o in originals])
+        items = {i['id']: i for i in evidence_items(union)}
+        for original in originals:
+            sid = snapshot_id(original)
+            mapping = {origin['original_id']: published
+                       for published, origins in union['item_provenance'].items()
+                       for origin in origins if origin['snapshot_id'] == sid}
+            old_items = {i['id']: i for i in evidence_items(original)}
+            assert len(old_items) == len(original['items'])  # exercise eligible constraints
+            for root in old_items:
+                expected = {mapping[id] for id in prerequisite_closure(old_items, [root])}
+                assert prerequisite_closure(items, [mapping[root]]) == expected
+        projection = {k: union[k] for k in ('items', 'item_provenance', 'open_gaps', 'quarantined')}
+        if previous is not None:
+            assert projection == previous
+        previous = projection
+        assert accounting(log)['local_totals']['model_calls'] == 0
 
 
 @pytest.mark.parametrize('grounded_history', [False, True])

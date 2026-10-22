@@ -67,6 +67,9 @@ def parser() -> argparse.ArgumentParser:
     plan.add_argument('--paper-id', action='append', default=[])
     plan.add_argument('--profile', choices=('extraction', 'extraction-full'), default='extraction-full')
     plan.add_argument('--token-counter', choices=('local', 'provider'), default='local')
+    report = sub.add_parser('report', help='render verified run receipts offline; no model calls')
+    report.add_argument('--run-dir', type=Path, action='append', required=True)
+    report.add_argument('--out', type=Path, required=True)
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -109,6 +112,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'report':
+            from ara.runtime.report import generate_report
+            print(str(generate_report(args.run_dir, args.out)))
+            return 0
         if args.command == 'schema-preflight':
             from ara.runtime.preflight import schema_preflight
             from ara.runtime.provenance import checkpoint, read_checkpoint, import_receipts

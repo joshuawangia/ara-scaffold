@@ -1656,3 +1656,20 @@ an interrupted trace, not a completed search. Older decision-only logs cannot
 recover state ancestry or unambiguously attach prunes to both polarities.
 The extra snapshot receipts increase log size; this is an additive logging patch
 that can be cherry-picked independently of the offline report command.
+
+## Offline full-run report projection
+
+`ara report` extends the native CLI beside export and reads verified snapshots
+without creating a model adapter, re-running the engine or modifying source runs.
+It preserves original receipts and artifacts in self-contained HTML/Markdown and
+JSON, with nested proof/state trees and local optional DOT-to-SVG rendering.
+Missing legacy search ancestry, model summaries, recorded revisions and exact
+source links are report gaps, never synthesized evidence. Failed or interrupted
+batches retain historical outcomes separately from the current selected roster.
+
+Combined spend deduplicates identical original event receipts across supplied
+runs, while local/inherited and measured/reservation totals remain separate.
+Current source files cannot establish a historic run's revision. Artifacts have
+separate trust labels and cannot override chain records. Existing tail checkpoints
+are checked read-only; missing anchors/origins are visible limits, not silent
+verification passes. A mismatched available receipt refuses report generation.

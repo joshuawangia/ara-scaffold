@@ -476,6 +476,37 @@ CASES += [
 ]
 
 
+CASES += [
+    ('report_anchor', 'ara/runtime/report.py',
+     "if anchor.read_text().splitlines() != [r['hash'] for r in records]:", 'if False:',
+     'tests/runtime/test_report.py::test_report_refuses_tampering_before_output[truncate]'),
+    ('report_reservations', 'ara/runtime/report.py',
+     "unknown = [e for e in events if payload(e).get('accounting') == 'reservation_unknown_actual']", 'unknown = []',
+     'tests/runtime/test_report.py::test_report_native_readonly_accounting_and_citations'),
+    ('report_deduplication', 'ara/runtime/report.py',
+     'unique.setdefault(digest(canonical(event)), event)', 'unique[len(unique)] = event',
+     'tests/runtime/test_report.py::test_imported_receipts_deduplicate_combined_accounting'),
+    ('report_source_links', 'ara/runtime/report.py',
+     "matches = [v for v in evidence.get(c['id'], []) if v.get('citation') == c['citation']]", 'matches = []',
+     'tests/runtime/test_report.py::test_report_native_readonly_accounting_and_citations'),
+    ('report_html_escape', 'ara/runtime/report_render.py',
+     "return '<pre>' + escape(pretty(value)) + '</pre>'", "return '<pre>' + pretty(value) + '</pre>'",
+     'tests/runtime/test_report.py::test_report_native_readonly_accounting_and_citations'),
+    ('report_historical_roster', 'ara/runtime/report.py',
+     'set(histories) | set(related) | requested_history | set(selected) | unattempted',
+     'set(histories) | set(related) | set(selected) | unattempted',
+     'tests/runtime/test_report.py::test_exclusion_roster_retains_selected_papers_without_any_outcome'),
+    ('report_unfinalized_usage', 'ara/runtime/report.py',
+     'received[id(pending[key][-1])] = data', 'pass',
+     'tests/runtime/test_report.py::test_received_usage_survives_interruption_without_becoming_a_final_charge'),
+    ('report_current_outcomes', 'ara/runtime/report.py',
+     'current = events[start:]', 'current = events',
+     'tests/runtime/test_report.py::test_historical_success_is_not_current_success_and_pending_is_visible'),
+    ('search_trace_prunes', 'ara/engine/search.py',
+     "trace('prune', state_id=state_id, node_id=node.id, proposal_index=proposal_index,\n                          reason=license.decision.reason_code)", 'pass',
+     'tests/engine/test_search_trace.py::test_trace_branches_rejections_and_completed_graphs'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

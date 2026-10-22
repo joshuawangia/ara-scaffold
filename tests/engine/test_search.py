@@ -107,7 +107,7 @@ def test_negated_leaf_has_infinite_cost():
     result = e.search(prop(P))
     assert result.routes[0].dialectical_cost is None
     assert result.routes[0].status == 'OPEN'
-    assert any(ev.decision.reason_code == 'OPPOSED_COMMITMENT' for ev in e.sink.events)
+    assert any(ev.decision and ev.decision.reason_code == 'OPPOSED_COMMITMENT' for ev in e.sink.events)
 
 
 def test_caps_bound_cyclic_search():

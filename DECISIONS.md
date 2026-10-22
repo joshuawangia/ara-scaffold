@@ -1643,3 +1643,16 @@ artifact hashes and pinned provenance remain verifiable. Republishing and a
 second resume preserve original identities, item bodies and receipts. Current
 usage text permits paper-stated or reconstructed links; neither licenses an
 engine step. No prompt/schema or grounding-threshold change is made this round.
+
+## Search trace receipts
+
+The engine now emits versioned `search_trace` SYSTEM events through its existing
+EventSink: begin, queued state with parent and graph/depth snapshot, visit,
+expansion, proposed alternative, rejected alternative, completed route, and end.
+A begin receipt scopes search IDs; state IDs are unique within that search.
+This preserves best-first order and alternatives without changing route IDs,
+licensing, caps, provider behavior or the returned analysis. Missing end means
+an interrupted trace, not a completed search. Older decision-only logs cannot
+recover state ancestry or unambiguously attach prunes to both polarities.
+The extra snapshot receipts increase log size; this is an additive logging patch
+that can be cherry-picked independently of the offline report command.

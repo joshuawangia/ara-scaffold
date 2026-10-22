@@ -30,6 +30,8 @@ def test_large_single_graph_windows_close_against_full_evidence(rig, monkeypatch
         item.update(id=f'p:r1-2:z{index}', citation=f'p:pdf:1#p:r1-2:z{index}', text='P ' * 1600)
         decoys.append(item)
     paper['items'] = original[:3] + decoys[:45] + original[3:6] + decoys[45:] + original[6:]
+    from ara.runtime.grounding import ground_outcome
+    data['papers'][0] = ground_outcome(Paper('p', '{}', 'P', (PageText(1, 'P Q R F(x)'),)), paper, calls.log)
     seen = []
     def complete(kind, prompt, schema, maximum):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1]); seen.append((kind, inputs))

@@ -58,7 +58,8 @@
           },
           "text": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Faithful source-supported text with substantial lexical overlap on the cited physical pages. No template content, stand-ins, superseded markers, or meaningless text."
           },
           "page_start": {
             "type": "integer",
@@ -128,7 +129,8 @@
           "applies_to",
           "inference_origin"
         ]
-      }
+      },
+      "description": "Only source-supported argument items. An empty inventory is permitted with an explicit empty_reason; never invent filler to populate this array."
     },
     "resolutions": {
       "type": "array",
@@ -220,6 +222,27 @@
     "no_inference_reason": {
       "type": "string",
       "minLength": 1
+    },
+    "discard_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "reason"
+        ]
+      }
     }
   },
   "required": [

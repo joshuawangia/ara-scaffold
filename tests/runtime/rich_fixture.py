@@ -1,8 +1,9 @@
 """Placeholder-only rich source and wire responses."""
 def graph(source='p', page=1):
     def node(id, kind, text, **kw):
+        text = ' '.join([text] * 3) if len(text) <= 2 else text
         return dict(id=id, source_id=source, kind=kind, text=text,
-                    attribution='author_claim', attributed_to='P', page_start=page, page_end=page,
+                    attribution='author_claim', attributed_to='a', page_start=page, page_end=page,
                     premise_ids=[], conclusion_id=None, qualification_ids=[], applies_to=[],
                     inference_origin=None, **kw)
     items = [node('p', 'premise', 'P'), node('q', 'premise', 'Q'),
@@ -26,7 +27,7 @@ def batch_response(inputs):
     for paper in inputs['papers']:
         for item in paper['items']:
             # Native formulas include multiple premises and intermediate conclusions.
-            name = item['text'] if item['text'] in ('P', 'Q', 'R') else 'F'
+            name = item['text'][0] if item['text'] in ('P P P', 'Q Q Q', 'R R R') else 'F'
             formula = {'op': 'atom', 'name': name}
             if item['kind'] == 'inference':
                 name = 'R' if item['text'] == 'P, Q; R' else 'F'

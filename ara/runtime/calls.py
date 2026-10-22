@@ -133,7 +133,12 @@ def merge_extraction_patch(candidate: dict, patch: dict) -> dict:
         require(len(ids) == len(set(ids)), 'duplicate correction id')
         return {item['id']: item for item in data['items']}
     old, updates = inventory(candidate), inventory(patch)
-    merged = {**patch, 'items': [updates.pop(id, item) for id, item in old.items()]}
+    discarded = patch.get('discard_items', [])
+    ids = [d['id'] for d in discarded]
+    require(len(ids) == len(set(ids)) and set(ids) <= old.keys() and not set(ids) & updates.keys() and
+            all(d['reason'].strip() for d in discarded), 'invalid rejected-candidate discard')
+    merged = {k: v for k, v in patch.items() if k != 'discard_items'}
+    merged['items'] = [updates.pop(id, item) for id, item in old.items() if id not in ids]
     merged['items'].extend(updates.values())
     return merged
 
@@ -173,6 +178,8 @@ class ModelCalls:
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
         if kind == 'extract_paper':
+            if inputs.get('mode') != 'targeted_correction':
+                del schema['properties']['discard_items']
             mode = inputs.get('original_mode') if inputs.get('mode') == 'targeted_correction' else inputs.get('mode')
             reconciliation = mode == 'reconcile_ranges'
             if not reconciliation or not inputs.get('obligations'):
@@ -181,9 +188,8 @@ class ModelCalls:
             if reconciliation:
                 del schema['properties']['empty_reason']
             elif inputs.get('mode') == 'targeted_correction':
-                # Patch items may be empty while the resulting graph is nonempty.
-                if inputs.get('candidate', {}).get('items'):
-                    schema['properties']['empty_reason'] = {'type': 'null'}
+                # Explicit discards may remove all rejected candidate items.
+                pass
             else:
                 # The provider projection preserves these disjoint alternatives.
                 # Empty arrays are represented without unsupported maxItems=0.
@@ -201,7 +207,9 @@ class ModelCalls:
             # The service grammar is a compact projection. Show the model every
             # local constraint as well; the same complete prompt is logged/keyed.
             schema = self.response_schema(kind, inputs)
-            template += '\nLOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n' + canonical(schema)
+            note = ('constraints apply after runtime completion of omitted edge fields; follow WIRE SHAPE, never put field instructions in text'
+                    if kind == 'extract_paper' else 'all constraints are mandatory')
+            template += f'\nLOCAL_RESPONSE_SCHEMA ({note})\n' + canonical(schema)
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
@@ -543,7 +551,11 @@ class ModelCalls:
                 extraction_defaults(merged)
                 schema = self.response_schema('extract_paper', inputs)
                 Draft202012Validator(schema).validate(merged)
-                return check(merged)
+                result = check(merged)
+                for discarded in patch.get('discard_items', []):
+                    self.log.record('extraction_candidate_discarded', source_id=paper.source_id,
+                                    candidate_hash=digest(canonical(candidate)), **discarded)
+                return result
             try:
                 return self._call_once('extract_paper', request,
                                        check if correction == 0 else corrected, attempt=correction + 1)

@@ -23,8 +23,10 @@ if TYPE_CHECKING:
 HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
 # Bump when validation, normalization, mode schemas or graph interpretation change.
-EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v5'
-# The one reviewed predecessor; unknown contracts never migrate by version alone.
+EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v6'
+V5_UNION_PROMPT_SHA256 = '7f653b3126df705c7fe2ccd8fb806f0c864146dfee63f12d4b907beb6492e537'
+V5_SCHEMA_SHA256 = 'e5995f28b1d3c311c10de7894e5106634cec33ba70f13310a5dd23d1df323df9'
+# The reviewed predecessors; unknown contracts never migrate by version alone.
 V5_PRE_UNION_PROMPT_SHA256 = '96510d73f8288a587c78edf86b417725863a275487f795f9f3d75cdbb6ebbc72'
 V4_PROMPT_SHA256 = '6fdc1d8a71ded072a99d9190245bd3380e8ae003ee7cdce7f614e611158bbe22'
 V4_SCHEMA_SHA256 = '7d2778f90a78b5040dc3e9d7975f33b216d96652f3ca134e9d7ce568b72fd9cf'
@@ -245,8 +247,13 @@ def literature_entry(outcome: dict) -> dict:
         entry['failure_receipt'] = outcome['failure_receipt']
         entry['failure_detail'] = outcome['failure_detail']
     if outcome.get('range_union_policy'):
-        entry['open_gaps'] = [o for o in outcome.get('obligations', []) if o['id'] not in {r['obligation_id'] for r in outcome.get('resolutions', [])}]
+        blocked = {q['item_id'] for q in outcome.get('quarantined', [])}
+        resolved = {r['obligation_id'] for r in outcome.get('resolutions', []) if not blocked.intersection(r['evidence_ids'])}
+        entry['open_gaps'] = [o for o in outcome.get('obligations', []) if o['id'] not in resolved]
         entry['dispositions'] = outcome.get('dispositions', [])
+    if 'grounding' in outcome:
+        entry['grounding'] = outcome['grounding']
+        entry['quarantined'] = outcome['quarantined']
     if outcome.get('affected_pages'):
         entry['coverage'] = 'partial: unread visual pages excluded; retained encoding warnings require source inspection; see diagnostics'
     return entry
@@ -267,6 +274,7 @@ def assemble(outcomes: list[dict]) -> str:
                'Copy evidence identifiers and citations verbatim. Inferences describe paper-stated links, not engine licenses.',
         **({'status': 'complete_with_disclosed_failures'} if any(e['status'] == 'failed' for e in entries) else {}),
         'papers': entries,
+        **({'grounding_note': 'Items retain the original inventory for audit. Entries listed in quarantined are not evidence and must never enter T. Only grounding-accepted items may be used; lexical overlap is not semantic entailment.'} if any('grounding' in o for o in outcomes) else {}),
         **({'acceptance_note': 'Accepted range union with best-effort reconciliation. Open gaps, missing pages and thin ranges remain disclosed. Inference origins may be paper_stated or reconstructed; neither is an engine license.', 'publication_roster': publication_roster(outcomes)} if any(o.get('range_union_policy') for o in outcomes) or any(o['status'] in ('excluded', 'not extracted') for o in outcomes) else {})}) + '\n'
 
 
@@ -294,6 +302,7 @@ def extraction_range_plan(calls: ModelCalls, paper: Paper):
 def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'record-only',
             estimate_only: bool = False, reused: dict | None = None, salvage_only=False, excluded=None) -> Path | None:
     from ara.types import TokenUsage
+    from ara.runtime.grounding import ground_outcome
     from ara.runtime.calls import Rejected
     from ara.runtime.budget import BudgetStop
 
@@ -362,6 +371,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
             validate_reused_paper(paper, outcome, acceptance)
             calls.log.record('extraction_paper_reused', source_id=paper.source_id, origin=previous['origin'],
                              outcome_hash=digest(canonical(outcome)))
+            outcome = ground_outcome(paper, outcome, calls.log)
             calls.log.record('extraction_outcome', **outcome)
             outcomes.append(outcome)
             save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
@@ -412,6 +422,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         if any(d.get('kind') == 'unextracted_pages' for d in json.loads(result.dispositions_json)):
             outcome['status'] = 'partial' if result.items else 'not extracted'
             outcome['reason'] = 'Readable pages remain unextracted; see dispositions.'
+        outcome = ground_outcome(paper, outcome, calls.log)
         calls.log.record('extraction_outcome', **outcome)
         outcomes.append(outcome)
         save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
@@ -466,12 +477,15 @@ def validate_failure_limit(config):
 def validate_reused_paper(paper, outcome, acceptance):
     previous = outcome.get('acceptance_identity')
     compatible_v4 = bool(previous and acceptance and
+        acceptance.get('version') == 'rich-paper-acceptance-v6' and
         previous.get('version') == 'rich-paper-acceptance-v4' and
-        acceptance.get('version') == 'rich-paper-acceptance-v5' and
         previous.get('prompt_sha256') == V4_PROMPT_SHA256 and
         previous.get('schema_sha256') == V4_SCHEMA_SHA256 and
         all(previous.get(k) == acceptance.get(k) for k in ('provider', 'stage', 'require_inference')))
-    compatible_v5 = bool(previous and acceptance and previous.get('version') == acceptance.get('version') == 'rich-paper-acceptance-v5' and previous.get('prompt_sha256') == V5_PRE_UNION_PROMPT_SHA256 and all(previous.get(k) == acceptance.get(k) for k in ('schema_sha256', 'provider', 'stage', 'require_inference')))
+    compatible_v5 = bool(previous and acceptance and acceptance.get('version') == 'rich-paper-acceptance-v6' and previous.get('version') == 'rich-paper-acceptance-v5' and
+        previous.get('prompt_sha256') in (V5_PRE_UNION_PROMPT_SHA256, V5_UNION_PROMPT_SHA256) and
+        previous.get('schema_sha256') == V5_SCHEMA_SHA256 and
+        all(previous.get(k) == acceptance.get(k) for k in ('provider', 'stage', 'require_inference')))
     if not acceptance or (previous != acceptance and not compatible_v4 and not compatible_v5):
         raise ValueError('resume extraction acceptance identity mismatch')
     if outcome['status'] not in ('extracted', 'partial'):
@@ -530,13 +544,15 @@ def revalidate_v4_graph(paper, outcome, acceptance):
         raise ValueError('resume unresolved graph obligations')
 
 
-def resume_papers(log, papers, sources, config: dict, root: Path):
+def resume_papers(log, papers, sources, config: dict, root: Path, *, revalidate_only=False):
     """Verify all ancestry before import; index compatible successes across every batch.
 
     config must be the effective (profile-applied) configuration, root the contract
     directory. Missing or incompatible acceptance identities require extraction.
     Publication still uses extraction_outcomes(), which selects only the last batch.
     """
+    def retained(value):
+        return {k: v for k, v in value.items() if k not in ('grounding', 'quarantined')}
     acceptance = extraction_acceptance_identity(config, root)
     loaded = []
     reused = {}
@@ -552,14 +568,14 @@ def resume_papers(log, papers, sources, config: dict, root: Path):
             if source not in selected or outcome['status'] not in ('extracted', 'partial'):
                 continue
             paper = selected[source]
-            if outcome.get('range_union_policy') and any(d.get('kind') in ('thin_range', 'unextracted_pages') for d in outcome.get('dispositions', [])):
+            if not revalidate_only and outcome.get('range_union_policy') and any(d.get('kind') in ('thin_range', 'unextracted_pages') for d in outcome.get('dispositions', [])):
                 continue
             try:
                 validate_reused_paper(paper, outcome, acceptance)
             except ValueError:
                 # Changed sources or incompatible/unknown acceptance policies need extraction.
                 continue
-            if source in reused and reused[source]['outcome'] != outcome:
+            if not revalidate_only and source in reused and retained(reused[source]['outcome']) != retained(outcome):
                 raise ValueError(f'conflicting completed paper receipts: {source}')
             graph = {k: outcome[k] for k in ('schema_version', 'source_id', 'items',
                                             'obligations', 'resolutions', 'dispositions')}
@@ -598,4 +614,5 @@ def citation_ids(literature: str) -> set[str] | None:
     if not literature.startswith(HEADER):
         return None
     data = json.loads(literature[len(HEADER):])
-    return {item['citation'] for paper in data['papers'] if paper['status'] in ('extracted', 'partial') for item in paper['items']}
+    from ara.runtime.grounding import evidence_items
+    return {item['citation'] for paper in data['papers'] if paper['status'] in ('extracted', 'partial') for item in evidence_items(paper)}

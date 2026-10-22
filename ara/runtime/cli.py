@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             papers = load_papers(args.manifest, args.fulltext_dir, selected)
             if not set(excluded) <= {p.source_id for p in papers}:
                 raise ValueError('excluded paper is absent from manifest')
-            reused = resume_papers(log, papers, args.resume_from, config, ROOT) if args.resume_from and not args.estimate_only else {}
+            reused = resume_papers(log, papers, args.resume_from, config, ROOT, revalidate_only=args.salvage_only) if args.resume_from and not args.estimate_only else {}
             if args.salvage_only:
                 from ara.runtime.salvage import OfflineExtractionProvider
                 calls = ModelCalls(config, OfflineExtractionProvider(config), log, Cache(Path(config['cache_dir'])), ROOT, '')

@@ -4,7 +4,7 @@ import copy
 import json
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.extraction import (ExtractedItem, PaperExtraction, V4_PROMPT_SHA256, V5_PRE_UNION_PROMPT_SHA256,
+from ara.runtime.extraction import (ExtractedItem, PaperExtraction, V4_PROMPT_SHA256, V5_PRE_UNION_PROMPT_SHA256, V5_UNION_PROMPT_SHA256,
                                    extraction_acceptance_identity)
 from ara.runtime.providers import Response
 
@@ -75,7 +75,7 @@ def accepted_ranges(events, papers, config, root, log):
             log.record('extraction_range_salvage_excluded', source_id=source, receipt_hash=event_id, reason='Incompatible effective extraction profile.')
             continue
         template = event['prompt'].split('\nLOCAL_RESPONSE_SCHEMA')[0]
-        if digest(template) not in (V4_PROMPT_SHA256, V5_PRE_UNION_PROMPT_SHA256, expected['prompt_sha256']):
+        if digest(template) not in (V4_PROMPT_SHA256, V5_PRE_UNION_PROMPT_SHA256, V5_UNION_PROMPT_SHA256, expected['prompt_sha256']):
             # Older, unreviewed contracts cannot qualify through a version label.
             log.record('extraction_range_salvage_excluded', source_id=source, receipt_hash=event_id, reason='Unreviewed predecessor prompt contract.')
             continue

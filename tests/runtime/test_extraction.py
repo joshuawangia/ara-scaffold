@@ -21,7 +21,7 @@ from ara.runtime.logging import EventLog
 from ara.runtime.providers import MockProvider, Response, mock_key
 
 ROOT = Path(__file__).resolve().parents[2]
-ITEM = {'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim', 'attributed_to': 'P', 'text': 'P',
+ITEM = {'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim', 'attributed_to': 'a', 'text': 'P P P',
         'page_start': 1, 'page_end': 1, 'premise_ids': [], 'conclusion_id': None, 'qualification_ids': [],
         'applies_to': [], 'inference_origin': None}
 VALUE = {'schema_version': 2, 'source_id': 'p', 'coverage_complete': True, 'new_gaps': [], 'items': [ITEM]}
@@ -65,7 +65,7 @@ def rig(tmp_path):
                                         {'id': 'q', 'title': 'Q', 'fulltext': 'fulltext/q.pdf'}]))
     fulltext = tmp_path / 'fulltext'
     fulltext.mkdir()
-    pdf(fulltext / 'p.pdf')
+    pdf(fulltext / 'p.pdf', ('P Q R F(x)', 'Q P R F(x)'))
     provider = MockProvider({})
     log = EventLog(tmp_path / 'run/events.jsonl')
     calls = ModelCalls(config, provider, log, Cache(Path(config['cache_dir'])), ROOT, '')
@@ -83,7 +83,7 @@ def accounting(log):
 
 def test_page_text_and_immutable_contract(rig):
     calls, provider, papers, *_ = rig
-    assert [p.text for p in papers[0].pages] == ['P', 'Q']
+    assert [p.text for p in papers[0].pages] == ['P Q R F(x)', 'Q P R F(x)']
     register(calls, provider, papers[0])
     result = calls.extract_paper(papers[0])
     assert result.items[0].citation == 'p:pdf:1#p:r1-2:p'
@@ -236,7 +236,7 @@ def test_provenance_integrity(rig, tmp_path):
     assert accounting(log)['extraction']['cost_usd'] == .00175
     assert accounting(log)['extraction']['upstream_receipts_imported']
     with pytest.raises(ValueError, match='does not match'):
-        literature_provenance(path, path.read_text().replace('"text":"P"', '"text":"R"'))
+        literature_provenance(path, path.read_text().replace('"text":"P P P"', '"text":"R R R"'))
     path.with_suffix('.provenance.json').unlink()
     with pytest.raises(FileNotFoundError): literature_provenance(path, path.read_text())
 
@@ -251,7 +251,7 @@ def test_extract_cli_to_build_t_native_path(rig, tmp_path, monkeypatch):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         observed.append((kind, inputs))
         if kind == 'extract_paper':
-            assert inputs['pages'] == [{'page': 1, 'text': 'P'}, {'page': 2, 'text': 'Q'}]
+            assert inputs['pages'] == [{'page': 1, 'text': 'P Q R F(x)'}, {'page': 2, 'text': 'Q P R F(x)'}]
             value = VALUE
         elif kind in ('select_t_roots', 'build_t_batch'):
             from rich_fixture import batch_response

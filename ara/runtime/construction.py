@@ -153,7 +153,9 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     require(len({p['source_id'] for p in papers}) == len(papers), 'duplicate source id')
     require(all(not p['items'] for p in papers if p['status'] == 'failed'),
             'failed paper cannot supply evidence')
-    usable = [p for p in papers if p['status'] in ('extracted', 'partial') and p['items']]
+    from ara.runtime.grounding import evidence_items
+    usable = [{**p, 'items': evidence_items(p)} for p in papers if p['status'] in ('extracted', 'partial')]
+    usable = [p for p in usable if p['items']]
     all_items = [item for p in usable for item in p['items']]
     require(len({i['id'] for i in all_items}) == len(all_items), 'duplicate evidence id')
     require(len({i['citation'] for i in all_items}) == len(all_items), 'duplicate evidence citation')

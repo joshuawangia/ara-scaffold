@@ -99,6 +99,8 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     second = json.loads(json.dumps(value['papers'][0]).replace('p:', 'q:'))
     second['source_id'] = 'q'
     for item in second['items']: item['source_id'] = 'q'
+    from ara.runtime.grounding import ground_outcome
+    second = ground_outcome(Paper('q', '{}', 'Q', (PageText(1, 'P Q R F(x)'),)), second, calls.log)
     value['papers'].append(second)
     calls.config.update(working_t_token_budget=10000, working_t_symbol_token_budget=19000)
     allowances = []

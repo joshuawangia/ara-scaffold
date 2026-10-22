@@ -1575,3 +1575,48 @@ historical review additions, before paying for a retry. Conflicting retained
 no-explicit-structure dispositions and overlapping paper-stated inference nodes
 are both preserved and explicitly flagged; union acceptance does not adjudicate
 the disagreement. Offline salvage never constructs a generation-capable provider.
+
+## Mu round 2: grounded evidence and retained quarantine
+
+Rich-paper acceptance v6 separates the retained range inventory from evidence
+eligible for construction. At publication, including offline reuse of pinned v4
+and v5 graphs, assess each item's text against only its cited readable physical
+pages. NFKC/case folding, alphabetic tokenization, line-end dehyphenation and a
+versioned function-word exclusion set precede distinct-token comparison. Require
+at least half the item's content tokens and at least three distinct matches (or
+all its content tokens when fewer than three exist). This is a conservative
+lexical support screen, not entailment or an attribution-truth proof. Real-data
+calibration and intentionally selected false-positive checks remain in ignored
+run evidence and the external task report; no source content belongs here.
+
+Template prefixes, one/two-character text, text identical to attribution and
+nonword text are quarantined independently of overlap. All reference dependents
+are quarantined transitively, including inference links constrained by a
+quarantined qualifier. Original item bodies and IDs remain unchanged in the
+retained inventory; separate `quarantined` records disclose reasons, scores and
+blocked IDs. Log every decision. Grounding metadata binds the policy, inventory,
+source text and quarantine decisions. Native citation lookup and construction
+refuse ungrounded/modified inventories and exclude quarantine. Resolutions using
+quarantined evidence no longer close a disclosed gap. Methodology distinguishes
+retained counts from grounded counts. Original receipts are never rewritten.
+
+There was no positive filler example or universal nonempty-item quota in the
+reviewed prompt/schema. However, rejected-candidate corrections were forbidden
+to remove unsupported items, and the displayed local-schema requirements did
+not clearly distinguish post-normalization fields from wire omissions. The prompt
+also described an empty array where the initial wire grammar requires null; v6
+now explicitly explains that null-to-empty normalization. V6 makes
+that distinction explicit and permits `discard_items` with an ID and reason,
+only for rejected candidates. Unknown/accepted IDs cannot be discarded, a patch
+cannot both replace and discard an ID, and all remaining references must still
+resolve. An all-discarded no-content candidate can return the empty disposition.
+Accepted history is quarantined, never silently deleted. Changing the prompt
+is a hypothesis about model behavior; the offline gate is the enforced boundary.
+
+Offline `--salvage-only` can use the latest verified paper snapshot, including
+thin/partial coverage, without paying for retries. It revalidates grounding on
+every retained item. A historical ungated artifact must be republished offline
+before it can supply T; schema validity alone is insufficient. No extra anchor
+field is added: historical items have no verbatim anchors, and adding one would
+not improve their offline check. The changed correction grammar requires the
+bounded live schema preflight; it does not authorize new extraction.

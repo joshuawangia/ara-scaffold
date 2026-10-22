@@ -20,7 +20,7 @@ def corpus(rig, monkeypatch, failed=('q',), limit=3):
     calls, provider, *_ = rig
     calls.config.update(extraction_max_failed_papers=limit, extraction_targeted_corrections=0)
     papers = tuple(Paper(id, json.dumps({'id': id, 'title': id.upper()}), id.upper(),
-                         (PageText(1, 'P'),)) for id in ('p', 'q', 'r', 's', 't'))
+                         (PageText(1, 'P Q R F(x)'),)) for id in ('p', 'q', 'r', 's', 't'))
     sent = []
     def complete(kind, prompt, schema, maximum):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])

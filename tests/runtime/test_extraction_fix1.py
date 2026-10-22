@@ -226,7 +226,7 @@ def test_capacity53_maximum_through_cli(rig, tmp_path):
     records = [{'id': f'p{i:02}' + 'P' * 3, 'title': 'P', 'fulltext': f'fulltext/p{i:02}' + 'P' * 3 + '.pdf'}
                for i in range(53)]
     manifest.write_text(yaml.safe_dump(records))
-    for record in records: pdf(fulltext / (record['id'] + '.pdf'), ('P',))
+    for record in records: pdf(fulltext / (record['id'] + '.pdf'), ('P Q R F(x)',))
     server = CapacityServer()
     def factory(config, log, topic):
         return ModelCalls(config, AnthropicProvider(config, client=server), log, calls.cache, ROOT, topic)

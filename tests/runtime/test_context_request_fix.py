@@ -92,7 +92,8 @@ def test_mode_contract_reaches_counter_prompt_and_wire(rig, monkeypatch, mode, c
                         (seen.append((prompt, schema)) or TokenUsage(input_tokens=1)))
     calls.count_request('extract_paper', inputs)
     prompt, schema = seen[0]
-    embedded = json.loads(prompt.split('LOCAL_RESPONSE_SCHEMA (all constraints are mandatory)\n')[1].split('\nINPUT_JSON\n')[0])
+    assert 'constraints apply after runtime completion of omitted edge fields; follow WIRE SHAPE' in prompt
+    embedded = json.loads(prompt.split('\nLOCAL_RESPONSE_SCHEMA ', 1)[1].split('\n', 1)[1].split('\nINPUT_JSON\n')[0])
     assert schema == embedded
     wire = structured_schema(schema)
     for candidate in [schema, *wire.get('anyOf', [wire])]:

@@ -1713,3 +1713,42 @@ that inference node as its parent at the next depth, and each recorded alternati
 must have exactly one matching admission or explicit prune. A sealed but contradictory
 or unresolved trace remains partial, with named gaps and all original receipts.
 These checks compare recorded evidence without rerunning search or licensing.
+
+## M5 — Completed snapshot unions and stable ordinary reuse
+
+This supersedes M4's differing-snapshot refusal. Acceptance remains v6; the new
+completed-snapshot-union-v1 representation separately versions union publication.
+Prompts, response schemas and grounding thresholds are unchanged.
+
+Ordinary resume previously skipped completed outcomes with thin-range or missing-
+page dispositions. Rebuilding from accepted range receipts then receipt-qualified
+native IDs, even when bounded retries were already exhausted and no generation
+occurred. Reuse validated completed outcomes directly, including disclosed thin
+and partial results. Their limitations persist; resume is not an implicit request
+to regenerate accepted papers. Raw accepted ranges remain salvageable when there
+is no compatible completed snapshot.
+
+When original verified snapshots differ, retain their union. Deduplication never
+uses text similarity or discards distinct original IDs. Nonconflicting IDs receive
+a stable union namespace. Conflicting IDs and their dependent reference context,
+including incoming inference qualifiers, receive snapshot-qualified namespaces.
+Identical referring bodies remain separate when their endpoints or constraints
+resolve differently. All citations and graph references map within each source
+snapshot. Per-item provenance records the snapshot, original ID, original citation
+and original body hash. The snapshot manifest preserves original acceptance
+identities, graph hashes and verified origin checkpoints; complete original bodies
+remain unchanged in the pinned ancestry.
+
+Obligations and resolutions are snapshot-scoped: resolution in one version never
+silently closes an obligation in another. Dispositions retain snapshot identity.
+Grounding and dependency quarantine are recomputed over the union; methodology
+and literature disclose the resulting gaps and provenance. A derived union is
+not another original snapshot. Subsequent resume requires all named originals in
+verified ancestry and checks that they reproduce its graph and item provenance.
+All origin and graph checks precede destination import.
+
+Best-effort reconciliation already catches counted context overflow, logs the
+refusal, accepts the retained ranges and continues to the next paper. Keep one
+bounded pass. Splitting would require a new cross-window obligation and evidence
+contract and extra calls; it is not a cheap substitute for the complete review.
+A native two-paper regression and production-wire control verify continuation.

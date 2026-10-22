@@ -62,6 +62,7 @@ def methodology(log_path: Path) -> str:
         **split_totals(extraction_calls),
         'acceptance_note': 'Accepted range union; reconciliation is one best-effort pass. Open gaps and thin ranges are not completeness guarantees.',
         'publication_roster': publication_roster(outcomes),
+        'snapshot_unions': [dict(source_id=p['source_id'], **p['snapshot_union']) for p in outcomes if 'snapshot_union' in p],
         'limitations': [dict(source_id=p['source_id'], open_gaps=literature_entry(p).get('open_gaps', []), dispositions=p.get('dispositions', [])) for p in outcomes if p.get('range_union_policy') or p.get('publication_policy') == PUBLICATION_POLICY],
         'grounding': [dict(source_id=p['source_id'], **p['grounding'], quarantined=len(p['quarantined'])) for p in outcomes if 'grounding' in p],
         'quarantined': [dict(source_id=p['source_id'], entries=p['quarantined']) for p in outcomes if p.get('quarantined')],

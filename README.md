@@ -165,9 +165,11 @@ limits. Estimates exclude retries and server fallbacks; actual requests reserve
 and account separately. Use an isolated cache for the planned extraction run.
 
 For a full-run plan, use the separate `extraction-full` profile. It selects Opus
-in `stages.extraction.model`, disables fallbacks, requires a stated inference in
-an accepted aggregate paper, and allows up to two targeted corrections per range or reconciliation response, within the
-shared paper-wide count and cost limits.
+in `stages.extraction.model` and disables fallbacks. Accepted range unions disclose
+inference coverage rather than imposing a link quota. Range corrections use the
+configured limit (0 through 3), within shared paper-wide count and cost limits.
+Reconciliation is one best-effort pass with no correction queue; a counted context
+overflow is logged and skipped while accepted ranges survive.
 Its enclosing token/cost caps and extraction cost cap are `null`: the operator
 must set all three before generation. The same profile is accepted by native `ara run --profile extraction-full` so its
 32k catalogue and construction correction policy also reach construction. Use it
@@ -393,7 +395,9 @@ Retried papers get fresh paper-local allowances. Preserve all original logs and
 checkpoints: missing or changed origins refuse, including during later pilot
 import. Unknown or interrupted spend must be reconciled before reuse.
 
-Partial ranges within failed papers are not restored. The original run directory
+Verified accepted range receipts can be salvaged from failed or interrupted papers.
+Accepted completed snapshots, including disclosed thin or partial results, are
+reused without reconstructing their IDs or automatically repeating extraction. The original run directory
 remains immutable; an occupied destination refuses before provider construction.
 Cross-run cache entries without original receipts remain invalid provenance.
 
@@ -405,7 +409,15 @@ costs are still imported. Dollar/token caps, paper/recovery allowances and unrel
 stage settings can change without invalidating compatible completed papers.
 `--missing refuse` also rejects reused partial sources before publication.
 Ancestor successes remain reusable if an intermediate run stops before reaching
-those papers. Conflicting compatible successes refuse instead of selecting one.
+those papers. Multiple compatible completed snapshots publish an explicit union.
+Identical original ID/body pairs can share an output item; distinct IDs are never
+merged by text similarity. Conflicting IDs and their dependent reference context
+are snapshot-qualified, with all links mapped within the originating snapshot.
+The artifact carries per-item provenance and original snapshot identities and
+checkpoints. Gaps and resolutions remain snapshot-scoped; quarantine is recomputed
+over the union. A second resume rebuilds from verified original snapshots rather
+than recursively unioning derived copies. The acceptance identity remains v6;
+`completed-snapshot-union-v1` versions this publication representation.
 
 The extraction/provenance API for downstream consumers is:
 

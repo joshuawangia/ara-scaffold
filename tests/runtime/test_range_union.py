@@ -123,7 +123,8 @@ def test_native_salvage_only_never_constructs_provider(rig, monkeypatch, tmp_pat
     assert value['publication_roster'][0]['reason']
 
 
-def test_historical_thin_retry_is_not_repeated(rig, monkeypatch, tmp_path):
+@pytest.mark.parametrize('history', ['completed', 'interrupted'])
+def test_historical_thin_retry_is_not_repeated(rig, monkeypatch, tmp_path, history):
     from ara.runtime.calls import ModelCalls
     from ara.runtime.cache import Cache
     from ara.runtime.extraction import resume_papers
@@ -134,16 +135,28 @@ def test_historical_thin_retry_is_not_repeated(rig, monkeypatch, tmp_path):
     first = graph(); first['items'] = first['items'][:1]
     second = graph(page=11); second['items'] = second['items'][:1]
     sent = sequence(monkeypatch, provider, [first, first, second, {**graph(), 'items': []}])
-    extract(calls, (paper,))
+    original = extract(calls, (paper,))
+    original_items = json.loads(original.read_text()[len(HEADER):])['papers'][0]['items']
     assert len(sent) == 4
+    source = calls.log
+    if history == 'interrupted':
+        from ara.types import RunEvent
+        source = EventLog(tmp_path/'interrupted/events.jsonl')
+        for event in calls.log.read():
+            if event['stage'] == 'extraction_outcome':
+                break
+            source.emit(RunEvent.from_dict(event))
     log = EventLog(tmp_path/'follow/events.jsonl')
-    reused = resume_papers(log, (paper,), [calls.log.path.parent], calls.config, ROOT)
+    reused = resume_papers(log, (paper,), [source.path.parent], calls.config, ROOT)
     sent.clear()
     follow = ModelCalls(calls.config, provider, log, Cache(tmp_path/'follow/cache'), ROOT, '')
     path = extract(follow, (paper,), reused=reused)
     assert sent == []
     value = json.loads(path.read_text()[len(HEADER):])['papers'][0]
-    assert len(value['items']) == 3
+    if history == 'completed':
+        assert value['items'] == original_items
+    else:
+        assert len(value['items']) == len(original_items)
     assert any(d['kind'] == 'thin_range' for d in value['dispositions'])
 
 
@@ -181,3 +194,33 @@ def test_accepted_review_fills_thin_range_before_paid_retry(rig, monkeypatch, tm
     assert not sent and len(result.items) == 17
     kinds = {d['kind'] for d in json.loads(result.dispositions_json)}
     assert 'thin_range_filled_by_accepted_evidence' in kinds and 'thin_range' not in kinds
+
+
+def test_reconciliation_context_overflow_preserves_paper_and_continues(rig, monkeypatch):
+    from test_paper_recovery import corpus
+    from ara.types import TokenUsage
+    calls, provider, papers, sent = corpus(rig, monkeypatch, failed=(), limit=0)
+    papers = (replace(papers[0], pages=(PageText(1, 'P Q R F(x)'), PageText(2, 'P Q R F(x)'))), papers[1])
+    monkeypatch.setattr('ara.runtime.calls.extraction_range_plan', lambda calls, paper: [((p,), 1) for p in paper.pages])
+    original_count = provider.estimate
+    def count(kind, prompt, schema, maximum):
+        if json.loads(prompt.split('\nINPUT_JSON\n')[1]).get('mode') == 'reconcile_ranges':
+            return TokenUsage(input_tokens=220721)
+        return original_count(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'estimate', count)
+    from ara.runtime.providers import Response
+    from test_extraction import response
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        sent.append((kind, inputs))
+        return Response(response(graph(inputs['source_id'], page=inputs['pages'][0]['page'])))
+    monkeypatch.setattr(provider, 'complete', complete)
+    calls.config['model_context_token_bound'] = 200000
+    path = extract(calls, papers)
+    data = json.loads(path.read_text()[len(HEADER):])['papers']
+    assert [p['status'] for p in data] == ['extracted', 'extracted']
+    assert len(data[0]['items']) == 16 and len(data[1]['items']) == 8
+    assert len(sent) == 3 and all(i.get('mode') != 'reconcile_ranges' for _, i in sent)
+    assert any(d['kind'] == 'reconciliation_failed' and 'context bound' in d['reason'] for d in data[0]['dispositions'])
+    failures = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_reconciliation_failed']
+    assert len(failures) == 1 and failures[0]['retained_items'] == 16

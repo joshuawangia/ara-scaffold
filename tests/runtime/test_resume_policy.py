@@ -130,7 +130,7 @@ def test_stopped_descendant_reuses_unreached_ancestor_success(rig, monkeypatch, 
     literature_provenance(path, path.read_text())
 
 
-def test_conflicting_compatible_ancestor_successes_refuse(rig, monkeypatch, tmp_path):
+def test_conflicting_compatible_ancestor_successes_union(rig, monkeypatch, tmp_path):
     calls, provider, papers, sent = corpus(rig, monkeypatch, failed=())
     extract(calls, papers[:1])
     original = provider.complete
@@ -143,9 +143,11 @@ def test_conflicting_compatible_ancestor_successes_refuse(rig, monkeypatch, tmp_
     extract(other, papers[:1])
     from ara.runtime.extraction import resume_papers
     destination = EventLog(tmp_path/'destination/events.jsonl')
-    with pytest.raises(ValueError, match='conflicting completed'):
-        resume_papers(destination, papers[:1], [calls.log.path.parent, other.log.path.parent], calls.config, ROOT)
-    assert destination.read() == []
+    reused = resume_papers(destination, papers[:1], [calls.log.path.parent, other.log.path.parent], calls.config, ROOT)
+    outcome = reused['p']['outcome']
+    assert len(outcome['items']) == 10
+    assert len(outcome['snapshot_union']['snapshots']) == 2
+    assert set(outcome['item_provenance']) == {i['id'] for i in outcome['items']}
 
 
 

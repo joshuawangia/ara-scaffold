@@ -288,9 +288,9 @@ CASES += [
     ('resume_ancestor_inventory', 'ara/runtime/extraction.py',
      'for outcome in historical_extraction_outcomes(events):', 'for outcome in extraction_outcomes(events):',
      'tests/runtime/test_resume_policy.py::test_stopped_descendant_reuses_unreached_ancestor_success'),
-    ('resume_ancestor_conflict', 'ara/runtime/extraction.py',
-     "if source in reused and retained(reused[source]['outcome']) != retained(outcome):", 'if False:',
-     'tests/runtime/test_resume_policy.py::test_conflicting_compatible_ancestor_successes_refuse'),
+    ('resume_ancestor_union', 'ara/runtime/extraction.py',
+     "outcome = unite(entries, acceptance) if len(entries) > 1 else first['outcome']", "outcome = first['outcome']",
+     'tests/runtime/test_resume_policy.py::test_conflicting_compatible_ancestor_successes_union'),
     ('resume_execution_policy', 'ara/runtime/extraction.py',
      '            validate_reused_paper(paper, outcome, acceptance)\n            calls.log.record', '            calls.log.record',
      'tests/runtime/test_resume_policy.py::test_execution_rechecks_reuse_policy'),
@@ -415,7 +415,7 @@ CASES += [
      'tests/runtime/test_range_union.py::test_refinement_discloses_conflicting_inference_disposition'),
     ('union_thin_retry_once', 'ara/runtime/calls.py',
      "if entry.get('refined'):", 'if False:',
-     'tests/runtime/test_range_union.py::test_historical_thin_retry_is_not_repeated'),
+     'tests/runtime/test_range_union.py::test_historical_thin_retry_is_not_repeated[interrupted]'),
     ('union_thin_retry', 'ara/runtime/salvage.py',
      'return len(pages) >= 8 and len(items) <= max(1, len(pages) // 10)', 'return False',
      'tests/runtime/test_range_union.py::test_thin_range_retried_once_without_dropping_original'),
@@ -462,8 +462,8 @@ CASES += [
 ]
 
 CASES += [
-    ('offline_snapshot_retention', 'ara/runtime/extraction.py',
-     "if any(next_items.get(id) != item for id, item in previous_items.items()):", 'if False:',
+    ('offline_snapshot_retention', 'ara/runtime/snapshot_union.py',
+     "for original in outcome['items']:", "for original in outcome['items'][:1]:",
      'tests/runtime/test_republication.py::test_offline_snapshot_replacement_preserves_accepted_inventory'),
     ('legacy_gap_publication', 'ara/runtime/extraction.py',
      "if outcome.get('range_union_policy') or outcome.get('publication_policy') == PUBLICATION_POLICY:",
@@ -543,6 +543,36 @@ CASES += [
      'if any(dispositions[key] != 1 for key in proposals):', 'if False:',
      'tests/engine/test_search_trace.py::test_sealed_trace_semantics_are_checked_before_rendering'),
 ]
+
+
+CASES += [
+    ('snapshot_collision_namespace', 'ara/runtime/snapshot_union.py',
+     "if i['id'] in qualified", 'if False',
+     'tests/runtime/test_republication.py::test_offline_snapshot_replacement_preserves_accepted_inventory[conflicting]'),
+    ('snapshot_incoming_qualifier', 'ara/runtime/snapshot_union.py',
+     "dependencies.setdefault(target, set()).add(item['id'])", 'pass',
+     'tests/runtime/test_republication.py::test_offline_snapshot_replacement_preserves_accepted_inventory[qualifier]'),
+    ('snapshot_incoming_presence', 'ara/runtime/snapshot_union.py',
+     'qualified.update(id for id, contexts in incoming_contexts.items() if len(contexts) > 1)', 'pass',
+     'tests/runtime/test_republication.py::test_offline_snapshot_replacement_preserves_accepted_inventory[new_qualifier]'),
+    ('snapshot_reference_mapping', 'ara/runtime/snapshot_union.py',
+     "item[field] = [mapping[id] for id in original[field]]", "item[field] = original[field]",
+     'tests/runtime/test_republication.py::test_offline_snapshot_replacement_preserves_accepted_inventory[conflicting]'),
+    ('snapshot_gap_scope', 'ara/runtime/snapshot_union.py',
+     ':snapshot:{sid}:gap:', ':gap:',
+     'tests/runtime/test_republication.py::test_union_keeps_gap_resolution_with_its_snapshot'),
+    ('snapshot_derived_reconstruction', 'ara/runtime/extraction.py',
+     'graph(rebuilt) != graph(outcome) or', 'False or',
+     'tests/runtime/test_republication.py::test_union_keeps_gap_resolution_with_its_snapshot'),
+    ('completed_thin_snapshot_reuse', 'ara/runtime/extraction.py',
+     "            try:\n                validate_reused_paper(selected[source], outcome, acceptance)",
+     "            if any(d.get('kind') == 'thin_range' for d in outcome.get('dispositions', [])):\n                continue\n            try:\n                validate_reused_paper(selected[source], outcome, acceptance)",
+     'tests/runtime/test_range_union.py::test_historical_thin_retry_is_not_repeated[completed]'),
+    ('reconciliation_overflow_continues', 'ara/runtime/reconciliation.py',
+     '    except Exception as exc:', '    except Exception as exc:\n        raise',
+     'tests/runtime/test_range_union.py::test_reconciliation_context_overflow_preserves_paper_and_continues'),
+]
+
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

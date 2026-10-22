@@ -252,6 +252,9 @@ def literature_entry(outcome: dict) -> dict:
         resolved = {r['obligation_id'] for r in outcome.get('resolutions', []) if not blocked.intersection(r['evidence_ids'])}
         entry['open_gaps'] = [o for o in outcome.get('obligations', []) if o['id'] not in resolved]
         entry['dispositions'] = outcome.get('dispositions', [])
+    if 'snapshot_union' in outcome:
+        entry['snapshot_union'] = outcome['snapshot_union']
+        entry['item_provenance'] = outcome['item_provenance']
     if 'grounding' in outcome:
         entry['grounding'] = outcome['grounding']
         entry['quarantined'] = outcome['quarantined']
@@ -556,12 +559,13 @@ def resume_papers(log, papers, sources, config: dict, root: Path, *, revalidate_
     config must be the effective (profile-applied) configuration, root the contract
     directory. Missing or incompatible acceptance identities require extraction.
     Publication still uses extraction_outcomes(), which selects only the last batch.
+    revalidate_only remains an accepted keyword; completed reuse now always retains
+    every compatible snapshot, in both ordinary and salvage-only runs.
     """
-    def retained(value):
-        return {k: v for k, v in value.items() if k not in ('grounding', 'quarantined', 'publication_policy')}
+    from ara.runtime.snapshot_union import VERSION, graph, snapshot_id, unite
     acceptance = extraction_acceptance_identity(config, root)
-    loaded = []
-    reused = {}
+    loaded, derived = [], []
+    snapshots = {}
     selected = {p.source_id: p for p in papers}
     for directory in sources:
         path = Path(directory) / 'events.jsonl'
@@ -569,40 +573,62 @@ def resume_papers(log, papers, sources, config: dict, root: Path, *, revalidate_
         events = read_checkpoint(origin)
         if missing_lineage(events):
             raise MissingExtractionLineage('resume origin lacks original extraction receipts')
+        accepted_graphs = {json.loads(e['payload_json']).get('graph_hash') for e in events
+                           if e['stage'] == 'extraction_graph_merged'}
         for outcome in historical_extraction_outcomes(events):
             source = outcome['source_id']
             if source not in selected or outcome['status'] not in ('extracted', 'partial'):
                 continue
-            paper = selected[source]
-            if not revalidate_only and outcome.get('range_union_policy') and any(d.get('kind') in ('thin_range', 'unextracted_pages') for d in outcome.get('dispositions', [])):
-                continue
             try:
-                validate_reused_paper(paper, outcome, acceptance)
+                validate_reused_paper(selected[source], outcome, acceptance)
             except ValueError:
                 # Changed sources or incompatible/unknown acceptance policies need extraction.
                 continue
-            if source in reused and retained(reused[source]['outcome']) != retained(outcome):
-                if not revalidate_only:
-                    raise ValueError(f'conflicting completed paper receipts: {source}')
-                previous_items = {i['id']: i for i in reused[source]['outcome']['items']}
-                next_items = {i['id']: i for i in outcome['items']}
-                if any(next_items.get(id) != item for id, item in previous_items.items()):
-                    raise ValueError(f'non-monotonic completed paper replacement: {source}; accepted item IDs and bodies must be retained')
-            graph = {k: outcome[k] for k in ('schema_version', 'source_id', 'items',
-                                            'obligations', 'resolutions', 'dispositions')}
-            if not any(e['stage'] == 'extraction_graph_merged' and
-                       json.loads(e['payload_json']).get('graph_hash') == digest(canonical(graph)) for e in events):
+            if digest(canonical(graph(outcome))) not in accepted_graphs:
                 raise ValueError('completed paper lacks accepted graph receipt')
-            reused[source] = dict(outcome=outcome, origin=origin)
+            if 'snapshot_union' in outcome:
+                if outcome['snapshot_union'].get('version') != VERSION:
+                    raise ValueError('unsupported completed snapshot union')
+                derived.append(outcome)
+                continue
+            sid = snapshot_id(outcome)
+            entry = snapshots.setdefault(source, {}).setdefault(sid, dict(outcome=outcome, origins=[]))
+            if origin not in entry['origins']:
+                entry['origins'].append(origin)
         loaded.append((events, origin))
-    # Validate every origin before modifying the destination or constructing a provider.
+    # A published union is derived, never a new independent source snapshot.
+    # Require its original snapshots in the verified ancestry before rebuilding.
+    for outcome in derived:
+        if not set(outcome['snapshot_union']['snapshots']) <= snapshots.get(outcome['source_id'], {}).keys():
+            raise ValueError('completed snapshot union lacks original snapshot receipts')
+        originals = {id: snapshots[outcome['source_id']][id] for id in outcome['snapshot_union']['snapshots']}
+        rebuilt = unite(originals, outcome['acceptance_identity'])
+        if (graph(rebuilt) != graph(outcome) or
+                rebuilt['item_provenance'] != outcome.get('item_provenance')):
+            raise ValueError('completed snapshot union differs from original snapshot receipts')
+    reused = {}
+    for source, entries in snapshots.items():
+        first = entries[sorted(entries)[0]]
+        outcome = unite(entries, acceptance) if len(entries) > 1 else first['outcome']
+        reused[source] = dict(outcome=outcome, origin=sorted(first['origins'], key=canonical)[0])
+    # Validate and construct every union before modifying the destination.
     for events, origin in loaded:
         import_provenance(log, events, origin)
-    for source, entry in reused.items():
-        if entry['outcome']['acceptance_identity'] != acceptance:
-            log.record('extraction_acceptance_revalidated', source_id=source,
-                       from_identity=entry['outcome']['acceptance_identity'], to_identity=acceptance,
-                       outcome_hash=digest(canonical(entry['outcome'])))
+    for source, entries in snapshots.items():
+        for entry in entries.values():
+            outcome = entry['outcome']
+            if outcome['acceptance_identity'] != acceptance:
+                log.record('extraction_acceptance_revalidated', source_id=source,
+                           from_identity=outcome['acceptance_identity'], to_identity=acceptance,
+                           outcome_hash=digest(canonical(outcome)))
+        outcome = reused[source]['outcome']
+        if 'snapshot_union' in outcome:
+            graph_hash = digest(canonical(graph(outcome)))
+            log.record('extraction_snapshot_union', source_id=source, **outcome['snapshot_union'],
+                       items=len(outcome['items']), graph_hash=graph_hash,
+                       item_provenance_sha256=digest(canonical(outcome['item_provenance'])))
+            log.record('extraction_graph_merged', source_id=source, graph_hash=graph_hash,
+                       snapshots=len(entries), items=len(outcome['items']))
     from ara.runtime.salvage import accepted_ranges
     combined = []
     seen = set()

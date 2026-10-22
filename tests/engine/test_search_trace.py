@@ -230,10 +230,15 @@ def test_native_500_state_trace_full_report(tmp_path, monkeypatch):
     ('fields', 'invalid terminal graph fields'),
     ('action', 'unsupported trace action'),
     ('node_reference', 'transition references an absent proof node'),
+    ('terminal_proposal', 'terminal proposal differs from selected proposal'),
+    ('node_parent', 'inference child parent/depth differs from node definition'),
+    ('dangling_proposal', 'proposal must have exactly one admission or prune'),
+    ('admitted_and_pruned', 'proposal must have exactly one admission or prune'),
 ])
 def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypatch, fault, expected):
     import hashlib
-    from ara.runtime.cache import canonical
+    from copy import deepcopy
+    from ara.runtime.cache import canonical, digest
     from ara.runtime.report import generate_report
     import ara.runtime.report_render as rendering
     monkeypatch.setattr(rendering.shutil, 'which', lambda _: None)
@@ -252,6 +257,27 @@ def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypat
     if fault == 'fields': terminal['graph']['nodes'][0]['proposition'] = None
     if fault == 'action': rows.insert(-1, dict(action='future'))
     if fault == 'node_reference': next(r for r in rows if r['action'] == 'expand')['node_id'] = 'absent'
+    if fault == 'terminal_proposal':
+        original = next(r for r in rows if r['action'] == 'definition' and r['kind'] == 'proposal')
+        changed = deepcopy(original['value'])
+        text_ref = digest(canonical('R'))
+        changed['premises'][0]['text_id'] = text_ref
+        proposal_ref = digest(canonical(changed))
+        rows[-1:-1] = [dict(action='definition', kind='text', ref=text_ref, value='R'),
+                       dict(action='definition', kind='proposal', ref=proposal_ref, value=changed)]
+        terminal['graph']['nodes'][0]['proposal_id'] = proposal_ref
+    if fault == 'node_parent':
+        node = next(r for r in rows if r['action'] == 'node' and r['node_id'] == 'n2')
+        node.update(parent_node_id='n1', depth=2)
+    if fault == 'dangling_proposal':
+        candidate = deepcopy(next(r for r in rows if r['action'] == 'proposal'))
+        candidate['proposal_index'] = 7
+        rows.insert(-1, candidate)
+    if fault == 'admitted_and_pruned':
+        candidate = next(r for r in rows if r['action'] == 'proposal')
+        rows.insert(-1, dict(action='prune', status='pruned', state_id=candidate['state_id'],
+                             node_id=candidate['node_id'], proposal_index=candidate['proposal_index'],
+                             reason='NODE_CAP'))
     for index, row in enumerate(rows): row['seq'] = index
     raw = ''.join(canonical(row) + '\n' for row in rows).encode()
     path.write_bytes(raw)
@@ -260,10 +286,14 @@ def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypat
     log.anchor.unlink()
     log.record('search_trace_receipt', **seal)
     generate_report([log.path.parent], tmp_path/'out')
-    trace = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]['search']['traces'][0]
+    run = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]
+    trace = run['search']['traces'][0]
     assert not trace['complete']
     assert any(expected in issue for issue in trace['issues']), trace['issues']
     assert len(trace['receipts']) == len(rows)
+    assert [r['payload'] for r in trace['receipts']] == rows
+    assert any(gap.startswith('PARTIAL SEARCH TRACE: ') and expected in gap for gap in run['gaps'])
+    assert expected in (tmp_path/'out/report.html').read_text()
 
 
 def test_padded_cap_trace_stays_below_pilot_limit_and_preserves_every_route(tmp_path):

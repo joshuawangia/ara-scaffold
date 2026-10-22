@@ -533,6 +533,15 @@ CASES += [
     ('trace_all_state_rendering', 'ara/runtime/report_render.py',
      "for index, state in enumerate(trace['states']):", "for index, state in enumerate(trace['states'][:499]):",
      'tests/engine/test_search_trace.py::test_native_500_state_trace_full_report'),
+    ('trace_selected_proposal_identity', 'ara/runtime/report_traces.py',
+     "if node.get('proposal') != expand_proposal(candidate.get('proposal_id'), reference):", 'if False:',
+     'tests/engine/test_search_trace.py::test_sealed_trace_semantics_are_checked_before_rendering'),
+    ('trace_selected_child_ancestry', 'ara/runtime/report_traces.py',
+     "if (child.get('parent_node_id') != state.get('node_id') or\n                            type(parent.get('depth')) is not int or child.get('depth') != parent['depth'] + 1):", 'if False:',
+     'tests/engine/test_search_trace.py::test_sealed_trace_semantics_are_checked_before_rendering'),
+    ('trace_alternative_disposition', 'ara/runtime/report_traces.py',
+     'if any(dispositions[key] != 1 for key in proposals):', 'if False:',
+     'tests/engine/test_search_trace.py::test_sealed_trace_semantics_are_checked_before_rendering'),
 ]
 
 def main():

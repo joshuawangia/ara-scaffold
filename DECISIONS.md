@@ -1706,3 +1706,10 @@ payloads referenced through the same interned definitions as state deltas. The
 report resolves those references only after authentication and preserves the raw
 receipts alongside the expanded terminal graphs. This keeps long repeated premise
 text from multiplying across alternative routes; it does not omit any route.
+
+Round-three R1 requires agreement across the authenticated records: a terminal
+inference must contain the full selected proposal, each selected child must name
+that inference node as its parent at the next depth, and each recorded alternative
+must have exactly one matching admission or explicit prune. A sealed but contradictory
+or unresolved trace remains partial, with named gaps and all original receipts.
+These checks compare recorded evidence without rerunning search or licensing.

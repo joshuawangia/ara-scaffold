@@ -153,6 +153,10 @@ def walk(value: Any):
             yield from walk(child)
 
 
+def extraction_failure_reason(exc):
+    return f'{type(exc).__name__}: {exc}' if isinstance(exc, (Rejected, BudgetStop)) else type(exc).__name__
+
+
 class ModelCalls:
     def __init__(self, config: dict, provider: Provider, log: EventLog, cache: Cache,
                  root: Path, topic: str):
@@ -426,12 +430,12 @@ class ModelCalls:
                              scope='paper' if kind == 'extract_paper' else 'run')
         return estimate
 
-    def extract_paper(self, paper: Paper) -> PaperExtraction:
+    def extract_paper(self, paper: Paper, *, salvaged=(), salvage_only=False) -> PaperExtraction:
         from ara.runtime.extraction_budget import PaperAllowance
         require(self._paper_budget is None, 'nested paper extraction')
         allowance = self._paper_budget = PaperAllowance(self, paper)
         try:
-            return self._extract_paper(paper)
+            return self._extract_paper(paper, salvaged=salvaged, salvage_only=salvage_only)
         except BudgetStop as exc:
             if not allowance.stopped:
                 allowance.stop(str(exc), scope=exc.scope)
@@ -440,7 +444,7 @@ class ModelCalls:
             self._paper_budget = None
 
     def _extraction_response(self, paper, inputs, pages, prefix, existing=(),
-                             allow_incomplete=False, validate_context=None):
+                             allow_incomplete=False, validate_context=None, single_pass=False, recorded_data=None):
         corrections = self.config.get('extraction_targeted_corrections')
         if corrections is not None and (type(corrections) is not int or corrections not in (0, 1, 2, 3)):
             raise ValueError('extraction_targeted_corrections must be 0, 1, 2 or 3')
@@ -483,13 +487,6 @@ class ModelCalls:
                             not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
                 require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
             by_id = {item.id: item for item in (*existing, *items)}
-            if self.config.get('extraction_require_inference', False) and (
-                    (inputs.get('mode') != 'reconcile_ranges' or inputs.get('paper_level')) and not data['new_gaps'] and
-                    len(pages) == len(paper.readable_pages)):
-                require(any(item.kind == 'inference' for item in by_id.values()) or
-                        bool(data.get('no_inference_reason', '').strip()),
-                        'extraction has no stated inference: add supported paper_stated or reconstructed links, '
-                        'or disclose no explicit inferential structure in no_inference_reason')
             if data.get('no_inference_reason') is not None:
                 require(bool(data['no_inference_reason'].strip()), 'blank no-inference disposition')
                 require(not any(i.kind == 'inference' for i in by_id.values()),
@@ -531,6 +528,11 @@ class ModelCalls:
                                          reason=data['no_inference_reason']))
             return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
                                    dispositions_json=canonical(dispositions)), data['new_gaps'], request
+        if recorded_data is not None:
+            Draft202012Validator(self.response_schema('extract_paper', inputs)).validate(recorded_data)
+            return check(recorded_data)
+        if single_pass:
+            return self._call_once('extract_paper', inputs, check)
         if corrections is None:
             return self.call('extract_paper', inputs, check)
         candidate = None
@@ -574,16 +576,18 @@ class ModelCalls:
                                 valid_page_bounds=request['valid_page_bounds'])
         raise AssertionError('unreachable')
 
-    def _extract_paper(self, paper: Paper) -> PaperExtraction:
-        ranges: list[PaperExtraction] = []
-        def run(inputs, pages, prefix, existing=(), allow_incomplete=False, validate_context=None):
+    def _extract_paper(self, paper: Paper, *, salvaged=(), salvage_only=False) -> PaperExtraction:
+        from ara.runtime.salvage import is_thin
+        ranges = [entry['result'] for entry in salvaged]
+        dispositions = []
+        covered = {p for entry in salvaged for p in entry['pages']}
+        def run(inputs, pages, prefix, existing=(), allow_incomplete=False, validate_context=None, single_pass=False):
             return self._extraction_response(paper, inputs, pages, prefix, existing,
-                                             allow_incomplete, validate_context)
+                                             allow_incomplete, validate_context, single_pass)
 
-        unresolved = []
-        def segment(pages):
+        def segment(pages, *, refinement=False):
             inputs = {**paper.inputs(), 'pages': [dict(page=p.page, text=p.text) for p in pages]}
-            prefix = f'r{pages[0].page}-{pages[-1].page}'
+            prefix = f'r{pages[0].page}-{pages[-1].page}' + ('-refine' if refinement else '')
             self.log.record('extraction_range', source_id=paper.source_id, prefix=prefix,
                             pages=[p.page for p in pages], input_hash=digest(canonical(inputs)))
             try:
@@ -593,39 +597,94 @@ class ModelCalls:
                     raise
                 self.log.record('extraction_range_split', source_id=paper.source_id, prefix=prefix, reason=str(exc))
                 mid = len(pages) // 2
-                segment(pages[:mid]); segment(pages[mid:])
+                segment(pages[:mid], refinement=refinement); segment(pages[mid:], refinement=refinement)
                 return
             obligations = record_new_obligations(self.log, paper.source_id, prefix, 1,
                                                  [p.page for p in pages], new_gaps)
             result = replace(result, obligations_json=canonical(obligations))
             ranges.append(result)
-            unresolved.extend(obligations)
+            covered.update(p.page for p in pages)
             save_immutable(self.log.path.parent / f'{paper.source_id}.{prefix}.rich.json', canonical(result.to_dict()))
-        for pages, _ in extraction_range_plan(self, paper):
-            segment(pages)
-        from ara.runtime.reconciliation import reconcile
-        items, unresolved, resolutions = reconcile(self, paper, ranges, run)
-        resolutions_json = canonical(resolutions)
+            if is_thin(pages, result.items):
+                if not refinement:
+                    refine(pages)
+                else:
+                    dispositions.append(dict(kind='thin_range', pages=[p.page for p in pages],
+                                             items=len(result.items), reason='Still thin after one split re-extraction.'))
+
+        def refine(pages):
+            self.log.record('extraction_thin_retry', source_id=paper.source_id, pages=[p.page for p in pages])
+            mid = len(pages) // 2
+            for half in (pages[:mid], pages[mid:]):
+                try:
+                    segment(half, refinement=True)
+                except Exception as exc:
+                    dispositions.append(dict(kind='thin_range', pages=[p.page for p in half],
+                                             reason=f'Re-extraction failed; accepted evidence retained: {extraction_failure_reason(exc)}'))
+
+        pending_thin = []
+        for entry in salvaged:
+            ids = entry['pages']
+            pages = tuple(p for p in paper.readable_pages if p.page in ids)
+            if is_thin(pages, entry['result'].items):
+                # A richer accepted snapshot may already cover this same range.
+                richer = {p for other in salvaged if not is_thin(other['pages'], other['result'].items)
+                          for p in other['pages']}
+                supported = [i for other in salvaged for i in other['result'].items
+                             if i.page_start in ids and i.page_end in ids]
+                if not is_thin(pages, supported):
+                    dispositions.append(dict(kind='thin_range_filled_by_accepted_evidence', pages=ids,
+                        reason='Accepted evidence from other ranges or review already exceeds the thin-range threshold.'))
+                elif not set(ids) <= richer:
+                    if entry.get('refined'):
+                        dispositions.append(dict(kind='thin_range', pages=ids, reason='Still thin after the historical split re-extraction attempt.'))
+                    else:
+                        pending_thin.append(pages)
+        if salvage_only:
+            dispositions.extend(dict(kind='thin_range', pages=[p.page for p in pages],
+                                     reason='Offline salvage; one split re-extraction remains due.') for pages in pending_thin)
+        else:
+            seen = set()
+            for pages in pending_thin:
+                key = tuple(p.page for p in pages)
+                if key not in seen:
+                    refine(pages)
+                    seen.add(key)
+        missing = tuple(p for p in paper.readable_pages if p.page not in covered)
+        if missing and not salvage_only:
+            try:
+                for pages, _ in extraction_range_plan(self, replace(paper, pages=missing)):
+                    segment(pages)
+            except Exception as exc:
+                if not ranges:
+                    raise
+                dispositions.append(dict(kind='range_extraction_failed', reason=f'{extraction_failure_reason(exc)}'))
+        missing_ids = [p.page for p in paper.readable_pages if p.page not in covered]
+        if missing_ids:
+            dispositions.append(dict(kind='unextracted_pages', pages=missing_ids,
+                                     reason='No accepted range covers these readable pages.'))
+        if salvage_only or salvaged:
+            items = tuple(i for r in ranges for i in r.items)
+            unresolved = [o for r in ranges for o in json.loads(r.obligations_json)]
+            resolutions = [v for r in ranges for v in json.loads(r.resolutions_json)]
+            dispositions.append(dict(kind='reconciliation_not_repeated', reason='Accepted historical review output retained; offline salvage does not repeat review.'))
+        else:
+            from ara.runtime.reconciliation import reconcile
+            items, unresolved, resolutions, review_dispositions = reconcile(self, paper, ranges, run)
+            dispositions.extend(review_dispositions)
         require(len({item.id for item in items}) == len(items), 'duplicate merged extraction id')
-        dispositions = [d for r in ranges for d in json.loads(r.dispositions_json)]
+        dispositions.extend(d for r in ranges for d in json.loads(r.dispositions_json))
         if self.config.get('extraction_require_inference', False) and not any(i.kind == 'inference' for i in items):
-            covered = {p for d in dispositions if d.get('kind') == 'no_explicit_inferential_structure'
-                       for p in d['pages']}
-            if covered != {p.page for p in paper.readable_pages}:
-                # A paper-level review can add cross-range links or explicitly
-                # disclose absence. Full context is counted, never truncated.
-                inputs = {**paper.inputs(), 'mode': 'reconcile_ranges', 'paper_level': True,
-                          'ranges': [PaperExtraction(paper.source_id, items).to_dict()], 'obligations': []}
-                self.count_request('extract_paper', inputs, admission=True)
-                review, gaps, _ = run(inputs, paper.readable_pages, 'inference-review', existing=items)
-                require(not gaps, 'paper inference review has unresolved gaps')
-                items += review.items
-                dispositions.extend(json.loads(review.dispositions_json))
-                require(any(i.kind == 'inference' for i in items) or any(
-                    d.get('kind') == 'no_explicit_inferential_structure' for d in json.loads(review.dispositions_json)),
-                    'extraction has no stated inference or explicit no-inference disposition')
+            dispositions.append(dict(kind='inference_coverage_unverified',
+                                     reason='Accepted range union contains no inference nodes; no completeness claim.'))
+        if any(d.get('kind') == 'no_explicit_inferential_structure' and any(
+                i.kind == 'inference' and i.inference_origin == 'paper_stated' and
+                any(i.page_start <= page <= i.page_end for page in d['pages']) for i in items)
+                for d in dispositions):
+            dispositions.append(dict(kind='inference_disposition_conflict',
+                reason='Retained attempts disagree: a no-explicit-structure disposition overlaps accepted paper-stated inference evidence.'))
         result = PaperExtraction(paper.source_id, items, obligations_json=canonical(unresolved),
-                                 resolutions_json=resolutions_json, dispositions_json=canonical(dispositions))
+                                 resolutions_json=canonical(resolutions), dispositions_json=canonical(dispositions))
         self.log.record('extraction_graph_merged', source_id=paper.source_id, ranges=len(ranges),
                         items=len(items), graph_hash=digest(canonical(result.to_dict())))
         return result

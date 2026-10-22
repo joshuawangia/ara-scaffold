@@ -41,13 +41,16 @@ def test_no_inference_requires_explicit_disposition(rig, monkeypatch, reason):
     value = graph(); value['items'] = value['items'][:2]
     if reason is not None: value['no_inference_reason'] = reason
     sent = sequence(monkeypatch, provider, [value])
-    if reason != 'P':
+    if reason in ('', ' '):
         with pytest.raises(Rejected): calls.extract_paper(papers[0])
         assert len(sent) == 1
     else:
         result = calls.extract_paper(papers[0])
         assert len(result.items) == 2
-        assert json.loads(result.dispositions_json) == [dict(pages=[1, 2], kind='no_explicit_inferential_structure', reason='P')]
+        dispositions = json.loads(result.dispositions_json)
+        assert any(d['kind'] == 'inference_coverage_unverified' for d in dispositions)
+        if reason == 'P':
+            assert dict(pages=[1, 2], kind='no_explicit_inferential_structure', reason='P') in dispositions
 
 
 def test_inference_is_paper_level_across_ranges(rig, monkeypatch):
@@ -72,10 +75,9 @@ def test_zero_inference_multi_range_gets_paper_review(rig, monkeypatch):
     final = {**review, 'no_inference_reason': 'P'}
     sent = sequence(monkeypatch, provider, [first, second, review, review, final])
     result = calls.extract_paper(papers[0])
-    assert len(sent) == 5 and sent[-2]['paper_level'] is True
-    assert sent[-1]['mode'] == 'targeted_correction'
+    assert len(sent) == 3 and sent[-1]['mode'] == 'reconcile_ranges'
     assert len(result.items) == 2
-    assert json.loads(result.dispositions_json)[0]['pages'] == [1, 2]
+    assert any(d['kind'] == 'inference_coverage_unverified' for d in json.loads(result.dispositions_json))
 
 
 def test_reversed_pages_repaired_logged_and_out_of_bounds_refused(rig, monkeypatch):
@@ -135,7 +137,7 @@ def test_v4_graph_revalidated_offline(rig, monkeypatch, tmp_path, defect):
     if defect in ('page', 'reference'):
         # A hash-consistent old graph still has to pass the new validation boundary.
         original = calls.extract_paper
-        def corrupted(paper):
+        def corrupted(paper, **kwargs):
             result = original(paper)
             item = replace(result.items[0], page_end=99) if defect == 'page' else replace(result.items[-1], premise_ids=('unknown',))
             changed = replace(result, items=((item,) + result.items[1:] if defect=='page' else result.items[:-1]+(item,)))

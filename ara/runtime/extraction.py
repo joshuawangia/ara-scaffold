@@ -25,6 +25,7 @@ EXTRACTION_VERSION = 2
 # Bump when validation, normalization, mode schemas or graph interpretation change.
 EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v5'
 # The one reviewed predecessor; unknown contracts never migrate by version alone.
+V5_PRE_UNION_PROMPT_SHA256 = '96510d73f8288a587c78edf86b417725863a275487f795f9f3d75cdbb6ebbc72'
 V4_PROMPT_SHA256 = '6fdc1d8a71ded072a99d9190245bd3380e8ae003ee7cdce7f614e611158bbe22'
 V4_SCHEMA_SHA256 = '7d2778f90a78b5040dc3e9d7975f33b216d96652f3ca134e9d7ce568b72fd9cf'
 
@@ -243,9 +244,18 @@ def literature_entry(outcome: dict) -> dict:
             raise ValueError('failed paper cannot supply evidence')
         entry['failure_receipt'] = outcome['failure_receipt']
         entry['failure_detail'] = outcome['failure_detail']
+    if outcome.get('range_union_policy'):
+        entry['open_gaps'] = [o for o in outcome.get('obligations', []) if o['id'] not in {r['obligation_id'] for r in outcome.get('resolutions', [])}]
+        entry['dispositions'] = outcome.get('dispositions', [])
     if outcome.get('affected_pages'):
         entry['coverage'] = 'partial: unread visual pages excluded; retained encoding warnings require source inspection; see diagnostics'
     return entry
+
+
+def publication_roster(outcomes):
+    return [dict(source_id=o['source_id'], status=o['status'],
+                 reason=o.get('failure_detail') or o.get('reason') or 'No accepted evidence.')
+            for o in outcomes if o['status'] not in ('extracted', 'partial')]
 
 
 def assemble(outcomes: list[dict]) -> str:
@@ -256,7 +266,8 @@ def assemble(outcomes: list[dict]) -> str:
                'readable pages. Preserve attribution; reported or attacked views are not author endorsements. '
                'Copy evidence identifiers and citations verbatim. Inferences describe paper-stated links, not engine licenses.',
         **({'status': 'complete_with_disclosed_failures'} if any(e['status'] == 'failed' for e in entries) else {}),
-        'papers': entries}) + '\n'
+        'papers': entries,
+        **({'acceptance_note': 'Accepted range union with best-effort reconciliation. Open gaps, missing pages and thin ranges remain disclosed. Inference origins may be paper_stated or reconstructed; neither is an engine license.', 'publication_roster': publication_roster(outcomes)} if any(o.get('range_union_policy') for o in outcomes) or any(o['status'] in ('excluded', 'not extracted') for o in outcomes) else {})}) + '\n'
 
 
 def extraction_range_plan(calls: ModelCalls, paper: Paper):
@@ -281,7 +292,7 @@ def extraction_range_plan(calls: ModelCalls, paper: Paper):
 
 
 def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'record-only',
-            estimate_only: bool = False, reused: dict | None = None) -> Path | None:
+            estimate_only: bool = False, reused: dict | None = None, salvage_only=False, excluded=None) -> Path | None:
     from ara.types import TokenUsage
     from ara.runtime.calls import Rejected
     from ara.runtime.budget import BudgetStop
@@ -289,7 +300,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     acceptance = extraction_acceptance_identity(calls.config, calls.root)
     maximum_failures = validate_failure_limit(calls.config)
     policy = dict(policy='continue-on-paper-failure', max_failed_papers=maximum_failures)
-    calls.log.record('extraction_batch_started', **policy, selected=[p.source_id for p in papers])
+    calls.log.record('extraction_batch_started', **policy, config=calls.config, selected=[p.source_id for p in papers])
     if not estimate_only:
         calls.budget.after('extract_paper')
     reused = reused or {}
@@ -319,6 +330,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     if estimate['planned_batch_exceeds_enclosing_caps']:
         print('planned batch exceeds enclosing caps', flush=True)
     outcomes = []
+    stopped = None
     for index, paper in enumerate(papers):
         reason = paper.unavailable
         prompt_bytes = len(calls.render('extract_paper', paper.inputs())[1].encode())
@@ -331,7 +343,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         if estimate_only:
             calls.log.record('extraction_preflight', source_id=paper.source_id, pages=len(paper.pages), reason=reason)
             continue
-        base = {'source_id': paper.source_id, 'record': json.loads(paper.record_json),
+        base = {'range_union_policy': True, 'source_id': paper.source_id, 'record': json.loads(paper.record_json),
                 'pdf_sha256': paper.pdf_sha256, 'pages': len(paper.pages),
                 'page_diagnostics': [asdict(d) for d in paper.diagnostics],
                 'affected_pages': list(paper.affected_pages),
@@ -339,7 +351,12 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
         if paper.affected_pages and missing == 'refuse':
             calls.log.record('extraction_outcome', **base, status='partial', reason='strict_incomplete_coverage', items=[])
             raise ValueError(f'{paper.source_id}: extraction refused: partial text coverage')
-        if paper.source_id in reused:
+        if excluded and paper.source_id in excluded:
+            outcome = {**base, 'status': 'excluded', 'reason': excluded[paper.source_id], 'items': [], 'range_union_policy': True}
+            calls.log.record('extraction_outcome', **outcome)
+            outcomes.append(outcome)
+            continue
+        if paper.source_id in reused and 'outcome' in reused[paper.source_id]:
             previous = reused[paper.source_id]
             outcome = previous['outcome']
             validate_reused_paper(paper, outcome, acceptance)
@@ -364,7 +381,7 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
             continue
         calls.log.record('extraction_paper_started', **base)
         try:
-            result = calls.extract_paper(paper)
+            result = calls.extract_paper(paper, salvaged=reused.get(paper.source_id, {}).get('ranges', ()), salvage_only=salvage_only)
         except Exception as exc:
             receipt = checkpoint(calls.log.path)
             outcome = {**base, 'status': 'failed', 'reason': type(exc).__name__, 'items': [],
@@ -381,10 +398,20 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
                                  completed=[o['source_id'] for o in outcomes if o['status'] != 'failed'],
                                  not_attempted=[p.source_id for p in papers[index + 1:]],
                                  reason='failed-paper threshold exceeded' if paper_failure else type(exc).__name__)
-                raise  # Run budgets, unknown accounting and excess failures refuse publication.
+                stopped = exc
+                for remaining in papers[index + 1:]:
+                    not_attempted = dict(source_id=remaining.source_id, status='not extracted', items=[],
+                                         pdf_sha256=remaining.pdf_sha256, range_union_policy=True,
+                                         reason='Batch stopped before extraction: ' + type(exc).__name__)
+                    calls.log.record('extraction_outcome', **not_attempted)
+                    outcomes.append(not_attempted)
+                break
             continue
         outcome = {**base, 'status': 'partial' if paper.affected_pages else 'extracted',
-                   'acceptance_identity': acceptance, **result.to_dict()}
+                   'acceptance_identity': acceptance, 'range_union_policy': True, **result.to_dict()}
+        if any(d.get('kind') == 'unextracted_pages' for d in json.loads(result.dispositions_json)):
+            outcome['status'] = 'partial' if result.items else 'not extracted'
+            outcome['reason'] = 'Readable pages remain unextracted; see dispositions.'
         calls.log.record('extraction_outcome', **outcome)
         outcomes.append(outcome)
         save_immutable(calls.log.path.parent / f'{paper.source_id}.extraction.json', canonical(outcome))
@@ -403,6 +430,8 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     path.with_suffix('.provenance.json').write_text(canonical({
         'source_log': str(calls.log.path.resolve()), 'records': len(records), 'last_hash': records[-1]['hash']}))
     save_immutable(path, literature)
+    if stopped is not None:
+        raise stopped
     return path
 
 
@@ -428,7 +457,7 @@ def import_provenance(log: EventLog, events: tuple[dict, ...], origin: dict | No
 
 
 def validate_failure_limit(config):
-    value = config.get('extraction_max_failed_papers', 3)
+    value = config.get('extraction_max_failed_papers', 8)
     if type(value) is not int or value < 0:
         raise ValueError('extraction_max_failed_papers must be a nonnegative integer')
     return value
@@ -442,7 +471,8 @@ def validate_reused_paper(paper, outcome, acceptance):
         previous.get('prompt_sha256') == V4_PROMPT_SHA256 and
         previous.get('schema_sha256') == V4_SCHEMA_SHA256 and
         all(previous.get(k) == acceptance.get(k) for k in ('provider', 'stage', 'require_inference')))
-    if not acceptance or (previous != acceptance and not compatible_v4):
+    compatible_v5 = bool(previous and acceptance and previous.get('version') == acceptance.get('version') == 'rich-paper-acceptance-v5' and previous.get('prompt_sha256') == V5_PRE_UNION_PROMPT_SHA256 and all(previous.get(k) == acceptance.get(k) for k in ('schema_sha256', 'provider', 'stage', 'require_inference')))
+    if not acceptance or (previous != acceptance and not compatible_v4 and not compatible_v5):
         raise ValueError('resume extraction acceptance identity mismatch')
     if outcome['status'] not in ('extracted', 'partial'):
         raise ValueError('resume requires completed paper outcome')
@@ -454,7 +484,7 @@ def validate_reused_paper(paper, outcome, acceptance):
         raise ValueError('resume paper identity mismatch')
     if outcome.get('input_sha256', digest(canonical(paper.inputs()))) != digest(canonical(paper.inputs())):
         raise ValueError('resume paper input mismatch')
-    if compatible_v4:
+    if compatible_v4 or compatible_v5:
         revalidate_v4_graph(paper, outcome, acceptance)
 
 
@@ -492,12 +522,10 @@ def revalidate_v4_graph(paper, outcome, acceptance):
             raise ValueError('resume invalid qualification relation')
         if original.get('citation') != ExtractedItem(**item).citation:
             raise ValueError('resume invalid citation')
-    if acceptance['require_inference'] and not any(i['kind'] == 'inference' for i in items):
-        raise ValueError('resume missing inference disposition')
     obligations = [o['id'] for o in outcome['obligations']]
     resolutions = [r['obligation_id'] for r in outcome['resolutions']]
     if (len(set(obligations)) != len(obligations) or len(set(resolutions)) != len(resolutions) or
-            set(obligations) != set(resolutions) or any(not r['evidence_ids'] or
+            not set(resolutions) <= set(obligations) or any(not r['evidence_ids'] or
             not set(r['evidence_ids']) <= by_id.keys() for r in outcome['resolutions'])):
         raise ValueError('resume unresolved graph obligations')
 
@@ -524,6 +552,8 @@ def resume_papers(log, papers, sources, config: dict, root: Path):
             if source not in selected or outcome['status'] not in ('extracted', 'partial'):
                 continue
             paper = selected[source]
+            if outcome.get('range_union_policy') and any(d.get('kind') in ('thin_range', 'unextracted_pages') for d in outcome.get('dispositions', [])):
+                continue
             try:
                 validate_reused_paper(paper, outcome, acceptance)
             except ValueError:
@@ -546,6 +576,21 @@ def resume_papers(log, papers, sources, config: dict, root: Path):
             log.record('extraction_acceptance_revalidated', source_id=source,
                        from_identity=entry['outcome']['acceptance_identity'], to_identity=acceptance,
                        outcome_hash=digest(canonical(entry['outcome'])))
+    from ara.runtime.salvage import accepted_ranges
+    combined = []
+    seen = set()
+    for events, _ in loaded:
+        for event in events:
+            key = digest(canonical(event))
+            if key not in seen:
+                combined.append(event)
+                seen.add(key)
+    incompatible_completed = {o['source_id'] for events, _ in loaded for o in historical_extraction_outcomes(events)
+                              if o['status'] in ('extracted', 'partial') and not (o.get('range_union_policy') and any(d.get('kind') in ('thin_range', 'unextracted_pages') for d in o.get('dispositions', [])))}
+    candidates = tuple(p for p in papers if p.source_id not in reused and p.source_id not in incompatible_completed)
+    ranges = accepted_ranges(combined, candidates, config, root, log)
+    for source, entries in ranges.items():
+        reused[source] = dict(ranges=entries)
     return reused
 
 

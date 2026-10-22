@@ -49,6 +49,8 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--paper-id', action='append', default=[])
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
+    extraction.add_argument('--salvage-only', action='store_true', help='Publish verified accepted ranges without model calls')
+    extraction.add_argument('--exclude-paper', action='append', default=[], metavar='ID=REASON')
     extraction.add_argument('--resume-from', type=Path, action='append', default=[])
     extraction.add_argument('--profile', choices=('extraction', 'extraction-full'))
     extraction.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'), default='refuse')
@@ -161,10 +163,24 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                        fulltext_dir=str(args.fulltext_dir.resolve()), selected=args.paper_id,
                        missing_policy=args.missing, estimate_only=args.estimate_only,
                        tools=['pypdf', 'Anthropic Messages API', 'jsonschema'])
-            papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
+            excluded = {}
+            for value in args.exclude_paper:
+                source, sep, reason = value.partition('=')
+                if not sep or not source or not reason.strip():
+                    raise ValueError('--exclude-paper requires ID=REASON')
+                excluded[source] = reason
+            selected = tuple(dict.fromkeys([*args.paper_id, *excluded])) if args.paper_id else ()
+            papers = load_papers(args.manifest, args.fulltext_dir, selected)
+            if not set(excluded) <= {p.source_id for p in papers}:
+                raise ValueError('excluded paper is absent from manifest')
             reused = resume_papers(log, papers, args.resume_from, config, ROOT) if args.resume_from and not args.estimate_only else {}
-            calls = calls_factory(config, log, '')
-            path = extract(calls, papers, missing=args.missing, estimate_only=args.estimate_only, reused=reused)
+            if args.salvage_only:
+                from ara.runtime.salvage import OfflineExtractionProvider
+                calls = ModelCalls(config, OfflineExtractionProvider(config), log, Cache(Path(config['cache_dir'])), ROOT, '')
+            else:
+                calls = calls_factory(config, log, '')
+            path = extract(calls, papers, missing=args.missing, estimate_only=args.estimate_only, reused=reused,
+                           salvage_only=args.salvage_only, excluded=excluded)
             if path:
                 print(str(path))
             return 0

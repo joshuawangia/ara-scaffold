@@ -70,11 +70,12 @@ def test_second_range_gets_correction_after_first_used_one(rig, monkeypatch):
 
 def test_correction_still_obeys_paper_allowance(rig, monkeypatch):
     calls, paper, sent = split_replay(rig, monkeypatch, limit=2)
-    with pytest.raises(BudgetStop, match='paper continuation limit'):
-        extract(calls, (paper,))
+    path = extract(calls, (paper,))
+    value = json.loads((path.parent/'p.extraction.json').read_text())
+    assert value['status'] == 'partial' and len(value['items']) == 8
     assert len(sent) == 3
     assert (calls.log.path.parent/'p.r1-1.rich.json').exists()
-    assert not (calls.log.path.parent/'literature.extracted.txt').exists()
+    assert (calls.log.path.parent/'literature.extracted.txt').exists()
 
 
 @pytest.mark.parametrize('mode', ['initial', 'review', 'obligation'])
@@ -130,9 +131,11 @@ def test_obligation_request_errors_correct_before_acceptance(rig, monkeypatch, b
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     result = calls.extract_paper(papers[0])
-    assert len(json.loads(result.resolutions_json)) == 1
-    assert [i.get('mode') for i in sent] == [None, 'reconcile_ranges', 'targeted_correction']
-    assert len([e for e in calls.log.read() if e['stage'] == 'extraction_targeted_correction']) == 1
+    assert not json.loads(result.resolutions_json)
+    assert len(result.items) == 8
+    assert any(d['kind'] == 'reconciliation_failed' for d in json.loads(result.dispositions_json))
+    assert [i.get('mode') for i in sent] == [None, 'reconcile_ranges']
+    assert not [e for e in calls.log.read() if e['stage'] == 'extraction_targeted_correction']
 
 
 def test_terminal_failure_stops_corpus_and_pilot_import(rig, monkeypatch):
@@ -142,13 +145,14 @@ def test_terminal_failure_stops_corpus_and_pilot_import(rig, monkeypatch):
         extract(calls, (paper, second))
     assert [i['source_id'] for i in sent] == ['p', 'p']
     outcomes = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_outcome']
-    assert outcomes[-1]['status'] == 'failed'
+    assert outcomes[0]['status'] == 'failed'
+    assert outcomes[1]['status'] == 'not extracted'
     stopped = next(json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'extraction_stopped')
     assert stopped['policy'] == 'continue-on-paper-failure' and stopped['max_failed_papers'] == 0 and stopped['not_attempted'] == ['q']
     assert accounting(calls.log)['extraction']['stops'] == [stopped]
-    assert not (calls.log.path.parent/'literature.extracted.txt').exists()
-    with pytest.raises(FileNotFoundError):
-        literature_provenance(calls.log.path.parent/'literature.extracted.txt', '# ARA extracted literature v2\n{}')
+    assert (calls.log.path.parent/'literature.extracted.txt').exists()
+    path = calls.log.path.parent/'literature.extracted.txt'
+    literature_provenance(path, path.read_text())
 
 
 def test_existing_run_refused_before_provider_and_left_untouched(rig):
@@ -166,9 +170,8 @@ def test_existing_run_refused_before_provider_and_left_untouched(rig):
 def test_graph_review_can_correct_request_without_dropping_evidence(rig, monkeypatch):
     calls, paper, sent = split_replay(rig, monkeypatch, review_defect=True)
     path = extract(calls, (paper,))
-    assert len(sent) == 6
-    assert sent[-1]['mode'] == 'targeted_correction'
-    assert sent[-1]['original_mode'] == 'reconcile_ranges'
+    assert len(sent) == 5
+    assert sent[-1]['mode'] == 'reconcile_ranges'
     assert len(json.loads((path.parent/'p.extraction.json').read_text())['items']) == 9
     literature_provenance(path, path.read_text())
 
@@ -196,10 +199,11 @@ def test_context_limit_and_reordered_cycle_can_correct(rig, monkeypatch, limit):
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     result = calls.extract_paper(paper)
-    assert len(sent) == (3 if limit == 0 else 4)
+    assert len(sent) == 2
     models = [e for e in calls.log.read() if e['label'] == 'MODEL']
     assert len(models) == len(sent)  # A reordered cycle must not add a cached accepted turn.
-    assert len(json.loads(result.resolutions_json)) == 1
+    assert not json.loads(result.resolutions_json)
+    assert any(d['kind'] == 'context_request_unfulfilled' for d in json.loads(result.dispositions_json))
     rejected = [json.loads(e['payload_json']) for e in calls.log.read()
                 if e['label'] == 'MODEL' and json.loads(e['payload_json'])['status'] == 'rejected']
-    assert len(rejected) == 1 and 'cycle or limit' in rejected[0]['reason']
+    assert rejected == []

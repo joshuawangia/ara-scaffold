@@ -7,7 +7,7 @@ from pathlib import Path
 
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log
-from ara.runtime.extraction import missing_lineage
+from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry
 from ara.runtime.provenance import extraction_outcomes
 
 
@@ -59,6 +59,9 @@ def methodology(log_path: Path) -> str:
         return {**raw_totals(selected), **split_totals(selected)}
     extraction_summary = {
         **split_totals(extraction_calls),
+        'acceptance_note': 'Accepted range union; reconciliation is one best-effort pass. Open gaps and thin ranges are not completeness guarantees.',
+        'publication_roster': publication_roster(outcomes),
+        'limitations': [dict(source_id=p['source_id'], open_gaps=literature_entry(p).get('open_gaps', []), dispositions=p.get('dispositions', [])) for p in outcomes if p.get('range_union_policy')],
         'schema_versions': sorted({p.get('schema_version', 1) for p in outcomes if p.get('items')}),
         'item_counts_by_kind': {kind: sum(item['kind'] == kind for p in outcomes for item in p['items'])
                                 for kind in sorted({item['kind'] for p in outcomes for item in p['items']})},

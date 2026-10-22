@@ -32,13 +32,13 @@ def test_changed_acceptance_matches_fresh_extraction(rig, monkeypatch, tmp_path)
     calls.config['extraction_require_inference'] = True
     fresh = ModelCalls(calls.config, provider, EventLog(tmp_path/'fresh/events.jsonl'),
                        Cache(tmp_path/'fresh/cache'), ROOT, '')
-    with pytest.raises(Rejected, match='no stated inference'):
-        extract(fresh, papers[:1])
+    fresh_path = extract(fresh, papers[:1])
+    assert 'inference_coverage_unverified' in fresh_path.read_text()
     sent.clear()
-    with pytest.raises(Rejected, match='no stated inference'):
-        resumed(calls, provider, papers[:1], tmp_path/'resumed', [calls.log.path.parent])
+    _, path = resumed(calls, provider, papers[:1], tmp_path/'resumed', [calls.log.path.parent])
+    assert 'inference_coverage_unverified' in path.read_text()
     assert sent == ['p']
-    assert not (tmp_path/'resumed/literature.extracted.txt').exists()
+    assert (tmp_path/'resumed/literature.extracted.txt').exists()
     assert accounting(EventLog(tmp_path/'resumed/events.jsonl'))['inherited_totals']['cost_usd'] == .00175
 
 
@@ -55,12 +55,12 @@ def test_native_cli_changed_acceptance_reextracts(rig, monkeypatch, tmp_path):
     data = yaml.safe_load(config.read_text())
     data['extraction_require_inference'] = True
     config.write_text(yaml.safe_dump(data))
-    assert main([*args, '--run-dir', str(tmp_path/'fresh')], calls_factory=factory) == 2
+    assert main([*args, '--run-dir', str(tmp_path/'fresh')], calls_factory=factory) == 0
     sent.clear()
     target = tmp_path/'resumed'
-    assert main([*args, '--run-dir', str(target), '--resume-from', str(source)], calls_factory=factory) == 2
+    assert main([*args, '--run-dir', str(target), '--resume-from', str(source)], calls_factory=factory) == 0
     assert sent == ['p']
-    assert not (target/'literature.extracted.txt').exists()
+    assert (target/'literature.extracted.txt').exists()
 
 
 @pytest.mark.parametrize('change', ['model', 'effort', 'thinking', 'fallbacks', 'version', 'prompt', 'schema', 'legacy'])

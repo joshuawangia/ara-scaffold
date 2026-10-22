@@ -158,7 +158,7 @@ def test_page_ranges_and_logged_reconciliation(rig, monkeypatch):
     seen = []
     def estimate(kind, prompt, schema, maximum):
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
-        return TokenUsage(input_tokens=200001 if len(data.get('pages', [])) > 1 else 100, output_tokens=maximum)
+        return TokenUsage(input_tokens=200001 if len(data.get('pages', [])) > 1 and data.get('mode') != 'reconcile_ranges' else 100, output_tokens=maximum)
     def complete(kind, prompt, schema, maximum):
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1]); seen.append(data)
         if data.get('mode') == 'reconcile_ranges':
@@ -170,7 +170,7 @@ def test_page_ranges_and_logged_reconciliation(rig, monkeypatch):
     path = extract(calls, (paper,))
     items = json.loads(path.read_text()[len(HEADER):])['papers'][0]['items']
     assert len(items) == 16 and len({x['id'] for x in items}) == 16
-    assert [x['pages'][0]['page'] for x in seen if x.get('pages')] == [1, 2]
+    assert [x['pages'][0]['page'] for x in seen if x.get('pages') and x.get('mode') != 'reconcile_ranges'] == [1, 2]
     assert seen[-1]['mode'] == 'reconcile_ranges'
     assert len([e for e in calls.log.read() if e['label'] == 'MODEL']) == 3
     assert len(list(calls.log.path.parent.glob('p.r*.rich.json'))) == 2

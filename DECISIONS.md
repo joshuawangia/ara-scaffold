@@ -1544,3 +1544,34 @@ The offline replay tool explicitly inventories imported grammar-only receipts
 and missing provider bodies instead of crashing or treating them as paper graphs.
 Production PDF extraction stays unchanged: the separately pinned comparison did
 not demonstrate that a replacement improves the affected source passages.
+
+## Mu addendum — accepted range union and bounded review
+
+Paper acceptance retains the union of validated accepted range graphs. One complete
+counted reconciliation request may add evidence; it has no correction, context-fetch
+or obligation queue. Admission refusal, invalid output and provider failure retain
+accepted evidence and disclose the review failure. Open obligations remain in the
+published artifact, methodology and construction inputs. Missing readable pages
+make a paper partial; no evidence makes it not extracted. Neither acceptance nor
+structural validation establishes semantic completeness or paraphrase fidelity.
+
+A range of at least eight readable pages with at most one item per ten pages
+(minimum one) is thin. It receives one re-extraction split into halves, preserving
+its original accepted items. Remaining thinness, failed refinements and unavailable
+pages are disclosed. Historical refinement receipts prevent repeating that attempt.
+Completed legacy graphs remain reusable; a socket-free salvage mode rebuilds accepted
+ranges from pinned original receipts and revalidates source text, graph references,
+attribution and physical locators. Distinct attempts keep distinct evidence IDs.
+No rejected response is promoted by salvage. Historical raw receipts stay unchanged.
+
+The default failed-paper allowance is eight. Cost/token admission still bounds paid
+work. A stopped batch publishes its accepted evidence and an explicit failed and
+not-extracted roster before returning the original failure. Operators may explicitly
+exclude available sources with ID=REASON; exclusions carry no evidence and flow into
+construction and methodology. No absent source is represented as extracted.
+
+Thinness is recomputed against all accepted evidence over the range, including
+historical review additions, before paying for a retry. Conflicting retained
+no-explicit-structure dispositions and overlapping paper-stated inference nodes
+are both preserved and explicitly flagged; union acceptance does not adjudicate
+the disagreement. Offline salvage never constructs a generation-capable provider.

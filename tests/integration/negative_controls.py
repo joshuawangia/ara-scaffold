@@ -125,7 +125,7 @@ CASES += [
     ('directional_shared_branch', 'ara/runtime/construction.py', "deps[item['conclusion_id']].add(id)", "deps[item['conclusion_id']].add(id)\n            for premise in item['premise_ids']: deps[premise].add(id)", 'tests/runtime/test_extraction_round3.py::test_directional_closure_shared_premise_and_qualifier'),
     ('directional_shared_qualifier', 'ara/runtime/construction.py', 'deps[target].add(id)', 'deps[target].add(id); deps[id].add(target)', 'tests/runtime/test_extraction_round3.py::test_directional_closure_shared_premise_and_qualifier'),
     ('reconciliation_obligation_inventory', 'ara/runtime/calls.py', "set(resolved_ids) | set(pending_ids) == {o['id'] for o in obligations}", 'True', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[False]'),
-    ('reconciliation_source_pages', 'ara/runtime/reconciliation.py', "[asdict(pages[p]) for p in page_ids] if obligation or requested else []", '[]', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[True]'),
+    ('reconciliation_source_pages', 'ara/runtime/reconciliation.py', '[asdict(p) for p in paper.readable_pages]', '[]', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[True]'),
     ('measured_before_validation', 'ara/runtime/calls.py', "self.log.record('response_received', kind=kind, cache_key=key,", "self.log.record('unrecorded_response', kind=kind, cache_key=key,", 'tests/runtime/test_extraction_round3.py::test_measured_response_survives_followup_count_failure'),
     ('measured_count_failure', 'ara/runtime/calls.py', "self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete'", "self._event(kind, prompt, None, estimate, self.budget.cost(estimate), start, cached, 'incomplete'", 'tests/runtime/test_extraction_round3.py::test_build_count_failure_preserves_measured_raw_receipt'),
     ('extraction_stage_model', 'ara/runtime/providers.py', "return stage_settings(self.config, kind)['model']", "return self.model", 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
@@ -145,7 +145,7 @@ CASES.append(('reconciliation_resolution_evidence', 'ara/runtime/calls.py', "req
 CASES += [
     ('kind_relation_wire', 'ara/runtime/providers.py', "edge_fields - set(fields)", "edge_fields - set(fields) - {'applies_to'}", 'tests/runtime/test_extraction_round3.py::test_extraction_wire_has_unambiguous_nodes'),
     ('extraction_grammar_size', 'ara/runtime/providers.py', 'branches.append(branch)', 'branches.extend([branch] * 4)', 'tests/runtime/test_extraction_round3b.py::test_extraction_grammar_size'),
-    ('nonzero_inference_acceptance', 'ara/runtime/calls.py', "require(any(item.kind == 'inference' for item in by_id.values()) or", 'require(True or', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_refused_without_correction'),
+    ('zero_inference_disclosure', 'ara/runtime/calls.py', "if self.config.get('extraction_require_inference', False) and not any(i.kind == 'inference' for i in items):", 'if False:', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_disclosed_without_correction'),
     ('targeted_inventory_retained', 'ara/runtime/calls.py', "[updates.pop(id, item) for id, item in old.items()]", '[]', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-inferences]'),
     ('targeted_unchanged_allowed', 'ara/runtime/calls.py', "old, updates = inventory(candidate), inventory(patch)", "old, updates = inventory(candidate), inventory(patch)\n    require(all(item != old.get(item['id']) for item in patch['items']), 'unchanged')", 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
     ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if correction == corrections:', "                if correction == corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
@@ -171,8 +171,8 @@ CASES += [
     ('window_inventory', 'ara/runtime/windows.py', 'values[:middle]', 'values[1:middle]', 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
     ('full_graph_closure', 'ara/runtime/construction.py', "prerequisite_closure(items, selection['roots'])", "prerequisite_closure(window_items, selection['roots'])", 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
     ('closure_size_admission', 'ara/runtime/construction.py', 'if closure_count.input_tokens > input_bound:', 'if False:', 'tests/runtime/test_evidence_windows.py::test_oversized_selected_closure_refuses_before_formalization'),
-    ('requested_context', 'ara/runtime/reconciliation.py', "ids = tuple(sorted(request['pages']))", 'ids = ()', 'tests/runtime/test_evidence_windows.py::test_reconcile_over_context_with_requested_cross_window_evidence[True]'),
-    ('bounded_graph_review', 'ara/runtime/reconciliation.py', 'for ids in windows_for():', 'for ids in [tuple(pages)]:', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
+    ('review_context_validation', 'ara/runtime/reconciliation.py', "require(set(request['pages']) <= set(inputs['evidence_page_ids']),", 'require(True,', 'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance[bad_request1]'),
+    ('bounded_graph_review', 'ara/runtime/reconciliation.py', "        calls.count_request('extract_paper', inputs, admission=True)", '        pass', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
 ]
 
 CASES += [
@@ -200,12 +200,8 @@ CASES += [
 ]
 
 CASES += [
-    ('new_gap_inventory', 'ara/runtime/reconciliation.py',
-     'ids, new_gaps)', 'ids, [])',
-     'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[False-2-R]'),
-    ('new_gap_queue', 'ara/runtime/reconciliation.py',
-     'queue.extend(new_obligations)', 'pass',
-     'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[True-2-R]'),
+    ('new_gap_inventory', 'ara/runtime/reconciliation.py', "inputs['evidence_page_ids'], gaps)", "inputs['evidence_page_ids'], [])", 'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[False-R]'),
+    ('review_resolution_retained', 'ara/runtime/reconciliation.py', 'resolutions.extend(json.loads(result.resolutions_json))', 'pass', 'tests/runtime/test_extraction_round5.py::test_new_gap_survives_original_resolution[True-R]'),
 ]
 
 CASES += [
@@ -233,24 +229,11 @@ CASES += [
     ('mode_specific_context_wire', 'ara/runtime/calls.py',
      "            if not reconciliation or not inputs.get('obligations'):", '            if False:',
      'tests/runtime/test_context_request_fix.py::test_mode_contract_reaches_counter_prompt_and_wire'),
-    ('context_validation_before_acceptance', 'ara/runtime/calls.py',
-     '                    validate_context(request)', '                    pass',
-     'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance'),
-    ('correction_paper_limit', 'ara/runtime/extraction_budget.py',
-     'if self.attempts > self.continuation_limit:', 'if False:',
-     'tests/runtime/test_context_request_fix.py::test_correction_still_obeys_paper_allowance'),
-    ('context_cycle_order', 'ara/runtime/reconciliation.py',
-     "return canonical({'pages': sorted(request['pages']), 'evidence_ids': sorted(request['evidence_ids'])})",
-     'return canonical(request)',
-     'tests/runtime/test_context_request_fix.py::test_context_limit_and_reordered_cycle_can_correct[16]'),
-    ('context_empty_recovery', 'ara/runtime/calls.py',
-     "require(bool(request['pages'] or request['evidence_ids']), 'unresolved obligation empty context request')",
-     'pass',
-     'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance[bad_request0]'),
-    ('terminal_paper_policy', 'ara/runtime/extraction.py',
-     '                raise  # Run budgets, unknown accounting and excess failures refuse publication.',
-     '                continue',
-     'tests/runtime/test_context_request_fix.py::test_terminal_failure_stops_corpus_and_pilot_import'),
+    ('context_validation_before_acceptance', 'ara/runtime/reconciliation.py', "require(set(request['evidence_ids']) <= {i.id for i in items},", 'require(True,', 'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance[bad_request2]'),
+    ('correction_paper_limit', 'ara/runtime/extraction_budget.py', 'if self.attempts > self.continuation_limit:', 'if False:', 'tests/runtime/test_context_request_fix.py::test_correction_still_obeys_paper_allowance'),
+    ('single_review_no_corrections', 'ara/runtime/calls.py', '        if single_pass:', '        if False:', 'tests/runtime/test_range_union.py::test_failed_review_preserves_ranges_and_discloses_gap'),
+    ('context_empty_recovery', 'ara/runtime/calls.py', "require(bool(request['pages'] or request['evidence_ids']), 'unresolved obligation empty context request')", 'pass', 'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance[bad_request0]'),
+    ('terminal_paper_policy', 'ara/runtime/extraction.py', '                stopped = exc', '                stopped = None', 'tests/runtime/test_context_request_fix.py::test_terminal_failure_stops_corpus_and_pilot_import'),
 ]
 
 CASES += [
@@ -270,9 +253,7 @@ CASES += [
      "if source not in selected or outcome['status'] not in ('extracted', 'partial'):",
      "if source not in selected or outcome['status'] not in ('extracted', 'partial') or not outcome['items']:",
      'tests/runtime/test_paper_recovery.py::test_completed_empty_disposition_is_reused'),
-    ('completed_paper_reuse', 'ara/runtime/extraction.py',
-     'if paper.source_id in reused:', 'if False:',
-     'tests/runtime/test_paper_recovery.py::test_resume_reuses_completed_papers_and_retries_failed[False]'),
+    ('completed_paper_reuse', 'ara/runtime/extraction.py', "if paper.source_id in reused and 'outcome' in reused[paper.source_id]:", 'if False:', 'tests/runtime/test_paper_recovery.py::test_resume_reuses_completed_papers_and_retries_failed[False]'),
     ('resume_input_binding', 'ara/runtime/extraction.py',
      "if outcome.get('input_sha256', digest(canonical(paper.inputs()))) != digest(canonical(paper.inputs())):", 'if False:',
      'tests/runtime/test_paper_recovery.py::test_changed_source_is_extracted_again[input]'),
@@ -297,9 +278,7 @@ CASES += [
 ]
 
 CASES += [
-    ('resume_acceptance_policy', 'ara/runtime/extraction.py',
-     "if not acceptance or (previous != acceptance and not compatible_v4):", 'if False:',
-     'tests/runtime/test_resume_policy.py::test_changed_acceptance_matches_fresh_extraction'),
+    ('resume_acceptance_policy', 'ara/runtime/extraction.py', 'if not acceptance or (previous != acceptance and not compatible_v4 and not compatible_v5):', 'if False:', 'tests/runtime/test_resume_policy.py::test_changed_acceptance_matches_fresh_extraction'),
     ('resume_acceptance_model', 'ara/runtime/extraction.py',
      "'stage': {'model': stage['model'], 'effort': stage['effort'],", "'stage': {'model': None, 'effort': stage['effort'],",
      'tests/runtime/test_resume_policy.py::test_acceptance_contract_drift_reextracts[model]'),
@@ -409,9 +388,7 @@ CASES += [
     ('v5_reuse_revalidation', 'ara/runtime/extraction.py',
      '        revalidate_v4_graph(paper, outcome, acceptance)', '        pass',
      'tests/runtime/test_extraction_v5.py::test_v4_graph_revalidated_offline[page]'),
-    ('v5_disposition_required', 'ara/runtime/calls.py',
-     "bool(data.get('no_inference_reason', '').strip()),", 'True,',
-     'tests/runtime/test_extraction_v5.py::test_no_inference_requires_explicit_disposition[None]'),
+    ('v5_disposition_required', 'ara/runtime/calls.py', "require(bool(data['no_inference_reason'].strip()),", 'require(True,', 'tests/runtime/test_extraction_v5.py::test_no_inference_requires_explicit_disposition'),
 ]
 
 CASES += [
@@ -421,6 +398,36 @@ CASES += [
     ('v5_duplicate_ambiguity', 'ara/runtime/calls.py',
      'require(old not in referenced or item == first[old],', 'require(True,',
      'tests/runtime/test_extraction_v5.py::test_ambiguous_duplicate_reference_is_not_guessed'),
+]
+
+CASES += [
+    ('union_later_range_failure_retained', 'ara/runtime/calls.py',
+     'if not ranges:', 'if True:',
+     'tests/runtime/test_range_union.py::test_offline_salvage_keeps_failed_paper_ranges_and_provenance'),
+    ('union_items_retained', 'ara/runtime/reconciliation.py',
+     'items = tuple(item for result in ranges for item in result.items)', 'items = ()',
+     'tests/runtime/test_range_union.py::test_failed_review_preserves_ranges_and_discloses_gap'),
+    ('union_salvage_avoids_redundant_retry', 'ara/runtime/calls.py',
+     'if not is_thin(pages, supported):', 'if False:',
+     'tests/runtime/test_range_union.py::test_accepted_review_fills_thin_range_before_paid_retry'),
+    ('union_inference_conflict_disclosure', 'ara/runtime/calls.py',
+     "if any(d.get('kind') == 'no_explicit_inferential_structure' and any(", 'if any(False and any(',
+     'tests/runtime/test_range_union.py::test_refinement_discloses_conflicting_inference_disposition'),
+    ('union_thin_retry_once', 'ara/runtime/calls.py',
+     "if entry.get('refined'):", 'if False:',
+     'tests/runtime/test_range_union.py::test_historical_thin_retry_is_not_repeated'),
+    ('union_thin_retry', 'ara/runtime/salvage.py',
+     'return len(pages) >= 8 and len(items) <= max(1, len(pages) // 10)', 'return False',
+     'tests/runtime/test_range_union.py::test_thin_range_retried_once_without_dropping_original'),
+    ('union_salvage_revalidation', 'ara/runtime/salvage.py',
+     "if any(source_text.get(p['page']) != p['text'] for p in request.get('pages', [])):", 'if False:',
+     'tests/runtime/test_range_union.py::test_salvage_source_mismatch_refuses_without_dispatch'),
+    ('union_roster_disclosure', 'ara/runtime/extraction.py',
+     "'publication_roster': publication_roster(outcomes)", "'publication_roster': []",
+     'tests/runtime/test_range_union.py::test_native_exclusion_roster_is_disclosed'),
+    ('union_open_gaps', 'ara/runtime/extraction.py',
+     "entry['open_gaps'] = [o for o in outcome.get('obligations', [])", "entry['open_gaps'] = [o for o in []",
+     'tests/runtime/test_range_union.py::test_failed_review_preserves_ranges_and_discloses_gap'),
 ]
 
 def main():

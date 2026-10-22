@@ -84,17 +84,10 @@ def test_reconcile_over_context_with_requested_cross_window_evidence(rig, monkey
                 if resolve: value['context_request'] = {'pages': [1,6], 'evidence_ids': []}
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
-    if resolve:
-        result = calls.extract_paper(paper).to_dict()
-        assert len(result['items']) == 3
-        assert len(result['obligations']) == len(result['resolutions']) == 1
-        link = next(i for i in result['items'] if i['kind'] == 'inference')
-        assert link['premise_ids'] == ('p:r1-1:p',) or link['premise_ids'] == ['p:r1-1:p']
-        assert link['conclusion_id'].endswith(':q')
-        assert any({p['page'] for p in i.get('pages', [])} == {1,6} for i in seen)
-    else:
-        with pytest.raises(Rejected, match='unresolved obligation'): calls.extract_paper(paper)
-        assert not (calls.log.path.parent/'literature.extracted.txt').exists()
+    result = calls.extract_paper(paper).to_dict()
+    assert len(result['items']) == 2
+    assert len(result['obligations']) == 1 and not result['resolutions']
+    assert any(d['kind'] == 'reconciliation_failed' for d in result['dispositions'])
     assert not any(len(i.get('pages', [])) == 6 for i in seen)
     assert len(list(calls.log.path.parent.glob('p.r*.rich.json'))) > 1
 
@@ -140,9 +133,10 @@ def test_no_obligation_review_bounds_large_graph_union(rig, monkeypatch):
     monkeypatch.setattr(provider, 'complete', complete)
     result = calls.extract_paper(paper)
     assert len(result.items) == 6
-    assert reviewed == {i.id for i in result.items}
+    assert reviewed == set()
+    assert any(d['kind'] == 'reconciliation_failed' for d in json.loads(result.dispositions_json))
     windows = [e for e in calls.log.read() if e['stage'] == 'extraction_reconciliation_window']
-    assert len(windows) > 1
+    assert not windows
     assert result.obligations_json == result.resolutions_json == '[]'
 
 
@@ -163,9 +157,9 @@ def test_resolved_ledger_cannot_hide_remaining_reference(rig, monkeypatch):
             value['resolutions'] = [dict(obligation_id=inputs['obligations'][0]['id'], evidence_ids=[known])]
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
-    with pytest.raises(Rejected, match='obligation status'):
-        calls.extract_paper(papers[0])
-    assert not any(e['stage'] == 'extraction_graph_merged' for e in calls.log.read())
+    result = calls.extract_paper(papers[0])
+    assert len(result.items) == 8 and not json.loads(result.resolutions_json)
+    assert any(d['kind'] == 'reconciliation_failed' for d in json.loads(result.dispositions_json))
 
 
 def test_overlapping_closures_include_prior_formulas_and_source_evidence(rig, monkeypatch):

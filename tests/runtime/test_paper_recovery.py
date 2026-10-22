@@ -65,7 +65,7 @@ def test_failure_threshold_stops_only_after_exceeded(rig, monkeypatch):
     with pytest.raises(Rejected):
         extract(calls, papers)
     assert [i['source_id'] for _,i in sent] == ['p','q','r','s']
-    assert not (calls.log.path.parent/'literature.extracted.txt').exists()
+    assert (calls.log.path.parent/'literature.extracted.txt').exists()
     stop = next(json.loads(e['payload_json']) for e in calls.log.read() if e['stage']=='extraction_stopped')
     assert stop['max_failed_papers'] == 3 and stop['failed_count'] == 4
     assert stop['not_attempted'] == ['t']
@@ -93,11 +93,12 @@ def test_only_paper_local_budget_stop_can_continue(rig, monkeypatch, failure):
     if failure == 'paper_cap':
         path = extract(calls, papers[:2])
         data = json.loads(path.read_text()[len(HEADER):])
-        assert [p['status'] for p in data['papers']] == ['failed','extracted']
+        assert [p['status'] for p in data['papers']] == ['extracted','extracted']
+        assert data['papers'][0]['open_gaps']
     else:
         with pytest.raises(BudgetStop):
             extract(calls, papers[:2])
-        assert not (calls.log.path.parent/'literature.extracted.txt').exists()
+        assert (calls.log.path.parent/'literature.extracted.txt').exists()
         assert not any(e['stage']=='extraction_paper_started' and json.loads(e['payload_json'])['source_id']=='q'
                        for e in calls.log.read())
 
@@ -283,7 +284,7 @@ def test_native_cli_resume_and_pilot_import(rig, monkeypatch, tmp_path):
 
 def test_full_profile_default_failure_threshold():
     config = yaml.safe_load((ROOT/'config.yaml').read_text())
-    assert config['extraction-full']['extraction_max_failed_papers'] == 3
+    assert config['extraction-full']['extraction_max_failed_papers'] == 8
 
 
 def test_operational_error_stops_corpus(rig, monkeypatch):
@@ -294,7 +295,7 @@ def test_operational_error_stops_corpus(rig, monkeypatch):
     with pytest.raises(OSError):
         extract(calls, papers[:2])
     assert sent == []
-    assert not (calls.log.path.parent/'literature.extracted.txt').exists()
+    assert (calls.log.path.parent/'literature.extracted.txt').exists()
 
 
 
@@ -322,7 +323,7 @@ def test_admission_operational_error_is_not_paper_failure(rig, monkeypatch, erro
     with pytest.raises(error):
         extract(calls, papers[:2])
     assert sent == []
-    assert not (calls.log.path.parent/'literature.extracted.txt').exists()
+    assert (calls.log.path.parent/'literature.extracted.txt').exists()
 
 
 

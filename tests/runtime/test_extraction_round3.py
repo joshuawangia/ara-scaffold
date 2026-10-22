@@ -63,9 +63,11 @@ def test_unresolved_obligations_require_evidence(rig, monkeypatch, resolve):
     monkeypatch.setattr(provider, 'estimate', estimate)
     monkeypatch.setattr(provider, 'complete', complete)
     if not resolve or resolve == 'unknown':
-        with pytest.raises(Rejected, match='obligation'):
-            extract(calls, (paper,))
-        assert not (calls.log.path.parent / 'literature.extracted.txt').exists()
+        result = calls.extract_paper(paper)
+        assert len(result.items) == 2
+        assert len(json.loads(result.obligations_json)) == 1
+        assert not json.loads(result.resolutions_json)
+        assert any(d['kind'] == 'reconciliation_failed' for d in json.loads(result.dispositions_json))
         assert not (calls.log.path.parent / 'p.joined.rich.json').exists()
     else:
         result = calls.extract_paper(paper)

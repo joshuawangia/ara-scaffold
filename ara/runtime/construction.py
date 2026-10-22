@@ -167,7 +167,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     input_bound = min(metadata['batch_input_tokens'], calls.config['model_context_token_bound'] -
                       calls.config['extracted_build_t_max_output_tokens'] - symbol_budget)
     require(input_bound > 0, 'no build-T batch input allowance')
-    base_inputs = {'plan': metadata, 'audience': audience, 'shared_symbols': []}
+    base_inputs = {'publication_roster': json.loads(literature[len(HEADER):]).get('publication_roster', []), 'plan': metadata, 'audience': audience, 'shared_symbols': []}
     items = {item['id']: item for item in all_items}
     dependencies = evidence_dependencies(items)
     def grouped(ids):

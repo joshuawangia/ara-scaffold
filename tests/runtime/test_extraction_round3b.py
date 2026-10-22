@@ -35,7 +35,9 @@ def test_targeted_correction_preserves_inventory_and_is_bounded(rig, monkeypatch
         changes = [graph()['items'][0]]
     else:
         changes = [i for i in candidate['items'] if i['kind'] == 'inference']
-        candidate['items'] = [i for i in candidate['items'] if i['kind'] != 'inference']
+        changes = copy.deepcopy(changes)
+        for item in candidate['items']:
+            if item['kind'] == 'inference': item['inference_origin'] = None
     correction = {**graph(), 'items': copy.deepcopy(changes)}
     if patch == 'unchanged': correction['items'].append(copy.deepcopy(candidate['items'][1]))
     if patch == 'invalid': correction['items'][0]['source_id'] = 'q'
@@ -57,7 +59,7 @@ def test_targeted_correction_preserves_inventory_and_is_bounded(rig, monkeypatch
     else:
         with pytest.raises(Rejected): extract(calls, (papers[0],))
         assert not list(calls.cache.path.glob('*.json'))
-        assert not (calls.log.path.parent / 'literature.extracted.txt').exists()
+        assert (calls.log.path.parent / 'literature.extracted.txt').exists()
     assert len(sent) == 2  # Generic validation_attempts must not add more corrections.
     models = [e for e in calls.log.read() if e['label'] == 'MODEL']
     assert len(models) == 2 and all(e['cost_usd'] > 0 for e in models)
@@ -65,15 +67,16 @@ def test_targeted_correction_preserves_inventory_and_is_bounded(rig, monkeypatch
     assert json.loads(models[0]['payload_json'])['status'] == 'rejected'
 
 
-def test_zero_inference_refused_without_correction(rig, monkeypatch):
+def test_zero_inference_disclosed_without_correction(rig, monkeypatch):
     calls, provider, papers, *_ = rig
     calls.config.update(extraction_require_inference=True, extraction_targeted_corrections=0, validation_attempts=3)
     value = graph(); value['items'] = [i for i in value['items'] if i['kind'] != 'inference']
     monkeypatch.setattr(provider, 'complete', lambda *a: Response(response(value)))
-    with pytest.raises(Rejected, match='no stated inference'): extract(calls, (papers[0],))
+    result = calls.extract_paper(papers[0])
+    assert len(result.items) == 6
+    assert any(d['kind'] == 'inference_coverage_unverified' for d in json.loads(result.dispositions_json))
     assert len([e for e in calls.log.read() if e['label'] == 'MODEL']) == 1
-    assert not list(calls.cache.path.glob('*.json'))
-    assert not (calls.log.path.parent / 'literature.extracted.txt').exists()
+    assert list(calls.cache.path.glob('*.json'))
 
 
 def test_each_range_has_one_correction_inside_paper_allowance(rig, monkeypatch):
@@ -95,7 +98,7 @@ def test_each_range_has_one_correction_inside_paper_allowance(rig, monkeypatch):
     monkeypatch.setattr(provider, 'estimate', estimate)
     monkeypatch.setattr(provider, 'complete', complete)
     path = extract(calls, (papers[0],))
-    assert len(sent) == 5
+    assert len(sent) == 4
     assert sum(d.get('mode') == 'targeted_correction' for d in sent) == 2
     assert path.exists()
 

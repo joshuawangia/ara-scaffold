@@ -189,6 +189,12 @@ class ModelCalls:
         self._key_locks = {}
         self.provider_factory = provider_factory
         self._stage_providers = {}
+        self._calibration_state = None
+        if hasattr(provider, 'calibration_state'):
+            from ara.runtime.claude_estimation import CalibrationState
+            self._calibration_state = CalibrationState()
+            self._calibration_state.restore(self.log.read())
+            provider.calibration_state = self._calibration_state
         self._stage_provider_lock = RLock()
         self._reservations = threading.local()
         self._ensure_provider_ready(force=True)
@@ -216,6 +222,12 @@ class ModelCalls:
         with self._stage_provider_lock:
             if key not in self._stage_providers:
                 self._stage_providers[key] = self.provider_factory(settings)
+                stage_provider = self._stage_providers[key]
+                if hasattr(stage_provider, 'calibration_state'):
+                    if self._calibration_state is None:
+                        self._calibration_state = stage_provider.calibration_state
+                        self._calibration_state.restore(self.log.read())
+                    stage_provider.calibration_state = self._calibration_state
         scoped = copy(self)
         scoped.config, scoped.provider = settings, self._stage_providers[key]
         scoped._dispatch_stage = stage
@@ -419,6 +431,9 @@ class ModelCalls:
                 # Parsing and follow-up validation happen only after accounting.
                 self._receive(state, kind, key, raw, usage, cost)
                 charged = True
+                if hasattr(self.provider, 'observe'):
+                    self.log.record('provider_estimate_observation', kind=kind, call_id=self._reservations.call_id,
+                                    **self.provider.observe(kind, prompt, schema, estimate, raw))
             # Stop reason is checked BEFORE interpreting any content blocks.
             if schema_smoke:
                 require(raw['stop_reason'] in ('end_turn', 'max_tokens'), f'provider stop: {raw["stop_reason"]}')
@@ -466,6 +481,9 @@ class ModelCalls:
                 cost = self.budget.response_cost(raw)
                 self._receive(state, kind, key, raw, usage, cost)
                 charged = True
+                if hasattr(self.provider, 'observe'):
+                    self.log.record('provider_estimate_observation', kind=kind, call_id=self._reservations.call_id,
+                                    **self.provider.observe(kind, prompt, schema, estimate, raw))
             if not validating:
                 from ara.runtime.providers import provider_error_evidence
                 self.log.record('provider_error', kind=kind, **provider_error_evidence(exc, prompt))
@@ -592,7 +610,8 @@ class ModelCalls:
                         input_tokens=initial, output_tokens=context_output, reserved_usage=estimate.to_dict(),
                         limit=self.config['model_context_token_bound'],
                         decision='fits' if fits else 'refused', prompt=prompt,
-                        token_count_method=getattr(self.provider, 'estimate_method', 'provider_count'))
+                        token_count_method=getattr(self.provider, 'estimate_method', 'provider_count'),
+                        calibration=self.provider.metadata(kind).get('calibration') if hasattr(self.provider, 'metadata') else None)
         if admission and not fits:
             self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind,
                              scope=('paper' if kind == 'extract_paper' else

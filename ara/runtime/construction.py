@@ -348,7 +348,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             refusal_reasons.append(reason)
             skip(batch, window_items, reason, selection, closure)
             continue
-        if allocation['window_commitment_cap'] == 0:
+        window_cap = allocation['window_commitment_caps'][batch.index]
+        if window_cap == 0:
             skip(batch, window_items, 'zero initial window share; commitment cap is zero', selection, closure)
             continue
         try:
@@ -362,11 +363,12 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             if catalog_tokens > symbol_budget:
                 calls.budget.stop('accepted catalogue exceeds global budget on recount', 'build_t_batch')
             symbol_available = symbol_budget - catalog_tokens
-            windows_left = len(batches) - batch.index
+            windows_left = sum(n > 0 for n in allocation['window_initial_commitments'][batch.index:])
             # Reserve the original headroom as a soft target; accepted output may borrow it.
             working_share = max(0, int(metadata['working_t_token_budget'] * (1 - allocation['headroom_fraction'])) - current.initial_input_tokens) // windows_left
             symbol_share = max(0, int(symbol_budget * (1 - allocation['headroom_fraction'])) - catalog_tokens) // windows_left
-            window_budget = {**allocation, 'window_copy_token_budget': working_share,
+            window_budget = {**allocation, 'initial_window_commitments': allocation['window_initial_commitments'][batch.index],
+                             'window_commitment_cap': window_cap, 'window_copy_token_budget': working_share,
                              'symbol_available_tokens': max(0, symbol_available),
                              'window_symbol_token_budget': symbol_share,
                              'per_window_commitments': min(
@@ -438,7 +440,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             def fits(ids):
                 if not ids:
                     return True
-                if len(ids - materialized) > allocation['window_commitment_cap']:
+                if len(ids - materialized) > window_cap:
                     return False
                 if payload_token_bound(items, ids) > input_bound - 8192:
                     return False
@@ -501,7 +503,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             # The actual growing catalogue and plan identity are counted again, including retries.
             def check(data):
                 ids = [c['id'] for c in data['commitments']]
-                require(len(ids) <= allocation['window_commitment_cap'], 'construction window commitment cap exceeded')
+                require(len(ids) <= window_cap, 'construction window commitment cap exceeded')
                 require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
                 commitments = CommitmentSet.from_dict({'commitments': [
                     {**c, 'text': evidence_text(items[c['id']], support_omitted.get(c['id'])), 'citation': items[c['id']]['citation']}

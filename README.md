@@ -727,14 +727,25 @@ completion may have CLI `stop_reason: tool_use`.
 `timeout_seconds` defaults to 300. Rate/usage errors receive at most two fresh
 process retries, with logged exponential backoff capped at 30 seconds. Admission
 is repeated for every attempt. Concurrent requests reserve tokens atomically.
-There is no free CLI token counter: admission estimates one token per UTF-8 byte
-of prompt, system and schema plus 16,384 tokens of runtime headroom, reserving
-that amount and the output ceiling twice for at most two CLI turns, plus one
-output allowance for possible replay as second-turn input. This is a
-conservative local estimate, not a measurement or tokenizer guarantee. Initial
-context and cumulative token caps remain enforced. Unknown usage consumes the
-reservation and remains explicitly incomplete; resumption requires the existing
-unknown-usage reconciliation policy.
+There is no free CLI token counter. The versioned calibration table uses per-kind
+p99 measured API tokens/UTF-8-byte ratios with 5% margin, plus runtime overhead
+measured from retained CLI receipts. Source/event hashes and numeric pairs are in
+`ara/runtime/claude_code_calibration.json`; no source text is copied into that table.
+Unknown kinds use the largest calibrated factor. This is an estimate, not a
+hard tokenizer bound. The aggregate reservation still covers two turns and one
+output replay. Initial context and cumulative token caps remain enforced.
+After each uncached response with valid measured usage, an observation compares
+CLI aggregate input (including cache) with the initial estimate. Overshoots raise
+the model/kind factor for later calls, never lower it; stage providers share the
+run state and reopening the same run restores matching-version observations.
+In-flight reservations are not retroactively enlarged. Actual usage remains the
+accounting authority. Missing usage consumes the reservation and stays incomplete.
+
+If global construction capacity is smaller than the window count, available
+one-slot allocations go to the earliest windows in plan order. Per-window shares
+and caps, unfunded windows, and the allocation rule are disclosed in the plan.
+Actual closures, symbols and global limits are still checked; an allocation is
+not a guarantee that a window contributes.
 
 CLI reported cost equivalents appear under `subscription_usage`; they are not
 measured API USD. Dollar caps do not govern subscription calls. Original imported

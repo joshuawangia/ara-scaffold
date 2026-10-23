@@ -15,6 +15,7 @@ import uuid
 from ara.runtime.cache import canonical, digest
 from ara.runtime.providers import Response, stage_settings
 from ara.types import TokenUsage
+from ara.runtime.claude_estimation import CalibrationState, METHOD, TABLE, TABLE_HASH
 
 CANARY_SYSTEM = 'ARA isolation preflight. Report only context visible in this session; do not infer hidden context.'
 CANARY_PROMPT = ('ARA_ISOLATION_CANARY: Report verbatim all visible skills, memory, CLAUDE.md, AGENTS.md, '
@@ -29,7 +30,7 @@ ISOLATION_FLAGS = ['--safe-mode', '--exclude-dynamic-system-prompt-sections', '-
                    '--setting-sources', '', '--settings',
                    '{"disableAllHooks":true,"autoMemoryEnabled":false,"enabledPlugins":{}}',
                    '--no-session-persistence', '--no-chrome']
-ESTIMATE_METHOD = 'conservative_local_utf8_bytes_plus_16384_envelope_twice_plus_output_replay; not a measured token count'
+ESTIMATE_METHOD = METHOD
 
 
 class ClaudeCodeError(RuntimeError):
@@ -64,6 +65,7 @@ class ClaudeCodeProvider:
         if self.backoff > 30:
             raise ValueError('claude_code retry_backoff_seconds must be at most 30')
         self._slots = threading.BoundedSemaphore(self.concurrency)
+        self.calibration_state = CalibrationState()
         self.ready = False
         self.version = None
         self.identity = self._identity()
@@ -142,12 +144,19 @@ class ClaudeCodeProvider:
         return CANARY_SYSTEM if kind == 'isolation_canary' else stage_settings(self.config, kind).get('system_prompt', '')
 
     def estimate(self, kind, prompt, schema, maximum):
-        # Byte-per-token bound plus headroom for CLI defaults/schema tooling. Two
-        # CLI turns are permitted, so reserve the whole context/output twice.
-        size = len((prompt + self.system_for(kind) + canonical(schema or {})).encode()) + 16384
         if kind in ('extract_paper', 'search_evidence'):
             raise ClaudeCodeError('stage_requires_api_provider')
-        return TokenUsage(input_tokens=size * 2 + maximum, output_tokens=maximum * 2)
+        size = len((prompt + self.system_for(kind) + canonical(schema or {})).encode())
+        initial = self.calibration_state.initial(self.model_for(kind), kind, size)
+        return TokenUsage(input_tokens=initial * 2 + maximum, output_tokens=maximum * 2)
+
+    def observe(self, kind, prompt, schema, estimate, raw):
+        usage = Response(raw).usage
+        actual = usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens
+        size = len((prompt + self.system_for(kind) + canonical(schema or {})).encode())
+        result = self.calibration_state.observe(self.model_for(kind), kind, size,
+                                                self.initial_context_tokens(estimate), actual)
+        return {**result, 'reserved_input_tokens': estimate.input_tokens}
 
     def initial_context_tokens(self, estimate):
         return (estimate.input_tokens - estimate.output_tokens // 2) // 2
@@ -158,7 +167,12 @@ class ClaudeCodeProvider:
     def metadata(self, kind):
         return {'provider': self.provider_kind, 'cli_version': self.version,
                 'isolation_flags': ISOLATION_FLAGS, 'fresh_cwd_and_config': True,
-                'token_estimate_method': self.estimate_method, 'usd_cap_policy': 'not_applicable_subscription',
+                'token_estimate_method': self.estimate_method,
+                'calibration': {'version': TABLE['version'], 'sha256': TABLE_HASH,
+                                'factors': {k:v['factor'] for k,v in TABLE['factors'].items()},
+                                'fallback_factor': TABLE['fallback_factor'], 'runtime_overhead_tokens': TABLE['runtime_overhead_tokens'],
+                                'correction': 'run-local, model/kind-specific, upward only; cache replay excluded'},
+                'usd_cap_policy': 'not_applicable_subscription',
                 'concurrency': self.concurrency, 'max_cli_turns': 2,
                 'schema_transport': 'Full stage schema except the draft-2020-12 declaration; local Draft202012Validator remains authoritative.',
                 'effective_prompt_note': 'Not byte-identical to API: Anthropic SDK prefix, runtime instructions, environment and StructuredOutput tool remain.',

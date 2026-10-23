@@ -105,10 +105,11 @@ def methodology(log_path: Path) -> str:
         'providers_by_stage': {kind: sorted({p.get('provider', 'anthropic_or_mock_legacy') for e, p in routing
                                              if e['stage'] == kind}) for kind in served_by_kind},
         'claude_code': [{key: p.get(key) for key in ('cli_version', 'isolation_flags', 'fresh_cwd_and_config',
-                         'token_estimate_method', 'usd_cap_policy', 'effective_prompt_note',
+                         'token_estimate_method', 'calibration', 'usd_cap_policy', 'effective_prompt_note',
                          'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport',
                          'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan')}
                        for _, p in cli_calls[:1]],
+        'estimate_observations': [json.loads(e['payload_json']) for e in events if e['stage']=='provider_estimate_observation'],
         'isolation_preflights': [p.get('isolation') for e, p in cli_calls if e['stage'] == 'isolation_canary'],
         'subscription_usage': {'cost_equivalent_usd': sum(p.get('subscription_usage', {}).get('cost_equivalent_usd', 0)
                                   for e, p in cli_calls if not p.get('cache_hit')),

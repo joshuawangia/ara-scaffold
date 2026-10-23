@@ -23,15 +23,24 @@ def budget_plan(config, windows, copy_tokens, wrapper_tokens, input_bound):
     multiplier = config.get('construction_window_cap_multiplier', 2)
     require(type(multiplier) in (int, float) and isfinite(multiplier) and multiplier >= 1,
             'construction window cap multiplier must be finite and at least one')
-    return dict(window_count=windows, per_window_commitments=per_window,
-                initial_window_commitments=per_window, window_cap_multiplier=multiplier,
-                window_commitment_cap=floor(per_window * multiplier), redistribution_pass=False,
-                projected_t_commitments=per_window * windows, copy_tokens_per_commitment=copy_cost,
+    shares = [per_window] * windows
+    scarce = 0 < total < windows and input_bound - wrapper_tokens >= copy_cost + symbol_cost
+    if scarce:
+        shares = [1 if index < total else 0 for index in range(windows)]
+    caps = [floor(share * multiplier) for share in shares]
+    projected = sum(shares)
+    return dict(window_initial_commitments=shares, window_commitment_caps=caps,
+                global_commitment_slots=total, funded_windows=sum(share > 0 for share in shares),
+                allocation_rule=('one_slot_in_plan_order_when_capacity_below_window_count' if scarce else 'equal_initial_shares'),
+                window_count=windows, per_window_commitments=per_window,
+                initial_window_commitments=max(shares, default=0), window_cap_multiplier=multiplier,
+                window_commitment_cap=max(caps, default=0), redistribution_pass=False,
+                projected_t_commitments=projected, copy_tokens_per_commitment=copy_cost,
                 symbol_tokens_per_commitment=symbol_cost, headroom_fraction=headroom,
                 working_wrapper_tokens=wrapper_tokens, working_available_tokens=working,
                 symbol_available_tokens=symbols, batch_input_bound=input_bound,
-                projected_working_tokens=wrapper_tokens + per_window * windows * (copy_cost + symbol_cost),
-                projected_symbol_tokens=per_window * windows * symbol_cost,
+                projected_working_tokens=wrapper_tokens + projected * (copy_cost + symbol_cost),
+                projected_symbol_tokens=projected * symbol_cost,
                 window_copy_token_budget=working // count,
                 measured_symbol_basis='ceil(10471 / 45); configurable reservation may only raise this',
                 note='Allocation, not a prediction of model formulas. Exact requests and accepted outputs are rechecked.')

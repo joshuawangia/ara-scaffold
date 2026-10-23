@@ -25,6 +25,9 @@ class CountingProvider:
         self.estimate_method = getattr(self.provider, 'estimate_method',
                                        'provider_count_tokens' if self.provider else 'local_estimate_utf8_bytes_div_4')
 
+    def metadata(self, kind):
+        return self.provider.metadata(kind) if hasattr(self.provider, 'metadata') else {}
+
     def model_for(self, kind):
         return stage_settings(self.config, kind)['model']
 

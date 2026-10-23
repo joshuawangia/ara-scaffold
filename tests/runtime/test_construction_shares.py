@@ -265,13 +265,22 @@ def test_zero_initial_share_discloses_zero_cap_without_dispatch(rig, monkeypatch
             return TokenUsage(input_tokens=1000 + actual * 100, output_tokens=maximum)
         return estimate(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'estimate', count)
-    with pytest.raises(Rejected, match='empty working T'):
-        prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
-    assert payloads(calls, 'build_t_plan')[0]['plan']['budget']['window_commitment_cap'] == 0
-    assert not sent
-    assert len(payloads(calls, 'build_t_batch_skipped')) == 3
+    if headroom == .2:
+        with pytest.raises(Rejected, match='empty working T'):
+            prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+        assert payloads(calls, 'build_t_plan')[0]['plan']['budget']['window_commitment_cap'] == 0
+        assert not sent
+        assert len(payloads(calls, 'build_t_batch_skipped')) == 3
+        assert not payloads(calls, 'commitments_frozen')
+    else:
+        result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+        assert len(result.commitments) == 2
+        plan = payloads(calls, 'build_t_plan')[0]['plan']['budget']
+        assert plan['window_initial_commitments'] == [1, 1, 0]
+        assert [i['batch_index'] for kind,i in sent if kind=='build_t_batch'] == [0, 1]
+        assert len(payloads(calls, 'build_t_batch_skipped')) == 1
+        assert len(payloads(calls, 'commitments_frozen')) == 1
     assert all('zero initial window share' in p['reason'] for p in payloads(calls, 'build_t_batch_skipped'))
-    assert not payloads(calls, 'commitments_frozen')
 
 
 def test_mandatory_bundle_borrows_global_capacity_and_preserves_endpoints(rig, monkeypatch):

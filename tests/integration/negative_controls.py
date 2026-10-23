@@ -635,7 +635,7 @@ CASES += [
 
 CASES += [
     ('soft_recompute', 'ara/runtime/construction.py',
-     'windows_left = len(batches) - batch.index', 'windows_left = len(batches)',
+     "windows_left = sum(n > 0 for n in allocation['window_initial_commitments'][batch.index:])", 'windows_left = len(batches)',
      'tests/runtime/test_construction_shares.py::test_borrowing_recounts_and_recomputes_before_next_dispatch'),
     ('soft_recount', 'ara/runtime/construction.py',
      "current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})",
@@ -777,10 +777,10 @@ CASES += [
      "config.get('construction_window_cap_multiplier', 2)", '2',
      'tests/runtime/test_bounded_closure.py::test_initial_window_cap_is_configurable_and_disclosed'),
     ('construction_cap_depth_cut', 'ara/runtime/construction.py',
-     "if len(ids - materialized) > allocation['window_commitment_cap']:", 'if False:',
+     "if len(ids - materialized) > window_cap:", 'if False:',
      'tests/runtime/test_bounded_closure.py::test_native_closure_is_depth_cut_to_initial_window_cap'),
     ('construction_cap_stays_initial', 'ara/runtime/construction.py',
-     "if len(ids - materialized) > allocation['window_commitment_cap']:",
+     "if len(ids - materialized) > window_cap:",
      "if len(ids - materialized) > window_budget['per_window_commitments'] * allocation['window_cap_multiplier']:",
      'tests/runtime/test_bounded_closure.py::test_later_window_keeps_initial_cap_after_an_empty_window'),
     ('construction_fresh_run_mode', 'ara/runtime/cli.py',
@@ -970,6 +970,24 @@ CASES += [
     ('api_resolved_correction_settings', 'ara/runtime/construction_stages.py',
      "**overrides, 'stages': {}", "**overrides, 'stages': config.get('stages', {})",
      'tests/runtime/test_provider_integration.py::test_native_api_correction_matches_stage_manifest'),
+]
+
+
+CASES += [
+    ('cli_calibrated_count', 'ara/runtime/claude_code.py',
+     'initial = self.calibration_state.initial(self.model_for(kind), kind, size)', 'initial = size + 16384',
+     'tests/runtime/test_claude_calibration.py::test_provider_uses_calibration_and_keeps_two_turn_reservation'),
+    ('cli_calibration_learning', 'ara/runtime/claude_estimation.py',
+     'underestimated = actual > estimated', 'underestimated = False',
+     'tests/runtime/test_claude_calibration.py::test_live_usage_tightens_later_calls_without_invalidating_cache'),
+    ('cli_calibration_shared', 'ara/runtime/calls.py',
+     'stage_provider.calibration_state = self._calibration_state', 'pass',
+     'tests/runtime/test_claude_calibration.py::test_correction_provider_reuses_run_calibration'),
+    ('cli_calibration_restore', 'ara/runtime/claude_estimation.py',
+     'self._factors[key] = max(self.factor(*key), factor)', 'pass',
+     'tests/runtime/test_claude_calibration.py::test_live_usage_tightens_later_calls_without_invalidating_cache'),
+    ('construction_scarce_slots', 'ara/runtime/closure_budget.py', 'if scarce:', 'if False:',
+     'tests/runtime/test_construction_shares.py::test_zero_initial_share_discloses_zero_cap_without_dispatch[0.01]'),
 ]
 
 

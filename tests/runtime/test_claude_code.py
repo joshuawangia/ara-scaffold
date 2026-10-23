@@ -272,7 +272,7 @@ def test_unpaid_planning_uses_local_subscription_estimate(cli):
     from ara.runtime.planning import CountingProvider
     _,_,config,binary=cli
     provider=CountingProvider(config,'provider')
-    assert 'conservative_local' in provider.estimate_method
+    assert 'p99*1.05' in provider.estimate_method
     assert provider.estimate('formalise','P',{},32).input_tokens>len('P')
     assert not binary.with_suffix('.trace').exists()
     with pytest.raises(RuntimeError,match='planning forbids'): provider.complete('P')
@@ -293,7 +293,9 @@ def test_second_turn_replay_is_reserved(cli):
     provider=ClaudeCodeProvider(config)
     schema={'type':'object'}
     estimate=provider.estimate('formalise','P',schema,100)
-    size=len(('P'+canonical(schema)).encode())+16384
+    import math
+    from ara.runtime.claude_estimation import TABLE
+    size=math.ceil(len(('P'+canonical(schema)).encode())*TABLE['fallback_factor'])+TABLE['runtime_overhead_tokens']
     assert estimate.input_tokens>=2*size+100
     assert estimate.output_tokens==200
     assert provider.initial_context_tokens(estimate)==size

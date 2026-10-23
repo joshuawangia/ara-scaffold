@@ -2195,3 +2195,42 @@ available after headroom and wrapper. Its capacity is 78 commitments; divided
 among 177 windows, initial share and multiplier-2 cap are zero. Thus the corrected
 unit contract does not establish pilot readiness. No bound, cap or estimator was
 relaxed to claim contribution; a separate capacity-policy decision is required.
+
+
+## Omega round 5 — Measured calibration and scarce-window allocation
+
+The calibration artifact claude-code-input-v1 contains 928 deduplicated API
+count pairs: 381 build_t_batch, 453 select_t_roots, 94 propose_targets. Factors
+are nearest-rank p99 times 1.05, rounded upward to six decimals: 0.553224,
+0.551583 and 0.486932 respectively. Other kinds use the largest factor. CLI
+runtime overhead is 949 tokens: 1.05 times the maximum positive residual between
+recorded CLI aggregate input (including cache) and calibrated prompt/system/schema
+bytes. Eight retained real CLI receipts establish that overhead. Source log and
+anchor hashes, event hashes/sequence numbers and content hashes are retained;
+source text is excluded. tools/calibrate_claude_code.py verifies native chains
+and anchors and rebuilds the table without network or generation.
+
+Planning and admission use the same calibrated initial input. Aggregate two-turn
+and output-replay reservations remain separate. This replaces the old byte-per-
+token plus 16,384-token envelope, not actual accounting. The table is a measured
+forecast, not a universal tokenizer bound; distribution shift and unseen kinds
+can exceed it. The API samples are not live CLI measurements of the real corpus.
+
+Every uncached, numerically accounted CLI response, including rejected responses,
+records provider_estimate_observation. Compare aggregate CLI input against the
+initial estimate as a conservative response to missing per-turn attribution.
+Overshoots raise the model/kind factor with 5% margin under a lock; smaller calls
+never loosen it. Scoped providers share run state; matching-table observations
+restore when a run reopens. Cached output does not train the estimator or change
+cache identity. In-flight calls retain their admitted reservations; actual usage
+settles the ledger and normal over-budget stops still apply. Unmeasured failures
+remain explicitly incomplete, with no fabricated training sample.
+
+When total global slots are positive but below the window count, one-slot shares
+go to the earliest windows up to capacity; the remainder receive zero. The plan
+records a vector of initial shares and caps, funded-window count and the rule.
+Live dispatch skips unfunded windows, divides soft shares among funded remaining
+windows, and checks the appropriate fixed per-window cap. Existing global
+recounts and closure/mandatory-bundle checks remain authoritative. Allocation
+and the multiplier cap permit existing soft borrowing; they do not guarantee
+all funded windows contribute.

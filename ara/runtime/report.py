@@ -378,7 +378,7 @@ def generate_report(run_dirs, out):
         for row in run['records']:
             event = row['event']
             unique.setdefault(digest(canonical(event)), event)
-    report = dict(format_version=1, runs=runs, accounting=accounting(list(unique.values())),
+    report = dict(format_version=2, runs=runs, accounting=accounting(list(unique.values())),
                   aggregation_note='Combined accounting deduplicates identical event receipts across supplied runs and imported lineage. '
                                    'Per-run totals include inherited receipts; do not add them. Hash chains detect changes relative to checkpoints, not malicious rewriting of both log and checkpoint.')
     destination.mkdir(parents=True, exist_ok=True)

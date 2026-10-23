@@ -57,7 +57,8 @@ def test_report_native_readonly_accounting_and_citations(tmp_path, monkeypatch):
     assert data['accounting']['budget_accounted']['cost_usd'] == 4
     assert data['accounting']['measured']['tokens']['input_tokens'] == 7
     assert data['accounting']['unknown_at_reservation']['tokens']['input_tokens'] == 7
-    assert run['routes'][0]['support_chain'][0]['commitment']['source_evidence'][0]['page_start'] == 2
+    route = json.loads((out/run['routes'][0]['file']).read_text())
+    assert route['support_chain'][0]['commitment']['source_evidence'][0]['page_start'] == 2
     assert run['routes'][0]['model_summary'] is None
     assert run['construction']['by_kind'] == {'claim': 1}
     assert run['extraction']['exclusions'][0]['source_id'] == 'paper-q'
@@ -65,10 +66,13 @@ def test_report_native_readonly_accounting_and_citations(tmp_path, monkeypatch):
     assert '<script>' not in html and '&lt;script&gt;P&lt;/script&gt;' in html
     assert '<script src=' not in html and '<details' in html
     assert 'PARTIAL SEARCH TRACE' in html and 'Model-written route summaries' in html
-    assert 'placeholder failure' in (out/'report.md').read_text()
+    assert '[Full data]' in (out/'report.md').read_text()
     assert len(list((out/'trees').glob('*.dot'))) == 1
     assert not list((out/'trees').glob('*.svg'))
-    assert json.loads((out/'run-0-events.json').read_text()) == read_log(log.path)
+    envelopes = json.loads((out/'run-0-events.json').read_text())
+    restored = [{**{k:v for k,v in row.items() if k != 'event_ref'},
+                 'event': json.loads((out/row['event_ref']).read_text())} for row in envelopes]
+    assert restored == read_log(log.path)
 
 
 @pytest.mark.parametrize('tamper', ['event', 'truncate', 'anchor'])
@@ -165,7 +169,7 @@ def test_exclusion_roster_retains_selected_papers_without_any_outcome(tmp_path):
     assert next(p for p in run['extraction']['exclusions'] if p['source_id'] == 'paper-q')['reason'] == 'not selected in latest recorded batch'
 
 
-def test_svg_success_is_embedded_without_external_dependencies(tmp_path, monkeypatch):
+def test_svg_success_is_linked_without_embedding(tmp_path, monkeypatch):
     import ara.runtime.report_render as rendering
     from subprocess import CompletedProcess
     monkeypatch.setattr(rendering.shutil, 'which', lambda _: '/placeholder/dot')
@@ -175,7 +179,8 @@ def test_svg_success_is_embedded_without_external_dependencies(tmp_path, monkeyp
     run = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]
     assert run['tree_exports'][0]['svg'] == 'trees/run-0-route-0.svg'
     assert (tmp_path/'out/trees/run-0-route-0.svg').read_text().startswith('<svg')
-    assert 'src="data:image/svg+xml;base64,' in (tmp_path/'out/report.html').read_text()
+    assert 'href="trees/run-0-route-0.svg"' in (tmp_path/'out/report.html').read_text()
+    assert 'data:image/svg' not in (tmp_path/'out/report.html').read_text()
 
 
 def test_unmatched_citation_never_invents_source_pages(tmp_path):
@@ -299,7 +304,8 @@ def test_invalid_trace_is_partial_and_still_renders(tmp_path, fault, monkeypatch
     run = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]
     assert not run['search']['traces'][0]['complete']
     assert any('PARTIAL SEARCH TRACE' in g for g in run['gaps'])
-    assert len(run['search']['traces'][0]['receipts']) == len(rows)
+    trace = json.loads((tmp_path/'out'/run['search']['traces'][0]['file']).read_text())
+    assert len(trace['receipts']) == len(rows)
     expected = {'empty': 'root state inventory', 'version': 'unsupported trace version',
                 'orphan': 'state parent absent', 'cycle': 'state parent absent',
                 'duplicate': 'duplicate state ID', 'terminal': 'terminal state completion coverage',

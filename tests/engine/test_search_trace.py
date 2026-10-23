@@ -97,10 +97,13 @@ def test_native_trace_renders_both_polarities(tmp_path):
     data = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]
     assert len(data['search']['traces']) == 2
     assert all(t['complete'] for t in data['search']['traces'])
-    terminal_decisions = [d for t in data['search']['traces'] for d in t['decisions']
+    full_traces = [json.loads((tmp_path/'out'/t['file']).read_text()) for t in data['search']['traces']]
+    terminal_decisions = [d for t in full_traces for d in t['decisions']
                           if d['decision']['reason_code'].startswith('ROUTE_')]
     assert not terminal_decisions  # v2 keeps original decisions in their chained appendix
-    assert any(d['decision']['reason_code'].startswith('ROUTE_') for d in data['search']['engine_decisions'])
+    search = json.loads((tmp_path/'out'/data['search']['file']).read_text())
+    decisions = [json.loads((tmp_path/'out'/r['event_ref']).read_text()) for r in search['engine_decisions']]
+    assert any(d['decision']['reason_code'].startswith('ROUTE_') for d in decisions)
     assert len([r for r in read_log(log.path) if r['event']['stage'] == 'search_trace_receipt']) == 2
     assert {r['polarity'] for r in data['routes']} == {'target', 'negation'}
     assert not any('PARTIAL SEARCH TRACE' in gap for gap in data['gaps'])
@@ -214,10 +217,14 @@ def test_native_500_state_trace_full_report(tmp_path, monkeypatch):
     generate_report([log.path.parent], tmp_path/'out')
     trace = json.loads((tmp_path/'out/data.json').read_text())['runs'][0]['search']['traces'][0]
     assert trace['complete'], trace['issues']
+    summary = trace
+    trace = json.loads((tmp_path/'out'/summary['file']).read_text())
     assert len(trace['states']) == 500
+    assert summary['nodes'] == 500 and summary['depth'] == 499
     html = (tmp_path/'out/report.html').read_text()
-    assert html.count('<div id="run-0-search-0-state-') == 500
-    assert 'state-499' in html and 'State 499' in html
+    assert summary['preview_nodes'] == 3 and summary['omitted_nodes'] == 497
+    assert summary['file'] in html and 'First 3 levels' in html
+    assert len(html.encode()) < 200_000
 
 
 @pytest.mark.parametrize('fault, expected', [
@@ -290,6 +297,7 @@ def test_sealed_trace_semantics_are_checked_before_rendering(tmp_path, monkeypat
     trace = run['search']['traces'][0]
     assert not trace['complete']
     assert any(expected in issue for issue in trace['issues']), trace['issues']
+    trace = json.loads((tmp_path/'out'/trace['file']).read_text())
     assert len(trace['receipts']) == len(rows)
     assert [r['payload'] for r in trace['receipts']] == rows
     assert any(gap.startswith('PARTIAL SEARCH TRACE: ') and expected in gap for gap in run['gaps'])

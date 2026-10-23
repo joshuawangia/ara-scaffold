@@ -1901,3 +1901,21 @@ symbols restore without model replay or added charges. Normal global recounts,
 merge, one nonempty freeze, target/search and awaiting-selection then continue.
 Already-frozen runs, artifact corruption and incompatible plans refuse. This is
 bounded recovery from a terminal request rejection, not general crash recovery.
+
+
+## Report overview and linked evidence (round 4)
+
+A real multi-run lineage made the original monolithic HTML unusable. Reporting now
+separates a bounded HTML overview from full evidence files. The HTML uses a 12 MB
+working budget, at most 64 KB per section, and explicit overflow links; the delivery
+ceiling is 15 decimal MB. The manifest retains links even when whole sections cannot
+fit. Tree previews show three levels and at most 60 nodes, with full counts/depth and
+outcomes. JSON traces, route details and DOT retain the complete graph/state history.
+
+Report format v2 stores each canonical original event once by hash. Per-run chain
+envelopes reference those bodies; the event index records every occurrence and its
+original/imported-by runs. These identity hashes do not replace original chain hashes.
+Paper histories/items and full projections are split by run/paper; compact receipt
+views point to their shared event bodies. Artifacts are copied separately with their
+existing trust labels. HTML/Markdown are bounded navigation views, not raw appendices.
+Verification precedes publication and the reporter still makes no provider calls.

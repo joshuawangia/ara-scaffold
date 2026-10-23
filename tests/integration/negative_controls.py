@@ -531,7 +531,7 @@ CASES += [
      "data['graph'] = self.graph(data['graph'])", "data['graph'] = data['graph'].to_dict()",
      'tests/engine/test_search_trace.py::test_padded_cap_trace_stays_below_pilot_limit_and_preserves_every_route'),
     ('trace_all_state_rendering', 'ara/runtime/report_render.py',
-     "for index, state in enumerate(trace['states']):", "for index, state in enumerate(trace['states'][:499]):",
+     "write_json(destination / trace_file, trace)", "write_json(destination / trace_file, {**trace, 'states': trace['states'][:499]})",
      'tests/engine/test_search_trace.py::test_native_500_state_trace_full_report'),
     ('trace_selected_proposal_identity', 'ara/runtime/report_traces.py',
      "if node.get('proposal') != expand_proposal(candidate.get('proposal_id'), reference):", 'if False:',
@@ -716,6 +716,24 @@ CASES += [
     ('construction_resume_lock', 'ara/runtime/construction_resume.py',
      'fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)', 'pass',
      'tests/runtime/test_construction_resume.py::test_resume_cli_prevents_concurrent_dispatch'),
+]
+
+CASES += [
+    ('report_section_budget', 'ara/runtime/report_render.py',
+     'if used + size > allowance:', 'if False:',
+     'tests/runtime/test_report_size.py::test_section_budget_keeps_paper_items_and_explicit_links'),
+    ('report_global_budget', 'ara/runtime/report_render.py',
+     'allowance = min(self.budget, HTML_BYTES - self.size - 1000)', 'allowance = self.budget',
+     'tests/runtime/test_report_size.py::test_global_budget_keeps_all_run_files'),
+    ('report_event_identity', 'ara/runtime/report_files.py',
+     'event_hash = digest(canonical(event))', 'event_hash = digest(canonical(row))',
+     'tests/runtime/test_report_size.py::test_large_imported_history_is_external_and_unique'),
+    ('report_tree_preview', 'ara/runtime/report_render.py',
+     "visible = [r for r in rows if r[2] is not None and r[2] < TREE_LEVELS][:TREE_NODES]", 'visible = rows',
+     'tests/engine/test_search_trace.py::test_native_500_state_trace_full_report'),
+    ('report_paper_file', 'ara/runtime/report_render.py',
+     'files.projection(paper, run)', "{**files.projection(paper, run), 'outcome': None}",
+     'tests/runtime/test_report_size.py::test_section_budget_keeps_paper_items_and_explicit_links'),
 ]
 
 

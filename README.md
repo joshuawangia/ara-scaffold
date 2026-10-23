@@ -131,6 +131,23 @@ reduce the search portion from 20 waves to about five; proposal, forward/conflic
 analysis, solver checks, logging and provider limits reduce the total speedup.
 This is an expected effect, not a measured live-provider result.
 
+A job whose provider/validation retries are exhausted does not cancel its siblings.
+After the initial queue drains, failed jobs receive one more attempt in input
+order, each with a fresh search engine and a logged retry. Both attempts retain
+their accounting and trace evidence; publication remains in target/polarity order.
+Global budget/context exhaustion, unknown API accounting and infrastructure
+failures still stop the queue. Completed routes survive these stops, but generation
+cannot proceed past the applicable budget/accounting refusal.
+
+If a job still fails, its completed sibling routes remain available at
+`awaiting_selection`. The console and methodology disclose partial search and
+unavailable paired conflict analysis; missing work is not evidence of no conflicts.
+An exhausted conflict-analysis call also retains the completed search routes.
+If failed CLI calls left unknown usage, selection refuses by default. To explicitly
+retain those reservations as upper bounds (not measured spend), use
+`uv run ara select --run-dir runs/pilot --unknown-usage-policy count-at-reservation`.
+This does not bypass context/token/USD admission or unresolved dispatched calls.
+
 The pilot sets a 6,000-word hard maximum and rejects drafts below
 4,500 words, using the existing title-and-body whitespace count (bibliography
 excluded). The writer targets about 5,400 words to leave counting margin. Pilot output allowances are 20,000 tokens for the writer, 24,000 for each

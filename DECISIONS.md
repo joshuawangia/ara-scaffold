@@ -2234,3 +2234,44 @@ windows, and checks the appropriate fixed per-window cap. Existing global
 recounts and closure/mandatory-bundle checks remain authoritative. Allocation
 and the multiplier cap permit existing soft borrowing; they do not guarantee
 all funded windows contribute.
+
+## Xi round 8 — Job-local failure, one final retry and partial selection
+
+Native target/polarity jobs no longer cancel the entire queue on a ModelCalls
+Rejected/CountRequestRefused result or a local-scope BudgetStop. These are job
+failures after the existing transport/validation boundary. The initial queue
+drains first; failed jobs are then re-queued once in original order with fresh
+engines, preserving immutable inputs and polarity serials without carrying
+partially accumulated licenses. Successful results are never rerun. Global
+BudgetStop, context exhaustion and unexpected infrastructure exceptions halt
+queued work; active requests still drain and publish their durable evidence.
+Provider accounting that already requires a run-level stop remains authoritative.
+
+Both attempts share the job's durable journal. Started/failed/finished events
+carry attempt numbers; retry events state the bounded policy. Publication still
+copies journals in original target/polarity order. The final phase receipt lists
+each job as completed, failed or cancelled and retains its attempt count and
+failure class. Unsealed failed trace prefixes are retained, never represented as
+completed traces. Successful retry traces retain the original search identity.
+
+Missing searches are represented as absent results, not fabricated empty
+SearchResults. Completed sibling routes are saved independently. Paired conflict
+analysis runs only when both searches completed; an exhausted analysis provider
+failure preserves their routes and logs incomplete analysis. A fatal analysis
+error stops further analysis but still saves completed search routes before
+propagating the run-level error. Partial search does not assert absence of conflict.
+
+The normal run and resume-construction paths reach awaiting_selection after
+job-local failures, with partial status in the selection receipt, stderr and
+log-derived methodology. The offline report already retains these failure events.
+Select accepts the existing explicit unknown-usage policy; its default remains
+refusal. Count-at-reservation records unknown spend as upper bounds and keeps
+normal admission checks. An all-failed phase has no selectable routes and is
+disclosed as partial; no route or completed analysis is invented.
+
+Placeholder regressions exercise native ModelCalls/Engine/provider failure,
+transport-before-job retry bounds, queue order, both concurrency settings,
+failure recovery/exhaustion, global cancellation, durable accounting and the
+native CLI run-to-select-to-compose path. The twenty-search equivalence and
+forced-publication-schedule proofs remain required. No live speedup or completed
+pilot claim follows from this offline change.

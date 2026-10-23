@@ -19,6 +19,7 @@ from ara.runtime.export import export_run
 from ara.runtime.extraction import extract, load_papers, MissingExtractionLineage, resume_papers, validate_failure_limit
 from ara.runtime.logging import EventLog, now
 from ara.runtime.orchestration import compose, native_engine, prepare, search_all
+from ara.runtime.search_publication import search_status
 from ara.runtime.providers import AnthropicProvider, MockProvider
 from ara.types import RouteGraph
 
@@ -90,6 +91,7 @@ def parser() -> argparse.ArgumentParser:
         cmd.add_argument('--run-dir', type=Path, required=True)
         if command == 'select':
             cmd.add_argument('--route')
+            cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
         if command == 'feedback':
             cmd.add_argument('--text')
         if command == 'export':
@@ -132,6 +134,16 @@ def validate_profile_caps(config: dict, profile: str | None) -> None:
                     if config.get(key) is None]
     if missing_caps:
         raise ValueError('operator must set extraction-full caps: ' + ', '.join(missing_caps))
+
+
+def disclose_search(log):
+    status = search_status(log.read())
+    if status['status'] == 'partial':
+        print(f"Partial search: {len(status['failed_job_indices'])} jobs failed; "
+              f"{len(status['incomplete_analyses'])} target analyses incomplete. "
+              "Completed routes remain selectable; see methodology for missing work and accounting.",
+              file=sys.stderr)
+    return status
 
 
 def main(argv: list[str] | None = None, *, engine_factory: Callable = native_engine,
@@ -178,7 +190,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 human = next((json.loads(e['payload_json']) for e in events if e['stage'] == 'run' and e['label'] == 'HUMAN'), {})
                 commitments, targets = prepare(calls, bank, run['literature'], run['audience'], human.get('named_position'))
                 routes = search_all(calls, engine_factory(bank, calls), commitments, targets)
-                log.record('awaiting_selection', route_ids=[r.id for r in routes])
+                log.record('awaiting_selection', route_ids=[r.id for r in routes], search=disclose_search(log))
                 log.record('run_finished', state='awaiting_selection')
                 print(str(args.run_dir))
                 return 0
@@ -313,6 +325,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             engine = engine_factory(bank, calls)
             commitments, targets = prepare(calls, bank, literature, args.audience, args.named_position)
             routes = search_all(calls, engine, commitments, targets)
+            search_info = disclose_search(log)
             route_id = args.route
             if route_id:
                 log.human('select', route_id, source='run --route')
@@ -325,7 +338,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                     raise ValueError('unknown route id')
                 compose(calls, chosen)
             else:
-                log.record('awaiting_selection', route_ids=[r.id for r in routes])
+                log.record('awaiting_selection', route_ids=[r.id for r in routes], search=search_info)
             log.record('run_finished', state='complete' if route_id else 'awaiting_selection')
             export_run(log.path, directory / 'export')
             print(str(directory))
@@ -362,7 +375,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         if chosen is None:
             raise ValueError('unknown route id')
         run = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started')
-        calls = calls_factory(run['config'], log, run['topic'])
+        selection_config = dict(run['config'])
+        if args.unknown_usage_policy is not None:
+            selection_config['unknown_usage_policy'] = args.unknown_usage_policy
+        calls = calls_factory(selection_config, log, run['topic'])
         compose(calls, chosen)
         return 0
     except Exception as exc:

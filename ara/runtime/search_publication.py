@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import uuid
 
 from ara.runtime.logging import EventLog
@@ -20,15 +21,19 @@ class SearchPublication:
                               journal=str(journal.path.relative_to(log.path.parent)))
                          for i, (goal, journal) in enumerate(zip(goals, self.journals, strict=True))])
 
-    def run(self, index, search, goal):
+    def run(self, index, search, goal, *, attempt=1):
         with self.log.destination(self.journals[index]):
-            self.log.record('search_job_started', job_index=index)
+            if attempt > 1:
+                self.log.record('search_job_retry', job_index=index, attempt=attempt,
+                                policy='one retry after the initial queue drains')
+            self.log.record('search_job_started', job_index=index, attempt=attempt)
             try:
                 result = search(goal)
             except BaseException as exc:
-                self.log.record('search_job_failed', job_index=index, reason=type(exc).__name__)
+                self.log.record('search_job_failed', job_index=index, attempt=attempt,
+                                status='failed', reason=type(exc).__name__)
                 raise
-            self.log.record('search_job_finished', job_index=index)
+            self.log.record('search_job_finished', job_index=index, attempt=attempt)
             return result
 
     def publish(self):
@@ -45,3 +50,19 @@ class SearchPublication:
             self.log.emit_many(RunEvent.from_dict(event) for event in events)
             self.log.record('search_job_published', batch_id=self.batch_id, job_index=index)
         self.log.record('search_publication_finished', batch_id=self.batch_id)
+
+
+def search_status(events):
+    phases = [json.loads(e['payload_json']) for e in events if e['stage'] == 'search_phase_finished']
+    analyses = [json.loads(e['payload_json']) for e in events if e['stage'] == 'search_analysis_failed']
+    phase = phases[-1] if phases else None
+    jobs = phase['jobs'] if phase else []
+    return {'status': ('stopped' if phase and phase['status'] == 'stopped' else
+                       'partial' if analyses or (phase and phase['status'] == 'partial') else
+                       'complete' if phase else 'not_recorded'),
+            'jobs': jobs,
+            'failed_job_indices': [p['job_index'] for p in jobs if p['status'] == 'failed'],
+            'cancelled_job_indices': [p['job_index'] for p in jobs if p['status'] == 'cancelled'],
+            'retried_job_indices': [p['job_index'] for p in jobs if p['attempts'] > 1],
+            'incomplete_analyses': analyses,
+            'note': 'Only completed searches supply routes. Missing polarity or failed analysis is not evidence of no conflicts.'}

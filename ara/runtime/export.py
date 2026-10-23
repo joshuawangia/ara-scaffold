@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log, pending_search_publications
+from ara.runtime.search_publication import search_status
 from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry, PUBLICATION_POLICY
 from ara.runtime.provenance import extraction_outcomes
 from ara.runtime.grounding import evidence_items
@@ -122,6 +123,7 @@ def methodology(log_path: Path) -> str:
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
+        'search': search_status(events),
         'construction': {'support_omitted': [dict(index=p['index'], evidence_id=id, omitted_support_ids=ids)
                          for e in events if e['stage'] == 'build_t_closure'
                          for p in [json.loads(e['payload_json'])] for id, ids in p.get('support_omitted', {}).items()],

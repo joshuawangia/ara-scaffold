@@ -821,8 +821,8 @@ CASES += [
      'engine._search_serial = serial', 'engine._search_serial = 0',
      'tests/runtime/test_parallel_search.py::test_parallel_native_equivalence'),
     ('parallel_result_pairing', 'ara/runtime/orchestration.py',
-     'yield analyse_searches(positive, futures[i].result(), futures[i + 1].result())',
-     'yield analyse_searches(positive, futures[i].result(), futures[i].result())',
+     'analysis = analyse_searches(positive, results[i], results[i + 1])',
+     'analysis = analyse_searches(positive, results[i], results[i])',
      'tests/runtime/test_parallel_search.py::test_parallel_native_equivalence'),
     ('parallel_recovery_isolation', 'ara/runtime/budget.py',
      'self.used_tokens += tokens(usage) - reservation.charged_tokens',
@@ -988,6 +988,29 @@ CASES += [
      'tests/runtime/test_claude_calibration.py::test_live_usage_tightens_later_calls_without_invalidating_cache'),
     ('construction_scarce_slots', 'ara/runtime/closure_budget.py', 'if scarce:', 'if False:',
      'tests/runtime/test_construction_shares.py::test_zero_initial_share_discloses_zero_cap_without_dispatch[0.01]'),
+]
+
+
+CASES += [
+    ('search_job_isolation', 'ara/runtime/search_jobs.py',
+     'return isinstance(exc, (Rejected, CountRequestRefused)) or (', 'return False and (',
+     'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
+    ('search_job_retry_once', 'ara/runtime/search_jobs.py', 'for attempt in (1, 2):', 'for attempt in (1,):',
+     'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
+    ('search_job_retry_order', 'ara/runtime/search_jobs.py', 'pending = sorted(retry)', 'pending = sorted(retry, reverse=True)',
+     'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
+    ('search_global_stop', 'ara/runtime/search_jobs.py', "exc.scope != 'run'", 'True',
+     'tests/runtime/test_search_failures.py::test_global_stop_cancels_queue_without_retry_and_keeps_completed_routes[budget]'),
+    ('search_partial_routes', 'ara/runtime/orchestration.py', 'yield PartialSearch(results[i], results[i + 1])',
+     'yield PartialSearch(None, None)',
+     'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
+    ('search_partial_methodology', 'ara/runtime/export.py', "'search': search_status(events),", "'search': {},",
+     'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
+    ('search_partial_selection', 'ara/runtime/cli.py', 'search=search_info)', 'search={})',
+     'tests/runtime/test_search_failures.py::test_cli_partial_search_reaches_selection_and_composes'),
+    ('search_selection_unknown_policy', 'ara/runtime/cli.py',
+     "selection_config['unknown_usage_policy'] = args.unknown_usage_policy", 'pass',
+     'tests/runtime/test_search_failures.py::test_cli_partial_search_reaches_selection_and_composes'),
 ]
 
 

@@ -1,8 +1,7 @@
 """Runtime lifecycle; all search, robustness and conflicts belong to engine API."""
 from __future__ import annotations
 
-from dataclasses import replace
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
@@ -10,7 +9,8 @@ from ara.bank import Bank
 from ara.engine import AnalysisResult, Engine, EngineConfig
 from ara.engine.conflicts import analyse_searches
 from ara.runtime.logging import SerializedEventLog
-from ara.runtime.search_publication import SearchPublication
+from ara.runtime.search_jobs import job_failure, run_search_jobs
+from ara.engine.search import SearchResult
 from ara.runtime.cache import canonical
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
@@ -22,6 +22,12 @@ from ara.types import CommitmentSet, Proposition, RouteGraph, negate_proposition
 
 class EngineAPI(Protocol):
     def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult: ...
+
+
+@dataclass(frozen=True)
+class PartialSearch:
+    target: SearchResult | None
+    negated: SearchResult | None
 
 
 class NativeEngine:
@@ -49,24 +55,28 @@ class NativeEngine:
                 engine = self._engine(commitments)
                 engine._search_serial = serial
                 jobs.append((engine, goal))
-        publication = SearchPublication(self.calls.log, [goal for _, goal in jobs])
-        try:
-            with ThreadPoolExecutor(max_workers=concurrency, thread_name_prefix='ara-search') as pool:
-                futures = [pool.submit(publication.run, index, engine.search, goal)
-                           for index, (engine, goal) in enumerate(jobs)]
-                try:
-                    for future in as_completed(futures):
-                        future.result()
-                except BaseException:
-                    for future in futures:
-                        future.cancel()
-                    raise  # Running requests drain before publication and writer shutdown.
-        finally:
-            publication.publish()
+        results, fatal = run_search_jobs(self.calls.log, jobs, concurrency,
+                                         lambda: self._engine(commitments))
         for i in range(0, len(jobs), 2):
             positive, negative = jobs[i][0], jobs[i + 1][0]
-            positive._licenses.extend(negative._licenses)
-            yield analyse_searches(positive, futures[i].result(), futures[i + 1].result())
+            reason = 'run_stopped' if fatal else 'missing_search'
+            if fatal is None and results[i] is not None and results[i + 1] is not None:
+                positive._licenses.extend(negative._licenses)
+                try:
+                    analysis = analyse_searches(positive, results[i], results[i + 1])
+                except Exception as exc:
+                    reason = type(exc).__name__
+                    if not job_failure(exc):
+                        fatal = exc
+                else:
+                    yield analysis
+                    continue
+            self.calls.log.record('search_analysis_failed', target=targets[i // 2].id,
+                                  status='partial', reason=reason,
+                                  note='Completed routes retained; paired conflict analysis unavailable.')
+            yield PartialSearch(results[i], results[i + 1])
+        if fatal is not None:
+            raise fatal
 
 
 def native_engine(bank: Bank, calls: ModelCalls) -> EngineAPI:
@@ -119,10 +129,14 @@ def _save_analyses(calls, targets, results):
     graphs_by_id = {}
     analyses = []
     for target, analysis in zip(targets, results, strict=True):
-        analyses.append(analysis.to_dict())
+        if isinstance(analysis, AnalysisResult):
+            analyses.append(analysis.to_dict())
         for result, polarity in ((analysis.target, 'target'), (analysis.negated, 'negation')):
+            if result is None:
+                continue
             calls.log.record('search_started', target=target.id, polarity=polarity,
-                             goal=result.target.to_dict(), source='completed engine analysis')
+                             goal=result.target.to_dict(), source=('completed search; paired analysis unavailable'
+                                 if isinstance(analysis, PartialSearch) else 'completed engine analysis'))
             for route in result.routes:
                 # Formula-identical targets can share deterministic graph ids.
                 # Retain each search in the log, but persist/select a graph once.

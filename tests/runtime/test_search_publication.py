@@ -107,5 +107,7 @@ def test_search_failure_publishes_durable_accounting(tmp_path, monkeypatch):
     assert len(models) == 1
     assert json.loads(models[0]['payload_json'])['accounting'] == 'reservation_unknown_actual'
     assert calls.budget.used_tokens == sum(sum(e['usage'][k] for k in ('input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens')) for e in models)
-    assert events[-1]['stage'] == 'search_publication_finished'
+    assert any(e['stage'] == 'search_publication_finished' for e in events)
+    phase = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'search_phase_finished')
+    assert phase['status'] == 'stopped'
     assert calls.log is calls.budget.log is log

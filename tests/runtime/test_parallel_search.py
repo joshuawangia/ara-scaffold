@@ -76,8 +76,8 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
     active = peak = 0
     orders = []
     completion_order = []
-    schedule = {f.canonical(): i for i, t in enumerate(targets)
-                for f in (t.formula, t.formula.negated())}
+    schedule = {f.canonical(): i for i, f in enumerate(
+        f for t in targets for f in (t.formula, t.formula.negated()))}
     lock = Lock()
     original_search = Engine.search
     def observed_search(engine, target):
@@ -87,10 +87,16 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
             peak = max(peak, active)
         try:
             index = schedule[target.formula.canonical()]
-            time.sleep(0.01 * (9 - index if reverse else index))
+            if concurrency > 1:
+                started.wait(timeout=60)
             result = original_search(engine, target)
+            # Force a distinct finish order within each four-job window without
+            # relying on host load or serializing the native search work.
+            rank = index // 4 * 4 + (3 - index % 4 if reverse else index % 4)
+            assert completed[rank].wait(60)
             with lock:
                 completion_order.append(target.id)
+            completed[rank + 1].set()
             return result
         finally:
             with lock:
@@ -101,6 +107,9 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
     for concurrency, reverse in ((1, False), (4, False), (4, True)):
         peak = 0
         completion_order = []
+        started = Barrier(concurrency)
+        completed = [Event() for _ in range(21)]
+        completed[0].set()
         directory = tmp_path / f'{concurrency}-{reverse}'
         config = yaml.safe_load((ROOT / 'config.yaml').read_text())
         config.update(search_concurrency=concurrency, forward_pass_depth=1, node_cap=100)
@@ -143,7 +152,10 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
         results.append((routes, analysis, traces))
         orders.append(completion_order)
     assert results[0] == results[1] == results[2]
-    assert orders[1] != orders[2]
+    expected = [id for t in targets for id in (t.id, f'not:{t.id}')]
+    assert orders[0] == orders[1] == expected
+    assert orders[2] == [id for i in range(0, len(expected), 4)
+                         for id in reversed(expected[i:i + 4])]
     assert receipt_orders[0] == receipt_orders[1] == receipt_orders[2]
 
 

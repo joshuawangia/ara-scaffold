@@ -43,6 +43,8 @@ def parser() -> argparse.ArgumentParser:
     resume = sub.add_parser('resume-construction', help='continue a verified stopped construction in its existing directory')
     resume.add_argument('--run-dir', type=Path, required=True)
     resume.add_argument('--unknown-usage-policy', choices=('count-at-reservation',), required=True)
+    resume.add_argument('--plan-only', action='store_true', help='free counts and verified restoration only; no generation')
+    resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
     extraction = sub.add_parser('extract')
     extraction.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     extraction.add_argument('--manifest', type=Path, required=True)
@@ -128,10 +130,17 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         if args.command == 'resume-construction':
             if not (args.run_dir / 'events.jsonl').is_file():
                 raise ValueError('construction run log does not exist')
+            if args.plan_only:
+                if args.output_dir is None or args.output_dir.resolve().is_relative_to(args.run_dir.resolve()):
+                    raise ValueError('plan-only resume requires a separate --output-dir')
+                if args.output_dir.exists() and any(args.output_dir.iterdir()):
+                    raise ValueError('plan-only output directory must be empty')
+            elif args.output_dir is not None:
+                raise ValueError('--output-dir requires --plan-only')
             from ara.runtime.construction_resume import construction_resume_lock
             with construction_resume_lock(args.run_dir):
-                log = EventLog(args.run_dir / 'events.jsonl')
-                events = log.read()
+                source_log = EventLog(args.run_dir / 'events.jsonl')
+                events = source_log.read()
                 starts = [json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started']
                 if len(starts) != 1:
                     raise ValueError('construction resume requires one run configuration')
@@ -140,6 +149,14 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 if bank.bank_version != run['bank_version']:
                     raise ValueError('construction resume bank version mismatch')
                 config = {**run['config'], 'unknown_usage_policy': args.unknown_usage_policy}
+                if args.plan_only:
+                    from ara.runtime.planning import plan_construction_resume
+                    log = EventLog(args.output_dir / 'events.jsonl')
+                    log.human('resume-construction-plan', json.dumps(raw_args), reported_minutes=args.human_minutes)
+                    result = plan_construction_resume(config, log, source_log, ROOT, run)
+                    print(json.dumps(result))
+                    return 0
+                log = source_log
                 calls = calls_factory(config, log, run['topic'])
                 calls.construction_resume = True
                 log.human('resume-construction', json.dumps(raw_args), reported_minutes=args.human_minutes)

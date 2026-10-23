@@ -25,6 +25,10 @@ class Rejected(ValueError):
     pass
 
 
+class CountRequestRefused(RuntimeError):
+    """A free counter request received a terminal provider request rejection."""
+
+
 class InvalidOutput(Rejected):
     """A fully accounted model response failed local validation."""
     def __init__(self, reason: str, feedback: dict):
@@ -357,6 +361,8 @@ class ModelCalls:
                 Draft202012Validator(schema).validate(data)
             result = check(data) if check else data
         except Exception as exc:
+            if isinstance(exc, CountRequestRefused) and not dispatched:
+                raise
             if not charged and isinstance(exc, BudgetStop):
                 raise
             if not validating:
@@ -434,9 +440,18 @@ class ModelCalls:
         schema = self.response_schema(kind, inputs)
         try:
             estimate = self.provider.estimate(kind, prompt, schema, maximum)
-        except ValueError as exc:
-            # Counter failures during output validation are operational, not model errors.
-            raise RuntimeError('token counting failed') from exc
+        except Exception as exc:
+            from ara.runtime.providers import terminal_request_refusal, provider_error_evidence
+            if terminal_request_refusal(exc):
+                self.log.record('token_count_refused', kind=kind, request_hash=digest(prompt),
+                                cost_usd=0, evidence=provider_error_evidence(exc))
+                raise CountRequestRefused('terminal token-count request refusal; no charge or dispatch') from exc
+            self.log.record('token_count_failed', kind=kind, request_hash=digest(prompt),
+                            cost_usd=0, evidence=provider_error_evidence(exc))
+            if isinstance(exc, ValueError):
+                # Counter failures during output validation are operational, not model errors.
+                raise RuntimeError('token counting failed') from exc
+            raise
         # The search reservation includes future tool iterations. Admission concerns
         # the counted initial context; each iteration is separately bounded by the service.
         initial = estimate.input_tokens - (self.config['model_context_token_bound'] * estimate.server_tool_uses

@@ -76,6 +76,7 @@ def load_construction_resume(calls):
             receipt.get('reason') in ('APIStatusError', 'BadRequestError', 'RequestTooLargeError') and
             diagnostic.get('kind') == start['kind'] and
             diagnostic.get('error_type') in ('invalid_request_error', 'request_too_large') and
+            diagnostic.get('message') != 'Provider account credit is insufficient.' and
             (diagnostic.get('http_status') is None or 400 <= diagnostic['http_status'] < 500) and
             bool(diagnostic.get('request_id')) and terminal['event']['response'] is None and
             terminal['event']['usage'] == start['reserved_usage'],

@@ -737,6 +737,41 @@ CASES += [
 ]
 
 
+CASES += [
+    ('construction_counter_classification', 'ara/runtime/calls.py',
+     'if terminal_request_refusal(exc):', 'if False:',
+     'tests/runtime/test_construction_shares.py::test_counter_request_refusal_splits_or_skips_without_losing_later_windows[partition]'),
+    ('construction_counter_split', 'ara/runtime/construction.py',
+     'return partition_bound + 1 if len(ids) > 1 else partition_bound', 'return partition_bound',
+     'tests/runtime/test_construction_shares.py::test_counter_request_refusal_splits_or_skips_without_losing_later_windows[partition]'),
+    ('construction_uncounted_omit', 'ara/runtime/construction.py',
+     'if batch.input_tokens is None:', 'if False:',
+     'tests/runtime/test_construction_shares.py::test_counter_request_refusal_splits_or_skips_without_losing_later_windows[singleton]'),
+    ('construction_counter_no_model_receipt', 'ara/runtime/calls.py',
+     'if isinstance(exc, CountRequestRefused) and not dispatched:', 'if False:',
+     'tests/runtime/test_construction_shares.py::test_counter_request_refusal_splits_or_skips_without_losing_later_windows[admission]'),
+    ('construction_resume_preview_dispatch', 'ara/runtime/planning.py',
+     'plan_only=True, resume_state=state', 'plan_only=False, resume_state=state',
+     'tests/runtime/test_construction_resume.py::test_resume_plan_only_restores_in_separate_log_without_generation_or_source_edits'),
+    ('construction_account_credit_scope', 'ara/runtime/providers.py',
+     "evidence['message'] != 'Provider account credit is insufficient.'", 'True',
+     'tests/runtime/test_schema_preflight.py::test_account_credit_diagnostic_is_sanitized_and_not_a_window_refusal'),
+    ('construction_resume_preview_source', 'ara/runtime/cli.py',
+     "log = EventLog(args.output_dir / 'events.jsonl')", 'log = source_log',
+     'tests/runtime/test_construction_resume.py::test_resume_plan_only_restores_in_separate_log_without_generation_or_source_edits'),
+    ('construction_counter_safe_diagnostic', 'ara/runtime/calls.py',
+     "cost_usd=0, evidence=provider_error_evidence(exc))\n                raise CountRequestRefused", "cost_usd=0, evidence=str(exc))\n                raise CountRequestRefused",
+     'tests/runtime/test_construction_shares.py::test_counter_request_refusal_splits_or_skips_without_losing_later_windows[singleton]'),
+]
+
+
+CASES += [
+    ('construction_resume_account_scope', 'ara/runtime/construction_resume.py',
+     "diagnostic.get('message') != 'Provider account credit is insufficient.' and", 'True and',
+     'tests/runtime/test_construction_resume.py::test_resume_does_not_turn_account_failure_into_window_omission'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

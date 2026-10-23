@@ -349,3 +349,57 @@ def test_non_request_provider_failures_remain_fatal(rig, monkeypatch, status, er
         prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
     assert not payloads(calls, 'construction_provider_refusal')
     assert not payloads(calls, 'commitments_frozen')
+
+
+@pytest.mark.parametrize('failure', ['partition', 'singleton', 'copy_floor', 'admission'])
+def test_counter_request_refusal_splits_or_skips_without_losing_later_windows(rig, monkeypatch, failure):
+    import httpx2 as httpx
+    from anthropic import APIStatusError
+    calls, provider, literature, sent = windows(rig, monkeypatch)
+    estimate = provider.estimate
+    def count(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        ids = [i['id'].rsplit(':', 1)[-1] for p in inputs.get('papers', []) for i in p['items']]
+        reject = (failure == 'partition' and kind == 'build_t_batch' and len(ids) > 1 or
+                  failure == 'singleton' and kind == 'build_t_batch' and ids == ['q'] or
+                  failure == 'copy_floor' and kind == 'propose_targets' and
+                  [c['id'].rsplit(':', 1)[-1] for c in inputs['commitments']['commitments']] == ['q'] or
+                  failure == 'admission' and kind == 'select_t_roots' and inputs.get('plan_id') and ids == ['q'])
+        if reject:
+            raise APIStatusError('QQQQQQQQ', response=httpx.Response(400, request=httpx.Request('POST', 'https://example.invalid')),
+                                 body={'error': {'type': 'invalid_request_error', 'message': 'QQQQQQQQ'}})
+        return estimate(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'estimate', count)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    expected = {'p', 'q', 'r'} if failure == 'partition' else {'p', 'r'}
+    assert {c.id.rsplit(':', 1)[1] for c in result.commitments} == expected
+    assert payloads(calls, 'token_count_refused')
+    assert all(r['cost_usd'] == 0 for r in payloads(calls, 'token_count_refused'))
+    assert 'QQQQQQQQ' not in calls.log.path.read_text()
+    assert len(payloads(calls, 'commitments_frozen')) == 1
+    if failure in ('singleton', 'copy_floor'):
+        assert payloads(calls, 'build_t_plan')[0]['plan']['batches'][1]['input_tokens'] is None
+    if failure != 'partition':
+        assert not any(i['batch_index'] == 1 for _, i in sent)
+        assert len(payloads(calls, 'build_t_batch_skipped')) == 1
+    assert len(payloads(calls, 'call_start')) == sum(
+        e['label'] == 'MODEL' and not json.loads(e['payload_json']).get('cache_hit') for e in calls.log.read())
+
+
+def test_counter_account_credit_failure_stops_without_omitting_windows(rig, monkeypatch):
+    from anthropic import APIStatusError
+    import httpx2 as httpx
+    calls, provider, literature, sent = windows(rig, monkeypatch)
+    def count(*args):
+        raise APIStatusError('P', response=httpx.Response(400, request=httpx.Request('POST', 'https://example.invalid')),
+                             body={'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low P'}})
+    monkeypatch.setattr(provider, 'estimate', count)
+    with pytest.raises(APIStatusError):
+        prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    assert not sent
+    assert not payloads(calls, 'build_t_batch_skipped')
+    assert not payloads(calls, 'token_count_refused')
+    failure = payloads(calls, 'token_count_failed')[0]
+    assert failure['kind'] == 'build_t_batch' and failure['cost_usd'] == 0
+    assert failure['evidence']['message'] == 'Provider account credit is insufficient.'
+    assert 'Your credit balance is too low' not in calls.log.path.read_text()

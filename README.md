@@ -603,3 +603,19 @@ usage counted at its reservation; it does not convert it to measured usage.
 Concurrent resumes, an already-frozen run, corrupt/missing receipts, a changed
 plan, or a dispatch without a terminal receipt refuse. This command can make new
 paid calls after verification; it is not an offline diagnostic command.
+
+
+To verify a resume using free token counts only, write its receipts into a separate
+empty directory:
+
+```sh
+uv run ara resume-construction --run-dir runs/previous --unknown-usage-policy count-at-reservation --plan-only --output-dir runs/resume-plan
+```
+
+The preview verifies the same plan and accepted artifacts, restores the provisional
+commitments in its own log, and stops after counting the next eligible selection
+request, before generation. It has zero spending caps and a provider that cannot
+generate; it does not append to the source run or freeze commitments. The report
+records the next window, restored count, and any refused counter requests. An
+account credit rejection still stops even though the count endpoint is free;
+restore account access before trying again.

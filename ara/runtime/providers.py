@@ -248,7 +248,7 @@ class AnthropicProvider:
 
 
 def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
-    """Validate metadata; emit only parsed compiler diagnostics, never free text.
+    """Validate metadata; emit only recognized diagnostics, never free text.
 
     Prompt knowledge is deliberately unnecessary, including for token-counter
     failures. Substring redaction cannot safely recognize partial request echoes.
@@ -289,6 +289,9 @@ def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
             message = f'prompt is too long: {int(size[1])} tokens > {int(size[2])} maximum'
         elif diagnostic in ('request too large', 'Request too large', 'Request size exceeds 32 MB limit'):
             message = diagnostic
+    if (getattr(exc, 'status_code', None) in (200, 400) and error_type == 'invalid_request_error' and isinstance(diagnostic, str)
+            and diagnostic.startswith('Your credit balance is too low')):
+        message = 'Provider account credit is insufficient.'
     return {'http_status': status, 'error_type': error_type,
             'message': message, 'request_id': request_id}
 
@@ -299,5 +302,7 @@ def terminal_request_refusal(exc: Exception) -> bool:
     if not isinstance(exc, APIStatusError):
         return False
     status = exc.status_code
+    evidence = provider_error_evidence(exc)
     return (type(status) is int and (status == 200 or 400 <= status < 500) and
-            provider_error_evidence(exc)['error_type'] in ('invalid_request_error', 'request_too_large'))
+            evidence['error_type'] in ('invalid_request_error', 'request_too_large') and
+            evidence['message'] != 'Provider account credit is insufficient.')

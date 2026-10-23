@@ -26,7 +26,7 @@ class Batch:
     index: int
     source_ids: tuple[str, ...]
     papers_json: str
-    input_tokens: int
+    input_tokens: int | None
     allowance: int
 
 
@@ -169,17 +169,19 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
         return calls._call_once(kind, request, corrected, attempt=2)
 
 
-def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: bool = False):
-    from ara.runtime.calls import Rejected, require
+def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: bool = False,
+              resume_state: dict | None = None):
+    from ara.runtime.calls import CountRequestRefused, Rejected, require
     from ara.runtime.budget import BudgetStop
     corrections = calls.config.get('construction_targeted_corrections')
     if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
         raise ValueError('construction_targeted_corrections must be 0 or 1')
     remaining = dict(select_t_roots=corrections, build_t_batch=corrections)
-    resumption = None
+    resumption = resume_state
     if getattr(calls, 'construction_resume', False):
         from ara.runtime.construction_resume import load_construction_resume
         resumption = load_construction_resume(calls)
+    if resumption:
         for kind, used in resumption['corrections'].items():
             if remaining[kind] is not None:
                 require(used <= remaining[kind], 'construction resume correction budget mismatch')
@@ -230,18 +232,32 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             {**p, 'items': [{**i, 'root_id': aliases[i['id']]} for i in p['items']]}
             for p in inputs['papers']]}
     count_cache = {}
+    refused_windows = set()
     def count(ids):
         key = tuple(ids)
+        if key in refused_windows:
+            return None
         if key in count_cache:
             return count_cache[key]
         inputs = inputs_for(grouped(ids), 0, metadata['working_t_token_budget'])
-        formal = calls.count_request('build_t_batch', inputs).input_tokens
-        roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).input_tokens
+        try:
+            formal = calls.count_request('build_t_batch', inputs).input_tokens
+            roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).input_tokens
+        except CountRequestRefused:
+            calls.log.record('build_t_partition_refused', evidence_ids=list(ids),
+                             action='split' if allocation is None and len(ids) > 1 else 'omit',
+                             input_tokens=None)
+            count_cache[key] = None
+            if allocation is not None or len(ids) == 1:
+                refused_windows.add(key)
+            return None
         count_cache[key] = max(formal, roots)
         return count_cache[key]
     partition_bound = max(1, input_bound - 2048)
     def partition_count(ids):
         measured = count(ids)
+        if measured is None:
+            return partition_bound + 1 if len(ids) > 1 else partition_bound
         # Keep an indivisible oversized record as its own window. The plan records
         # its real count and execution omits it before dispatch, without truncation.
         return min(measured, partition_bound) if len(ids) == 1 else measured
@@ -249,12 +265,20 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
     wrapper = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}}).input_tokens
     copy_total = 0
+    copy_items = 0
     for ids in windows:
+        if tuple(ids) in refused_windows:
+            continue
         floor = [dict(id=id, text=evidence_text(items[id]), citation=items[id]['citation'],
                       formula={'op': 'atom', 'name': 'P'}) for id in ids]
-        copy_total += max(0, calls.count_request('propose_targets', {**target_inputs,
-            'commitments': {'commitments': floor}}).input_tokens - wrapper)
-    allocation = budget_plan(calls.config, len(windows), copy_total / max(1, len(items)), wrapper, input_bound)
+        try:
+            copy_total += max(0, calls.count_request('propose_targets', {**target_inputs,
+                'commitments': {'commitments': floor}}).input_tokens - wrapper)
+            copy_items += len(ids)
+        except CountRequestRefused:
+            refused_windows.add(tuple(ids))
+            calls.log.record('build_t_partition_refused', evidence_ids=list(ids), action='omit', input_tokens=None)
+    allocation = budget_plan(calls.config, len(windows), copy_total / max(1, copy_items), wrapper, input_bound)
     count_cache.clear()
     batches = [Batch(index, tuple(p['source_id'] for p in grouped(ids)), canonical(grouped(ids)),
                      count(ids), metadata['working_t_token_budget']) for index, ids in enumerate(windows)]
@@ -271,7 +295,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         calls.log.record('build_t_plan', plan_id=plan_id, plan=plan)
     save_immutable(calls.log.path.parent / f'build-t-plan-{plan_id}.json', canonical(plan))
     calls.log.record('build_t_budget_plan', plan_id=plan_id, **allocation)
-    if plan_only:
+    if plan_only and not resumption:
         return plan
     symbols = []
     results = []
@@ -279,6 +303,10 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     materialized = set()
     exhausted = None
     refusal_reasons = []
+    def preview(next_window):
+        return dict(plan=plan, plan_id=plan_id, next_window=next_window,
+                    restored_windows=sorted(resumption['completed']),
+                    restored_commitments=sum(len(r.commitments.commitments) for r in results))
     def skip(batch, window_items, reason, selection, closure):
         omitted = [dict(evidence_id=id, reason=reason) for id in sorted(window_items)]
         window_omissions.extend(omitted)
@@ -309,6 +337,9 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             continue
         if exhausted:
             skip(batch, window_items, exhausted, selection, closure)
+            continue
+        if batch.input_tokens is None:
+            skip(batch, window_items, 'terminal token-count request refusal; uncounted window omitted', selection, closure)
             continue
         if batch.input_tokens > input_bound:
             reason = 'oversized source batch: counted selection window exceeds input bound; no truncation'
@@ -370,6 +401,9 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 require(len(omitted) == len(excluded), 'duplicate omission id')
                 require(not set(roots) & excluded and set(roots) | excluded == set(window_items), 'working T evidence inventory mismatch')
                 return {**data, 'roots': roots}, omitted
+            if plan_only:
+                calls.count_request('select_t_roots', selection_inputs, admission=True)
+                return preview(batch.index)
             selection, omitted = construction_call(calls, 'select_t_roots', selection_inputs, select, remaining)
             selected_ids = prerequisite_closure(items, selection['roots'])
             require(all(dependencies[id] <= selected_ids for id in selected_ids), 'working T drops premise/link/qualification')
@@ -515,11 +549,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                              source_ids=batch.source_ids, output_hash=digest(result.receipt_json),
                              evidence_ids=[c.id for c in result.commitments.commitments], omitted=data['omitted'])
             save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
-        except (Rejected, BudgetStop) as exc:
+        except (Rejected, BudgetStop, CountRequestRefused) as exc:
             if isinstance(exc, BudgetStop) and exc.scope != 'window':
                 raise
             refusal_reasons.append(str(exc))
             skip(batch, window_items, str(exc), selection, closure)
+    if plan_only:
+        return preview(None)
     merged = merge_batches(tuple(results), len(batches))
     require(bool(merged.commitments), 'empty working T after accounted omissions' + (': ' + '; '.join(refusal_reasons) if refusal_reasons else ''))
     final_omissions = [o for o in window_omissions if o['evidence_id'] not in materialized]

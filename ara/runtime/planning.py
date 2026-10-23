@@ -1,5 +1,6 @@
 """Unpaid range and capacity planning; this provider cannot generate responses."""
 import copy
+import json
 from math import ceil
 
 from ara.runtime.cache import Cache, canonical
@@ -108,8 +109,9 @@ def plan_construction(config, log, literature, root, topic, audience, counter):
     calls = ModelCalls(settings, CountingProvider(settings, counter), log,
                        Cache(log.path.parent / 'planning-cache'), root, topic)
     plan = construct(calls, literature, audience, plan_only=True)
-    largest = max((b['input_tokens'] for b in plan['batches']), default=0)
+    largest = max((b['input_tokens'] for b in plan['batches'] if b['input_tokens'] is not None), default=0)
     report = dict(plan=plan, counter='provider_count_tokens' if counter == 'provider' else 'local_estimate_utf8_bytes_div_4',
+                  uncounted_windows=[b['index'] for b in plan['batches'] if b['input_tokens'] is None],
                   generation_calls=0, audience=audience, max_request_tokens=largest,
                   context_reserved_tokens=largest + settings['extracted_build_t_max_output_tokens'] + settings['working_t_symbol_token_budget'],
                   limits=dict(batch=plan['budget']['batch_input_bound'], context=settings['model_context_token_bound'],
@@ -118,4 +120,22 @@ def plan_construction(config, log, literature, root, topic, audience, counter):
                        'Closure payload sizes are conservative UTF-8 bounds. Exact chosen formalization and search requests are rechecked live.')
     save_immutable(log.path.parent / 'construction-plan.json', canonical(report))
     log.record('construction_plan_complete', **report)
+    return report
+
+
+def plan_construction_resume(config, log, source_log, root, run):
+    from types import SimpleNamespace
+    from ara.runtime.construction import construct
+    from ara.runtime.construction_resume import load_construction_resume
+    state = load_construction_resume(SimpleNamespace(log=source_log, config=config))
+    settings = {**config, 'token_cap': 0, 'cost_cap_usd': 0, 'extraction_cost_cap_usd': 0}
+    calls = ModelCalls(settings, CountingProvider(settings, 'provider'), log,
+                       Cache(log.path.parent / 'planning-cache'), root, run['topic'])
+    result = construct(calls, run['literature'], run['audience'], plan_only=True, resume_state=state)
+    refusals = [json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'token_count_refused']
+    report = dict(**result, counter='provider_count_tokens', generation_calls=0, new_cost_usd=0,
+                  all_counts_passed=not refusals, counter_refusals=refusals,
+                  source_run=str(source_log.path.parent))
+    save_immutable(log.path.parent / 'construction-resume-plan.json', canonical(report))
+    log.record('construction_resume_plan_complete', **report)
     return report

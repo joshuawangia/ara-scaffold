@@ -1919,3 +1919,28 @@ Paper histories/items and full projections are split by run/paper; compact recei
 views point to their shared event bodies. Artifacts are copied separately with their
 existing trust labels. HTML/Markdown are bounded navigation views, not raw appendices.
 Verification precedes publication and the reporter still makes no provider calls.
+
+
+## S4 — Free counter refusals and non-mutating resume previews
+
+A terminal request-specific SDK rejection from the free count endpoint is logged
+with kind, request hash, sanitized diagnostic and zero cost. During partition
+planning an aggregate refusal causes deterministic splitting. An indivisible or
+final window that cannot be counted is represented by null input_tokens and
+omitted explicitly; no synthetic token count is persisted as a measurement.
+Copy-floor refusals also omit that window. Window-level admission/count refusals
+continue to later windows, while global final-envelope checks remain mandatory.
+A count refusal before generation produces no MODEL receipt or reservation.
+Authentication, rate limits, transport and server failures remain operational
+stops. An account-credit denial is also fatal: it is not evidence against any
+source window, and skipping every source would conceal the actual blocker.
+Only a canonical paraphrase of the recognized account condition is logged.
+
+resume-construction --plan-only requires a separate empty --output-dir. Under the
+source resume lock, it verifies the source chain, accepted artifacts and original
+plan, then recounts and restores into a new log. Zero spending caps and the
+CountingProvider independently forbid generation. The preview counts the next
+eligible selection request and reports its index without dispatch, freeze or
+source-ledger writes. Original correction use and the same-plan guard still apply;
+a refusal that would change the recorded partition or plan cannot authorize an
+incompatible resume. The preview is not live construction or downstream success.

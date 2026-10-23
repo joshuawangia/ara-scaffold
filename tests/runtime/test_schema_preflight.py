@@ -219,3 +219,14 @@ def test_provider_size_diagnostic_accepts_only_complete_safe_messages(status, me
     exc = SimpleNamespace(status_code=status, request_id='req_P',
                           body={'error': {'type': 'invalid_request_error', 'message': message}})
     assert provider_error_evidence(exc)['message'] == expected
+
+
+@pytest.mark.parametrize('status', [200, 400])
+def test_account_credit_diagnostic_is_sanitized_and_not_a_window_refusal(status):
+    from anthropic import APIStatusError
+    import httpx2 as httpx
+    from ara.runtime.providers import provider_error_evidence, terminal_request_refusal
+    exc = APIStatusError('P', response=httpx.Response(status, request=httpx.Request('POST', 'https://example.invalid')),
+                         body={'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low P'}})
+    assert provider_error_evidence(exc)['message'] == 'Provider account credit is insufficient.'
+    assert terminal_request_refusal(exc) is False

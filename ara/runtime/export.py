@@ -108,6 +108,8 @@ def methodology(log_path: Path) -> str:
                          'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
                          'skipped_windows': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_batch_skipped'],
                          'provider_refusals': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_provider_refusal'],
+                         'counter_refusals': [json.loads(e['payload_json']) for e in events if e['stage'] == 'token_count_refused'],
+                         'counter_failures': [json.loads(e['payload_json']) for e in events if e['stage'] == 'token_count_failed'],
                          'resumes': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_resumed'],
                          'share_borrowing': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_share_borrowed'],
                          'global_exhaustion': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_global_exhaustion'],

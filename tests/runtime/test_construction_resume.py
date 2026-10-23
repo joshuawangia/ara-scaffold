@@ -14,7 +14,7 @@ from test_construction_shares import windows, payloads
 from test_extraction import rig, ROOT
 
 
-def stopped(rig, monkeypatch, *, record_run=False):
+def stopped(rig, monkeypatch, *, record_run=False, error_message='P'):
     from ara.runtime import providers
     calls, provider, literature, sent = windows(rig, monkeypatch)
     if record_run:
@@ -25,7 +25,7 @@ def stopped(rig, monkeypatch, *, record_run=False):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         if inputs['batch_index'] == 1 and kind == 'select_t_roots':
             raise APIStatusError('P', response=httpx.Response(200, request=httpx.Request('POST', 'https://example.invalid'),
-                headers={'request-id': 'req_P'}), body={'error': {'type': 'invalid_request_error', 'message': 'P'}})
+                headers={'request-id': 'req_P'}), body={'error': {'type': 'invalid_request_error', 'message': error_message}})
         return complete(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'complete', fail)
     # Reproduce the prior policy's terminal stop with the actual model boundary.
@@ -104,3 +104,40 @@ def test_resume_cli_prevents_concurrent_dispatch(rig, monkeypatch):
                      '--unknown-usage-policy', 'count-at-reservation'],
                     calls_factory=lambda *args: pytest.fail('concurrent resume reached provider')) == 2
     assert len(sent) == before
+
+
+def test_resume_plan_only_restores_in_separate_log_without_generation_or_source_edits(rig, monkeypatch, tmp_path):
+    from ara.runtime.cli import main
+    from ara.runtime import planning
+    from ara.runtime.logging import EventLog
+    calls, provider, literature, sent = stopped(rig, monkeypatch, record_run=True)
+    source_log = calls.log.path.read_bytes()
+    before = len(sent)
+    monkeypatch.setattr(planning, 'AnthropicProvider', lambda config: provider)
+    output = tmp_path/'preview'
+    result = main(['resume-construction', '--run-dir', str(calls.log.path.parent),
+                   '--unknown-usage-policy', 'count-at-reservation', '--plan-only', '--output-dir', str(output)],
+                  calls_factory=lambda *args: pytest.fail('preview entered generating calls factory'))
+    assert result == 0
+    assert calls.log.path.read_bytes() == source_log
+    assert len(sent) == before
+    events = EventLog(output/'events.jsonl').read()
+    assert not any(e['stage'] in ('call_start', 'commitments_frozen') for e in events)
+    report = json.loads((output/'construction-resume-plan.json').read_text())
+    assert report['restored_commitments'] == 1
+    assert report['restored_windows'] == [0]
+    assert report['next_window'] == 2
+    assert report['generation_calls'] == 0 and report['new_cost_usd'] == 0
+    assert report['all_counts_passed'] is True
+
+
+def test_resume_does_not_turn_account_failure_into_window_omission(rig, monkeypatch, tmp_path):
+    calls, provider, literature, sent = stopped(rig, monkeypatch, error_message='Your credit balance is too low P')
+    before = len(sent)
+    resumed = ModelCalls({**calls.config, 'unknown_usage_policy': 'count-at-reservation'}, provider,
+                         calls.log, Cache(tmp_path/'resume-cache'), ROOT, calls.topic)
+    resumed.construction_resume = True
+    with pytest.raises(ValueError, match='finalized provider request refusal'):
+        prepare_commitments(resumed, load_bank(ROOT/'bank'), literature, '')
+    assert len(sent) == before
+    assert not payloads(calls, 'build_t_batch_skipped')

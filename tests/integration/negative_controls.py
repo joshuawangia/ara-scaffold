@@ -27,7 +27,7 @@ CASES = [
     ('full_schema_prompt', 'ara/runtime/calls.py', "if kind != 'search_evidence':", 'if False:', 'tests/runtime/test_calls.py::test_full_local_schema_reaches_provider_and_log'),
     ('compound_arguments', 'ara/runtime/providers.py', "result['minItems'] = min(1, value['minItems'])", 'pass', 'tests/runtime/test_provider.py::test_compound_generation_cannot_omit_all_arguments'),
     ('validation_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", 'attempts = 1', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[False]'),
-    ('retry_admission', 'ara/runtime/budget.py', "if self.used_tokens + tokens(usage) > self.config['token_cap']:", 'if False:', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[True]'),
+    ('retry_admission', 'ara/runtime/budget.py', "if self.used_tokens + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:", 'if False:', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[True]'),
     ('negative_audit_is_final', 'ara/runtime/calls.py', "if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):", 'if validating:', 'tests/runtime/test_calls.py::test_audit_rejects_extra_step'),
     ('route_artifacts', 'ara/runtime/orchestration.py', "save_route(calls.log.path.parent / 'routes', route)", 'pass', 'tests/integration/test_cli_e2e.py'),
     ('provider_not_projection', 'ara/runtime/providers.py', "'allOf', 'not'", "'allOf'", 'tests/runtime/test_provider.py::test_live_observed_not_constraint_projected_but_locally_enforced'),
@@ -56,7 +56,7 @@ CASES = [
     ('extraction_strict_refusal', 'ara/runtime/extraction.py', "if missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction.py::test_refuse_missing_and_no_publication'),
     ('extraction_counted_oversize', 'ara/runtime/extraction.py', 'return usage.input_tokens', 'return 0', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('extraction_provider_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'extract_paper':", 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
-    ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
+    ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + sum(r.cost for r in self._reservations if r.stage == stage) + self.cost(usage, model=model) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
     ('extraction_actual_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
     ('extraction_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", "attempts = 1 if kind == 'extract_paper' else self.config.get('validation_attempts', 1)", 'tests/runtime/test_extraction.py::test_extraction_retry_and_reservation'),
     ('extraction_model_logging', 'ara/runtime/calls.py', "self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)", "None if kind == 'extract_paper' else self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
@@ -136,8 +136,8 @@ CASES += [
 ]
 
 CASES += [
-    ('stage_reservation_price', 'ara/runtime/calls.py', 'self.budget.before(estimate, kind, model=self.requested_model(kind))', 'self.budget.before(estimate, kind)', 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
-    ('known_terminal_log_failure', 'ara/runtime/calls.py', 'if received:', 'if False:', 'tests/runtime/test_extraction_round3.py::test_known_usage_survives_parsing_or_terminal_log_failure[logging]'),
+    ('stage_reservation_price', 'ara/runtime/calls.py', 'self.budget.reserve(estimate, kind, model=self.requested_model(kind))', 'self.budget.reserve(estimate, kind)', 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
+    ('known_terminal_log_failure', 'ara/runtime/calls.py', 'if receipt:', 'if False:', 'tests/runtime/test_extraction_round3.py::test_known_usage_survives_parsing_or_terminal_log_failure[logging]'),
 ]
 
 CASES.append(('reconciliation_resolution_evidence', 'ara/runtime/calls.py', "require(all(r['evidence_ids'] and set(r['evidence_ids']) <= available for r in resolutions),", 'require(True,', 'tests/runtime/test_extraction_round3.py::test_unresolved_obligations_require_evidence[unknown]'))
@@ -769,6 +769,43 @@ CASES += [
     ('construction_resume_account_scope', 'ara/runtime/construction_resume.py',
      "diagnostic.get('message') != 'Provider account credit is insufficient.' and", 'True and',
      'tests/runtime/test_construction_resume.py::test_resume_does_not_turn_account_failure_into_window_omission'),
+]
+
+
+CASES += [
+    ('parallel_writer', 'ara/runtime/logging.py',
+     'self._writer.submit(self._log.emit, event).result()', 'self._log.emit(event)',
+     'tests/runtime/test_parallel_search.py::test_single_writer'),
+    ('parallel_writer_wiring', 'ara/runtime/orchestration.py',
+     'with SerializedEventLog(original_log) as writer:',
+     "with __import__('contextlib').nullcontext(original_log) as writer:",
+     'tests/runtime/test_parallel_search.py::test_native_search_uses_writer_and_default_limit'),
+    ('parallel_reservation', 'ara/runtime/budget.py',
+     'self._reservations.add(reservation)', 'pass',
+     'tests/runtime/test_parallel_search.py::test_concurrent_admission_reserves_inflight'),
+    ('parallel_reservation_lock', 'ara/runtime/budget.py',
+     'with self._lock:\n            if self._halted is not None:',
+     'if True:\n            if self._halted is not None:',
+     'tests/runtime/test_parallel_search.py::test_reservation_check_and_claim_are_atomic'),
+    ('parallel_equivalence', 'ara/runtime/orchestration.py',
+     'engine._search_serial = serial', 'engine._search_serial = 0',
+     'tests/runtime/test_parallel_search.py::test_parallel_native_equivalence'),
+    ('parallel_result_pairing', 'ara/runtime/orchestration.py',
+     'yield analyse_searches(positive, futures[i].result(), futures[i + 1].result())',
+     'yield analyse_searches(positive, futures[i].result(), futures[i].result())',
+     'tests/runtime/test_parallel_search.py::test_parallel_native_equivalence'),
+    ('parallel_recovery_isolation', 'ara/runtime/budget.py',
+     'self.used_tokens += tokens(usage) - reservation.charged_tokens',
+     'self.used_tokens = tokens(usage)',
+     'tests/runtime/test_parallel_search.py::test_recovery_does_not_erase_other_request'),
+    ('parallel_durable_reservation', 'ara/runtime/calls.py',
+     '# Keep the reservation until the measured receipt is durable.',
+     "self.budget.settle(state['reservation'], usage, cost)  # release before receipt",
+     'tests/runtime/test_parallel_search.py::test_reservation_is_held_until_receipt_is_durable'),
+    ('parallel_single_flight', 'ara/runtime/calls.py',
+     'with lock:\n            return self._call_reserved',
+     'if True:\n            return self._call_reserved',
+     'tests/runtime/test_parallel_search.py::test_same_request_single_flight'),
 ]
 
 

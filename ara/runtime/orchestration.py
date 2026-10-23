@@ -2,18 +2,21 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Protocol
 
 from ara.bank import Bank
 from ara.engine import AnalysisResult, Engine, EngineConfig
+from ara.engine.conflicts import analyse_searches
+from ara.runtime.logging import SerializedEventLog
 from ara.runtime.cache import canonical
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.extraction import save_immutable
 from ara.runtime.render import save_route
 from ara.runtime.search_traces import SearchTraceFiles
-from ara.types import CommitmentSet, Proposition, RouteGraph
+from ara.types import CommitmentSet, Proposition, RouteGraph, negate_proposition
 
 
 class EngineAPI(Protocol):
@@ -25,13 +28,39 @@ class NativeEngine:
     def __init__(self, bank: Bank, calls: ModelCalls):
         self.bank, self.calls = bank, calls
 
-    def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
+    def _engine(self, commitments: CommitmentSet) -> Engine:
         calls = self.calls
-        engine = Engine(bank=self.bank, commitments=commitments, proposer=calls,
+        return Engine(bank=self.bank, commitments=commitments, proposer=calls,
                         formaliser=calls, leaf_mapper=calls, cq_answerer=calls,
                         repairer=calls, sink=calls.log,
                         config=EngineConfig.from_mapping(calls.config), traces=SearchTraceFiles(calls.log))
-        return engine.analyse(target)
+
+    def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
+        return self._engine(commitments).analyse(target)
+
+    def analyse_all(self, targets, commitments, concurrency):
+        # A missing formula must be resolved once before constructing its negation.
+        targets = tuple(t if t.formula else replace(t, formula=self.calls.formalise(t)) for t in targets)
+        jobs = []
+        for target in targets:
+            self.calls.log.record('analysis_started', target=target.to_dict())
+            for serial, goal in enumerate((target, negate_proposition(target))):
+                engine = self._engine(commitments)
+                engine._search_serial = serial
+                jobs.append((engine, goal))
+        with ThreadPoolExecutor(max_workers=concurrency, thread_name_prefix='ara-search') as pool:
+            futures = [pool.submit(engine.search, goal) for engine, goal in jobs]
+            try:
+                for future in as_completed(futures):
+                    future.result()
+            except BaseException:
+                for future in futures:
+                    future.cancel()
+                raise  # Running requests drain and account before the writer closes.
+        for i in range(0, len(jobs), 2):
+            positive, negative = jobs[i][0], jobs[i + 1][0]
+            positive._licenses.extend(negative._licenses)
+            yield analyse_searches(positive, futures[i].result(), futures[i + 1].result())
 
 
 def native_engine(bank: Bank, calls: ModelCalls) -> EngineAPI:
@@ -59,12 +88,31 @@ def prepare(calls: ModelCalls, bank: Bank, literature: str, audience: str,
 
 def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
                targets: tuple[Proposition, ...]) -> tuple[RouteGraph, ...]:
+    concurrency = calls.config.get('search_concurrency', 4)
+    if type(concurrency) is not int or concurrency < 1:
+        raise ValueError('search_concurrency must be a positive integer')
+    original_log, budget_log = calls.log, calls.budget.log
+    with SerializedEventLog(original_log) as writer:
+        calls.log = calls.budget.log = writer
+        try:
+            if isinstance(engine, NativeEngine):
+                analyses = engine.analyse_all(targets, commitments, concurrency)
+            else:
+                def sequential():
+                    for target in targets:
+                        calls.log.record('analysis_started', target=target.to_dict())
+                        yield engine.analyse(target, commitments)
+                analyses = sequential()
+            return _save_analyses(calls, targets, analyses)
+        finally:
+            calls.log, calls.budget.log = original_log, budget_log
+
+
+def _save_analyses(calls, targets, results):
     routes = []
     graphs_by_id = {}
     analyses = []
-    for target in targets:
-        calls.log.record('analysis_started', target=target.to_dict())
-        analysis = engine.analyse(target, commitments)
+    for target, analysis in zip(targets, results, strict=True):
         analyses.append(analysis.to_dict())
         for result, polarity in ((analysis.target, 'target'), (analysis.negated, 'negation')):
             calls.log.record('search_started', target=target.id, polarity=polarity,

@@ -96,3 +96,27 @@ class EventLog:
     def read(self) -> list[dict]:
         with self._locked():
             return [r['event'] for r in self._verify()]
+
+
+class SerializedEventLog(EventLog):
+    """Acknowledged writes and reads on one owned writer, drained on exit."""
+    def __init__(self, log: EventLog):
+        from concurrent.futures import ThreadPoolExecutor
+        self.path, self.anchor = log.path, log.anchor
+        self._log = log
+        self._writer = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ara-event-writer')
+
+    def emit(self, event: RunEvent) -> None:
+        self._writer.submit(self._log.emit, event).result()
+
+    def emit_many(self, events: Iterable[RunEvent]) -> None:
+        self._writer.submit(self._log.emit_many, tuple(events)).result()
+
+    def read(self) -> list[dict]:
+        return self._writer.submit(self._log.read).result()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self._writer.shutdown(wait=True)

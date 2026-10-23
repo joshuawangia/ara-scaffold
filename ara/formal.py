@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import z3
+from threading import RLock
+
+_SOLVER_LOCK = RLock()
 
 from ara.types import Formula
 
@@ -39,6 +42,12 @@ class Compiler:
 def entails(premises: tuple[Formula, ...], conclusion: Formula, timeout_ms: int) -> str:
     if timeout_ms <= 0:
         raise ValueError('solver timeout must be positive')
+    # Z3 objects in the default context must stay inside this critical section.
+    with _SOLVER_LOCK:
+        return _entails(premises, conclusion, timeout_ms)
+
+
+def _entails(premises, conclusion, timeout_ms):
     compiler, solver = Compiler(), z3.Solver()
     solver.set(timeout=timeout_ms)
     solver.add(*(compiler.compile(f) for f in premises))

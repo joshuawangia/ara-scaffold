@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from threading import Lock, RLock
 from pathlib import Path
 from dataclasses import replace
 from typing import Callable, Any
@@ -174,6 +175,8 @@ class ModelCalls:
         self.budget = Budget(config, log)
         self._paper_budget = None
         self.construction_resume = False
+        self._key_lock = Lock()
+        self._key_locks = {}
 
     def requested_model(self, kind: str) -> str:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
@@ -238,31 +241,32 @@ class ModelCalls:
         raise AssertionError('unreachable')
 
     def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
-        offset = len(self.log.read())
-        before_tokens, before_cost = self.budget.used_tokens, self.budget.used_cost
+        # Same-request single flight prevents duplicate dispatch and partial cache reads.
+        key = digest(canonical([kind, inputs, schema_smoke]))
+        with self._key_lock:
+            lock = self._key_locks.setdefault(key, RLock())
+        with lock:
+            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+
+    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke):
+        state = {}
         started = time.monotonic()
         try:
-            return self._execute_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return self._execute_once(kind, inputs, check, attempt=attempt,
+                                      schema_smoke=schema_smoke, state=state)
         except Exception as exc:
-            events = self.log.read()[offset:]
-            starts = [e for e in events if e['stage'] == 'call_start']
-            completed = [e for e in events if e['label'] == 'MODEL']
-            if not starts or completed:
+            admission = state.get('admission')
+            if admission is None or state.get('completed'):
                 raise
-            received = [json.loads(e['payload_json']) for e in events if e['stage'] == 'response_received']
-            if received:
-                receipt = received[-1]
-                self._event(kind, json.loads(starts[-1]['payload_json'])['prompt'], receipt['raw_response'],
+            receipt = state.get('receipt')
+            if receipt:
+                self._event(kind, admission['prompt'], receipt['raw_response'],
                             TokenUsage.from_dict(receipt['measured_usage']), receipt['measured_cost_usd'],
                             started, False, 'rejected', type(exc).__name__, receipt['cache_key'], attempt=attempt)
                 self.budget.stop('post-response failure; measured usage retained', kind)
-            # Any unrecorded dispatched result is incomplete. Do not serialize the
-            # suspect raw response again, and replace any in-memory actual charge.
-            admission = json.loads(starts[-1]['payload_json'])
             usage = TokenUsage.from_dict(admission['reserved_usage'])
             cost = self.budget.cost(usage, model=self.requested_model(kind))
-            self.budget.used_tokens, self.budget.used_cost = before_tokens, before_cost
-            self.budget.charge(usage, cost)
+            self.budget.settle(state['reservation'], usage, cost)
             self.log.emit(RunEvent(now(), kind, 'MODEL', self.requested_model(kind), None,
                 admission['prompt'], None, usage, float(cost), time.monotonic() - started,
                 payload_json=canonical({'status': 'incomplete', 'attempt': attempt, 'reason': type(exc).__name__,
@@ -271,8 +275,10 @@ class ModelCalls:
                     **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
             self.budget.after(kind)
             self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
+        finally:
+            self.budget.release(state.get('reservation'))
 
-    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
@@ -305,7 +311,7 @@ class ModelCalls:
             else:
                 estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
             if not cached:
-                self.budget.before(estimate, kind, model=self.requested_model(kind))
+                state['reservation'] = self.budget.reserve(estimate, kind, model=self.requested_model(kind))
             if kind == 'extract_paper' and self._paper_budget is not None:
                 self._paper_budget.before(estimate, cached=cached)
             if cached:
@@ -314,17 +320,21 @@ class ModelCalls:
             else:
                 self.log.record('call_start', kind=kind, attempt=attempt, model=self.requested_model(kind), prompt=prompt,
                                 schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
+                state['admission'] = dict(prompt=prompt, reserved_usage=estimate.to_dict(), cache_key=key)
                 dispatched = True
                 raw = self.provider.complete(kind, prompt, schema, maximum).raw
                 usage = Response(raw).usage
                 require(all(type(n) is int and n >= 0 for n in usage.to_dict().values()), 'invalid usage')
                 cost = self.budget.response_cost(raw)
-                self.budget.charge(usage, cost)
-                charged = True
-                # Durable before parsing or follow-up token-counter/network validation.
+                # Keep the reservation until the measured receipt is durable.
+                # Parsing and follow-up validation happen only after accounting.
                 self.log.record('response_received', kind=kind, cache_key=key,
                                 requested_model=self.requested_model(kind), raw_response=raw,
                                 measured_usage=usage.to_dict(), measured_cost_usd=float(cost))
+                self.budget.settle(state['reservation'], usage, cost)
+                charged = True
+                state['receipt'] = dict(raw_response=raw, measured_usage=usage.to_dict(),
+                                        measured_cost_usd=float(cost), cache_key=key)
             # Stop reason is checked BEFORE interpreting any content blocks.
             if schema_smoke:
                 require(raw['stop_reason'] in ('end_turn', 'max_tokens'), f'provider stop: {raw["stop_reason"]}')
@@ -380,8 +390,9 @@ class ModelCalls:
             unknown_usage = dispatched and not charged
             if unknown_usage:
                 usage, cost = estimate, self.budget.cost(estimate, model=self.requested_model(kind))
-                self.budget.charge(usage, cost)
+                self.budget.settle(state['reservation'], usage, cost)
             self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
+            state['completed'] = True
             if unknown_usage:
                 self.budget.after(kind)
                 from ara.runtime.providers import terminal_request_refusal
@@ -404,6 +415,7 @@ class ModelCalls:
                 raise
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
+        state['completed'] = True
         self._after(kind)
         if not cached and not schema_smoke:
             self.cache.put(key, {'raw': raw})

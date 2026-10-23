@@ -120,7 +120,16 @@ uv run ara select --run-dir runs/pilot
 ```
 
 The pilot searches all 10 targets at depth 6 and node cap 500, then waits for
-human route selection. It sets a 6,000-word hard maximum and rejects drafts below
+human route selection. `search_concurrency` (top-level configuration, default 4)
+bounds independent target/polarity searches; set it to 1 for sequential searches.
+Each search retains a separate sealed trace, and one writer serializes the event
+chain. In-flight model reservations count against the run caps. Target proposal
+remains a single batch call. For 20 similarly sized searches, four workers can
+reduce the search portion from 20 waves to about five; proposal, forward/conflict
+analysis, solver checks, logging and provider limits reduce the total speedup.
+This is an expected effect, not a measured live-provider result.
+
+The pilot sets a 6,000-word hard maximum and rejects drafts below
 4,500 words, using the existing title-and-body whitespace count (bibliography
 excluded). The writer targets about 5,400 words to leave counting margin. Pilot output allowances are 20,000 tokens for the writer, 24,000 for each
 audit, 64,000 for evidence search and 48,000 for citation/originality

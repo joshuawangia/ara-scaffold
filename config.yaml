@@ -124,3 +124,6 @@ extraction-full:
 
 # Planning reservation, not a prediction of semantic symbol reuse.
 working_t_symbol_growth_tokens_per_item: 0
+
+# Independent target/polarity searches; 1 preserves sequential execution.
+search_concurrency: 4

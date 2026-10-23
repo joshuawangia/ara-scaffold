@@ -41,6 +41,11 @@ def analyse(engine: Engine, target: Proposition) -> AnalysisResult:
     engine._licenses = []
     positive = engine.search(target)
     negative = engine.search(negate_proposition(positive.target))
+    return analyse_searches(engine, positive, negative)
+
+
+def analyse_searches(engine: Engine, positive: SearchResult, negative: SearchResult) -> AnalysisResult:
+    """Finish a paired search, with licenses already merged in polarity order."""
     closed = tuple(r for result in (positive, negative) for r in result.routes if r.status == 'CLOSED')
     forward = tuple(forward_pass(tuple(Formula.from_json(f) for f in sorted(leaf_premises(r, engine.commitments))),
                                  engine.commitments, engine.licenser, engine.config.forward_pass_depth,

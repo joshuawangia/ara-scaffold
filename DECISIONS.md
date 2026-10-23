@@ -1944,3 +1944,38 @@ eligible selection request and reports its index without dispatch, freeze or
 source-ledger writes. Original correction use and the same-plan guard still apply;
 a refusal that would change the recorded partition or plan cannot authorize an
 incompatible resume. The preview is not live construction or downstream success.
+
+## Xi round 6 — Concurrent search with isolated accounting
+
+Runtime schedules each target and its negation as separate native engine jobs,
+bounded by positive-integer `search_concurrency` (default 4). Prepared formulas,
+frozen T and bank forms are shared immutable inputs. Each job owns its queue,
+RNG, licenses and trace. Polarity serials remain 0/1. Results and licenses join
+in target/polarity order before native forward and conflict analysis. Target
+proposal remains its existing single batch call. Custom EngineAPI adapters keep
+their sequential analysis contract.
+
+One acknowledged writer owns event-log reads/appends throughout search and result
+publication, retaining the existing chain/checkpoint verification and fsyncs.
+Workers own separate sidecars and submit their seals to that writer. On failure,
+pending jobs are cancelled and running requests drain before writer shutdown.
+Z3 default-context construction, solving and destruction share a solver-only lock;
+provider waits are outside it.
+
+ModelCalls uses per-request single flight and local dispatch/receipt state.
+Atomic admission includes all outstanding token/cost reservations. Reconciliation
+replaces only the corresponding request's provisional or measured charge, never
+a snapshot of global totals. Pre-dispatch failures release reservations; unknown
+spend retains its reservation charge. Run STOP prevents later paid admission;
+already admitted work must finish accounting. Existing paper-scoped construction
+recovery remains intact. The provider implementation is unchanged.
+
+Equivalence means identical native results, conflict findings and raw sidecar
+bytes for fixed port responses, inputs and engine seeds with sufficient budget.
+Wall-clock timestamps, event interleaving and sidecar filenames differ. A live
+model is not made deterministic by an engine seed, and near-cap admission may
+stop at different requests. At concurrency 4, twenty equal searches need about
+five waves instead of twenty: up to 4x on the independent search portion, less
+for the complete run because proposal, forward analysis, solver checks, event
+verification and provider throttling remain limiting factors. No paid benchmark
+is implied by the placeholder equivalence and concurrency controls.

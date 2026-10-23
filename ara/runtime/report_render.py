@@ -89,13 +89,14 @@ def graph_export(source, stem, destination, graphviz):
 
 CSS = '''
 :root {color-scheme:light; font-family:system-ui,sans-serif; color:#172630; background:#f4f6f7}
-body {max-width:1200px; margin:auto; padding:2rem} h1,h2,h3 {line-height:1.2}
+body {max-width:1264px; width:100%; box-sizing:border-box; margin:auto; padding:2rem} h1,h2,h3 {line-height:1.2}
 section {background:white; padding:1.4rem; margin:1.2rem 0; border-radius:8px}
-a {color:#075e89} nav a {margin-right:1rem} summary {cursor:pointer; font-weight:600; padding:.5rem}
+h2,p,a {overflow-wrap:anywhere} a {color:#075e89} nav a {margin-right:1rem} summary {cursor:pointer; font-weight:600; padding:.5rem}
 details {border-left:3px solid #9eb8c6; margin:.6rem 0; padding-left:.7rem}
 pre {white-space:pre-wrap; overflow-wrap:anywhere; background:#f5f7f8; padding:.8rem; font-size:.85rem}
-table {border-collapse:collapse; width:100%} td,th {text-align:left; padding:.6rem; border-bottom:1px solid #ddd}
+.table-scroll {max-width:100%; overflow-x:auto} table {border-collapse:collapse; width:100%; min-width:640px} td,th {text-align:left; padding:.6rem; border-bottom:1px solid #ddd}
 img {max-width:100%; height:auto} .gap {border-left:4px solid #b16b00; padding:.6rem; background:#fff6e6}
+@media (max-width:600px) {body {padding:1rem} section {padding:1rem}}
 @media print {body {background:white; padding:0} section {break-inside:auto}}
 '''
 
@@ -136,10 +137,18 @@ def link(path, title='see file'):
 
 
 def table(headers, rows):
-    # Each row is a complete small table so truncation cannot leave open tags.
+    # Complete table chunks keep overflow notices outside valid, closed markup.
     heading = '<thead><tr>' + ''.join('<th>' + escape(h) + '</th>' for h in headers) + '</tr></thead>'
+    chunk = []
+    def block():
+        return '<div class="table-scroll"><table>' + heading + '<tbody>' + ''.join(chunk) + '</tbody></table></div>'
     for row in rows:
-        yield '<table>' + heading + '<tbody><tr>' + ''.join('<td>' + cell + '</td>' for cell in row) + '</tr></tbody></table>'
+        chunk.append('<tr>' + ''.join('<td>' + cell + '</td>' for cell in row) + '</tr>')
+        if len(chunk) == 8:
+            yield block()
+            chunk = []
+    if chunk:
+        yield block()
 
 
 def tree_summary(tree, kind):
@@ -238,7 +247,12 @@ def render(report, destination: Path):
     account_file = files.write('accounting.json', report['accounting'])
     combined = {k: v for k, v in report['accounting'].items() if k not in ('timeline', 'unresolved_dispatches', 'unfinalized_measured_responses')}
     page.section('Combined accounting', 'combined', account_file,
-                 [pre(preview(combined)), '<p>' + escape(report['aggregation_note']) + '</p>'])
+                 [*table(['Classification', 'USD', 'Model receipts'],
+                         ([escape(name), str(combined[key]['cost_usd']), str(combined[key]['model_calls'])]
+                          for name, key in [('Measured', 'measured'), ('Reserved; actual unknown', 'unknown_at_reservation'),
+                                            ('Unclassified', 'unclassified'), ('Budget accounted', 'budget_accounted')])),
+                  '<p>' + escape(report['aggregation_note']) + '</p>',
+                  details('Accounting breakdown', pre(preview(combined)))])
     for index, run in enumerate(report['runs']):
         prefix = f'run-{index}'
         events_file = files.records(run, prefix)

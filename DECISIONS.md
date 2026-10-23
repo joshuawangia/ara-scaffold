@@ -1979,3 +1979,22 @@ five waves instead of twenty: up to 4x on the independent search portion, less
 for the complete run because proposal, forward analysis, solver checks, event
 verification and provider throttling remain limiting factors. No paid benchmark
 is implied by the placeholder equivalence and concurrency controls.
+
+## Xi round 7 — Stable publication with durable worker journals
+
+Psi F1 correctly distinguished serialized appends from deterministic publication.
+Native searches now write every worker event (including model accounting, engine
+decisions and sidecar seals) through the one writer into durable, independently
+chained per-job journals. After the pool drains, publication copies complete job
+events into the main run chain in input-target order, positive then negative,
+retaining within-job order. Results use that same order. UUID filenames, timings,
+and model/cache outcomes are not claimed to be identical event bytes.
+
+A main-chain publication-start record identifies every journal before dispatch.
+Publication binds each journal and checkpoint by hash and marks completion only
+after all jobs publish. Failure paths drain and publish accounted failures in the
+same order. A crash or publication error leaves a visible incomplete batch:
+Budget refuses new paid admission on reopen and methodology labels main-chain
+totals incomplete, directing inspection to the durable journals. This is a
+fail-closed boundary, not automatic interrupted-search replay. The round-six
+acceptance of scheduler-ordered worker events is superseded by this decision.

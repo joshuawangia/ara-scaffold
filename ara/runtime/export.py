@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 from ara.runtime.cache import canonical
-from ara.runtime.logging import read_log
+from ara.runtime.logging import read_log, pending_search_publications
 from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry, PUBLICATION_POLICY
 from ara.runtime.provenance import extraction_outcomes
 from ara.runtime.grounding import evidence_items
@@ -15,6 +15,7 @@ from ara.runtime.grounding import evidence_items
 def methodology(log_path: Path) -> str:
     records = read_log(log_path)
     events = [r['event'] for r in records]
+    unpublished = pending_search_publications(events)
     calls = [e for e in events if e['label'] == 'MODEL']
     human = [e for e in events if e['label'] == 'HUMAN']
     payloads = [json.loads(e['payload_json']) for e in human]
@@ -116,7 +117,8 @@ def methodology(log_path: Path) -> str:
                          'batches': sum(e['stage'] == 'build_t_batch_accepted' for e in events),
                          'freezes': sum(e['stage'] == 'commitments_frozen' for e in events),
                          'closure': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_closure']},
-        'accounting_complete': not unknown and not pending and not lineage_incomplete,
+        'accounting_complete': not unknown and not pending and not lineage_incomplete and not unpublished,
+        'unpublished_search_batches': unpublished,
         'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),
         'inherited_totals': totals([e for i, e in enumerate(events) if i in inherited_indices]),
         'inherited_receipt_ids': receipt_ids,
@@ -129,7 +131,8 @@ def methodology(log_path: Path) -> str:
         'tokens': {k: sum(e['usage'][k] for e in events) for k in (
             'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'server_tool_uses')},
         'cost_usd': round(sum(e['cost_usd'] for e in events), 10),
-        'accounting_note': ('INCOMPLETE production accounting: extraction cache replay lacks original receipts.'
+        'accounting_note': ('INCOMPLETE search accounting: inspect durable per-job journals; publication did not finish.'
+                            if unpublished else 'INCOMPLETE production accounting: extraction cache replay lacks original receipts.'
                             if lineage_incomplete else 'INCOMPLETE totals: unknown usage, counted at reservation (upper bound). Reservations are not measured charges.'
                             if unknown or pending else 'Complete recorded usage; prices are configuration assumptions.'),
         'reconciliation_policy': [json.loads(e['payload_json']) for e in events

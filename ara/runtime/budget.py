@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from threading import RLock
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.logging import EventLog
+from ara.runtime.logging import EventLog, pending_search_publications
 from ara.types import TokenUsage
 from ara.runtime.providers import Response
 
@@ -55,6 +55,8 @@ class Budget:
             raise ValueError('token cap must be a nonnegative integer')
         self.used_tokens = sum(tokens(TokenUsage.from_dict(e['usage'])) for e in log.read())
         self.used_cost = sum((Decimal(str(e['cost_usd'])) for e in log.read()), Decimal(0))
+        if pending_search_publications(log.read()):
+            self.stop('unpublished search accounting; inspect durable search journals', 'resume')
         if any(json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual' for e in log.read()):
             if config.get('unknown_usage_policy', 'refuse') != 'count-at-reservation':
                 self.stop('prior provider spend is unknown; start a reconciled new run', 'resume')

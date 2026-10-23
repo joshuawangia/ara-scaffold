@@ -6,6 +6,7 @@ import json
 import math
 import os
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Iterator
@@ -104,19 +105,36 @@ class SerializedEventLog(EventLog):
         from concurrent.futures import ThreadPoolExecutor
         self.path, self.anchor = log.path, log.anchor
         self._log = log
+        self._destination = ContextVar('event_destination', default=log)
         self._writer = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ara-event-writer')
 
     def emit(self, event: RunEvent) -> None:
-        self._writer.submit(self._log.emit, event).result()
+        self._writer.submit(self._destination.get().emit, event).result()
 
     def emit_many(self, events: Iterable[RunEvent]) -> None:
-        self._writer.submit(self._log.emit_many, tuple(events)).result()
+        self._writer.submit(self._destination.get().emit_many, tuple(events)).result()
 
     def read(self) -> list[dict]:
-        return self._writer.submit(self._log.read).result()
+        return self._writer.submit(self._destination.get().read).result()
+
+    @contextmanager
+    def destination(self, log):
+        token = self._destination.set(log)
+        try:
+            yield
+        finally:
+            self._destination.reset(token)
 
     def __enter__(self):
         return self
 
     def __exit__(self, *exc):
         self._writer.shutdown(wait=True)
+
+
+def pending_search_publications(events):
+    started = {json.loads(e['payload_json'])['batch_id'] for e in events
+               if e['stage'] == 'search_publication_started'}
+    finished = {json.loads(e['payload_json'])['batch_id'] for e in events
+                if e['stage'] == 'search_publication_finished'}
+    return sorted(started - finished)

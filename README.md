@@ -123,7 +123,9 @@ The pilot searches all 10 targets at depth 6 and node cap 500, then waits for
 human route selection. `search_concurrency` (top-level configuration, default 4)
 bounds independent target/polarity searches; set it to 1 for sequential searches.
 Each search retains a separate sealed trace, and one writer serializes the event
-chain. In-flight model reservations count against the run caps. Target proposal
+chain. Worker events are durably journaled and published in input-target order,
+positive then negative. Interrupted publication leaves accounting explicitly
+incomplete and refuses paid resume until reconciled. In-flight model reservations count against the run caps. Target proposal
 remains a single batch call. For 20 similarly sized searches, four workers can
 reduce the search portion from 20 waves to about five; proposal, forward/conflict
 analysis, solver checks, logging and provider limits reduce the total speedup.

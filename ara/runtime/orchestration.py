@@ -10,6 +10,7 @@ from ara.bank import Bank
 from ara.engine import AnalysisResult, Engine, EngineConfig
 from ara.engine.conflicts import analyse_searches
 from ara.runtime.logging import SerializedEventLog
+from ara.runtime.search_publication import SearchPublication
 from ara.runtime.cache import canonical
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
@@ -48,15 +49,20 @@ class NativeEngine:
                 engine = self._engine(commitments)
                 engine._search_serial = serial
                 jobs.append((engine, goal))
-        with ThreadPoolExecutor(max_workers=concurrency, thread_name_prefix='ara-search') as pool:
-            futures = [pool.submit(engine.search, goal) for engine, goal in jobs]
-            try:
-                for future in as_completed(futures):
-                    future.result()
-            except BaseException:
-                for future in futures:
-                    future.cancel()
-                raise  # Running requests drain and account before the writer closes.
+        publication = SearchPublication(self.calls.log, [goal for _, goal in jobs])
+        try:
+            with ThreadPoolExecutor(max_workers=concurrency, thread_name_prefix='ara-search') as pool:
+                futures = [pool.submit(publication.run, index, engine.search, goal)
+                           for index, (engine, goal) in enumerate(jobs)]
+                try:
+                    for future in as_completed(futures):
+                        future.result()
+                except BaseException:
+                    for future in futures:
+                        future.cancel()
+                    raise  # Running requests drain before publication and writer shutdown.
+        finally:
+            publication.publish()
         for i in range(0, len(jobs), 2):
             positive, negative = jobs[i][0], jobs[i + 1][0]
             positive._licenses.extend(negative._licenses)

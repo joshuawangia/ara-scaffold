@@ -97,6 +97,7 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
                 active -= 1
     monkeypatch.setattr(Engine, 'search', observed_search)
     results = []
+    receipt_orders = []
     for concurrency, reverse in ((1, False), (4, False), (4, True)):
         peak = 0
         completion_order = []
@@ -133,6 +134,8 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
         routes = search_all(calls, Sequential() if concurrency == 1 else native, table, targets)
         events = log.read()
         analysis = json.loads(next(e['payload_json'] for e in events if e['stage'] == 'conflicts_and_robustness'))
+        receipt_orders.append([json.loads(e['payload_json'])['search_id'] for e in events
+                               if e['stage'] == 'search_trace_receipt'])
         traces = sorted(p.read_bytes() for p in (directory / 'search-traces').glob('*.jsonl'))
         assert len(traces) == 20
         assert all(a['tier1'] and a['tier2'] and a['forward'] for a in analysis['findings']['analyses'])
@@ -141,6 +144,7 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
         orders.append(completion_order)
     assert results[0] == results[1] == results[2]
     assert orders[1] != orders[2]
+    assert receipt_orders[0] == receipt_orders[1] == receipt_orders[2]
 
 
 @pytest.mark.parametrize('cap', ['token_cap', 'cost_cap_usd'])

@@ -77,7 +77,7 @@ CASES = [
     ('extraction_blank_stream_detection', 'ara/runtime/extraction.py', 'contents.operations if contents is not None else []', 'contents.operations if contents else []', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_counted_not_bytes', 'ara/runtime/extraction.py', "if prompt_bytes + maximum > calls.config['model_context_token_bound']:", "if prompt_bytes + maximum > calls.config['model_context_token_bound']:\n            calls.budget.stop('byte bound', 'extract_paper')", 'tests/runtime/test_extraction_fix1.py::test_large_bytes_use_counted_tokens'),
     ('extraction_cache_lineage_import', 'ara/runtime/extraction.py', '    if missing_lineage(events):\n        raise', '    if False:\n        raise', 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
-    ('extraction_cache_lineage_accounting', 'ara/runtime/export.py', "'accounting_complete': not unknown and not pending and not lineage_incomplete,", "'accounting_complete': not unknown and not pending,", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
+    ('extraction_cache_lineage_accounting', 'ara/runtime/export.py', "'accounting_complete': not unknown and not pending and not lineage_incomplete and not unpublished,", "'accounting_complete': not unknown and not pending,", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_local_inherited_totals', 'ara/runtime/export.py', "'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),", "'local_totals': totals(events),", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_enclosing_cap_warning', 'ara/runtime/extraction.py', "print('planned batch exceeds enclosing caps', flush=True)", 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
     ('extraction_batch_profile', 'ara/runtime/cli.py', 'if args.profile:\n                config.update(config[args.profile])', 'if args.profile:\n                pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
@@ -774,11 +774,11 @@ CASES += [
 
 CASES += [
     ('parallel_writer', 'ara/runtime/logging.py',
-     'self._writer.submit(self._log.emit, event).result()', 'self._log.emit(event)',
+     'self._writer.submit(self._destination.get().emit, event).result()', 'self._destination.get().emit(event)',
      'tests/runtime/test_parallel_search.py::test_single_writer'),
-    ('parallel_writer_wiring', 'ara/runtime/orchestration.py',
-     'with SerializedEventLog(original_log) as writer:',
-     "with __import__('contextlib').nullcontext(original_log) as writer:",
+    ('parallel_writer_wiring', 'ara/runtime/logging.py',
+     'self._writer.submit(self._destination.get().emit_many, tuple(events)).result()',
+     'self._destination.get().emit_many(tuple(events))',
      'tests/runtime/test_parallel_search.py::test_native_search_uses_writer_and_default_limit'),
     ('parallel_reservation', 'ara/runtime/budget.py',
      'self._reservations.add(reservation)', 'pass',
@@ -806,6 +806,24 @@ CASES += [
      'with lock:\n            return self._call_reserved',
      'if True:\n            return self._call_reserved',
      'tests/runtime/test_parallel_search.py::test_same_request_single_flight'),
+]
+
+
+CASES += [
+    ('search_publication_order', 'ara/runtime/search_publication.py',
+     'for index, journal in enumerate(self.journals):',
+     'for index, journal in reversed(list(enumerate(self.journals))):',
+     'tests/runtime/test_search_publication.py::test_native_publication_order_under_reversed_schedule'),
+    ('search_publication_destination', 'ara/runtime/search_publication.py',
+     'with self.log.destination(self.journals[index]):',
+     "with __import__('contextlib').nullcontext():",
+     'tests/runtime/test_search_publication.py::test_native_publication_order_under_reversed_schedule'),
+    ('search_unpublished_resume', 'ara/runtime/budget.py',
+     'if pending_search_publications(log.read()):', 'if False:',
+     'tests/runtime/test_search_publication.py::test_unpublished_accounting_is_durable_and_refuses_resume'),
+    ('search_unpublished_export', 'ara/runtime/export.py',
+     'and not lineage_incomplete and not unpublished,', 'and not lineage_incomplete,',
+     'tests/runtime/test_search_publication.py::test_unpublished_accounting_is_durable_and_refuses_resume'),
 ]
 
 

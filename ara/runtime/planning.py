@@ -107,7 +107,8 @@ def plan_construction(config, log, literature, root, topic, audience, counter):
     settings = copy.deepcopy(config)
     settings.update(token_cap=0, cost_cap_usd=0, extraction_cost_cap_usd=0)
     calls = ModelCalls(settings, CountingProvider(settings, counter), log,
-                       Cache(log.path.parent / 'planning-cache'), root, topic)
+                       Cache(log.path.parent / 'planning-cache'), root, topic,
+                       provider_factory=lambda stage: CountingProvider(stage, counter))
     plan = construct(calls, literature, audience, plan_only=True)
     largest = max((b['input_tokens'] for b in plan['batches'] if b['input_tokens'] is not None), default=0)
     report = dict(plan=plan, counter='provider_count_tokens' if counter == 'provider' else 'local_estimate_utf8_bytes_div_4',
@@ -130,7 +131,8 @@ def plan_construction_resume(config, log, source_log, root, run):
     state = load_construction_resume(SimpleNamespace(log=source_log, config=config))
     settings = {**config, 'token_cap': 0, 'cost_cap_usd': 0, 'extraction_cost_cap_usd': 0}
     calls = ModelCalls(settings, CountingProvider(settings, 'provider'), log,
-                       Cache(log.path.parent / 'planning-cache'), root, run['topic'])
+                       Cache(log.path.parent / 'planning-cache'), root, run['topic'],
+                       provider_factory=lambda stage: CountingProvider(stage, 'provider'))
     result = construct(calls, run['literature'], run['audience'], plan_only=True, resume_state=state)
     refusals = [json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'token_count_refused']
     report = dict(**result, counter='provider_count_tokens', generation_calls=0, new_cost_usd=0,

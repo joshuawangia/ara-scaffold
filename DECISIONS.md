@@ -1944,3 +1944,39 @@ eligible selection request and reports its index without dispatch, freeze or
 source-ledger writes. Original correction use and the same-plan guard still apply;
 a refusal that would change the recorded partition or plan cannot authorize an
 incompatible resume. The preview is not live construction or downstream success.
+
+
+## S5 — Initial-share caps and construction dispatch configuration
+
+The first pass caps new commitments from each window at
+floor(initial_window_commitments * construction_window_cap_multiplier), default
+multiplier 2. The initial share is fixed by the global plan; later empty windows
+or changing soft targets never increase this cap. Previously materialized IDs
+remain reusable and do not consume a new window's cap. Native prerequisite depth
+cutting now also observes this cap, preserving mandatory qualifiers/endpoints and
+support_omitted disclosure. A mandatory root bundle above the cap contributes
+nothing; code does not invent a relevance ranking to discard roots. A zero initial
+share gives a zero cap and explicitly omits the window without generation.
+
+No second redistribution pass is implemented. Such a pass would require another
+logged selection/formalization lifecycle across remaining windows; unused capacity
+may remain. The cap limits concentration but cannot guarantee relevance, equal
+actual contributions, or global token capacity for every later window. Planning
+shares remain targets and all actual global/context bounds still apply.
+
+Plan version rich-working-t-v9 includes the cap arithmetic and effective
+construction stage configuration. Changing the multiplier or stage model/provider
+changes plan identity. A fresh run has no construction resume state, imports only
+its pinned extraction provenance, and does not restore another run's accepted
+batches. Old plans cannot authorize a capped rebuild; use a new empty run directory.
+
+Config keys stages.select_t_roots, stages.build_t_batch and
+stages.construction_correction independently override provider/model and dispatch
+settings. Corrections inherit their originating stage before correction overrides.
+Profile application preserves other named stages. Scoped ModelCalls views share
+the ledger, cache and enclosing Budget but do not mutate the run's active provider.
+Counting, reservations, cache identity and requested/served receipts use the chosen
+stage; provider changes invalidate cached responses even at the same model name.
+The CLI make_provider factory is the registration seam for provider implementations.
+The claude_code implementation and live provider proof remain owned by its provider
+lane; this change does not implement or execute that backend or edit providers.py.

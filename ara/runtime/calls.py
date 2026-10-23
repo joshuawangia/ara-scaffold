@@ -168,12 +168,34 @@ def extraction_failure_reason(exc):
 
 class ModelCalls:
     def __init__(self, config: dict, provider: Provider, log: EventLog, cache: Cache,
-                 root: Path, topic: str):
+                 root: Path, topic: str, *, provider_factory=None):
         self.config, self.provider, self.log, self.cache = config, provider, log, cache
         self.root, self.topic = Path(root), topic
         self.budget = Budget(config, log)
         self._paper_budget = None
         self.construction_resume = False
+        self.provider_factory = provider_factory
+        self._stage_providers = {}
+
+    def _for_construction_stage(self, kind, inputs, *, attempt=1):
+        from copy import copy
+        from ara.runtime.construction_stages import dispatch_settings
+        if hasattr(self, '_dispatch_stage'):
+            return self
+        stage, overrides, settings = dispatch_settings(self.config, kind,
+            correction=attempt > 1 or inputs.get('mode') == 'targeted_correction')
+        if not overrides:
+            return self
+        require(self.provider_factory is not None, 'construction stage overrides require a provider factory')
+        key = canonical(settings)
+        if key not in self._stage_providers:
+            self._stage_providers[key] = self.provider_factory(settings)
+        scoped = copy(self)
+        scoped.config, scoped.provider = settings, self._stage_providers[key]
+        scoped._dispatch_stage = stage
+        scoped._dispatch_identity = digest(canonical({'provider': settings['provider'], 'overrides': overrides,
+                                                     'options': settings.get(settings['provider'], {})}))
+        return scoped
 
     def requested_model(self, kind: str) -> str:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
@@ -238,6 +260,9 @@ class ModelCalls:
         raise AssertionError('unreachable')
 
     def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
+        scoped = self._for_construction_stage(kind, inputs, attempt=attempt)
+        if scoped is not self:
+            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
         offset = len(self.log.read())
         before_tokens, before_cost = self.budget.used_tokens, self.budget.used_cost
         started = time.monotonic()
@@ -279,6 +304,8 @@ class ModelCalls:
         if kind == 'build_t_batch':
             maximum = self.config['extracted_build_t_max_output_tokens']
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
+                              **({'dispatch_stage': self._dispatch_stage, 'dispatch_settings': self._dispatch_identity}
+                                 if hasattr(self, '_dispatch_stage') else {}),
                               'effort': stage_settings(self.config, kind)['effort'], 'maximum': maximum,
                               'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                               'web_max': self.config['web_search_max_uses'],
@@ -424,6 +451,8 @@ class ModelCalls:
                               payload_json=canonical({'status': status, 'reason': reason, 'attempt': attempt,
                                                        'cache_hit': cached, 'cache_key': key,
                                                        'requested_model': self.requested_model(kind),
+                                                       'provider': self.config.get('provider'),
+                                                       'dispatch_stage': getattr(self, '_dispatch_stage', kind),
                                                        'effort': stage_settings(self.config, kind)['effort'],
                                                        'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                                                        **(Response(raw).routing() if raw else {}),
@@ -432,6 +461,9 @@ class ModelCalls:
 
     def count_request(self, kind: str, inputs: dict, *, maximum: int | None = None,
                       admission: bool = False) -> TokenUsage:
+        scoped = self._for_construction_stage(kind, inputs)
+        if scoped is not self:
+            return scoped.count_request(kind, inputs, maximum=maximum, admission=admission)
         if maximum is None:
             maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
             if kind == 'build_t_batch':
@@ -458,6 +490,8 @@ class ModelCalls:
                                            if kind == 'search_evidence' else 0)
         fits = initial + maximum <= self.config['model_context_token_bound']
         self.log.record('context_admission' if admission else 'context_plan', kind=kind,
+                        model=self.requested_model(kind), provider=self.config.get('provider'),
+                        dispatch_stage=getattr(self, '_dispatch_stage', kind),
                         input_tokens=initial, output_tokens=maximum, limit=self.config['model_context_token_bound'],
                         decision='fits' if fits else 'refused', prompt=prompt)
         if admission and not fits:

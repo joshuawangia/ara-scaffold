@@ -141,3 +141,28 @@ def test_resume_does_not_turn_account_failure_into_window_omission(rig, monkeypa
         prepare_commitments(resumed, load_bank(ROOT/'bank'), literature, '')
     assert len(sent) == before
     assert not payloads(calls, 'build_t_batch_skipped')
+
+
+def test_fresh_run_does_not_restore_prior_batches_and_cap_changes_plan(rig, monkeypatch, tmp_path):
+    import yaml
+    from ara.runtime.cli import main
+    from ara.runtime.logging import EventLog
+    calls, provider, literature, sent = stopped(rig, monkeypatch, record_run=True)
+    old_plan = payloads(calls, 'build_t_plan')[0]['plan_id']
+    config = {**calls.config, 'construction_window_cap_multiplier': 3}
+    path = tmp_path/'fresh.yaml'; path.write_text(yaml.safe_dump(config))
+    source = calls.log.path.parent/'literature.extracted.txt'
+    before = len(sent)
+    def factory(config, log, topic):
+        result = ModelCalls(config, provider, log, calls.cache, ROOT, topic)
+        monkeypatch.setattr(result, 'propose_targets', lambda *args: ())
+        return result
+    output = tmp_path/'fresh'
+    assert main(['run', '--config', str(path), '--run-dir', str(output), '--topic', calls.topic,
+                 '--literature', str(source), '--audience', ''], calls_factory=factory) == 0
+    events = EventLog(output/'events.jsonl').read()
+    assert not any(e['stage'] in ('construction_resumed', 'build_t_batch_restored') for e in events)
+    plans = [json.loads(e['payload_json']) for e in events if e['stage']=='build_t_plan']
+    assert len(plans) == 1 and plans[0]['plan_id'] != old_plan
+    assert ('build_t_batch', 0) in [(kind, inputs['batch_index']) for kind, inputs in sent[before:]]
+    assert sum(e['stage']=='commitments_frozen' for e in events) == 1

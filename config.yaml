@@ -16,6 +16,10 @@ cache_dir: cache
 runs_dir: runs
 web_search_max_uses: 5
 stages:
+  # Empty construction overrides inherit the run's provider/model.
+  select_t_roots: {}
+  build_t_batch: {}
+  construction_correction: {}
   extraction:
     model: claude-sonnet-5-5
     fallbacks: []
@@ -124,3 +128,6 @@ extraction-full:
 
 # Planning reservation, not a prediction of semantic symbol reuse.
 working_t_symbol_growth_tokens_per_item: 0
+
+# Fixed cap on new commitments per window, based on its initial planning share.
+construction_window_cap_multiplier: 2

@@ -678,6 +678,18 @@ CASES += [
 ]
 
 
+CASES += [
+    ('global_closure_admission_after_headroom', 'ara/runtime/construction.py',
+     'if copied + growth > available or growth > symbol_available:',
+     'if copied + growth > working_share or growth > symbol_available:',
+     'tests/runtime/test_construction_shares.py::test_admission_continues_after_borrowing_crosses_headroom'),
+    ('global_mandatory_bundle_above_share', 'ara/runtime/construction.py',
+     'if copied + growth > available or growth > symbol_available:',
+     "if len(ids) > window_budget['per_window_commitments'] or copied + growth > available or growth > symbol_available:",
+     'tests/runtime/test_construction_shares.py::test_mandatory_bundle_borrows_global_capacity_and_preserves_endpoints'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

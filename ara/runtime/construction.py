@@ -349,7 +349,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                         'roots': selection['roots'], 'added_ids': sorted(ids - set(selection['roots'])),
                         'full_inventory': sorted(ids), 'uncut_inventory': sorted(full_ids),
                         'support_omitted': support, 'cut_depth': depth, 'window_budget': window_budget,
-                        'empty_reason': ('mandatory root context exceeds window budget' if selection['roots'] and not ids
+                        'empty_reason': ('mandatory root context exceeds remaining global capacity or request bound' if selection['roots'] and not ids
                                          else selection['relevance'] if not ids else None),
                         'already_formalized': sorted(ids & materialized), 'inventory': sorted(ids - materialized),
                         'relevance': selection['relevance'], 'omitted': omissions}
@@ -369,15 +369,15 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             def fits(ids):
                 if not ids:
                     return True
-                if (len(ids) > window_budget['per_window_commitments'] or
-                        payload_token_bound(items, ids) > input_bound - 8192):
+                if payload_token_bound(items, ids) > input_bound - 8192:
                     return False
                 support = {id: sorted(dependencies[id] - ids) for id in ids if dependencies[id] - ids}
                 floor = [dict(id=id, text=evidence_text(items[id], support.get(id)), citation=items[id]['citation'],
                               formula={'op': 'atom', 'name': 'P'}) for id in sorted(ids - materialized)]
                 copied = calls.count_request('propose_targets', {**target_inputs,
-                    'commitments': {'commitments': floor}}).input_tokens - wrapper
-                if copied + len(floor) * allocation['symbol_tokens_per_commitment'] > working_share:
+                    'commitments': {'commitments': prior + floor}}).input_tokens - current.input_tokens
+                growth = len(floor) * allocation['symbol_tokens_per_commitment']
+                if copied + growth > available or growth > symbol_available:
                     return False
                 trial = formalization_inputs(closure_record(ids, support, len(items), []))
                 return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound

@@ -1844,7 +1844,15 @@ the remaining planned capacity across the remaining windows. Headroom is a soft
 target: faithful output may borrow it within hard global working/catalogue and
 context bounds. Log accepted borrowing only after validation and accounting.
 The next window's allowance reflects that consumption, including unused capacity
-released by empty or refused windows. Closure depth still follows planning targets.
+released by empty or refused windows. Shares guide selection only: neither the
+per-window commitment target nor the headroom-adjusted working share is an
+admission bound. Closure admission and depth cuts use recounted remaining global
+working and catalogue capacity, counting only newly materialized IDs for growth.
+The working envelope includes prior accepted commitments; copied growth and the
+formula/catalogue growth reservation must fit the remaining global capacity.
+Mandatory qualifiers and inference endpoints remain indivisible; exact request
+and context checks and accepted-output bounds remain authoritative. Crossing the
+headroom target alone cannot prevent a later fitting closure from contributing.
 
 Selection/formalization refusals and exhausted corrections omit the window with
 roots, closure (when available), reason, and evidence IDs retained in receipts.

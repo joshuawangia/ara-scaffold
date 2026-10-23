@@ -228,3 +228,75 @@ def test_post_response_counter_error_is_not_a_window_refusal(rig, monkeypatch):
     rejected = [e for e in calls.log.read() if e['stage'] == 'build_t_batch' and e['label'] == 'MODEL'
                 and json.loads(e['payload_json'])['status'] == 'rejected']
     assert len(rejected) == 1 and rejected[0]['usage']['output_tokens'] > 0
+
+
+def test_admission_continues_after_borrowing_crosses_headroom(rig, monkeypatch):
+    calls, provider, literature, sent = windows(rig, monkeypatch)
+    estimate = provider.estimate
+    def count(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'propose_targets':
+            actual = sum(c['formula'].get('name') == 'F' for c in inputs['commitments']['commitments'])
+            return TokenUsage(input_tokens=1000 if not actual else 82000 + (actual - 1) * 1000,
+                              output_tokens=maximum)
+        return estimate(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'estimate', count)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    assert len(result.commitments) == 3
+    budgets = payloads(calls, 'build_t_window_budget')
+    assert [b['working_remaining'] for b in budgets] == [99000, 18000, 17000]
+    assert [b['budget']['per_window_commitments'] for b in budgets][1:] == [0, 0]
+    assert [b['budget']['window_copy_token_budget'] for b in budgets][1:] == [0, 0]
+    assert [i['batch_index'] for k, i in sent if k == 'build_t_batch'] == [0, 1, 2]
+    assert payloads(calls, 'build_t_merged')[0]['input_tokens'] == 84000
+    assert not payloads(calls, 'build_t_batch_skipped')
+    assert len(payloads(calls, 'commitments_frozen')) == 1
+
+
+@pytest.mark.parametrize('headroom', [.2, .01])
+def test_small_global_capacity_admits_roots_above_planning_share(rig, monkeypatch, headroom):
+    calls, provider, literature, sent = windows(rig, monkeypatch)
+    calls.config.update(working_t_token_budget=1500, working_t_headroom_fraction=headroom)
+    estimate = provider.estimate
+    def count(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'propose_targets':
+            actual = sum(c['formula'].get('name') == 'F' for c in inputs['commitments']['commitments'])
+            return TokenUsage(input_tokens=1000 + actual * 100, output_tokens=maximum)
+        return estimate(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'estimate', count)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    assert len(result.commitments) == 3
+    assert payloads(calls, 'build_t_merged')[0]['input_tokens'] == 1300
+    assert [b['working_remaining'] for b in payloads(calls, 'build_t_window_budget')] == [500, 400, 300]
+    assert [i['batch_index'] for k, i in sent if k == 'build_t_batch'] == [0, 1, 2]
+    assert not payloads(calls, 'build_t_batch_skipped')
+    assert len(payloads(calls, 'commitments_frozen')) == 1
+
+
+def test_mandatory_bundle_borrows_global_capacity_and_preserves_endpoints(rig, monkeypatch):
+    from test_extraction_rich import rich_calls
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    calls.config['working_t_symbol_token_budget'] = 1400
+    sent = []
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        sent.append((kind, inputs))
+        if kind == 'select_t_roots':
+            root = next(i['root_id'] for p in inputs['papers'] for i in p['items'] if i['id'].endswith(':j'))
+            value = dict(roots=[root], relevance='P', omissions=[dict(group_id=g['group_id'], reason='Q')
+                         for g in inputs['selection_groups'] if set(g['root_ids']) - {root}])
+        else:
+            value = batch_response(inputs)
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', complete)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
+    assert {c.id.rsplit(':', 1)[1] for c in result.commitments} == {'j', 'r', 'f', 'qual', 'd'}
+    selection = next(i for k, i in sent if k == 'select_t_roots')
+    assert selection['window_budget']['per_window_commitments'] == 4
+    closure = payloads(calls, 'build_t_closure')[0]
+    assert closure['cut_depth'] == 0
+    assert closure['support_omitted'] == {'p:r1-2:r': ['p:r1-2:i']}
+    accounted = payloads(calls, 'build_t_evidence_accounted')[0]
+    assert {o['evidence_id'].rsplit(':', 1)[1] for o in accounted['omitted']} == {'p', 'q', 'i'}
+    assert len(payloads(calls, 'commitments_frozen')) == 1

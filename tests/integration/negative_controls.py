@@ -54,7 +54,7 @@ CASES = [
     ('extraction_sparse_image_detection', 'ara/runtime/extraction.py', 'if image_or_form and chars < 200:', 'if False:', 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('extraction_fallback_marker', 'ara/runtime/extraction.py', "outcome = {**base, 'status': 'record only, not extracted'", "outcome = {**base, 'status': 'extracted'", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
     ('extraction_strict_refusal', 'ara/runtime/extraction.py', "if missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction.py::test_refuse_missing_and_no_publication'),
-    ('extraction_counted_oversize', 'ara/runtime/extraction.py', 'return usage.input_tokens', 'return 0', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
+    ('extraction_counted_oversize', 'ara/runtime/extraction.py', 'return usage.initial_input_tokens', 'return 0', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('extraction_provider_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'extract_paper':", 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
     ('extraction_admission_cap', 'ara/runtime/budget.py', "if not subscription and stage == 'extract_paper' and self.extraction_cost() + sum(r.cost for r in self._reservations if r.stage == stage) + self.cost(usage, model=model, subscription=subscription) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
     ('extraction_actual_cap', 'ara/runtime/budget.py', "if not subscription and stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
@@ -99,7 +99,7 @@ CASES = [
     ('rich_symbol_signature', 'ara/runtime/construction.py', "require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[symbol_arity]'),
     ('rich_symbol_alignment', 'ara/runtime/construction.py', 'require(valid_alignments,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[binding]'),
     ('rich_omission_reason', 'ara/runtime/construction.py', "require(all(g['reason'].strip() for g in data['omissions']),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[omission_reason]'),
-    ('rich_working_allowance', 'ara/runtime/construction.py', "require(cumulative.input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[working]'),
+    ('rich_working_allowance', 'ara/runtime/construction.py', "require(cumulative.initial_input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[working]'),
     ('rich_downstream_admission', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'propose_targets':", 'tests/runtime/test_extraction_rich.py::test_counted_capacity_refuses_explicitly[downstream]'),
     ('rich_stable_merge', 'ara/runtime/construction.py', 'tuple(sorted(items, key=lambda c: c.id))', 'tuple(items)', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
     ('rich_merge_citations', 'ara/runtime/construction.py', 'require(len({c.citation for c in items}) == len(items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_merge_order_cache_replay_and_contradictions'),
@@ -110,8 +110,8 @@ CASES = [
 ]
 CASES += [
     ('rich_output_exhaustion', 'ara/runtime/calls.py', "('provider stop: max_tokens', 'extraction coverage incomplete')", "('extraction coverage incomplete',)", 'tests/runtime/test_extraction_rich.py::test_output_exhaustion_splits_without_truncation'),
-    ('rich_final_working_budget', 'ara/runtime/construction.py', "if measured.input_tokens > metadata['working_t_token_budget']:", 'if False:', 'tests/runtime/test_extraction_rich.py::test_construction_final_capacity_guard[final_budget]'),
-    ('rich_symbol_budget', 'ara/runtime/construction.py', 'require(with_catalog.input_tokens - without.input_tokens <= symbol_budget,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_construction_final_capacity_guard[symbols]'),
+    ('rich_final_working_budget', 'ara/runtime/construction.py', "if measured.initial_input_tokens > metadata['working_t_token_budget']:", 'if False:', 'tests/runtime/test_extraction_rich.py::test_construction_final_capacity_guard[final_budget]'),
+    ('rich_symbol_budget', 'ara/runtime/construction.py', 'require(with_catalog.initial_input_tokens - without.initial_input_tokens <= symbol_budget,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_construction_final_capacity_guard[symbols]'),
     ('rich_cached_context', 'ara/runtime/calls.py', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=not cached)', 'tests/runtime/test_extraction_rich.py::test_cached_context_is_recounted'),
 ]
 
@@ -167,10 +167,10 @@ CASES += [
     ('full_profile_caps', 'ara/runtime/cli.py', 'if missing_caps:', 'if False:', 'tests/runtime/test_extraction_round4.py::test_full_profile_refuses_unset_caps_before_provider'),
     ('empty_range_disposition', 'ara/runtime/calls.py', "bool(data.get('empty_reason', '').strip())", 'True', 'tests/runtime/test_extraction_round4.py::test_empty_range_requires_disposition_and_preserves_aggregate[ ]'),
     ('empty_root_accounting', 'ara/runtime/construction.py', "require(bool(merged.commitments),", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_zero_roots_accounted_without_formalization'),
-    ('closure_preflight', 'ara/runtime/construction.py', "require(projected.input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_closure_preflight_before_formalization'),
+    ('closure_preflight', 'ara/runtime/construction.py', "require(projected.initial_input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_closure_preflight_before_formalization'),
     ('window_inventory', 'ara/runtime/windows.py', 'values[:middle]', 'values[1:middle]', 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
     ('full_graph_closure', 'ara/runtime/construction.py', "prerequisite_closure(items, selection['roots'])", "prerequisite_closure(window_items, selection['roots'])", 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
-    ('closure_size_admission', 'ara/runtime/construction.py', 'if closure_count.input_tokens > input_bound:', 'if False:', 'tests/runtime/test_evidence_windows.py::test_oversized_selected_closure_refuses_before_formalization'),
+    ('closure_size_admission', 'ara/runtime/construction.py', 'if closure_count.initial_input_tokens > input_bound:', 'if False:', 'tests/runtime/test_evidence_windows.py::test_oversized_selected_closure_refuses_before_formalization'),
     ('review_context_validation', 'ara/runtime/reconciliation.py', "require(set(request['pages']) <= set(inputs['evidence_page_ids']),", 'require(True,', 'tests/runtime/test_context_request_fix.py::test_obligation_request_errors_correct_before_acceptance[bad_request1]'),
     ('bounded_graph_review', 'ara/runtime/reconciliation.py', "        calls.count_request('extract_paper', inputs, admission=True)", '        pass', 'tests/runtime/test_evidence_windows.py::test_no_obligation_review_bounds_large_graph_union'),
 ]
@@ -615,15 +615,15 @@ CASES += [
      "p.get('support_omitted', {}).items()", '{}.items()',
      'tests/runtime/test_bounded_closure.py::test_native_cut_disclosed_in_frozen_text_receipt_and_methodology'),
     ('soft_working_output', 'ara/runtime/construction.py',
-     "require(cumulative.input_tokens <= metadata['working_t_token_budget'],",
-     "require(cumulative.input_tokens - current.input_tokens <= working_share,",
+     "require(cumulative.initial_input_tokens <= metadata['working_t_token_budget'],",
+     "require(cumulative.initial_input_tokens - current.initial_input_tokens <= working_share,",
      'tests/runtime/test_bounded_closure.py::test_actual_output_borrows_within_global_limits[working]'),
     ('soft_symbol_output', 'ara/runtime/construction.py',
-     "require(with_catalog.input_tokens - without.input_tokens <= symbol_budget,",
-     "require(with_catalog.input_tokens - without.input_tokens - catalog_tokens <= symbol_share,",
+     "require(with_catalog.initial_input_tokens - without.initial_input_tokens <= symbol_budget,",
+     "require(with_catalog.initial_input_tokens - without.initial_input_tokens - catalog_tokens <= symbol_share,",
      'tests/runtime/test_bounded_closure.py::test_actual_output_borrows_within_global_limits[symbols]'),
     ('bounded_exact_request_cut', 'ara/runtime/construction.py',
-     "return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound",
+     "return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).initial_input_tokens <= input_bound",
      'return True',
      'tests/runtime/test_bounded_closure.py::test_counted_formalization_bound_cuts_before_dispatch'),
     ('bounded_zero_window', 'ara/runtime/construction.py',
@@ -651,7 +651,7 @@ CASES += [
      'if available <= 0 or symbol_available <= 0:', 'if False:',
      'tests/runtime/test_construction_shares.py::test_global_exhaustion_freezes_accepted_work_once'),
     ('soft_global_working', 'ara/runtime/construction.py',
-     "require(cumulative.input_tokens <= metadata['working_t_token_budget'],", 'require(True,',
+     "require(cumulative.initial_input_tokens <= metadata['working_t_token_budget'],", 'require(True,',
      'tests/runtime/test_construction_shares.py::test_window_refusal_is_accounted_and_later_window_succeeds[working]'),
     ('soft_campaign_stop', 'ara/runtime/construction.py',
      "if isinstance(exc, BudgetStop) and exc.scope != 'window':", 'if False:',
@@ -952,6 +952,24 @@ CASES += [
     ('cli_config_auth_environment', 'ara/runtime/claude_code.py',
      "env.update(CLAUDE_CONFIG_DIR=str(config_dir),", "env.update(CLAUDE_CODE_OAUTH_TOKEN=self._oauth['accessToken'], CLAUDE_CONFIG_DIR=str(config_dir),",
      'tests/runtime/test_claude_code.py::test_config_auth_has_no_token_in_same_user_process_environment'),
+]
+
+
+CASES += [
+    ('cli_initial_context_partition', 'ara/runtime/construction.py',
+     "formal = calls.count_request('build_t_batch', inputs).initial_input_tokens",
+     "formal = calls.count_request('build_t_batch', inputs).reservation.input_tokens",
+     'tests/runtime/test_subagent_counting.py::test_native_subscription_plan_uses_initial_context_at_pilot_limits'),
+    ('cli_transport_reservation_contract', 'ara/runtime/calls.py',
+     'return RequestCount(initial, context_output, estimate)',
+     'return RequestCount(initial, context_output, TokenUsage(input_tokens=initial, output_tokens=context_output))',
+     'tests/runtime/test_subagent_counting.py::test_count_contract_retains_aggregate_for_admission'),
+    ('cli_resolved_correction_settings', 'ara/runtime/construction_stages.py',
+     "**overrides, 'stages': {}", "**overrides, 'stages': config.get('stages', {})",
+     'tests/runtime/test_provider_integration.py::test_native_cli_correction_matches_stage_manifest'),
+    ('api_resolved_correction_settings', 'ara/runtime/construction_stages.py',
+     "**overrides, 'stages': {}", "**overrides, 'stages': config.get('stages', {})",
+     'tests/runtime/test_provider_integration.py::test_native_api_correction_matches_stage_manifest'),
 ]
 
 

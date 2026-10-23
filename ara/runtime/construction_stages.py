@@ -1,5 +1,6 @@
 """Config-only dispatch contracts for independently selected construction stages."""
 from ara.runtime.cache import canonical, digest
+from ara.runtime.providers import stage_settings
 
 KINDS = ('select_t_roots', 'build_t_batch')
 
@@ -9,14 +10,16 @@ def dispatch_settings(config, kind, *, correction=False):
         return kind, {}, config
     stages = config.get('stages', {})
     overrides = {}
-    keys = (kind, 'construction_correction') if correction else (kind,)
+    keys = ('construction', kind, 'construction_correction') if correction else ('construction', kind)
     for key in keys:
         values = stages.get(key, {})
         if not isinstance(values, dict):
             raise ValueError(f'construction stage {key} must be a mapping')
         overrides.update(values)
     stage = 'construction_correction' if correction else kind
-    return stage, overrides, {**config, **overrides}
+    # Scoped providers must not resolve the original stage over this correction.
+    resolved = {**stage_settings(config, kind), **overrides, 'stages': {}}
+    return stage, overrides, resolved
 
 
 def construction_stage_manifest(config):

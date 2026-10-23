@@ -8,7 +8,7 @@ from threading import Lock, RLock
 import threading
 import uuid
 from pathlib import Path
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Callable, Any
 
 from jsonschema import Draft202012Validator, ValidationError
@@ -22,6 +22,14 @@ from ara.runtime.providers import Provider, Response, stage_settings
 from ara.types import (BankEntry, CommitmentSet, CQAnswer, CriticalQuestion, Formula,
                        PremiseFill, Proposal, Proposition, RouteGraph, RunEvent,
                        Tier1Repair, TokenUsage)
+
+
+@dataclass(frozen=True)
+class RequestCount:
+    """Context sizing is distinct from cumulative transport/accounting usage."""
+    initial_input_tokens: int
+    context_output_tokens: int
+    reservation: TokenUsage
 
 
 class Rejected(ValueError):
@@ -382,7 +390,7 @@ class ModelCalls:
             if schema_smoke:
                 estimate = self.provider.estimate(kind, prompt, schema, maximum)
             else:
-                estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
+                estimate = self.count_request(kind, inputs, maximum=maximum, admission=True).reservation
             if not cached:
                 state['reservation'] = self.budget.reserve(estimate, kind, model=self.requested_model(kind), subscription=self._subscription())
             if kind == 'extract_paper' and self._paper_budget is not None:
@@ -544,7 +552,7 @@ class ModelCalls:
                                                        **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
 
     def count_request(self, kind: str, inputs: dict, *, maximum: int | None = None,
-                      admission: bool = False) -> TokenUsage:
+                      admission: bool = False) -> RequestCount:
         scoped = self._for_construction_stage(kind, inputs)
         if scoped is not self:
             return scoped.count_request(kind, inputs, maximum=maximum, admission=admission)
@@ -581,14 +589,15 @@ class ModelCalls:
         self.log.record('context_admission' if admission else 'context_plan', kind=kind,
                         model=self.requested_model(kind), provider=self.config.get('provider'),
                         dispatch_stage=getattr(self, '_dispatch_stage', kind),
-                        input_tokens=initial, output_tokens=context_output, limit=self.config['model_context_token_bound'],
+                        input_tokens=initial, output_tokens=context_output, reserved_usage=estimate.to_dict(),
+                        limit=self.config['model_context_token_bound'],
                         decision='fits' if fits else 'refused', prompt=prompt,
                         token_count_method=getattr(self.provider, 'estimate_method', 'provider_count'))
         if admission and not fits:
             self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind,
                              scope=('paper' if kind == 'extract_paper' else
                                     'window' if kind in ('select_t_roots', 'build_t_batch') else 'run'))
-        return estimate
+        return RequestCount(initial, context_output, estimate)
 
     def extract_paper(self, paper: Paper, *, salvaged=(), salvage_only=False) -> PaperExtraction:
         from ara.runtime.extraction_budget import PaperAllowance

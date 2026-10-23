@@ -2161,3 +2161,37 @@ when profile scope is advertised. The private copy now advertises only the
 existing user:inference scope, matching environment-token discovery behavior.
 This suppresses profile discovery; it does not narrow the bearer token's actual
 server-side permissions. The original credential bytes and scopes are unchanged.
+
+
+## Omega round 4 — Context sizing and resolved construction dispatch
+
+RequestCount separates initial_input_tokens and context_output_tokens from the
+aggregate TokenUsage reservation. Construction partitions, working envelopes,
+closure copies, catalogue deltas and final acceptance use initial input size.
+The call boundary explicitly admits and accounts with reservation, retaining the
+CLI two-turn envelope and API web-tool iteration allowance. Count events record
+both quantities. Extraction range partitioning also uses initial input size;
+its returned usage remains the API reservation for planning/accounting. Free
+context checks in reconciliation consume no usage. Downstream context acceptance
+uses the count's provider-specific output allowance.
+
+Construction dispatch resolves category, exact-kind and correction settings in
+that order and clears nested stages on the scoped configuration. Providers then
+receive the resolved model/effort/system/thinking/fallback settings, without
+reapplying the original stage over correction settings. Default provider state,
+independent stage providers, canaries, transport retries and shared budgets remain
+on their native paths. The construction manifest uses the same resolution.
+
+Regression proof uses fake subprocesses and a fake API client, never paid calls.
+Real-literature planning remains a capacity projection, not executed relevance,
+formalization or proof of all-window contribution. Conservative local byte counts
+can produce more windows and lower shares than the historical API token counts;
+configured bounds and the computed cap are not relaxed to match that old plan.
+
+The offline real-source replay under unchanged pilot limits has 177 windows,
+versus the historical API-count plan's 48. The local estimate budgets 491 copied
+input units plus 233 growth units per commitment, with 56,535 working units
+available after headroom and wrapper. Its capacity is 78 commitments; divided
+among 177 windows, initial share and multiplier-2 cap are zero. Thus the corrected
+unit contract does not establish pilot readiness. No bound, cap or estimator was
+relaxed to claim contribution; a separate capacity-policy decision is required.

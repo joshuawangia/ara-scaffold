@@ -243,8 +243,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             return count_cache[key]
         inputs = inputs_for(grouped(ids), 0, metadata['working_t_token_budget'])
         try:
-            formal = calls.count_request('build_t_batch', inputs).input_tokens
-            roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).input_tokens
+            formal = calls.count_request('build_t_batch', inputs).initial_input_tokens
+            roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).initial_input_tokens
         except CountRequestRefused:
             calls.log.record('build_t_partition_refused', evidence_ids=list(ids),
                              action='split' if allocation is None and len(ids) > 1 else 'omit',
@@ -265,7 +265,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         return min(measured, partition_bound) if len(ids) == 1 else measured
     windows = counted_windows(list(items), partition_count, partition_bound, lambda: None)
     target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
-    wrapper = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}}).input_tokens
+    wrapper = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}}).initial_input_tokens
     copy_total = 0
     copy_items = 0
     for ids in windows:
@@ -275,7 +275,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                       formula={'op': 'atom', 'name': 'P'}) for id in ids]
         try:
             copy_total += max(0, calls.count_request('propose_targets', {**target_inputs,
-                'commitments': {'commitments': floor}}).input_tokens - wrapper)
+                'commitments': {'commitments': floor}}).initial_input_tokens - wrapper)
             copy_items += len(ids)
         except CountRequestRefused:
             refused_windows.add(tuple(ids))
@@ -355,16 +355,16 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             prior = [c.to_dict() for r in results for c in r.commitments.commitments]
             target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
             current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})
-            available = metadata['working_t_token_budget'] - current.input_tokens
+            available = metadata['working_t_token_budget'] - current.initial_input_tokens
             catalog_probe = {**base_inputs, 'papers': [], 'shared_symbols': symbols}
-            catalog_tokens = (calls.count_request('build_t_batch', catalog_probe).input_tokens -
-                              calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).input_tokens)
+            catalog_tokens = (calls.count_request('build_t_batch', catalog_probe).initial_input_tokens -
+                              calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).initial_input_tokens)
             if catalog_tokens > symbol_budget:
                 calls.budget.stop('accepted catalogue exceeds global budget on recount', 'build_t_batch')
             symbol_available = symbol_budget - catalog_tokens
             windows_left = len(batches) - batch.index
             # Reserve the original headroom as a soft target; accepted output may borrow it.
-            working_share = max(0, int(metadata['working_t_token_budget'] * (1 - allocation['headroom_fraction'])) - current.input_tokens) // windows_left
+            working_share = max(0, int(metadata['working_t_token_budget'] * (1 - allocation['headroom_fraction'])) - current.initial_input_tokens) // windows_left
             symbol_share = max(0, int(symbol_budget * (1 - allocation['headroom_fraction'])) - catalog_tokens) // windows_left
             window_budget = {**allocation, 'window_copy_token_budget': working_share,
                              'symbol_available_tokens': max(0, symbol_available),
@@ -373,7 +373,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                                  working_share // (allocation['copy_tokens_per_commitment'] + allocation['symbol_tokens_per_commitment']),
                                  symbol_share // allocation['symbol_tokens_per_commitment'])}
             calls.log.record('build_t_window_budget', plan_id=plan_id, index=batch.index,
-                             working_input_tokens=current.input_tokens, catalogue_tokens=catalog_tokens,
+                             working_input_tokens=current.initial_input_tokens, catalogue_tokens=catalog_tokens,
                              working_remaining=available, symbol_remaining=symbol_available,
                              remaining_windows=windows_left, budget=window_budget)
             if available <= 0 or symbol_available <= 0:
@@ -446,12 +446,12 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 floor = [dict(id=id, text=evidence_text(items[id], support.get(id)), citation=items[id]['citation'],
                               formula={'op': 'atom', 'name': 'P'}) for id in sorted(ids - materialized)]
                 copied = calls.count_request('propose_targets', {**target_inputs,
-                    'commitments': {'commitments': prior + floor}}).input_tokens - current.input_tokens
+                    'commitments': {'commitments': prior + floor}}).initial_input_tokens - current.initial_input_tokens
                 growth = len(floor) * allocation['symbol_tokens_per_commitment']
                 if copied + growth > available or growth > symbol_available:
                     return False
                 trial = formalization_inputs(closure_record(ids, support, len(items), []))
-                return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound
+                return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).initial_input_tokens <= input_bound
             support_omitted = {}
             cut_depth = None
             if not fits(selected_ids):
@@ -483,19 +483,19 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             catalog_inputs = {**inputs, 'papers': []}
             empty_catalog = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
             current_catalog = calls.count_request('build_t_batch', catalog_inputs)
-            catalog_tokens = current_catalog.input_tokens - empty_catalog.input_tokens
+            catalog_tokens = current_catalog.initial_input_tokens - empty_catalog.initial_input_tokens
             growth = len(selected_ids) * allocation['symbol_tokens_per_commitment']
             calls.log.record('build_t_capacity_preflight', plan_id=plan_id, index=batch.index,
-                             working_input_tokens=current.input_tokens, working_available=available,
-                             closure_copy_input_tokens=projected.input_tokens, catalogue_tokens=catalog_tokens,
+                             working_input_tokens=current.initial_input_tokens, working_available=available,
+                             closure_copy_input_tokens=projected.initial_input_tokens, catalogue_tokens=catalog_tokens,
                              catalogue_growth_reservation=growth, catalogue_limit=symbol_budget,
                              note='Minimal formula envelope and configurable growth reservation; actual output rechecked.')
-            require(projected.input_tokens <= metadata['working_t_token_budget'], 'working T closure preflight exceeded')
+            require(projected.initial_input_tokens <= metadata['working_t_token_budget'], 'working T closure preflight exceeded')
             require(catalog_tokens + growth <= symbol_budget, 'shared symbol token allowance preflight exceeded')
             inputs = {**inputs, 'working_token_allowance': available,
                       'new_symbol_token_allowance': symbol_budget - catalog_tokens}
             closure_count = calls.count_request('build_t_batch', {**inputs, 'shared_symbols': []})
-            if closure_count.input_tokens > input_bound:
+            if closure_count.initial_input_tokens > input_bound:
                 raise Rejected('selected closure exceeds bounded formalization; no truncation; reselect roots')
             calls.count_request('build_t_batch', inputs, admission=True)
             # The actual growing catalogue and plan identity are counted again, including retries.
@@ -533,16 +533,16 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                     require(symbol['name'] in used, 'unused symbol definition')
                 cumulative = calls.count_request('propose_targets', {**target_inputs,
                     'commitments': {'commitments': prior + commitments.to_dict()['commitments']}})
-                require(cumulative.input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
-                require(cumulative.input_tokens + calls.config.get('propose_targets_max_output_tokens', calls.config['max_output_tokens']) <=
+                require(cumulative.initial_input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
+                require(cumulative.initial_input_tokens + cumulative.context_output_tokens <=
                         calls.config['model_context_token_bound'], 'working T downstream context allowance exceeded')
                 catalog_inputs = {**inputs, 'papers': [], 'shared_symbols': symbols + data['new_symbols']}
                 without = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
                 with_catalog = calls.count_request('build_t_batch', catalog_inputs)
-                require(with_catalog.input_tokens - without.input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
+                require(with_catalog.initial_input_tokens - without.initial_input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
                 borrowing = dict(
-                    working_borrowed_tokens=max(0, cumulative.input_tokens - current.input_tokens - working_share),
-                    symbols_borrowed_tokens=max(0, with_catalog.input_tokens - without.input_tokens - catalog_tokens - symbol_share))
+                    working_borrowed_tokens=max(0, cumulative.initial_input_tokens - current.initial_input_tokens - working_share),
+                    symbols_borrowed_tokens=max(0, with_catalog.initial_input_tokens - without.initial_input_tokens - catalog_tokens - symbol_share))
                 return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
                     'bindings': bindings, 'omitted': omitted, 'closure': closure, 'borrowing': borrowing}))
             result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
@@ -574,15 +574,15 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                      graph_hash=digest(canonical(items)), selected_ids=sorted(materialized), omitted=final_omissions)
     measured = calls.count_request('propose_targets', {'commitments': merged.to_dict(),
         'count': calls.config['target_candidates'], 'named_position': None}, admission=True)
-    if measured.input_tokens > metadata['working_t_token_budget']:
+    if measured.initial_input_tokens > metadata['working_t_token_budget']:
         calls.budget.stop('working T downstream token budget exceeded before freeze', 'build_t_batch')
     catalog_probe = {**base_inputs, 'papers': [], 'shared_symbols': symbols}
-    final_catalog = (calls.count_request('build_t_batch', catalog_probe).input_tokens -
-                     calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).input_tokens)
+    final_catalog = (calls.count_request('build_t_batch', catalog_probe).initial_input_tokens -
+                     calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).initial_input_tokens)
     if final_catalog > symbol_budget:
         calls.budget.stop('accepted catalogue exceeds global budget before freeze', 'build_t_batch')
     calls.log.record('build_t_merged', plan_id=plan_id, commitments=merged.to_dict(), symbols=symbols,
-                     input_tokens=measured.input_tokens, source_ids=[p['source_id'] for p in papers],
+                     input_tokens=measured.initial_input_tokens, source_ids=[p['source_id'] for p in papers],
                      note='One construction lifecycle, one freeze; explicit model omissions retained in batch receipts.')
     save_immutable(calls.log.path.parent / f'working-t-{plan_id}.json', canonical({
         'plan_id': plan_id, 'symbols': symbols, 'commitments': merged.to_dict()}))

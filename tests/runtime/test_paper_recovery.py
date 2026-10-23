@@ -209,7 +209,7 @@ def test_changed_source_is_extracted_again(rig, monkeypatch, tmp_path, change):
 def test_inherited_cost_prevents_new_dispatch(rig, monkeypatch, tmp_path):
     calls, provider, papers, sent = corpus(rig, monkeypatch, failed=())
     extract(calls, papers[:1])
-    reserve = calls.budget.cost(calls.count_request('extract_paper', papers[1].inputs()),
+    reserve = calls.budget.cost(calls.count_request('extract_paper', papers[1].inputs()).reservation,
                                 model=calls.requested_model('extract_paper'))
     calls.config['extraction_cost_cap_usd'] = float(reserve + calls.budget.used_cost / 2)
     sent.clear()

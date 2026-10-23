@@ -298,10 +298,10 @@ def extraction_range_plan(calls: ModelCalls, paper: Paper):
     def measure(pages):
         inputs = {**paper.inputs(), 'pages': [asdict(p) for p in pages]}
         usage = calls.count_request('extract_paper', inputs)
-        counts[tuple(p.page for p in pages)] = usage
+        counts[tuple(p.page for p in pages)] = usage.reservation
         if density * len(pages) > maximum:
             return bound + 1
-        return usage.input_tokens
+        return usage.initial_input_tokens
     windows = counted_windows(paper.readable_pages, measure, bound, lambda: calls.budget.stop(
         'extract_paper context bound or output planning bound: single page cannot fit; no truncation', 'extract_paper', scope='paper'))
     return [(pages, counts[tuple(p.page for p in pages)]) for pages in windows]

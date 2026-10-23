@@ -258,7 +258,7 @@ def test_concurrent_budget_admission_cannot_oversubscribe(cli):
     calls,log=make()
     set_mode('slow')
     estimate=calls.count_request('formalise',{'proposition':Proposition('p','P').to_dict()})
-    config['token_cap']=calls.budget.used_tokens+sum(estimate.to_dict().values())
+    config['token_cap']=calls.budget.used_tokens+sum(estimate.reservation.to_dict().values())
     def invoke(i):
         try: calls.formalise(Proposition(str(i),'P')); return True
         except BudgetStop: return False

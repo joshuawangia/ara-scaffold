@@ -7,6 +7,7 @@ import time
 import pytest
 
 from ara.runtime.budget import BudgetStop
+from ara.runtime.calls import RequestCount
 from ara.runtime.logging import EventLog, read_log
 from ara.types import Proposition, TokenUsage
 from test_calls import rig, response
@@ -32,7 +33,7 @@ def test_single_writer(tmp_path, monkeypatch):
 def test_concurrent_admission_reserves_inflight(rig, monkeypatch):
     calls, provider, log = rig
     calls.config['token_cap'] = 15
-    monkeypatch.setattr(calls, 'count_request', lambda *a, **k: TokenUsage(5, 5))
+    monkeypatch.setattr(calls, 'count_request', lambda *a, **k: RequestCount(5, 5, TokenUsage(5, 5)))
     entered, release = Event(), Event()
     dispatched = []
     def complete(*args):
@@ -194,7 +195,7 @@ def test_recovery_does_not_erase_other_request(rig, monkeypatch):
     from ara.runtime.providers import Response
     calls, provider, log = rig
     waiting, release = Event(), Event()
-    monkeypatch.setattr(calls, 'count_request', lambda *a, **k: TokenUsage(10, 10))
+    monkeypatch.setattr(calls, 'count_request', lambda *a, **k: RequestCount(10, 10, TokenUsage(10, 10)))
     def complete(kind, prompt, *args):
         raw = response({'formula': {'op': 'atom', 'name': 'P'}})
         if json.loads(prompt.split('\nINPUT_JSON\n')[1])['proposition']['id'] == 'p':
@@ -309,7 +310,7 @@ def test_reservation_is_held_until_receipt_is_durable(rig, monkeypatch):
     from ara.runtime.providers import Response
     calls, provider, log = rig
     calls.config['token_cap'] = 19
-    monkeypatch.setattr(calls, 'count_request', lambda *a, **k: TokenUsage(5, 5))
+    monkeypatch.setattr(calls, 'count_request', lambda *a, **k: RequestCount(5, 5, TokenUsage(5, 5)))
     monkeypatch.setattr(provider, 'complete', lambda *a: Response(response(
         {'formula': {'op': 'atom', 'name': 'P'}})))
     waiting, release = Event(), Event()

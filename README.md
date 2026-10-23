@@ -567,3 +567,22 @@ Before generation, use `ara plan-construction --literature <path> --topic <text>
 counter with generation disabled. `--token-counter local` needs no network but
 reports byte/4 estimates, not provider measurements. Neither command selects roots
 or predicts the actual frozen T. The full source and every cut remain inspectable.
+
+
+### Resume a stopped construction
+
+For a stopped, unfrozen run ending in a receipted provider request rejection:
+
+```sh
+uv run ara resume-construction --run-dir runs/previous --unknown-usage-policy count-at-reservation
+```
+
+This uses the stored configuration, source, topic and audience. It verifies batch
+artifacts and the original counted plan, restores accepted work without model
+replay, skips the terminally refused window, and continues through the existing
+single freeze and search to route selection. Earlier charges and unknown
+reservations remain in the same ledger. The policy flag acknowledges unknown
+usage counted at its reservation; it does not convert it to measured usage.
+Concurrent resumes, an already-frozen run, corrupt/missing receipts, a changed
+plan, or a dispatch without a terminal receipt refuse. This command can make new
+paid calls after verification; it is not an offline diagnostic command.

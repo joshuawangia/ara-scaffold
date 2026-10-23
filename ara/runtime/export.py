@@ -107,6 +107,8 @@ def methodology(log_path: Path) -> str:
                          'support_policy': 'Budget-cut frontier items are attributed assumed premises (support_omitted); routes using them are conditional on those premises. Immutable full sources retain omitted support.',
                          'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
                          'skipped_windows': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_batch_skipped'],
+                         'provider_refusals': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_provider_refusal'],
+                         'resumes': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_resumed'],
                          'share_borrowing': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_share_borrowed'],
                          'global_exhaustion': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_global_exhaustion'],
                          'batches': sum(e['stage'] == 'build_t_batch_accepted' for e in events),

@@ -176,6 +176,14 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
         raise ValueError('construction_targeted_corrections must be 0 or 1')
     remaining = dict(select_t_roots=corrections, build_t_batch=corrections)
+    resumption = None
+    if getattr(calls, 'construction_resume', False):
+        from ara.runtime.construction_resume import load_construction_resume
+        resumption = load_construction_resume(calls)
+        for kind, used in resumption['corrections'].items():
+            if remaining[kind] is not None:
+                require(used <= remaining[kind], 'construction resume correction budget mismatch')
+                remaining[kind] -= used
     papers = sorted(json.loads(literature[len(HEADER):])['papers'], key=lambda p: p['source_id'])
     require(len({p['source_id'] for p in papers}) == len(papers), 'duplicate source id')
     require(all(not p['items'] for p in papers if p['status'] == 'failed'),
@@ -253,7 +261,14 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     plan = {**metadata, 'budget': allocation, 'batches': [dict(index=b.index, source_ids=b.source_ids, input_tokens=b.input_tokens,
                                        allowance=b.allowance, content_hash=digest(b.papers_json)) for b in batches]}
     plan_id = digest(canonical(plan))
-    calls.log.record('build_t_plan', plan_id=plan_id, plan=plan)
+    if resumption:
+        require(plan_id == resumption['plan_id'], 'construction resume requires the same counted plan id')
+        calls.log.record('construction_resumed', plan_id=plan_id,
+                         next_window=resumption['terminal_index'] + 1,
+                         restored_windows=sorted(resumption['completed']),
+                         terminal_receipt=resumption['terminal_receipt'], policy='count-at-reservation')
+    else:
+        calls.log.record('build_t_plan', plan_id=plan_id, plan=plan)
     save_immutable(calls.log.path.parent / f'build-t-plan-{plan_id}.json', canonical(plan))
     calls.log.record('build_t_budget_plan', plan_id=plan_id, **allocation)
     if plan_only:
@@ -277,6 +292,21 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         group = json.loads(batch.papers_json)
         window_items = {item['id']: item for paper in group for item in paper['items']}
         selection, closure = {}, None
+        if resumption and batch.index in resumption['completed']:
+            data = resumption['completed'][batch.index]
+            commitments = CommitmentSet.from_dict({'commitments': data.get('commitments', [])})
+            results.append(BatchResult(batch.index, commitments, canonical(data)))
+            symbols += data.get('new_symbols', [])
+            materialized.update(c.id for c in commitments.commitments)
+            window_omissions.extend(o for o in data['omitted'] if o['evidence_id'] in window_items)
+            calls.log.record('build_t_batch_restored', plan_id=plan_id, index=batch.index,
+                             evidence_ids=[c.id for c in commitments.commitments])
+            continue
+        if resumption and batch.index == resumption['terminal_index']:
+            closure = resumption['terminal_closure']
+            selection = {'roots': closure['roots']} if closure else {}
+            skip(batch, window_items, 'terminal provider request refusal; unknown usage counted at reservation', selection, closure)
+            continue
         if exhausted:
             skip(batch, window_items, exhausted, selection, closure)
             continue

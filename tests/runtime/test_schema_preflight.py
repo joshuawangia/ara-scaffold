@@ -204,3 +204,18 @@ def test_cli_token_counter_suppresses_request_echo(rig, tmp_path, monkeypatch, c
     for artifact in directory.rglob('*'):
         if artifact.is_file():
             assert 'QQQQQQQQ' not in artifact.read_text()
+
+
+@pytest.mark.parametrize('status', [200, 400])
+@pytest.mark.parametrize('message,expected', [
+    ('prompt is too long: 210000 tokens > 200000 maximum', 'prompt is too long: 210000 tokens > 200000 maximum'),
+    ('request too large', 'request too large'),
+    ('prompt is too long: 210000 tokens > 200000 maximum P', 'Provider diagnostic suppressed.'),
+    ('request too large\nAuthorization: P', 'Provider diagnostic suppressed.'),
+])
+def test_provider_size_diagnostic_accepts_only_complete_safe_messages(status, message, expected):
+    from types import SimpleNamespace
+    from ara.runtime.providers import provider_error_evidence
+    exc = SimpleNamespace(status_code=status, request_id='req_P',
+                          body={'error': {'type': 'invalid_request_error', 'message': message}})
+    assert provider_error_evidence(exc)['message'] == expected

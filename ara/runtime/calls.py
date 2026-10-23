@@ -169,6 +169,7 @@ class ModelCalls:
         self.root, self.topic = Path(root), topic
         self.budget = Budget(config, log)
         self._paper_budget = None
+        self.construction_resume = False
 
     def requested_model(self, kind: str) -> str:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
@@ -377,6 +378,13 @@ class ModelCalls:
             self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
             if unknown_usage:
                 self.budget.after(kind)
+                from ara.runtime.providers import terminal_request_refusal
+                if kind in ('select_t_roots', 'build_t_batch') and terminal_request_refusal(exc):
+                    self.log.record('construction_provider_refusal', kind=kind, cache_key=key,
+                                    policy='count-at-reservation', terminal=True,
+                                    evidence=provider_error_evidence(exc),
+                                    note='Terminal provider rejection; actual usage unknown; reservation retained.')
+                    raise Rejected('terminal provider request refusal; unknown usage counted at reservation') from exc
                 self.budget.stop(f'provider accounting unavailable ({reason}); reservation charged; actual spend unknown', kind)
             self._after(kind)
             if not isinstance(exc, (Rejected, ValueError, ValidationError)):

@@ -282,5 +282,22 @@ def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
             if len(keywords) == len(set(keywords)) and all(k in allowed_keywords for k in keywords):
                 names = ', '.join(k for k in allowed_keywords if k in keywords)
                 message = f"output_config.format.schema: For 'anyOf', '{names}' is not supported"
+    if (getattr(exc, 'status_code', None) in (200, 400, 413) and
+            error_type in ('invalid_request_error', 'request_too_large') and isinstance(diagnostic, str)):
+        size = re.fullmatch(r'prompt is too long: ([0-9]{1,9}) tokens > ([0-9]{1,9}) maximum', diagnostic)
+        if size:
+            message = f'prompt is too long: {int(size[1])} tokens > {int(size[2])} maximum'
+        elif diagnostic in ('request too large', 'Request too large', 'Request size exceeds 32 MB limit'):
+            message = diagnostic
     return {'http_status': status, 'error_type': error_type,
             'message': message, 'request_id': request_id}
+
+
+def terminal_request_refusal(exc: Exception) -> bool:
+    """Only an SDK terminal rejection, including an error in an HTTP-200 stream."""
+    from anthropic import APIStatusError
+    if not isinstance(exc, APIStatusError):
+        return False
+    status = exc.status_code
+    return (type(status) is int and (status == 200 or 400 <= status < 500) and
+            provider_error_evidence(exc)['error_type'] in ('invalid_request_error', 'request_too_large'))

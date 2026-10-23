@@ -690,6 +690,35 @@ CASES += [
 ]
 
 
+CASES += [
+    ('construction_terminal_provider_skip', 'ara/runtime/calls.py',
+     "if kind in ('select_t_roots', 'build_t_batch') and terminal_request_refusal(exc):", 'if False:',
+     'tests/runtime/test_construction_shares.py::test_terminal_provider_request_refusal_skips_window_at_reservation[200-select_t_roots]'),
+    ('provider_size_diagnostic', 'ara/runtime/providers.py',
+     'if size:', 'if False:',
+     'tests/runtime/test_schema_preflight.py::test_provider_size_diagnostic_accepts_only_complete_safe_messages'),
+    ('construction_resume_artifact_hash', 'ara/runtime/construction_resume.py',
+     "require(digest(content) == data['output_hash'],", 'require(True,',
+     'tests/runtime/test_construction_resume.py::test_resume_refuses_unverified_state_before_dispatch[artifact]'),
+    ('construction_resume_same_plan', 'ara/runtime/construction.py',
+     "require(plan_id == resumption['plan_id'],", 'require(True,',
+     'tests/runtime/test_construction_resume.py::test_resume_refuses_unverified_state_before_dispatch[plan]'),
+    ('construction_resume_cli_wire', 'ara/runtime/cli.py',
+     'calls.construction_resume = True', 'calls.construction_resume = False',
+     'tests/runtime/test_construction_resume.py::test_resume_cli_reuses_stored_run_and_refuses_second_freeze'),
+]
+
+
+CASES += [
+    ('construction_provider_scope', 'ara/runtime/calls.py',
+     'and terminal_request_refusal(exc):', 'and True:',
+     'tests/runtime/test_construction_shares.py::test_non_request_provider_failures_remain_fatal[500-invalid_request_error]'),
+    ('construction_resume_lock', 'ara/runtime/construction_resume.py',
+     'fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)', 'pass',
+     'tests/runtime/test_construction_resume.py::test_resume_cli_prevents_concurrent_dispatch'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

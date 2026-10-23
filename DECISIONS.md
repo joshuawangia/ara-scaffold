@@ -1873,3 +1873,31 @@ working T, catalogue and downstream context before that freeze. Zero accepted
 commitments still fail. An oversized candidate is a window refusal, not evidence
 that every future candidate would exceed the remaining global capacity. Partial
 construction completion does not guarantee downstream search capacity or success.
+
+
+## S3 — Terminal construction refusals and verified continuation
+
+A structured SDK invalid_request_error or request_too_large on construction
+selection/formalization (including a correction) is a terminal window refusal.
+This includes an error event inside an HTTP-200 stream; it is not an unreceipted
+interruption. Retain the full reservation as unknown actual usage, disclose the
+count-at-reservation policy, enforce enclosing caps, then omit the window and
+continue. Other provider/transport/accounting failures still stop. No unknown
+reservation is relabelled measured usage, and no rejected response is cached.
+Diagnostics retain only complete allowlisted size sentences and bounded numeric
+token counts; arbitrary diagnostic text remains suppressed.
+
+resume-construction operates in the existing stopped run directory under an
+exclusive lock and requires explicit --unknown-usage-policy count-at-reservation.
+It uses the stored run inputs/configuration and bank version, verifies the event
+chain and plan artifact, requires a contiguous prefix of completed windows, and
+verifies accepted artifacts against their logged hashes. Skipped artifacts match
+their logged omission/closure receipts. It requires a finalized terminal provider
+request-rejection receipt for the next window, retains its reservation, and skips
+that failed window. Interrupted dispatches without a terminal receipt refuse.
+The native planner must reproduce the same plan id before any generation; existing
+correction use is restored rather than replenished. Accepted commitments and
+symbols restore without model replay or added charges. Normal global recounts,
+merge, one nonempty freeze, target/search and awaiting-selection then continue.
+Already-frozen runs, artifact corruption and incompatible plans refuse. This is
+bounded recovery from a terminal request rejection, not general crash recovery.

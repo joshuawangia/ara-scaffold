@@ -300,3 +300,52 @@ def test_mandatory_bundle_borrows_global_capacity_and_preserves_endpoints(rig, m
     accounted = payloads(calls, 'build_t_evidence_accounted')[0]
     assert {o['evidence_id'].rsplit(':', 1)[1] for o in accounted['omitted']} == {'p', 'q', 'i'}
     assert len(payloads(calls, 'commitments_frozen')) == 1
+
+
+@pytest.mark.parametrize('stage', ['select_t_roots', 'build_t_batch', 'correction'])
+@pytest.mark.parametrize('status', [400, 200])
+def test_terminal_provider_request_refusal_skips_window_at_reservation(rig, monkeypatch, stage, status):
+    from anthropic import APIStatusError
+    import httpx2 as httpx
+    calls, provider, literature, sent = windows(rig, monkeypatch)
+    complete = provider.complete
+    def respond(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if inputs['batch_index'] == 1:
+            if kind == stage or (stage == 'correction' and inputs.get('mode') == 'targeted_correction'):
+                raise APIStatusError('P', response=httpx.Response(status, request=httpx.Request('POST', 'https://example.invalid'),
+                    headers={'request-id': 'req_P'}), body={'error': {'type': 'invalid_request_error', 'message': 'P'}})
+            if stage == 'correction' and kind == 'build_t_batch':
+                value = json.loads(complete(kind, prompt, schema, maximum).text())
+                value['commitments'][0]['formula']['name'] = 'Q'
+                return Response(response(value))
+        return complete(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'complete', respond)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    assert {c.id.rsplit(':', 1)[1] for c in result.commitments} == {'p', 'r'}
+    refusal = payloads(calls, 'construction_provider_refusal')
+    assert len(refusal) == 1 and refusal[0]['policy'] == 'count-at-reservation'
+    summary = json.loads(methodology(calls.log.path).split('```json\n')[1].split('\n```')[0])
+    assert summary['construction']['provider_refusals'] == refusal
+    assert summary['accounting_complete'] is False
+    unknown = [e for e in calls.log.read() if json.loads(e['payload_json']).get('accounting') == 'reservation_unknown_actual']
+    assert len(unknown) == 1 and unknown[0]['cost_usd'] > 0
+    start = next(p for p in payloads(calls, 'call_start') if p['cache_key'] == json.loads(unknown[0]['payload_json'])['cache_key'])
+    assert unknown[0]['usage'] == start['reserved_usage']
+    assert len(payloads(calls, 'build_t_batch_skipped')) == 1
+    assert len(payloads(calls, 'commitments_frozen')) == 1
+
+
+@pytest.mark.parametrize('status,error_type', [(500, 'invalid_request_error'), (401, 'authentication_error'), (429, 'rate_limit_error')])
+def test_non_request_provider_failures_remain_fatal(rig, monkeypatch, status, error_type):
+    from anthropic import APIStatusError
+    import httpx2 as httpx
+    calls, provider, literature, sent = windows(rig, monkeypatch)
+    def fail(*args):
+        raise APIStatusError('P', response=httpx.Response(status, request=httpx.Request('POST', 'https://example.invalid')),
+                             body={'error': {'type': error_type, 'message': 'P'}})
+    monkeypatch.setattr(provider, 'complete', fail)
+    with pytest.raises(BudgetStop, match='provider accounting unavailable'):
+        prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    assert not payloads(calls, 'construction_provider_refusal')
+    assert not payloads(calls, 'commitments_frozen')

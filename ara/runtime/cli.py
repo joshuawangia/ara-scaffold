@@ -40,6 +40,9 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--audience', default='runtime audience')
     run.add_argument('--named-position')
     run.add_argument('--route')
+    resume = sub.add_parser('resume-construction', help='continue a verified stopped construction in its existing directory')
+    resume.add_argument('--run-dir', type=Path, required=True)
+    resume.add_argument('--unknown-usage-policy', choices=('count-at-reservation',), required=True)
     extraction = sub.add_parser('extract')
     extraction.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     extraction.add_argument('--manifest', type=Path, required=True)
@@ -122,6 +125,31 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'resume-construction':
+            if not (args.run_dir / 'events.jsonl').is_file():
+                raise ValueError('construction run log does not exist')
+            from ara.runtime.construction_resume import construction_resume_lock
+            with construction_resume_lock(args.run_dir):
+                log = EventLog(args.run_dir / 'events.jsonl')
+                events = log.read()
+                starts = [json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started']
+                if len(starts) != 1:
+                    raise ValueError('construction resume requires one run configuration')
+                run = starts[0]
+                bank = load_bank(ROOT / 'bank')
+                if bank.bank_version != run['bank_version']:
+                    raise ValueError('construction resume bank version mismatch')
+                config = {**run['config'], 'unknown_usage_policy': args.unknown_usage_policy}
+                calls = calls_factory(config, log, run['topic'])
+                calls.construction_resume = True
+                log.human('resume-construction', json.dumps(raw_args), reported_minutes=args.human_minutes)
+                human = next((json.loads(e['payload_json']) for e in events if e['stage'] == 'run' and e['label'] == 'HUMAN'), {})
+                commitments, targets = prepare(calls, bank, run['literature'], run['audience'], human.get('named_position'))
+                routes = search_all(calls, engine_factory(bank, calls), commitments, targets)
+                log.record('awaiting_selection', route_ids=[r.id for r in routes])
+                log.record('run_finished', state='awaiting_selection')
+                print(str(args.run_dir))
+                return 0
         if args.command == 'report':
             from ara.runtime.report import generate_report
             print(str(generate_report(args.run_dir, args.out)))

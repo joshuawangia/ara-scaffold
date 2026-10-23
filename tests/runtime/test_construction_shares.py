@@ -254,7 +254,7 @@ def test_admission_continues_after_borrowing_crosses_headroom(rig, monkeypatch):
 
 
 @pytest.mark.parametrize('headroom', [.2, .01])
-def test_small_global_capacity_admits_roots_above_planning_share(rig, monkeypatch, headroom):
+def test_zero_initial_share_discloses_zero_cap_without_dispatch(rig, monkeypatch, headroom):
     calls, provider, literature, sent = windows(rig, monkeypatch)
     calls.config.update(working_t_token_budget=1500, working_t_headroom_fraction=headroom)
     estimate = provider.estimate
@@ -265,13 +265,13 @@ def test_small_global_capacity_admits_roots_above_planning_share(rig, monkeypatc
             return TokenUsage(input_tokens=1000 + actual * 100, output_tokens=maximum)
         return estimate(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'estimate', count)
-    result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
-    assert len(result.commitments) == 3
-    assert payloads(calls, 'build_t_merged')[0]['input_tokens'] == 1300
-    assert [b['working_remaining'] for b in payloads(calls, 'build_t_window_budget')] == [500, 400, 300]
-    assert [i['batch_index'] for k, i in sent if k == 'build_t_batch'] == [0, 1, 2]
-    assert not payloads(calls, 'build_t_batch_skipped')
-    assert len(payloads(calls, 'commitments_frozen')) == 1
+    with pytest.raises(Rejected, match='empty working T'):
+        prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+    assert payloads(calls, 'build_t_plan')[0]['plan']['budget']['window_commitment_cap'] == 0
+    assert not sent
+    assert len(payloads(calls, 'build_t_batch_skipped')) == 3
+    assert all('zero initial window share' in p['reason'] for p in payloads(calls, 'build_t_batch_skipped'))
+    assert not payloads(calls, 'commitments_frozen')
 
 
 def test_mandatory_bundle_borrows_global_capacity_and_preserves_endpoints(rig, monkeypatch):

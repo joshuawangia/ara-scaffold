@@ -107,6 +107,10 @@ def methodology(log_path: Path) -> str:
                          for p in [json.loads(e['payload_json'])] for id, ids in p.get('support_omitted', {}).items()],
                          'support_policy': 'Budget-cut frontier items are attributed assumed premises (support_omitted); routes using them are conditional on those premises. Immutable full sources retain omitted support.',
                          'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
+                         'stage_dispatches': [dict(kind=e['stage'], stage=json.loads(e['payload_json']).get('dispatch_stage', e['stage']),
+                                                  provider=json.loads(e['payload_json']).get('provider'),
+                                                  requested_model=e['model_id'], served_model=e['model_version'])
+                                              for e in calls if e['stage'] in ('select_t_roots', 'build_t_batch')],
                          'skipped_windows': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_batch_skipped'],
                          'provider_refusals': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_provider_refusal'],
                          'counter_refusals': [json.loads(e['payload_json']) for e in events if e['stage'] == 'token_count_refused'],

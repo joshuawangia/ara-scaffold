@@ -174,3 +174,69 @@ def test_counted_formalization_bound_cuts_before_dispatch(rig, monkeypatch):
     t = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
     assert len(t.commitments) == 2
     assert any('support_omitted' in c.text for c in t.commitments)
+
+
+@pytest.mark.parametrize('multiplier,cap', [(1, 3), (2, 6), (1.5, 4)])
+def test_initial_window_cap_is_configurable_and_disclosed(rig, multiplier, cap):
+    calls, *_ = rig
+    config = {**calls.config, 'working_t_symbol_token_budget': 48000,
+              'working_t_symbol_growth_tokens_per_item': 128,
+              'construction_window_cap_multiplier': multiplier}
+    plan = budget_plan(config, 48, 220, 3200, 70000)
+    assert plan['initial_window_commitments'] == 3
+    assert plan['window_commitment_cap'] == cap
+    assert plan['window_cap_multiplier'] == multiplier
+    assert plan['redistribution_pass'] is False
+
+
+def test_native_closure_is_depth_cut_to_initial_window_cap(rig, monkeypatch):
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    calls.config.update(working_t_symbol_token_budget=1400, construction_window_cap_multiplier=1)
+    sent = []
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1]); sent.append((kind, inputs))
+        return Response(response(choose(inputs) if kind == 'select_t_roots' else batch_response(inputs)))
+    monkeypatch.setattr(provider, 'complete', complete)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
+    assert len(result.commitments) == 2
+    assert any('support_omitted' in c.text for c in result.commitments)
+    selection = next(i for k, i in sent if k == 'select_t_roots')
+    assert selection['window_budget']['window_commitment_cap'] == 4
+    formal = next(i for k, i in sent if k == 'build_t_batch')
+    assert len(formal['closure']['inventory']) <= 4
+    assert formal['closure']['support_omitted']
+    summary = json.loads(methodology(calls.log.path).split('```json\n')[1].split('\n```')[0])
+    assert summary['construction']['plans'][0]['plan']['budget']['redistribution_pass'] is False
+
+
+def test_later_window_keeps_initial_cap_after_an_empty_window(rig, monkeypatch):
+    from ara.types import TokenUsage
+    from test_extraction import register
+    from ara.runtime.extraction import extract
+    calls, provider, papers, *_ = rig
+    value = graph(); value['items'] = value['items'][4:] + value['items'][:4]
+    register(calls, provider, papers[0], value)
+    path = extract(calls, (papers[0],))
+    calls.config['working_t_symbol_token_budget'] = 1400
+    estimate = provider.estimate
+    def count(kind, prompt, schema, maximum):
+        data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'select_t_roots' and sum(len(p['items']) for p in data['papers']) > 4:
+            return TokenUsage(input_tokens=70001, output_tokens=maximum)
+        return estimate(kind, prompt, schema, maximum)
+    sent = []
+    def complete(kind, prompt, schema, maximum):
+        data = json.loads(prompt.split('\nINPUT_JSON\n')[1]); sent.append((kind, data))
+        if kind == 'select_t_roots' and data['batch_index'] == 0:
+            value = dict(roots=[], relevance='P', omissions=[dict(group_id=g['group_id'], reason='Q') for g in data['selection_groups']])
+        else:
+            value = choose(data) if kind == 'select_t_roots' else batch_response(data)
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'estimate', count)
+    monkeypatch.setattr(provider, 'complete', complete)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
+    assert len(result.commitments) == 2
+    budgets = [i['window_budget'] for k,i in sent if k=='select_t_roots']
+    assert [b['initial_window_commitments'] for b in budgets] == [2,2]
+    assert [b['window_commitment_cap'] for b in budgets] == [4,4]
+    assert budgets[1]['per_window_commitments'] > budgets[0]['per_window_commitments']

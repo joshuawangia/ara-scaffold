@@ -1,5 +1,5 @@
 """Deterministic budget arithmetic and depth cuts; never chooses relevance."""
-from math import ceil
+from math import ceil, floor, isfinite
 
 from ara.runtime.cache import canonical
 
@@ -20,7 +20,12 @@ def budget_plan(config, windows, copy_tokens, wrapper_tokens, input_bound):
     # Reserve formula growth at the measured symbol rate as well as copied text.
     total = min(working // (copy_cost + symbol_cost), symbols // symbol_cost)
     per_window = min(total // count, max(0, input_bound - wrapper_tokens) // (copy_cost + symbol_cost))
+    multiplier = config.get('construction_window_cap_multiplier', 2)
+    require(type(multiplier) in (int, float) and isfinite(multiplier) and multiplier >= 1,
+            'construction window cap multiplier must be finite and at least one')
     return dict(window_count=windows, per_window_commitments=per_window,
+                initial_window_commitments=per_window, window_cap_multiplier=multiplier,
+                window_commitment_cap=floor(per_window * multiplier), redistribution_pass=False,
                 projected_t_commitments=per_window * windows, copy_tokens_per_commitment=copy_cost,
                 symbol_tokens_per_commitment=symbol_cost, headroom_fraction=headroom,
                 working_wrapper_tokens=wrapper_tokens, working_available_tokens=working,

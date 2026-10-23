@@ -630,3 +630,35 @@ generate; it does not append to the source run or freeze commitments. The report
 records the next window, restored count, and any refused counter requests. An
 account credit rejection still stops even though the count endpoint is free;
 restore account access before trying again.
+
+
+### Construction spread and stage configuration
+
+`construction_window_cap_multiplier` defaults to 2. Each window can add at most
+its initial planning share times that multiplier, rounded down: share 3 gives cap
+6. The cap stays fixed even when earlier windows contribute nothing. Closures are
+depth-cut within it, with mandatory context preserved and omitted support disclosed.
+There is no second redistribution pass. A zero share gives a zero cap; the plan
+and skipped-window receipts disclose it. Actual contributions depend on relevance
+and global token limits, so the capacity targets are not a promise of equal coverage.
+
+Rebuild with `ara run` and a new empty `--run-dir`. Do not use
+`resume-construction` for a capped rebuild of an older plan. Fresh runs retain
+extraction provenance but never restore the previous construction's accepted
+batches. The cap and construction dispatch settings are part of the plan identity.
+
+Each construction stage can independently select a registered provider and model:
+
+```yaml
+stages:
+  select_t_roots: {provider: anthropic, model: claude-opus-5}
+  build_t_batch: {provider: anthropic, model: claude-opus-5}
+  construction_correction: {provider: anthropic, model: claude-opus-5}
+```
+
+Empty overrides inherit the run configuration. Corrections inherit their original
+stage before applying `construction_correction`; profiles preserve unrelated stage
+entries. Receipts and methodology show the actual requested/served stage models
+and providers. Model pricing/accounting must be configured for the selected backend.
+The `claude_code` provider can use these same keys once its implementation is
+registered in `ara.runtime.cli.make_provider`; it is not supplied by this change.

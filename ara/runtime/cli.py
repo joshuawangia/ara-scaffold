@@ -100,14 +100,26 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
-def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> ModelCalls:
+def make_provider(config: dict, root: Path = ROOT):
     if config['provider'] == 'anthropic':
         provider = AnthropicProvider(config)
     elif config['provider'] == 'mock':
         provider = MockProvider(Path(config.get('mock_responses', root / 'tests/fixtures/runtime/native-canned.json')), config['model'])
     else:
         raise ValueError(f'unknown provider: {config["provider"]}')
-    return ModelCalls(config, provider, log, Cache(Path(config['cache_dir'])), root, topic)
+    return provider
+
+
+def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> ModelCalls:
+    return ModelCalls(config, make_provider(config, root), log, Cache(Path(config['cache_dir'])), root, topic,
+                      provider_factory=lambda settings: make_provider(settings, root))
+
+
+def apply_profile(config, name):
+    profile = config[name]
+    stages = {**config.get('stages', {}), **profile.get('stages', {})}
+    config.update(profile)
+    config['stages'] = stages
 
 
 def validate_profile_caps(config: dict, profile: str | None) -> None:
@@ -177,7 +189,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if not 0 <= args.cost_cap_usd <= 1:
                 raise ValueError('schema preflight cap must be between zero and USD1')
             config = yaml.safe_load(args.config.read_text())
-            config.update(config[args.profile])
+            apply_profile(config, args.profile)
             config.update(cost_cap_usd=args.cost_cap_usd, extraction_cost_cap_usd=args.cost_cap_usd,
                           unknown_usage_policy=args.unknown_usage_policy)
             if args.run_dir.exists() and any(args.run_dir.iterdir()):
@@ -195,7 +207,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         if args.command == 'plan-construction':
             from ara.runtime.planning import plan_construction
             config = yaml.safe_load(args.config.read_text())
-            config.update(config[args.profile])
+            apply_profile(config, args.profile)
             if args.run_dir.exists() and any(args.run_dir.iterdir()):
                 raise ValueError('new planning directory must be empty')
             log = EventLog(args.run_dir / 'events.jsonl')
@@ -207,7 +219,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         if args.command == 'plan-extraction':
             from ara.runtime.planning import plan_extraction
             config = yaml.safe_load(args.config.read_text())
-            config.update(config[args.profile])
+            apply_profile(config, args.profile)
             if args.run_dir.exists() and any(args.run_dir.iterdir()):
                 raise ValueError('new planning directory must be empty')
             log = EventLog(args.run_dir / 'events.jsonl')
@@ -219,7 +231,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         if args.command == 'extract':
             config = yaml.safe_load(args.config.read_text())
             if args.profile:
-                config.update(config[args.profile])
+                apply_profile(config, args.profile)
             validate_profile_caps(config, args.profile)
             config['unknown_usage_policy'] = args.unknown_usage_policy
             config.setdefault('validation_attempts', 3)
@@ -260,7 +272,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             config = yaml.safe_load(args.config.read_text())
             selected_profile = 'smoke' if args.smoke else args.profile
             if selected_profile:
-                config.update(config[selected_profile])
+                apply_profile(config, selected_profile)
             validate_profile_caps(config, selected_profile)
             if args.smoke:
                 topic = args.topic if args.topic is not None else 'P Q'

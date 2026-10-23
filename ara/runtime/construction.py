@@ -17,7 +17,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v8'
+PLAN_VERSION = 'rich-working-t-v9'
 CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
@@ -196,9 +196,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     all_items = [item for p in usable for item in p['items']]
     require(len({i['id'] for i in all_items}) == len(all_items), 'duplicate evidence id')
     require(len({i['citation'] for i in all_items}) == len(all_items), 'duplicate evidence citation')
+    from ara.runtime.construction_stages import construction_stage_manifest
     metadata = {'version': PLAN_VERSION, 'closure_version': CLOSURE_VERSION, 'sources': [
         {'source_id': p['source_id'], 'content_hash': digest(canonical(p))} for p in papers],
         'topic': calls.topic, 'audience': audience,
+        'construction_stages': construction_stage_manifest(calls.config),
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
         'symbol_token_budget': calls.config['working_t_symbol_token_budget'],
         'working_t_token_budget': calls.config['working_t_token_budget']}
@@ -346,6 +348,9 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             refusal_reasons.append(reason)
             skip(batch, window_items, reason, selection, closure)
             continue
+        if allocation['window_commitment_cap'] == 0:
+            skip(batch, window_items, 'zero initial window share; commitment cap is zero', selection, closure)
+            continue
         try:
             prior = [c.to_dict() for r in results for c in r.commitments.commitments]
             target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
@@ -413,7 +418,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                         'roots': selection['roots'], 'added_ids': sorted(ids - set(selection['roots'])),
                         'full_inventory': sorted(ids), 'uncut_inventory': sorted(full_ids),
                         'support_omitted': support, 'cut_depth': depth, 'window_budget': window_budget,
-                        'empty_reason': ('mandatory root context exceeds remaining global capacity or request bound' if selection['roots'] and not ids
+                        'empty_reason': ('mandatory root context exceeds window commitment cap, remaining global capacity or request bound' if selection['roots'] and not ids
                                          else selection['relevance'] if not ids else None),
                         'already_formalized': sorted(ids & materialized), 'inventory': sorted(ids - materialized),
                         'relevance': selection['relevance'], 'omitted': omissions}
@@ -433,6 +438,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             def fits(ids):
                 if not ids:
                     return True
+                if len(ids - materialized) > allocation['window_commitment_cap']:
+                    return False
                 if payload_token_bound(items, ids) > input_bound - 8192:
                     return False
                 support = {id: sorted(dependencies[id] - ids) for id in ids if dependencies[id] - ids}
@@ -494,6 +501,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             # The actual growing catalogue and plan identity are counted again, including retries.
             def check(data):
                 ids = [c['id'] for c in data['commitments']]
+                require(len(ids) <= allocation['window_commitment_cap'], 'construction window commitment cap exceeded')
                 require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
                 commitments = CommitmentSet.from_dict({'commitments': [
                     {**c, 'text': evidence_text(items[c['id']], support_omitted.get(c['id'])), 'citation': items[c['id']]['citation']}

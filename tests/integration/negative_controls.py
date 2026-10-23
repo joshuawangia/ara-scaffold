@@ -64,7 +64,7 @@ CASES = [
     ('extraction_cache', 'ara/runtime/calls.py', 'saved = self.cache.get(key)', "saved = None if kind == 'extract_paper' else self.cache.get(key)", 'tests/runtime/test_extraction.py::test_cache_replay_and_pdf_identity'),
     ('extraction_pdf_cache_identity', 'ara/runtime/extraction.py', "'pdf_sha256': self.pdf_sha256, 'pages':", "'pdf_sha256': None, 'pages':", 'tests/runtime/test_extraction.py::test_cache_replay_and_pdf_identity'),
     ('extraction_provenance_integrity', 'ara/runtime/extraction.py', "if events[-1]['stage'] != 'extraction_completed' or complete['literature_sha256'] != digest(text) or assemble(outcomes) != text:", 'if False:', 'tests/runtime/test_extraction.py::test_provenance_integrity'),
-    ('extraction_cli_import', 'ara/runtime/cli.py', "import_provenance(log, provenance, json.loads(args.literature.with_suffix('.provenance.json').read_text()))", 'pass' , 'tests/runtime/test_extraction.py::test_extract_cli_to_build_t_native_path'),
+    ('extraction_cli_import', 'ara/runtime/verification.py', '_append_receipts(log, events, origin)', 'pass' , 'tests/runtime/test_extraction.py::test_extract_cli_to_build_t_native_path'),
     ('extraction_ai_label', 'ara/runtime/cli.py', 'literature=literature if args.literature is not None and not provenance else None,', 'literature=literature if args.literature is not None else None,', 'tests/runtime/test_extraction.py::test_extract_cli_to_build_t_native_path'),
     ('extraction_t_citation', 'ara/runtime/construction.py', "require(c.citation == items[c.id]['citation'],", 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[citation]'),
     ('extraction_no_record_only_t', 'ara/runtime/calls.py', "require(bool(allowed), 'no extracted claims available to build T')", 'pass', 'tests/runtime/test_extraction.py::test_record_only_cannot_build_t'),
@@ -258,7 +258,7 @@ CASES += [
      "if outcome.get('input_sha256', digest(canonical(paper.inputs()))) != digest(canonical(paper.inputs())):", 'if False:',
      'tests/runtime/test_paper_recovery.py::test_changed_source_is_extracted_again[input]'),
     ('resume_transitive_validation', 'ara/runtime/provenance.py',
-     'verify_imports(events, active | {key}, memo)', 'pass',
+     'verify_imports(events, active | {key}, memo, inputs=inputs)', 'pass',
      'tests/runtime/test_paper_recovery.py::test_resume_origin_tamper_is_detected_transitively'),
     ('resume_receipt_dedup', 'ara/runtime/provenance.py',
      'if identity not in seen:', 'if True:',
@@ -769,6 +769,44 @@ CASES += [
     ('construction_resume_account_scope', 'ara/runtime/construction_resume.py',
      "diagnostic.get('message') != 'Provider account credit is insufficient.' and", 'True and',
      'tests/runtime/test_construction_resume.py::test_resume_does_not_turn_account_failure_into_window_omission'),
+]
+
+
+CASES += [
+    ('lineage_hash_recheck', 'ara/runtime/verification.py',
+     "return all(file_hash(path) == checksum for path, checksum in files.items())", 'return True',
+     'tests/runtime/test_verification_receipts.py::test_changed_input_forces_full_verification_and_refuses[ancestor]'),
+    ('lineage_anchor_verification', 'ara/runtime/provenance.py',
+     "if content.decode().splitlines() != [r['hash'] for r in rows]:", 'if False:',
+     'tests/runtime/test_verification_receipts.py::test_changed_input_forces_full_verification_and_refuses[ancestor_anchor]'),
+    ('lineage_verifier_version', 'ara/runtime/verification.py',
+     "candidate['verifier'] != verifier", 'False',
+     'tests/runtime/test_verification_receipts.py::test_invalid_cache_or_changed_valid_input_is_fully_reverified[version]'),
+    ('lineage_receipt_anchor', 'ara/runtime/verification.py',
+     "path.with_suffix('.anchor').read_bytes() != ''.join(r['hash'] + '\\n' for r in rows).encode()", 'False',
+     'tests/runtime/test_verification_receipts.py::test_invalid_cache_or_changed_valid_input_is_fully_reverified[receipt_anchor]'),
+    ('lineage_symlink_hash_binding', 'ara/runtime/logging.py',
+     'key = str(Path(path).absolute())', 'key = str(Path(path).resolve())',
+     'tests/runtime/test_verification_receipts.py::test_changed_input_forces_full_verification_and_refuses[symlink]'),
+    ('lineage_receipt_logged', 'ara/runtime/verification.py',
+     "log.record('lineage_verification',", "dict(stage='lineage_verification',",
+     'tests/runtime/test_verification_receipts.py::test_native_startup_reuses_chained_receipt_without_reverification'),
+]
+
+
+CASES += [
+    ('lineage_header_binding', 'ara/runtime/verification.py',
+     'if not text.startswith(HEADER) and not sidecar.exists() and not candidates:',
+     'if not text.startswith(HEADER):',
+     'tests/runtime/test_verification_receipts.py::test_changed_input_forces_full_verification_and_refuses[header]'),
+    ('lineage_full_stable_inputs', 'ara/runtime/verification.py',
+     'if not matching_inputs(files) or json.loads(sidecar.read_bytes()) != origin:',
+     'if json.loads(sidecar.read_bytes()) != origin:',
+     'tests/runtime/test_verification_receipts.py::test_input_changed_during_verification_is_refused[full]'),
+    ('lineage_warm_stable_inputs', 'ara/runtime/verification.py',
+     "if digest(canonical(events)) != candidate['events_sha256'] or not matching_inputs(files):",
+     "if digest(canonical(events)) != candidate['events_sha256']:",
+     'tests/runtime/test_verification_receipts.py::test_input_changed_during_verification_is_refused[warm]'),
 ]
 
 

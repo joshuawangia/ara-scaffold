@@ -16,7 +16,7 @@ from ara.runtime.budget import BudgetStop
 from ara.runtime.cache import Cache
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
-from ara.runtime.extraction import extract, load_papers, literature_provenance, import_provenance, MissingExtractionLineage, resume_papers, validate_failure_limit
+from ara.runtime.extraction import extract, load_papers, MissingExtractionLineage, resume_papers, validate_failure_limit
 from ara.runtime.logging import EventLog, now
 from ara.runtime.orchestration import compose, native_engine, prepare, search_all
 from ara.runtime.providers import AnthropicProvider, MockProvider
@@ -277,12 +277,12 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')
             log = EventLog(directory / 'events.jsonl')
             try:
-                provenance = literature_provenance(args.literature, literature) if args.literature else ()
+                from ara.runtime.verification import import_literature
+                provenance = import_literature(log, args.literature, literature,
+                    Path(config['cache_dir']) / 'lineage-verification') if args.literature else ()
             except MissingExtractionLineage as exc:
                 log.record('extraction_lineage_missing', reason=str(exc))
                 raise
-            if provenance:
-                import_provenance(log, provenance, json.loads(args.literature.with_suffix('.provenance.json').read_text()))
             log.human('run', args.topic if args.topic is not None else json.dumps(raw_args, ensure_ascii=False),
                       argv=raw_args, topic=args.topic,
                       literature=literature if args.literature is not None and not provenance else None,

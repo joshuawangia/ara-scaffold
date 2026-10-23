@@ -578,6 +578,23 @@ CASES += [
 ]
 
 
+CASES += [
+    ('construction_window_metadata', 'ara/runtime/construction.py',
+     'evidence_window(p, selected)', "{**p, 'items': [i for i in p['items'] if i['id'] in selected]}",
+     'tests/runtime/test_evidence_windows.py::test_windows_keep_only_selected_metadata'),
+    ('construction_window_gap_scope', 'ara/runtime/construction.py',
+     'if relevant(g)', 'if True',
+     'tests/runtime/test_evidence_windows.py::test_windows_keep_only_selected_metadata'),
+    ('receipt_bulk_import', 'ara/runtime/provenance.py',
+     'log.emit_many([marker, *(RunEvent.from_dict(event) for event in copied)])',
+     'for event in [marker, *(RunEvent.from_dict(event) for event in copied)]:\n        log.emit(event)',
+     'tests/runtime/test_boundaries.py::test_receipt_import_verification_does_not_grow_per_event'),
+    ('bulk_append_verifies_chain', 'ara/runtime/logging.py',
+     'records = self._verify()', 'records = []',
+     'tests/runtime/test_boundaries.py::test_bulk_log_append_refuses_tamper_and_interrupted_write'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

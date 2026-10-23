@@ -1772,3 +1772,26 @@ Native publication regressions compare every original root's exact prerequisite
 closure after mapping, for four qualifier target kinds and an added inference,
 in both source orders and after a second resume. The production-wire control
 replaces native prerequisites with outgoing references and must fail.
+
+## M7 — Construction windows project metadata and imports append in batches
+
+Construction plan v6 uses one model-facing projection for counting, selection
+and fixed-closure formalization. Each paper window carries source ID, supplied
+title/authors (null when absent), a partial-source flag, selected evidence with
+unchanged IDs/citations, and only its own provenance and quarantine entries.
+Gap entries with item references are filtered to those IDs; otherwise a gap must
+overlap a selected item's physical pages and, when scoped, its snapshot. Unscoped
+gaps and all full-paper diagnostics, snapshot manifests and grounding receipts
+stay in the immutable artifact and imported receipts. The original paper hash
+still pins the full source in the plan. The projection changes no selection,
+closure, omission, formula or freeze rule; actual requests remain counted.
+
+Receipt import previously re-read and verified the growing destination chain
+for every copied event. Import now appends its marker and exact copied events
+under one verified destination lock, retaining per-event sequence numbers,
+hashes and anchor entries. Both files are flushed and fsynced before return.
+An interrupted mismatched append is refused on the next verification; an
+incomplete import is still rejected by its declared event count. Nothing is
+silently repaired or discarded. Single-event writes use the same append path.
+Transitive verification shares a checkpoint memo only within one operation;
+there is no persistent cache that could hide later ancestor tampering.

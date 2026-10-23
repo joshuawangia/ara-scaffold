@@ -8,7 +8,7 @@ import os
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator
+from typing import Iterable, Iterator
 
 from ara.runtime.cache import canonical, digest
 from ara.types import RunEvent
@@ -65,15 +65,21 @@ class EventLog:
         return records
 
     def emit(self, event: RunEvent) -> None:
+        self.emit_many((event,))
+
+    def emit_many(self, events: Iterable[RunEvent]) -> None:
+        """Append a batch under one verified lock, retaining every chained event."""
         with self._locked():
             records = self._verify()
-            row = {'seq': len(records), 'previous': records[-1]['hash'] if records else '0' * 64,
-                   'event': event.to_dict()}
-            row['hash'] = digest(canonical(row))
-            # Never rewrite either file, including when recovering a failed append.
-            for path, text in ((self.path, canonical(row) + '\n'), (self.anchor, row['hash'] + '\n')):
-                with path.open('a') as stream:
-                    stream.write(text)
+            previous = records[-1]['hash'] if records else '0' * 64
+            with self.path.open('a') as stream, self.anchor.open('a') as anchor:
+                for seq, event in enumerate(events, len(records)):
+                    row = {'seq': seq, 'previous': previous, 'event': event.to_dict()}
+                    row['hash'] = digest(canonical(row))
+                    stream.write(canonical(row) + '\n')
+                    anchor.write(row['hash'] + '\n')
+                    previous = row['hash']
+                for stream in (stream, anchor):
                     stream.flush()
                     os.fsync(stream.fileno())
 

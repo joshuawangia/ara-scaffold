@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.logging import read_log
+from ara.runtime.logging import now, read_log
 from ara.types import RunEvent
 
 IMPORT_STAGE = 'extraction_provenance_import'
@@ -52,6 +52,7 @@ def unique_events(events, seen):
 
 
 def verify_imports(events, active=frozenset(), memo=None):
+    memo = {} if memo is None else memo
     seen = set()
     for index, event in enumerate(events):
         if event['stage'] == IMPORT_STAGE:
@@ -71,10 +72,11 @@ def verify_imports(events, active=frozenset(), memo=None):
 
 
 def import_receipts(log, events, origin=None):
-    verify_imports(events)
+    memo = {}
+    verify_imports(events, memo=memo)
     receipt_id = digest(canonical(events))
     existing = log.read()
-    if origin is not None and tuple(events) != read_checkpoint(origin):
+    if origin is not None and tuple(events) != read_checkpoint(origin, memo=memo):
         raise ValueError('origin receipt events mismatch')
     if any(e['stage'] == IMPORT_STAGE and json.loads(e['payload_json']).get('receipt_id') == receipt_id
            for e in existing):
@@ -83,11 +85,11 @@ def import_receipts(log, events, origin=None):
     # that complete prefix intact; native resume/import supplies the origin pin.
     copied = list(events) if origin is None else unique_events(events, {
         digest(canonical(e)) for e in existing if e['stage'] != IMPORT_STAGE})
-    log.record(IMPORT_STAGE, records=len(copied), receipt_id=receipt_id,
+    marker = RunEvent(now(), IMPORT_STAGE, 'SYSTEM', payload_json=canonical(dict(
+               records=len(copied), receipt_id=receipt_id,
                **({'origin': origin} if origin is not None else {}),
-               note='Original receipts, not new dispatches; inherited charges count in this run.')
-    for event in copied:
-        log.emit(RunEvent.from_dict(event))
+               note='Original receipts, not new dispatches; inherited charges count in this run.')))
+    log.emit_many([marker, *(RunEvent.from_dict(event) for event in copied)])
 
 
 def batch_events(events):

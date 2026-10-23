@@ -17,6 +17,63 @@ from test_extraction import rig, offline, response, ROOT
 from test_extraction_rich import rich_calls
 
 
+def test_windows_keep_only_selected_metadata(rig, monkeypatch):
+    calls, provider, path = rich_calls(rig, monkeypatch)
+    data = json.loads(path.read_text()[len(HEADER):])
+    paper = data['papers'][0]
+    original = copy.deepcopy(paper['items'])
+    for n, item in enumerate(paper['items']):
+        item.update(page_start=n + 1, page_end=n + 1)
+    paper.update(title='P', authors=['a'], status='partial', record={'title': 'Q', 'extra': 'R'},
+                 snapshot_union={'snapshots': {'foreign': 'R' * 100000}},
+                 dispositions=[{'reason': 'R' * 100000}], unknown_metadata='R' * 100000)
+    paper['item_provenance'] = {i['id']: [dict(snapshot_id='a', original_id=i['id'])] for i in paper['items']}
+    paper['open_gaps'] = [dict(id=i['id'] + ':gap', description='Q', pages=[i['page_start']], snapshot_id='a')
+                          for i in paper['items']]
+    paper['open_gaps'] += [dict(id='foreign', description='R', pages=[1], snapshot_id='b'),
+                           dict(id='unscoped', description='R')]
+    from ara.runtime.grounding import ground_outcome
+    data['papers'][0] = paper = ground_outcome(
+        Paper('p', '{}', 'P', tuple(PageText(n, 'P Q R F(x)') for n in range(1, 9))), paper, calls.log)
+    # A valid quarantine receipt for unrelated inventory must not reach a window.
+    from ara.runtime.grounding import receipt_hash
+    paper['quarantined'] = [dict(item_id='foreign', reasons=['P'], blocked_by=[])]
+    paper['grounding']['inventory_sha256'] = receipt_hash(paper['items'], paper['quarantined'],
+                                                        paper['grounding']['source_text_sha256'])
+    text = HEADER + json.dumps(data)
+    original_estimate = provider.estimate
+    observed = []
+    def check(inputs):
+        for window in inputs.get('papers', []):
+            ids = {i['id'] for i in window['items']}
+            assert set(window) == {'source_id', 'title', 'authors', 'partial_source', 'items',
+                                   'item_provenance', 'quarantined', 'open_gaps'}
+            assert (window['source_id'], window['title'], window['authors'], window['partial_source']) == ('p', 'P', ['a'], True)
+            assert set(window['item_provenance']) == ids
+            assert window['quarantined'] == []
+            assert {g['id'] for g in window['open_gaps']} == {id + ':gap' for id in ids}
+            assert all({k: v for k, v in i.items() if k != 'root_id'} in paper['items'] for i in window['items'])
+    def estimate(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind in ('build_t_batch', 'select_t_roots'):
+            check(inputs)
+            if kind == 'select_t_roots' and sum(len(p['items']) for p in inputs['papers']) > 4:
+                return TokenUsage(input_tokens=70001, output_tokens=maximum)
+        return original_estimate(kind, prompt, schema, maximum)
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        check(inputs)
+        observed.append(kind)
+        return Response(response(batch_response(inputs)))
+    monkeypatch.setattr(provider, 'estimate', estimate)
+    monkeypatch.setattr(provider, 'complete', complete)
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), text, 'P')
+    assert {c.id for c in result.commitments} == {i['id'] for i in original}
+    assert {c.citation for c in result.commitments} == {i['citation'] for i in original}
+    assert observed.count('select_t_roots') == 2 and 'build_t_batch' in observed
+    assert json.loads(text[len(HEADER):]) == data
+
+
 
 
 def test_large_single_graph_windows_close_against_full_evidence(rig, monkeypatch):

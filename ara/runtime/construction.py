@@ -17,7 +17,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v5'
+PLAN_VERSION = 'rich-working-t-v6'
 CLOSURE_VERSION = 'directional-prerequisites-v1'
 
 
@@ -82,6 +82,32 @@ def selection_inventory(items: dict[str, dict]) -> tuple[dict[str, str], list[di
     groups = [dict(group_id=f'g{index}', root_ids=partitions[key], **dict(zip(fields, key)))
               for index, key in enumerate(sorted(partitions), 1)]
     return aliases, groups
+
+
+def evidence_window(paper: dict, selected: set[str]) -> dict:
+    """Model-facing evidence only; full source metadata remains in the artifact."""
+    items = [i for i in paper['items'] if i['id'] in selected]
+    ids = {i['id'] for i in items}
+    provenance = {id: origins for id, origins in paper.get('item_provenance', {}).items() if id in ids}
+    def relevant(gap):
+        if 'evidence_ids' in gap:
+            return bool(ids.intersection(gap['evidence_ids']))
+        if 'item_id' in gap:
+            return gap['item_id'] in ids
+        return any(any(i['page_start'] <= page <= i['page_end'] for page in gap.get('pages', [])) and
+                   ('snapshot_id' not in gap or any(o['snapshot_id'] == gap['snapshot_id']
+                                                    for o in provenance.get(i['id'], [])))
+                   for i in items)
+    gaps = [{**g, **({'evidence_ids': [id for id in g['evidence_ids'] if id in ids]}
+                    if 'evidence_ids' in g else {})}
+            for g in paper.get('open_gaps', []) if relevant(g)]
+    record = paper.get('record', {})
+    return dict(source_id=paper['source_id'], title=paper.get('title', record.get('title')),
+                authors=paper.get('authors', record.get('authors')),
+                partial_source=paper['status'] == 'partial' or bool(paper.get('coverage')),
+                items=items, item_provenance=provenance,
+                quarantined=[q for q in paper.get('quarantined', []) if q['item_id'] in ids],
+                open_gaps=gaps)
 
 
 def formula_symbols(formula, bound: frozenset[str] = frozenset()):
@@ -174,7 +200,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     dependencies = evidence_dependencies(items)
     def grouped(ids):
         selected = set(ids)
-        return [{**p, 'items': [i for i in p['items'] if i['id'] in selected]}
+        return [evidence_window(p, selected)
                 for p in usable if any(i['id'] in selected for i in p['items'])]
     def inputs_for(group, index, allowance):
         return {**base_inputs, 'batch_index': index, 'papers': group, 'working_token_allowance': allowance}

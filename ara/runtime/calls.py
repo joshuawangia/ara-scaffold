@@ -350,7 +350,12 @@ class ModelCalls:
                 self._paper_budget.before(estimate, cached=cached)
             if cached:
                 if hasattr(self.provider, 'scan_output'):
-                    self.provider.scan_output(canonical(saved['raw']))
+                    from ara.runtime.claude_code import ClaudeCodeError
+                    try:
+                        self.provider.scan_output(saved['raw'])
+                    except ClaudeCodeError:
+                        self.cache.discard(key)
+                        raise
                 raw = saved['raw']
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:

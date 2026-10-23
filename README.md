@@ -360,8 +360,10 @@ are forms with slots and critical questions. Under round-2 R4 in DECISIONS.md,
 software-engineering known-case recordings. Every other fixture stays
 placeholder-only.
 Supply substantive topic/literature at runtime. Runs, caches, generated drafts and
-logs are gitignored and must never be committed. Credentials come only from the
-environment and must never be written or logged. See AGENTS.md and DECISIONS.md.
+logs are gitignored and must never be committed. API credentials come from the
+environment and must never be written or logged. The subscription provider uses
+the explicitly authorized temporary OAuth copy described below; it never logs
+credentials. See AGENTS.md and DECISIONS.md.
 
 Measured responses and usage are persisted before fallible validation/counting.
 A later failure prevents caching/freezing but retains the known bill and response.
@@ -633,9 +635,17 @@ fresh `claude -p` sessions through the usual `ModelCalls` boundary.
 
 The machine must have Claude Code, an existing subscription login (or
 `CLAUDE_CODE_OAUTH_TOKEN` in the environment), and both `git config user.name`
-and `git config user.email`. The runtime reads the existing login token into the
-child environment only; it never copies the credential file. It creates separate
-empty cwd/config directories for every process, checks ancestor instruction
+and `git config user.email`. Each process uses a private 0600 copy of the existing
+OAuth authentication fields in a fresh config directory, deleted after the call.
+Refresh tokens, MCP credentials and operator settings are excluded. The copy
+advertises only the existing inference scope to suppress CLI profile discovery
+(this does not change the token's server permissions); no OAuth
+token is passed in the child environment when this file is available. If only
+an environment login exists, the disclosed fallback passes that token through
+the environment. Same-user processes can already read the original credential
+file and may inspect an environment-only login; this is not a blanket promise
+about `ps` visibility. Credentials are excluded from argv, logs and caches.
+It creates a separate empty cwd for every process, checks ancestor instruction
 files, and uses safe mode, no user setting sources, no MCP, no slash commands,
 no session persistence, no browser, and an empty built-in tool list. It does not
 refresh or rotate the original login. An expired token requires operator login

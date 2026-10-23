@@ -1987,3 +1987,43 @@ validation, retry, identity and concurrency boundaries. Production-wire controls
 live in the existing sequential integration control runner. Placeholder live
 construction, target proposal and formalization passed the local schemas and
 native acceptance path; the external omega report records receipts and limits.
+
+
+## Omega round 3 — Decoded output, construction retries and config authentication
+
+F6: scan raw CLI stdout/stderr/debug for credentials, then recursively scan every
+JSON string value and key before any untrusted CLI field enters a receipt,
+log or cache. Nested JSON strings and cache replay receive the same scan.
+Reject and evict contaminated cache entries without logging their contents.
+Rejected CLI results retain only validated numeric usage/cost and locally
+created routing/session data; missing accounting remains explicitly unknown.
+
+F7: both construction_call attempts use the shared transport retry boundary.
+Ordinary validation and targeted correction budgets are unchanged; rate/usage
+retries spend transport attempts, never additional validation corrections.
+Exhausted transport retries surface through the normal Rejected boundary.
+
+F8: prefer a private 0600 copy of only the existing OAuth authentication fields
+in each temporary config directory. No token goes in the child environment on
+this path. Exclude refresh tokens to prevent child login rotation, and remove
+the directory on success, error or timeout. A copy avoids writes through a
+symlink/hardlink to the original credential. This brief explicitly authorizes
+this temporary authentication-file exception to the repository's general
+no-secret-files rule. The receipt label config-link includes this copy mode.
+If the credential file is absent and only an environment login exists, retain
+the explicitly disclosed env mode. Malformed/unreadable credential files refuse.
+
+The accepted threat model permits same-user access: that user already can read
+the original Claude credential file. Credentials never enter argv, logs or
+cache; private file permissions protect against other unprivileged users.
+Environment-only authentication remains visible to same-user environment
+inspection, including ps eww. There is no unconditional "never in ps" claim,
+and no protection from root is asserted. Original login refresh remains the
+operator's responsibility. Methodology exports the chosen auth mode and policy.
+
+A live canary with the original scope metadata authenticated but was rejected
+for operator identity before any stage ran. CLI 2.1.306 fetches profile identity
+when profile scope is advertised. The private copy now advertises only the
+existing user:inference scope, matching environment-token discovery behavior.
+This suppresses profile discovery; it does not narrow the bearer token's actual
+server-side permissions. The original credential bytes and scopes are unchanged.

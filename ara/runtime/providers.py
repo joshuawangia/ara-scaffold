@@ -184,8 +184,12 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
 
 
 def stage_settings(config: dict, kind: str) -> dict:
-    overrides = config.get('stages', {}).get('extraction', {}) if kind == 'extract_paper' else {}
-    return {**config, **overrides}
+    stage = ('extraction' if kind == 'extract_paper' else
+             'construction' if kind in ('build_t', 'select_t_roots', 'build_t_batch', 'reconcile_t') else
+             'writing' if kind in ('write_essay', 'audit_essay', 'search_evidence', 'verify_originality_citations') else
+             'search')
+    stages = config.get('stages', {})
+    return {**config, **stages.get(stage, {}), **stages.get(kind, {})}
 
 
 class AnthropicProvider:
@@ -213,6 +217,8 @@ class AnthropicProvider:
         request = {'model': self.model_for(kind), 'max_tokens': maximum,
                    'thinking': {'type': settings.get('thinking', 'adaptive')}, 'output_config': output,
                    'messages': [{'role': 'user', 'content': prompt}]}
+        if settings.get('system_prompt'):
+            request['system'] = settings['system_prompt']
         if kind == 'search_evidence':
             request['tools'] = [{'type': 'web_search_20260209', 'name': 'web_search',
                                  'max_uses': self.config['web_search_max_uses'] }]
@@ -253,6 +259,10 @@ def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
     Prompt knowledge is deliberately unnecessary, including for token-counter
     failures. Substring redaction cannot safely recognize partial request echoes.
     """
+    from ara.runtime.claude_code import ClaudeCodeError
+    if isinstance(exc, ClaudeCodeError):
+        return {'provider': 'claude_code', 'error_type': exc.code, 'message': 'CLI diagnostic suppressed.',
+                'cli': exc.receipt, 'retryable': exc.retryable}
     import re
     body = getattr(exc, 'body', None)
     error = body.get('error', body) if isinstance(body, dict) else {}

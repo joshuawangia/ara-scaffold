@@ -14,7 +14,16 @@ class CountingProvider:
     def __init__(self, config, counter):
         self.config = config
         self.model = config['model']
-        self.provider = AnthropicProvider(config) if counter == 'provider' else None
+        if counter == 'provider' and config.get('provider') == 'claude_code':
+            from ara.runtime.claude_code import ClaudeCodeProvider
+            self.provider = ClaudeCodeProvider(config)
+        else:
+            self.provider = AnthropicProvider(config) if counter == 'provider' else None
+        if hasattr(self.provider, 'initial_context_tokens'):
+            self.initial_context_tokens = self.provider.initial_context_tokens
+            self.context_output_tokens = self.provider.context_output_tokens
+        self.estimate_method = getattr(self.provider, 'estimate_method',
+                                       'provider_count_tokens' if self.provider else 'local_estimate_utf8_bytes_div_4')
 
     def model_for(self, kind):
         return stage_settings(self.config, kind)['model']
@@ -47,7 +56,7 @@ def plan_extraction(config, log, papers, root, counter):
     graph_allowance = source_bound - batch_overhead
     if output_rate <= 0 or graph_rate <= 0 or graph_allowance <= 0:
         raise ValueError('invalid planning density or batch allowance')
-    report = dict(counter='provider_count_tokens' if counter == 'provider' else 'local_estimate_utf8_bytes_div_4',
+    report = dict(counter=calls.provider.estimate_method,
                   model=model, operator_caps=caps, generation_ready=False, dispatches=0,
                   output_tokens_per_readable_page=output_rate, graph_tokens_per_readable_page=graph_rate,
                   batch_overhead_estimate=batch_overhead, input_rate_usd_per_million=rates['input_per_million_usd'],
@@ -110,7 +119,7 @@ def plan_construction(config, log, literature, root, topic, audience, counter):
                        Cache(log.path.parent / 'planning-cache'), root, topic)
     plan = construct(calls, literature, audience, plan_only=True)
     largest = max((b['input_tokens'] for b in plan['batches'] if b['input_tokens'] is not None), default=0)
-    report = dict(plan=plan, counter='provider_count_tokens' if counter == 'provider' else 'local_estimate_utf8_bytes_div_4',
+    report = dict(plan=plan, counter=calls.provider.estimate_method,
                   uncounted_windows=[b['index'] for b in plan['batches'] if b['input_tokens'] is None],
                   generation_calls=0, audience=audience, max_request_tokens=largest,
                   context_reserved_tokens=largest + settings['extracted_build_t_max_output_tokens'] + settings['working_t_symbol_token_budget'],
@@ -133,7 +142,7 @@ def plan_construction_resume(config, log, source_log, root, run):
                        Cache(log.path.parent / 'planning-cache'), root, run['topic'])
     result = construct(calls, run['literature'], run['audience'], plan_only=True, resume_state=state)
     refusals = [json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'token_count_refused']
-    report = dict(**result, counter='provider_count_tokens', generation_calls=0, new_cost_usd=0,
+    report = dict(**result, counter=calls.provider.estimate_method, generation_calls=0, new_cost_usd=0,
                   all_counts_passed=not refusals, counter_refusals=refusals,
                   source_run=str(source_log.path.parent))
     save_immutable(log.path.parent / 'construction-resume-plan.json', canonical(report))

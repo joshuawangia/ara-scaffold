@@ -56,8 +56,8 @@ CASES = [
     ('extraction_strict_refusal', 'ara/runtime/extraction.py', "if missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction.py::test_refuse_missing_and_no_publication'),
     ('extraction_counted_oversize', 'ara/runtime/extraction.py', 'return usage.input_tokens', 'return 0', 'tests/runtime/test_extraction_rich.py::test_page_ranges_and_logged_reconciliation'),
     ('extraction_provider_context', 'ara/runtime/calls.py', 'if admission and not fits:', "if admission and not fits and kind != 'extract_paper':", 'tests/runtime/test_extraction.py::test_provider_context_bound_rechecked'),
-    ('extraction_admission_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
-    ('extraction_actual_cap', 'ara/runtime/budget.py', "if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
+    ('extraction_admission_cap', 'ara/runtime/budget.py', "if not self.subscription and stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(", 'if False and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_budget_admission[extraction_cost_cap_usd]'),
+    ('extraction_actual_cap', 'ara/runtime/budget.py', "if not self.subscription and stage == 'extract_paper' and self.extraction_cost() > Decimal(str(", 'if False and self.extraction_cost() > Decimal(str(', 'tests/runtime/test_extraction.py::test_extraction_actual_cost_cap'),
     ('extraction_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", "attempts = 1 if kind == 'extract_paper' else self.config.get('validation_attempts', 1)", 'tests/runtime/test_extraction.py::test_extraction_retry_and_reservation'),
     ('extraction_model_logging', 'ara/runtime/calls.py', "self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)", "None if kind == 'extract_paper' else self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
     ('extraction_export_accounting', 'ara/runtime/export.py', "'extraction': extraction_summary,", "'extraction': {},", 'tests/runtime/test_extraction.py::test_missing_fallback_and_methodology'),
@@ -81,7 +81,7 @@ CASES = [
     ('extraction_local_inherited_totals', 'ara/runtime/export.py', "'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),", "'local_totals': totals(events),", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_enclosing_cap_warning', 'ara/runtime/extraction.py', "print('planned batch exceeds enclosing caps', flush=True)", 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
     ('extraction_batch_profile', 'ara/runtime/cli.py', 'if args.profile:\n                config.update(config[args.profile])', 'if args.profile:\n                pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
-    ('extracted_t_output_capacity', 'ara/runtime/calls.py', "maximum = self.config['extracted_build_t_max_output_tokens']\n        identity", "maximum = self.config['max_output_tokens']\n        identity", 'tests/runtime/test_extraction_fix1.py::test_capacity53_maximum_through_cli'),
+    ('extracted_t_output_capacity', 'ara/runtime/calls.py', "maximum = self.config['extracted_build_t_max_output_tokens']\n        if kind == 'isolation_canary':\n            maximum = 4096\n        identity", "maximum = self.config['max_output_tokens']\n        if kind == 'isolation_canary':\n            maximum = 4096\n        identity", 'tests/runtime/test_extraction_fix1.py::test_capacity53_maximum_through_cli'),
     ('build_t_retry_context', 'ara/runtime/calls.py', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)', "estimate = self.count_request(kind, inputs, maximum=maximum, admission='validation_feedback' not in inputs)", 'tests/runtime/test_extraction_fix1.py::test_build_t_retry_recounts_feedback'),
     ('extraction_import_idempotence', 'ara/runtime/provenance.py', "if any(e['stage'] == IMPORT_STAGE and", "if False and any(e['stage'] == IMPORT_STAGE and", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_partial_methodology', 'ara/runtime/export.py', "for p in outcomes if p['status'] == 'partial'", "for p in outcomes if p['status'] == 'extracted'", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
@@ -769,6 +769,37 @@ CASES += [
     ('construction_resume_account_scope', 'ara/runtime/construction_resume.py',
      "diagnostic.get('message') != 'Provider account credit is insufficient.' and", 'True and',
      'tests/runtime/test_construction_resume.py::test_resume_does_not_turn_account_failure_into_window_omission'),
+]
+
+
+CASES += [
+    ('cli_safe_mode', 'ara/runtime/claude_code.py', "['--safe-mode', '--exclude", "['--exclude",
+     'tests/runtime/test_claude_code.py::test_native_preflight_receipts_schema_cache_and_export'),
+    ('cli_schema_transport', 'ara/runtime/claude_code.py', "'--json-schema', canonical({k: v for k, v in schema.items() if k != '$schema'})", "'--json-schema', '{}'",
+     'tests/runtime/test_claude_code.py::test_stage_model_system_and_input_are_preserved'),
+    ('cli_identity_scan', 'ara/runtime/claude_code.py', 'if any(term.casefold() in folded for term in self.identity):', 'if False:',
+     'tests/runtime/test_claude_code.py::test_provider_errors_never_echo_output[identity]'),
+    ('cli_forbidden_scan', 'ara/runtime/claude_code.py', 'if any(term.casefold() in combined for term in self.forbidden):', 'if False:',
+     'tests/runtime/test_claude_code.py::test_preflight_fails_closed[forbidden_debug]'),
+    ('cli_debug_proof', 'ara/runtime/claude_code.py', 'if not all(marker in debug for marker in required):', 'if False:',
+     'tests/runtime/test_claude_code.py::test_preflight_fails_closed[missing_debug]'),
+    ('cli_preflight_each_run', 'ara/runtime/calls.py', "self.call('isolation_canary', {})", 'pass',
+     'tests/runtime/test_claude_code.py::test_native_preflight_receipts_schema_cache_and_export'),
+    ('cli_no_stderr_echo', 'ara/runtime/claude_code.py', 'receipt.update(exit_status=result.returncode, wall_seconds=time.monotonic()-started)',
+     "receipt.update(exit_status=result.returncode, wall_seconds=time.monotonic()-started, stderr=result.stderr)",
+     'tests/runtime/test_claude_code.py::test_provider_errors_never_echo_output[exit]'),
+    ('cli_retry_bound', 'ara/runtime/calls.py', "range(getattr(self.provider, 'retries', 0) + 1)", "range(1)",
+     'tests/runtime/test_claude_code.py::test_bounded_logged_retry[rate]'),
+    ('cli_concurrency', 'ara/runtime/claude_code.py', 'threading.BoundedSemaphore(self.concurrency)', 'threading.BoundedSemaphore(64)',
+     'tests/runtime/test_claude_code.py::test_configurable_concurrency_and_fresh_sessions[2]'),
+    ('cli_concurrent_admission', 'ara/runtime/budget.py', "if self.used_tokens + self._pending_tokens + tokens(usage) > self.config['token_cap']:", 'if False:',
+     'tests/runtime/test_claude_code.py::test_concurrent_budget_admission_cannot_oversubscribe'),
+]
+
+
+CASES += [
+    ('cli_system_cache', 'ara/runtime/calls.py', "if stage_settings(self.config, kind).get('system_prompt') else {}", 'if False else {}', 'tests/runtime/test_claude_code.py::test_configured_system_prompt_partitions_existing_cache'),
+    ('cli_stop_artifact', 'ara/runtime/budget.py', "def stop(self, reason: str, stage: str, *, scope='run', **details) -> None:\n        with self._lock:", "def stop(self, reason: str, stage: str, *, scope='run', **details) -> None:\n        with threading.RLock():", 'tests/runtime/test_claude_code.py::test_concurrent_stop_artifacts_are_serialized'),
 ]
 
 

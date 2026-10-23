@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 import json
+import threading
 
 from ara.runtime.cache import canonical, digest
 from ara.runtime.logging import EventLog
@@ -27,7 +28,10 @@ def tokens(usage: TokenUsage) -> int:
 class Budget:
     def __init__(self, config: dict, log: EventLog):
         self.config, self.log = config, log
-        self.rates = config['pricing'][config['model']]
+        self._lock = threading.RLock()
+        self._pending_tokens = 0
+        self.subscription = config.get('provider') == 'claude_code'
+        self.rates = config['pricing'].get(config['model'], {}) if self.subscription else config['pricing'][config['model']]
         for rates in config['pricing'].values():
             for name, value in rates.items():
                 if name.endswith('_usd') and (not Decimal(str(value)).is_finite() or Decimal(str(value)) < 0):
@@ -57,6 +61,8 @@ class Budget:
             self.stop('interrupted provider call: actual spend unknown', 'resume')
 
     def cost(self, usage: TokenUsage, raw_usage: dict | None = None, model: str | None = None) -> Decimal:
+        if self.subscription:
+            return Decimal(0)
         model = model or self.config['model']
         r = self.config['pricing'].get(model)
         if r is None or not {'input_per_million_usd', 'output_per_million_usd'} <= r.keys():
@@ -79,6 +85,8 @@ class Budget:
         return result + Decimal(usage.server_tool_uses) * Decimal(str(self.rates['web_search_per_thousand_usd'])) / 1000
 
     def response_cost(self, raw: dict) -> Decimal:
+        if raw.get('provider') == 'claude_code':
+            return Decimal(0)
         served_model = raw['model']
         # Validate the served model even for a zero-token refusal or cache entry.
         self.cost(TokenUsage(), model=served_model)
@@ -98,34 +106,54 @@ class Budget:
         return result + self.cost(TokenUsage(server_tool_uses=tools), model=served_model)
 
     def stop(self, reason: str, stage: str, *, scope='run', **details) -> None:
-        state = {**details, 'scope': scope, 'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
-                 'cost_usd': float(self.used_cost), 'status': 'STOPPED'}
-        self.log.record(stage, 'STOP', **{k: v for k, v in state.items() if k != 'stage'})
-        (self.log.path.parent / 'partial.json').write_text(canonical(state))
-        raise BudgetStop(reason, scope=scope)
+        with self._lock:
+            state = {**details, 'scope': scope, 'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
+                     'cost_usd': float(self.used_cost), 'status': 'STOPPED'}
+            self.log.record(stage, 'STOP', **{k: v for k, v in state.items() if k != 'stage'})
+            (self.log.path.parent / 'partial.json').write_text(canonical(state))
+            raise BudgetStop(reason, scope=scope)
 
     def extraction_cost(self) -> Decimal:
         return sum((Decimal(str(e['cost_usd'])) for e in self.log.read()
                     if e['stage'] == 'extract_paper' and e['label'] == 'MODEL'), Decimal(0))
 
     def before(self, usage: TokenUsage, stage: str, model: str | None = None) -> None:
-        if stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(
+        if not self.subscription and stage == 'extract_paper' and self.extraction_cost() + self.cost(usage, model=model) > Decimal(str(
                 self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
             self.stop('extraction cost cap: request reservation exceeds remaining cost', stage)
         if self.used_tokens + tokens(usage) > self.config['token_cap']:
             self.stop('token cap: request reservation exceeds remaining tokens', stage)
-        if self.used_cost + self.cost(usage, model=model) > Decimal(str(self.config['cost_cap_usd'])):
+        if not self.subscription and self.used_cost + self.cost(usage, model=model) > Decimal(str(self.config['cost_cap_usd'])):
             self.stop('cost cap: request reservation exceeds remaining cost', stage)
 
+    def reserve_subscription(self, usage: TokenUsage, stage: str, model: str) -> int:
+        with self._lock:
+            if self.used_tokens + self._pending_tokens + tokens(usage) > self.config['token_cap']:
+                self.stop('token cap: concurrent reservations exceed remaining tokens', stage)
+            self.before(usage, stage, model)
+            reservation = tokens(usage)
+            self._pending_tokens += reservation
+            return reservation
+
+    def release_subscription(self, reservation: int) -> None:
+        with self._lock:
+            self._pending_tokens -= reservation
+
     def charge(self, usage: TokenUsage, cost: Decimal) -> None:
-        self.used_tokens += tokens(usage)
-        self.used_cost += cost
+        with self._lock:
+            self.used_tokens += tokens(usage)
+            self.used_cost += cost
+
+    def undo_charge(self, usage: TokenUsage, cost: Decimal) -> None:
+        with self._lock:
+            self.used_tokens -= tokens(usage)
+            self.used_cost -= cost
 
     def after(self, stage: str) -> None:
-        if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(
+        if not self.subscription and stage == 'extract_paper' and self.extraction_cost() > Decimal(str(
                 self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
             self.stop('extraction cost cap exceeded by actual usage', stage)
         if self.used_tokens > self.config['token_cap']:
             self.stop('token cap exceeded by actual usage', stage)
-        if self.used_cost > Decimal(str(self.config['cost_cap_usd'])):
+        if not self.subscription and self.used_cost > Decimal(str(self.config['cost_cap_usd'])):
             self.stop('cost cap exceeded by actual usage', stage)

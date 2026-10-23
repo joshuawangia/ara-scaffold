@@ -34,7 +34,7 @@ def parser() -> argparse.ArgumentParser:
     profile = run.add_mutually_exclusive_group()
     profile.add_argument('--smoke', action='store_true')
     profile.add_argument('--profile', choices=('pilot', 'extraction-full'))
-    run.add_argument('--provider', choices=('anthropic', 'mock'))
+    run.add_argument('--provider', choices=('anthropic', 'mock', 'claude_code'))
     run.add_argument('--topic')
     run.add_argument('--literature', type=Path)
     run.add_argument('--audience', default='runtime audience')
@@ -50,7 +50,7 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--manifest', type=Path, required=True)
     extraction.add_argument('--fulltext-dir', type=Path, required=True)
     extraction.add_argument('--run-dir', type=Path, required=True)
-    extraction.add_argument('--provider', choices=('anthropic', 'mock'))
+    extraction.add_argument('--provider', choices=('anthropic', 'mock', 'claude_code'))
     extraction.add_argument('--paper-id', action='append', default=[])
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
@@ -103,6 +103,9 @@ def parser() -> argparse.ArgumentParser:
 def make_provider(config: dict, root: Path = ROOT):
     if config['provider'] == 'anthropic':
         provider = AnthropicProvider(config)
+    elif config['provider'] == 'claude_code':
+        from ara.runtime.claude_code import ClaudeCodeProvider
+        provider = ClaudeCodeProvider(config)
     elif config['provider'] == 'mock':
         provider = MockProvider(Path(config.get('mock_responses', root / 'tests/fixtures/runtime/native-canned.json')), config['model'])
     else:

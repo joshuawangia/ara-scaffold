@@ -2060,3 +2060,65 @@ cryptographic authentication. Source histories must remain stable during startup
 hash rechecks detect observed changes, not an adversarial change-and-restore
 between reads. This cache covers lineage verification and import only, not
 construction restoration, planning, generation or search.
+
+## Omega — Isolated subscription CLI provider
+
+The opt-in `claude_code` provider extends the native ModelCalls seam, with one
+fresh process/session and empty cwd/config per request. Native startup preflight
+is live, uncached, token-budgeted and logged. User settings, skills, installed
+plugins/hooks, MCP and memory are excluded. A canary and debug checks scan a
+runtime inventory of forbidden operator names/paths; private configuration can
+supplement it. Git identity is read at runtime and rejected in every output,
+including cache replays, without echoing the matched value. A fresh config with
+only the existing OAuth token in the environment suppressed the account reminder
+on CLI 2.1.306. No credentials or operator terms enter committed artifacts.
+
+Round 1's literal ban on all plugins/hooks could not be met by safe mode. The
+revised contract accepts Anthropic built-ins, the SDK prefix, runtime environment
+and StructuredOutput with disclosure. Full effective prompt equivalence to the
+API path is not claimed. `--exclude-dynamic-system-prompt-sections` is ignored
+with an explicit system prompt; isolation relies on the fresh configuration,
+safe mode and evidence checks instead. Empty ancestor instruction files are
+not trusted merely because the cwd itself is empty.
+
+The observed CLI validator rejects the draft-2020-12 metaschema declaration.
+Only that declaration is omitted from the CLI argument. Stage constraints and
+recursive definitions remain intact; authoritative local validation uses the
+original schema. Successful structured tool-use completion is accepted, but
+missing structured output, model mismatch and non-success exits are rejected.
+
+Accounting records subscription list-price equivalents separately from API USD.
+Subscription dollar caps are inapplicable, while context/token admission remains
+mandatory. Local estimation reserves byte-per-token input plus runtime headroom
+and two output allowances plus one possible input replay for the two-turn bound. Unknown usage is reserved and
+labelled incomplete. Concurrency defaults to four processes per provider;
+concurrent token reservations and per-call recovery IDs prevent one request's
+failure from charging another request's reservation. Rate/usage retries are
+bounded, logged and admitted independently. Original extraction API receipts
+remain inherited evidence; this provider does not run extraction or silently
+substitute generated text for tool-based web evidence.
+
+Offline fake-executable tests exercise the native process, preflight, receipt,
+validation, retry, identity and concurrency boundaries. Production-wire controls
+live in the existing sequential integration control runner. Placeholder live
+construction, target proposal and formalization passed the local schemas and
+native acceptance path; the external omega report records receipts and limits.
+
+## Round 7 integration — Stage providers share admission, not billing policy
+
+Sigma's construction-stage routing and Omega's subscription backend share Xi's
+single reservation ledger. Every request reserves tokens atomically, with zero
+API-dollar reservation for a subscription provider. API stage calls remain priced
+and subject to USD caps even when the run's default provider is subscription;
+subscription stage calls remain zero-USD even under an API default. Imported API
+charges remain measured history. Durable response receipts precede settlement,
+including validated CLI error receipts. Request-local recovery supersedes both
+older log-tail recovery and subscription-only pending counters.
+
+Each new scoped subscription provider must complete its uncached isolation canary
+before generation, while count-only planning remains non-generative. Bounded
+transport retries use the selected stage provider's settings. Sigma's stage
+cache identities, Mu's byte-bound verification receipts and the existing local
+schema validation/isolation gates are preserved. Offline mixed-provider tests
+exercise both routing directions and the scoped retry/canary boundaries; they
+are not a live-provider or full-pilot completion claim.

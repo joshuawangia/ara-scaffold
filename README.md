@@ -671,3 +671,63 @@ receipt and reuse decision without changing inherited model receipts or charges.
 Deleting this cache safely forces full verification. Receipts use local hash
 chains with separate anchors, not signed authentication. The optimization does
 not skip construction restoration or any downstream work.
+
+## Subscription CLI provider
+
+Set `provider: claude_code` and a full pinned `model` such as `claude-opus-5-5`
+in a local configuration file. `stages.construction`, `stages.search`, and
+`stages.writing` may override `model`, `effort`, and `system_prompt`; an exact
+call-kind override takes precedence. Existing extraction configuration and API
+receipts are retained. This provider refuses extraction and `search_evidence`:
+it has no external retrieval tools, so it cannot replace web verification.
+Native symbolic search, construction, and writing calls with response schemas use
+fresh `claude -p` sessions through the usual `ModelCalls` boundary.
+
+The machine must have Claude Code, an existing subscription login (or
+`CLAUDE_CODE_OAUTH_TOKEN` in the environment), and both `git config user.name`
+and `git config user.email`. The runtime reads the existing login token into the
+child environment only; it never copies the credential file. It creates separate
+empty cwd/config directories for every process, checks ancestor instruction
+files, and uses safe mode, no user setting sources, no MCP, no slash commands,
+no session persistence, no browser, and an empty built-in tool list. It does not
+refresh or rotate the original login. An expired token requires operator login
+maintenance outside ARA.
+
+Every newly opened run context performs an uncached, budgeted isolation canary.
+The visible-context report must show no skills, memory, CLAUDE.md or AGENTS.md.
+Debug markers must prove skipped skill discovery, disabled installed plugins and
+MCP, and disabled project memory. Both visible context and debug output are
+scanned for runtime-discovered user skill names, project names and memory paths.
+Supplement that inventory with `claude_code.forbidden_terms` in private local
+configuration for project names absent from Claude's registry. Inventory values
+and git identity are never added to prompts or committed. Every response,
+including cached output, is scanned for the git name/email; a hit is rejected
+without echoing its value. The isolated config suppressed the account reminder
+in the verified CLI version. Debug output is scanned in the temporary directory
+and discarded; its digest and check results remain in the event log.
+
+Anthropic built-in plugins, SDK identity/runtime instructions, environment info,
+and the `StructuredOutput` schema tool remain. The effective prompt is **not
+byte-identical** to the API path; methodology records these differences. The
+CLI receives the stage schema without its unsupported draft-2020-12 declaration;
+ARA still validates the full original schema locally. A successful structured
+completion may have CLI `stop_reason: tool_use`.
+
+`claude_code.concurrency` defaults to 4 processes per provider instance;
+`timeout_seconds` defaults to 300. Rate/usage errors receive at most two fresh
+process retries, with logged exponential backoff capped at 30 seconds. Admission
+is repeated for every attempt. Concurrent requests reserve tokens atomically.
+There is no free CLI token counter: admission estimates one token per UTF-8 byte
+of prompt, system and schema plus 16,384 tokens of runtime headroom, reserving
+that amount and the output ceiling twice for at most two CLI turns, plus one
+output allowance for possible replay as second-turn input. This is a
+conservative local estimate, not a measurement or tokenizer guarantee. Initial
+context and cumulative token caps remain enforced. Unknown usage consumes the
+reservation and remains explicitly incomplete; resumption requires the existing
+unknown-usage reconciliation policy.
+
+CLI reported cost equivalents appear under `subscription_usage`; they are not
+measured API USD. Dollar caps do not govern subscription calls. Original imported
+API charges remain visible in methodology, and cached subscription receipts do
+not add new usage. Each call records requested/served model, CLI version, tokens,
+wall time, exit status and session id; unsafe error text is suppressed.

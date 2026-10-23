@@ -133,3 +133,15 @@ working_t_symbol_growth_tokens_per_item: 0
 construction_window_cap_multiplier: 2
 # Independent target/polarity searches; 1 preserves sequential execution.
 search_concurrency: 4
+
+# Opt-in subscription transport: select provider: claude_code and a full model id.
+# Each run starts with a live isolation canary; extraction keeps its API workflow.
+# CLI equivalents are subscription_usage, never measured API USD. Token caps apply;
+# cost_cap_usd does not apply to subscription calls.
+claude_code:
+  concurrency: 4
+  timeout_seconds: 300
+  retries: 2
+  retry_backoff_seconds: 1
+  # Supplement the runtime inventory with private project names in local config.
+  forbidden_terms: []

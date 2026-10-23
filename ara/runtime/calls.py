@@ -5,6 +5,8 @@ import json
 import re
 import time
 from threading import Lock, RLock
+import threading
+import uuid
 from pathlib import Path
 from dataclasses import replace
 from typing import Callable, Any
@@ -179,6 +181,18 @@ class ModelCalls:
         self._key_locks = {}
         self.provider_factory = provider_factory
         self._stage_providers = {}
+        self._stage_provider_lock = RLock()
+        self._reservations = threading.local()
+        self._ensure_provider_ready(force=True)
+
+    def _subscription(self):
+        return getattr(self.provider, 'provider_kind', None) == 'claude_code'
+
+    def _ensure_provider_ready(self, *, force=False):
+        with self._stage_provider_lock:
+            if self._subscription() and (force or not self.provider.ready):
+                self.call('isolation_canary', {})
+                self.provider.ready = True
 
     def _for_construction_stage(self, kind, inputs, *, attempt=1):
         from copy import copy
@@ -191,8 +205,9 @@ class ModelCalls:
             return self
         require(self.provider_factory is not None, 'construction stage overrides require a provider factory')
         key = canonical(settings)
-        if key not in self._stage_providers:
-            self._stage_providers[key] = self.provider_factory(settings)
+        with self._stage_provider_lock:
+            if key not in self._stage_providers:
+                self._stage_providers[key] = self.provider_factory(settings)
         scoped = copy(self)
         scoped.config, scoped.provider = settings, self._stage_providers[key]
         scoped._dispatch_stage = stage
@@ -204,6 +219,9 @@ class ModelCalls:
         return self.provider.model_for(kind) if hasattr(self.provider, 'model_for') else self.provider.model
 
     def response_schema(self, kind: str, inputs: dict) -> dict | None:
+        if kind == 'isolation_canary':
+            from ara.runtime.claude_code import CANARY_SCHEMA
+            return CANARY_SCHEMA
         if kind == 'search_evidence':
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
@@ -232,6 +250,9 @@ class ModelCalls:
         return schema
 
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
+        if kind == 'isolation_canary':
+            from ara.runtime.claude_code import CANARY_PROMPT
+            return CANARY_PROMPT, CANARY_PROMPT
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
         if kind != 'search_evidence':
             # The service grammar is a compact projection. Show the model every
@@ -252,7 +273,7 @@ class ModelCalls:
         request_inputs = inputs
         for attempt in range(attempts):
             try:
-                return self._call_once(kind, request_inputs, check, attempt=attempt + 1)
+                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1)
             except InvalidOutput as exc:
                 if attempt + 1 == attempts:
                     raise
@@ -262,10 +283,27 @@ class ModelCalls:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
+    def _transport_call(self, kind, inputs, check, *, attempt):
+        from ara.runtime.claude_code import ClaudeCodeError
+        provider = self._for_construction_stage(kind, inputs, attempt=attempt).provider
+        for retry in range(getattr(provider, 'retries', 0) + 1):
+            try:
+                return self._call_once(kind, inputs, check, attempt=attempt)
+            except ClaudeCodeError as exc:
+                if not exc.retryable or retry == provider.retries:
+                    raise Rejected(exc.code) from None
+                delay = min(30, provider.backoff * 2 ** retry)
+                self.log.record('provider_retry', kind=kind, next_attempt=retry + 2,
+                                delay_seconds=delay, reason=exc.code)
+                time.sleep(delay)
+        raise AssertionError('unreachable')
+
     def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
         scoped = self._for_construction_stage(kind, inputs, attempt=attempt)
         if scoped is not self:
             return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+        if kind != 'isolation_canary':
+            self._ensure_provider_ready()
         # Same-request single flight prevents duplicate dispatch and partial cache reads.
         key = digest(canonical([kind, inputs, schema_smoke]))
         with self._key_lock:
@@ -276,6 +314,8 @@ class ModelCalls:
     def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke):
         state = {}
         started = time.monotonic()
+        previous_call_id = getattr(self._reservations, 'call_id', None)
+        self._reservations.call_id = str(uuid.uuid4())
         try:
             return self._execute_once(kind, inputs, check, attempt=attempt,
                                       schema_smoke=schema_smoke, state=state)
@@ -290,18 +330,19 @@ class ModelCalls:
                             started, False, 'rejected', type(exc).__name__, receipt['cache_key'], attempt=attempt)
                 self.budget.stop('post-response failure; measured usage retained', kind)
             usage = TokenUsage.from_dict(admission['reserved_usage'])
-            cost = self.budget.cost(usage, model=self.requested_model(kind))
+            cost = self.budget.cost(usage, model=self.requested_model(kind), subscription=self._subscription())
             self.budget.settle(state['reservation'], usage, cost)
             self.log.emit(RunEvent(now(), kind, 'MODEL', self.requested_model(kind), None,
                 admission['prompt'], None, usage, float(cost), time.monotonic() - started,
                 payload_json=canonical({'status': 'incomplete', 'attempt': attempt, 'reason': type(exc).__name__,
                     'cache_hit': False, 'cache_key': admission['cache_key'],
-                    'accounting': 'reservation_unknown_actual',
+                    'accounting': 'reservation_unknown_actual', 'call_id': self._reservations.call_id,
                     **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
-            self.budget.after(kind)
+            self.budget.after(kind, subscription=self._subscription())
             self.budget.stop('provider result incomplete; reservation charged; actual spend unknown', kind)
         finally:
             self.budget.release(state.get('reservation'))
+            self._reservations.call_id = previous_call_id
 
     def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict) -> Any:
         template, prompt = self.render(kind, inputs)
@@ -309,6 +350,8 @@ class ModelCalls:
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
         if kind == 'build_t_batch':
             maximum = self.config['extracted_build_t_max_output_tokens']
+        if kind == 'isolation_canary':
+            maximum = 4096
         identity = canonical({'inputs': inputs, 'topic': self.topic, 'provider': type(self.provider).__name__,
                               **({'dispatch_stage': self._dispatch_stage, 'dispatch_settings': self._dispatch_identity}
                                  if hasattr(self, '_dispatch_stage') else {}),
@@ -316,13 +359,16 @@ class ModelCalls:
                               'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                               'web_max': self.config['web_search_max_uses'],
                               'formula_depth': self.config.get('formula_output_depth', 2),
-                              'fallbacks': stage_settings(self.config, kind).get('fallbacks', ['claude-opus-4-8'])})
+                              'fallbacks': stage_settings(self.config, kind).get('fallbacks', ['claude-opus-4-8']),
+                              **({'system_prompt': stage_settings(self.config, kind)['system_prompt']}
+                                 if stage_settings(self.config, kind).get('system_prompt') else {}),
+                              **({'provider_metadata': self.provider.metadata(kind)} if hasattr(self.provider, 'metadata') else {})})
         if schema_smoke:
             prompt = 'P. Return a JSON object matching the response schema.'
             maximum = 1
         key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
         saved = None
-        if not schema_smoke:
+        if not schema_smoke and kind != 'isolation_canary':
             saved = self.cache.get(key)
         start = time.monotonic()
         raw = None
@@ -338,15 +384,18 @@ class ModelCalls:
             else:
                 estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)
             if not cached:
-                state['reservation'] = self.budget.reserve(estimate, kind, model=self.requested_model(kind))
+                state['reservation'] = self.budget.reserve(estimate, kind, model=self.requested_model(kind), subscription=self._subscription())
             if kind == 'extract_paper' and self._paper_budget is not None:
                 self._paper_budget.before(estimate, cached=cached)
             if cached:
+                if hasattr(self.provider, 'scan_output'):
+                    self.provider.scan_output(canonical(saved['raw']))
                 raw = saved['raw']
                 self.budget.response_cost(raw)  # Cached responses retain validated model/pricing provenance.
             else:
                 self.log.record('call_start', kind=kind, attempt=attempt, model=self.requested_model(kind), prompt=prompt,
-                                schema=schema, reserved_usage=estimate.to_dict(), cache_key=key)
+                                schema=schema, reserved_usage=estimate.to_dict(), cache_key=key, call_id=self._reservations.call_id,
+                                **(self.provider.metadata(kind) if hasattr(self.provider, 'metadata') else {}))
                 state['admission'] = dict(prompt=prompt, reserved_usage=estimate.to_dict(), cache_key=key)
                 dispatched = True
                 raw = self.provider.complete(kind, prompt, schema, maximum).raw
@@ -355,13 +404,8 @@ class ModelCalls:
                 cost = self.budget.response_cost(raw)
                 # Keep the reservation until the measured receipt is durable.
                 # Parsing and follow-up validation happen only after accounting.
-                self.log.record('response_received', kind=kind, cache_key=key,
-                                requested_model=self.requested_model(kind), raw_response=raw,
-                                measured_usage=usage.to_dict(), measured_cost_usd=float(cost))
-                self.budget.settle(state['reservation'], usage, cost)
+                self._receive(state, kind, key, raw, usage, cost)
                 charged = True
-                state['receipt'] = dict(raw_response=raw, measured_usage=usage.to_dict(),
-                                        measured_cost_usd=float(cost), cache_key=key)
             # Stop reason is checked BEFORE interpreting any content blocks.
             if schema_smoke:
                 require(raw['stop_reason'] in ('end_turn', 'max_tokens'), f'provider stop: {raw["stop_reason"]}')
@@ -402,6 +446,13 @@ class ModelCalls:
                 raise
             if not charged and isinstance(exc, BudgetStop):
                 raise
+            from ara.runtime.claude_code import ClaudeCodeError
+            if isinstance(exc, ClaudeCodeError) and exc.response is not None and not charged:
+                raw = exc.response
+                usage = Response(raw).usage
+                cost = self.budget.response_cost(raw)
+                self._receive(state, kind, key, raw, usage, cost)
+                charged = True
             if not validating:
                 from ara.runtime.providers import provider_error_evidence
                 self.log.record('provider_error', kind=kind, **provider_error_evidence(exc, prompt))
@@ -416,12 +467,15 @@ class ModelCalls:
                         for error in exc.context)
             unknown_usage = dispatched and not charged
             if unknown_usage:
-                usage, cost = estimate, self.budget.cost(estimate, model=self.requested_model(kind))
+                usage, cost = estimate, self.budget.cost(estimate, model=self.requested_model(kind), subscription=self._subscription())
                 self.budget.settle(state['reservation'], usage, cost)
-            self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt)
+            self._event(kind, prompt, raw, usage, cost, start, cached, 'incomplete' if unknown_usage else 'rejected', reason, key, unknown_usage, attempt=attempt, error_receipt=getattr(exc, 'receipt', None))
             state['completed'] = True
+            if isinstance(exc, ClaudeCodeError):
+                self.budget.after(kind, subscription=self._subscription())
+                raise
             if unknown_usage:
-                self.budget.after(kind)
+                self.budget.after(kind, subscription=self._subscription())
                 from ara.runtime.providers import terminal_request_refusal
                 if kind in ('select_t_roots', 'build_t_batch') and terminal_request_refusal(exc):
                     self.log.record('construction_provider_refusal', kind=kind, cache_key=key,
@@ -444,27 +498,40 @@ class ModelCalls:
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         state['completed'] = True
         self._after(kind)
-        if not cached and not schema_smoke:
+        if not cached and not schema_smoke and kind != 'isolation_canary':
             self.cache.put(key, {'raw': raw})
         return result
 
+    def _receive(self, state, kind, key, raw, usage, cost):
+        self.log.record('response_received', kind=kind, cache_key=key,
+                        requested_model=self.requested_model(kind), raw_response=raw,
+                        call_id=self._reservations.call_id,
+                        measured_usage=usage.to_dict(), measured_cost_usd=float(cost))
+        self.budget.settle(state['reservation'], usage, cost)
+        state['receipt'] = dict(raw_response=raw, measured_usage=usage.to_dict(),
+                                measured_cost_usd=float(cost), cache_key=key)
+
     def _after(self, kind):
-        self.budget.after(kind)
+        self.budget.after(kind, subscription=self._subscription())
         if kind == 'extract_paper' and self._paper_budget is not None:
             self._paper_budget.after()
 
     def _event(self, kind: str, prompt: str, raw: dict | None, usage: TokenUsage,
                cost: Any, start: float, cached: bool, status: str, reason: str | None,
-               key: str, unknown_usage: bool = False, *, attempt: int = 1) -> None:
+               key: str, unknown_usage: bool = False, *, attempt: int = 1, error_receipt: dict | None = None) -> None:
         self.log.emit(RunEvent(now(), kind, 'MODEL', self.requested_model(kind),
                               raw.get('model') if raw else None, prompt,
                               canonical(raw) if raw is not None else None, usage, float(cost),
                               time.monotonic() - start,
                               payload_json=canonical({'status': status, 'reason': reason, 'attempt': attempt,
                                                        'cache_hit': cached, 'cache_key': key,
+                                                       'call_id': self._reservations.call_id,
                                                        'requested_model': self.requested_model(kind),
                                                        'provider': self.config.get('provider'),
                                                        'dispatch_stage': getattr(self, '_dispatch_stage', kind),
+                                                       **(self.provider.metadata(kind) if hasattr(self.provider, 'metadata') else {}),
+                                                       **({k: raw[k] for k in ('cli', 'subscription_usage', 'isolation') if k in raw} if raw else {}),
+                                                       **({'cli': error_receipt} if error_receipt else {}),
                                                        'effort': stage_settings(self.config, kind)['effort'],
                                                        'thinking': stage_settings(self.config, kind).get('thinking', 'adaptive'),
                                                        **(Response(raw).routing() if raw else {}),
@@ -480,6 +547,8 @@ class ModelCalls:
             maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
             if kind == 'build_t_batch':
                 maximum = self.config['extracted_build_t_max_output_tokens']
+        if kind == 'isolation_canary':
+            maximum = 4096
         prompt = self.render(kind, inputs)[1]
         schema = self.response_schema(kind, inputs)
         try:
@@ -500,12 +569,16 @@ class ModelCalls:
         # the counted initial context; each iteration is separately bounded by the service.
         initial = estimate.input_tokens - (self.config['model_context_token_bound'] * estimate.server_tool_uses
                                            if kind == 'search_evidence' else 0)
-        fits = initial + maximum <= self.config['model_context_token_bound']
+        if hasattr(self.provider, 'initial_context_tokens'):
+            initial = self.provider.initial_context_tokens(estimate)
+        context_output = self.provider.context_output_tokens(maximum) if hasattr(self.provider, 'context_output_tokens') else maximum
+        fits = initial + context_output <= self.config['model_context_token_bound']
         self.log.record('context_admission' if admission else 'context_plan', kind=kind,
                         model=self.requested_model(kind), provider=self.config.get('provider'),
                         dispatch_stage=getattr(self, '_dispatch_stage', kind),
-                        input_tokens=initial, output_tokens=maximum, limit=self.config['model_context_token_bound'],
-                        decision='fits' if fits else 'refused', prompt=prompt)
+                        input_tokens=initial, output_tokens=context_output, limit=self.config['model_context_token_bound'],
+                        decision='fits' if fits else 'refused', prompt=prompt,
+                        token_count_method=getattr(self.provider, 'estimate_method', 'provider_count'))
         if admission and not fits:
             self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind,
                              scope=('paper' if kind == 'extract_paper' else

@@ -41,7 +41,8 @@ class Budget:
         self._lock = RLock()
         self._reservations = set()
         self._halted = None
-        self.rates = config['pricing'][config['model']]
+        self.subscription = config.get('provider') == 'claude_code'
+        self.rates = config['pricing'].get(config['model'], {}) if self.subscription else config['pricing'][config['model']]
         for rates in config['pricing'].values():
             for name, value in rates.items():
                 if name.endswith('_usd') and (not Decimal(str(value)).is_finite() or Decimal(str(value)) < 0):
@@ -72,7 +73,9 @@ class Budget:
         if starts > finishes:
             self.stop('interrupted provider call: actual spend unknown', 'resume')
 
-    def cost(self, usage: TokenUsage, raw_usage: dict | None = None, model: str | None = None) -> Decimal:
+    def cost(self, usage: TokenUsage, raw_usage: dict | None = None, model: str | None = None, *, subscription: bool | None = None) -> Decimal:
+        if (self.subscription if subscription is None else subscription):
+            return Decimal(0)
         model = model or self.config['model']
         r = self.config['pricing'].get(model)
         if r is None or not {'input_per_million_usd', 'output_per_million_usd'} <= r.keys():
@@ -92,15 +95,19 @@ class Budget:
                 raise UnpricedModel(f'unpriced usage for served model {model}: {key}')
         result = sum((Decimal(n) * Decimal(str(r[k])) / 1000000 for n, k in pairs if n), Decimal(0))
         # Web search is a service charge, independent of the serving model.
-        return result + Decimal(usage.server_tool_uses) * Decimal(str(self.rates['web_search_per_thousand_usd'])) / 1000
+        if usage.server_tool_uses:
+            result += Decimal(usage.server_tool_uses) * Decimal(str((self.rates or r)['web_search_per_thousand_usd'])) / 1000
+        return result
 
     def response_cost(self, raw: dict) -> Decimal:
+        if raw.get('provider') == 'claude_code':
+            return Decimal(0)
         served_model = raw['model']
         # Validate the served model even for a zero-token refusal or cache entry.
-        self.cost(TokenUsage(), model=served_model)
+        self.cost(TokenUsage(), model=served_model, subscription=False)
         iterations = raw['usage'].get('iterations') or []
         if not iterations:
-            return self.cost(Response(raw).usage, raw['usage'], model=served_model)
+            return self.cost(Response(raw).usage, raw['usage'], model=served_model, subscription=False)
         result = Decimal(0)
         fallback = Response(raw).routing()['fallback_used']
         for iteration in iterations:
@@ -109,9 +116,9 @@ class Budget:
             if fallback and not iteration.get('model'):
                 raise UnpricedModel('missing model in fallback usage iteration')
             model = iteration.get('model') or served_model
-            result += self.cost(Response.usage_fields(iteration), iteration, model=model)
+            result += self.cost(Response.usage_fields(iteration), iteration, model=model, subscription=False)
         tools = Response(raw).usage.server_tool_uses
-        return result + self.cost(TokenUsage(server_tool_uses=tools), model=served_model)
+        return result + self.cost(TokenUsage(server_tool_uses=tools), model=served_model, subscription=False)
 
     def stop(self, reason: str, stage: str, *, scope='run', **details) -> None:
         with self._lock:
@@ -127,21 +134,27 @@ class Budget:
         return sum((Decimal(str(e['cost_usd'])) for e in self.log.read()
                     if e['stage'] == 'extract_paper' and e['label'] == 'MODEL'), Decimal(0))
 
-    def before(self, usage: TokenUsage, stage: str, model: str | None = None) -> None:
-        if stage == 'extract_paper' and self.extraction_cost() + sum(r.cost for r in self._reservations if r.stage == stage) + self.cost(usage, model=model) > Decimal(str(
+    @property
+    def _pending_tokens(self):
+        with self._lock:
+            return sum(tokens(r.usage) for r in self._reservations)
+
+    def before(self, usage: TokenUsage, stage: str, model: str | None = None, *, subscription: bool | None = None) -> None:
+        subscription = self.subscription if subscription is None else subscription
+        if not subscription and stage == 'extract_paper' and self.extraction_cost() + sum(r.cost for r in self._reservations if r.stage == stage) + self.cost(usage, model=model, subscription=subscription) > Decimal(str(
                 self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
             self.stop('extraction cost cap: request reservation exceeds remaining cost', stage)
         if self.used_tokens + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:
             self.stop('token cap: request reservation exceeds remaining tokens', stage)
-        if self.used_cost + sum(r.cost for r in self._reservations) + self.cost(usage, model=model) > Decimal(str(self.config['cost_cap_usd'])):
+        if not subscription and self.used_cost + sum(r.cost for r in self._reservations) + self.cost(usage, model=model, subscription=subscription) > Decimal(str(self.config['cost_cap_usd'])):
             self.stop('cost cap: request reservation exceeds remaining cost', stage)
 
-    def reserve(self, usage: TokenUsage, stage: str, model: str | None = None) -> Reservation:
+    def reserve(self, usage: TokenUsage, stage: str, model: str | None = None, *, subscription: bool | None = None) -> Reservation:
         with self._lock:
             if self._halted is not None:
                 raise BudgetStop(self._halted)
-            self.before(usage, stage, model=model)
-            reservation = Reservation(usage, self.cost(usage, model=model), stage)
+            self.before(usage, stage, model=model, subscription=subscription)
+            reservation = Reservation(usage, self.cost(usage, model=model, subscription=subscription), stage)
             self._reservations.add(reservation)
             return reservation
 
@@ -162,12 +175,13 @@ class Budget:
             self.used_tokens += tokens(usage)
             self.used_cost += cost
 
-    def after(self, stage: str) -> None:
+    def after(self, stage: str, *, subscription: bool | None = None) -> None:
+        subscription = self.subscription if subscription is None else subscription
         with self._lock:
-            if stage == 'extract_paper' and self.extraction_cost() > Decimal(str(
+            if not subscription and stage == 'extract_paper' and self.extraction_cost() > Decimal(str(
                     self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
                 self.stop('extraction cost cap exceeded by actual usage', stage)
             if self.used_tokens > self.config['token_cap']:
                 self.stop('token cap exceeded by actual usage', stage)
-            if self.used_cost > Decimal(str(self.config['cost_cap_usd'])):
+            if not subscription and self.used_cost > Decimal(str(self.config['cost_cap_usd'])):
                 self.stop('cost cap exceeded by actual usage', stage)

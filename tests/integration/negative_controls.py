@@ -935,6 +935,26 @@ CASES += [
 ]
 
 
+CASES += [
+    ('cli_decoded_credentials', 'ara/runtime/claude_code.py', 'self.scan_output(data)', 'pass',
+     'tests/runtime/test_claude_code.py::test_json_escaped_credential_rejected_before_retention'),
+    ('cli_cached_credentials', 'ara/runtime/calls.py', "self.provider.scan_output(saved['raw'])", 'pass',
+     'tests/runtime/test_claude_code.py::test_cached_credential_rejected_without_logging_and_evicted'),
+    ('cli_construction_transport', 'ara/runtime/construction.py',
+     'calls._transport_call(kind, inputs, check, attempt=1)', 'calls._call_once(kind, inputs, check, attempt=1)',
+     'tests/runtime/test_claude_code.py::test_native_construction_transport_retries'),
+    ('cli_correction_transport', 'ara/runtime/construction.py',
+     'calls._transport_call(kind, request, corrected, attempt=2)', 'calls._call_once(kind, request, corrected, attempt=2)',
+     'tests/runtime/test_claude_code.py::test_targeted_construction_retry_does_not_spend_more_corrections'),
+    ('cli_config_inference_scope', 'ara/runtime/claude_code.py',
+     "snapshot['scopes'] = ['user:inference']", "snapshot['scopes'] = oauth['scopes']",
+     'tests/runtime/test_claude_code.py::test_private_auth_snapshot_cleanup_and_source_unchanged'),
+    ('cli_config_auth_environment', 'ara/runtime/claude_code.py',
+     "env.update(CLAUDE_CONFIG_DIR=str(config_dir),", "env.update(CLAUDE_CODE_OAUTH_TOKEN=self._oauth['accessToken'], CLAUDE_CONFIG_DIR=str(config_dir),",
+     'tests/runtime/test_claude_code.py::test_config_auth_has_no_token_in_same_user_process_environment'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

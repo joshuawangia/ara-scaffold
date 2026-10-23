@@ -27,6 +27,11 @@ def cli(tmp_path, monkeypatch):
     monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(home / '.gitconfig'))
     monkeypatch.setenv('GIT_CONFIG_NOSYSTEM', '1')
     monkeypatch.setenv('CLAUDE_CODE_OAUTH_TOKEN', 'offline-token')
+    credentials = home/'.claude/.credentials.json'
+    credentials.write_text(json.dumps({'claudeAiOauth': {'accessToken': 'offline-token',
+        'refreshToken': 'offline-refresh-token', 'expiresAt': 4102444800000,
+        'scopes': ['user:profile', 'user:inference', 'user:mcp_servers']}, 'mcpOAuth': {'P': {'accessToken': 'offline-mcp'}}}))
+    credentials.chmod(0o600)
     binary = tmp_path / 'claude'
     binary.write_text('''#!/usr/bin/env python3
 import json, os, sys, uuid, time
@@ -43,12 +48,22 @@ assert json.loads(arg('--settings'))['disableAllHooks'] is True
 assert not list(Path.cwd().iterdir())
 assert Path(os.environ['CLAUDE_CONFIG_DIR']) != Path.home()/'.claude'
 assert not any(k.startswith('ANTHROPIC_') for k in os.environ)
+auth_path=Path(os.environ['CLAUDE_CONFIG_DIR'])/'.credentials.json'
+if auth_path.exists():
+ assert 'CLAUDE_CODE_OAUTH_TOKEN' not in os.environ
+ assert auth_path.stat().st_mode & 0o777 == 0o600
+ auth=json.loads(auth_path.read_text())
+ assert set(auth)=={'claudeAiOauth'} and 'refreshToken' not in auth['claudeAiOauth']
+ assert auth['claudeAiOauth']['scopes']==['user:inference']
+ token=auth['claudeAiOauth']['accessToken']
+else:
+ token=os.environ['CLAUDE_CODE_OAUTH_TOKEN']
 prompt=sys.stdin.read()
 config=Path(__file__).with_suffix('.json')
 mode=json.loads(config.read_text())['mode']
 canary='ARA_ISOLATION_CANARY' in prompt
 trace=Path(__file__).with_suffix('.trace')
-with trace.open('a') as f: f.write(json.dumps({'args':args,'prompt':prompt,'cwd':str(Path.cwd()),'event':'start','time':time.monotonic()})+'\\n')
+with trace.open('a') as f: f.write(json.dumps({'args':args,'prompt':prompt,'cwd':str(Path.cwd()),'event':'start','time':time.monotonic(),'config_dir':os.environ['CLAUDE_CONFIG_DIR']})+'\\n')
 if not canary and mode=='timeout': time.sleep(5)
 if not canary and mode=='slow': time.sleep(.3)
 if not canary and mode=='invalid_json': print('SECRET PROMPT ECHO'); sys.exit(0)
@@ -73,6 +88,8 @@ else:
  if mode=='identity_encoded': value['formula']['name']='sentinel@example.invalid'
  if mode=='identity_name': value['formula']['name']='Operator Sentinel'
  if mode=='bad_schema': value={'unknown':'P'}
+ if mode=='secret_encoded': value['formula']['name']=token
+ if mode.startswith('construction_correction_'): value={'roots':[],'relevance':'P','omissions':[]}
 usage={'input_tokens':10,'output_tokens':5,'cache_read_input_tokens':2,'cache_creation_input_tokens':3}
 result={'type':'result','subtype':'success','is_error':False,'stop_reason':'tool_use','terminal_reason':'completed',
  'session_id':arg('--session-id'),'usage':usage,'modelUsage':{arg('--model'):{'inputTokens':10,'outputTokens':5}},
@@ -82,14 +99,16 @@ if not canary and mode=='missing_output': result.pop('structured_output')
 if not canary and mode=='bad_usage': result['usage']['input_tokens']=-1
 if not canary and mode=='missing_usage': result.pop('usage')
 if not canary and mode=='refusal': result['stop_reason']='refusal'
-if not canary and mode in ('rate','usage'):
+correction_limit=mode.startswith('construction_correction_') and '"mode":"targeted_correction"' in prompt
+if not canary and (mode in ('rate','usage') or correction_limit):
  result.update(subtype='error_during_execution',is_error=True,api_error_status=429,
-               result='usage limit SECRET PROMPT ECHO' if mode=='usage' else 'rate limit SECRET PROMPT ECHO')
+               result='usage limit SECRET PROMPT ECHO' if mode.endswith('usage') else 'rate limit SECRET PROMPT ECHO')
  print(json.dumps(result)); sys.exit(1)
 if not canary and mode=='slow':
  with trace.open('a') as f: f.write(json.dumps({'event':'end','time':time.monotonic()})+'\\n')
 encoded=json.dumps(result)
-if mode=='identity_encoded': encoded=encoded.replace('@','\\u0040')
+if mode=='identity_encoded': encoded=encoded.replace('@','\\\\u0040')
+if mode=='secret_encoded': encoded=encoded.replace(token, ''.join('\\\\u%04x'%ord(c) for c in token))
 print(encoded)
 ''')
     binary.chmod(0o755)
@@ -348,3 +367,152 @@ def test_concurrent_stop_artifacts_are_serialized(rig,monkeypatch):
     with ThreadPoolExecutor(max_workers=2) as pool: list(pool.map(stop,[1,100]))
     assert peak==1
     assert json.loads((calls.log.path.parent/'partial.json').read_text())['status']=='STOPPED'
+
+
+def test_json_escaped_credential_rejected_before_retention(cli):
+    make,set_mode,_,_=cli
+    calls,log=make()
+    set_mode('secret_encoded')
+    with pytest.raises(Rejected,match='credential_in_cli_output'):
+        calls.formalise(Proposition('p','P'))
+    for path in (*log.path.parent.rglob('*'),*calls.cache.path.rglob('*')):
+        if path.is_file(): assert 'offline-token' not in path.read_text()
+    event=model_events(log)[-1]
+    assert event['usage']['input_tokens']==10
+    assert json.loads(event['payload_json'])['accounting']=='actual'
+    assert not list(calls.cache.path.glob('*.json'))
+
+
+def test_cached_credential_rejected_without_logging_and_evicted(cli):
+    make,_,_,_=cli
+    calls,log=make()
+    calls.formalise(Proposition('p','P'))
+    path=next(calls.cache.path.glob('*.json'))
+    saved=json.loads(path.read_text())
+    saved['raw']['content'][0]['text']=json.dumps({'formula':{'op':'atom','name':'offline-token'}})
+    path.write_text(json.dumps(saved))
+    with pytest.raises(Rejected,match='credential_in_cli_output'):
+        calls.formalise(Proposition('p','P'))
+    assert 'offline-token' not in log.path.read_text()
+    assert not path.exists()
+
+
+@pytest.mark.parametrize('kind',['select_t_roots','build_t_batch'])
+@pytest.mark.parametrize('corrections',[None,0,1])
+@pytest.mark.parametrize('mode',['rate','usage'])
+def test_native_construction_transport_retries(cli,kind,corrections,mode):
+    from ara.runtime.construction import construction_call
+    make,set_mode,_,binary=cli
+    calls,log=make()
+    set_mode(mode)
+    remaining={kind:corrections}
+    with pytest.raises(Rejected,match='cli_usage_limit'):
+        construction_call(calls,kind,{'papers':[]},None,remaining)
+    assert remaining[kind]==corrections
+    assert len(binary.with_suffix('.trace').read_text().splitlines())==4
+    assert sum(e['stage']=='provider_retry' for e in log.read())==2
+    assert not any(e['stage']=='construction_targeted_correction' for e in log.read())
+
+
+@pytest.mark.parametrize('mode',['rate','usage'])
+def test_targeted_construction_retry_does_not_spend_more_corrections(cli,mode):
+    from ara.runtime.construction import construction_call
+    make,set_mode,_,binary=cli
+    calls,log=make()
+    set_mode('construction_correction_'+mode)
+    remaining={'select_t_roots':1}
+    def check(data):
+        if data['relevance']!='Q': raise Rejected('P')
+        return data
+    with pytest.raises(Rejected,match='cli_usage_limit'):
+        construction_call(calls,'select_t_roots',{'papers':[]},check,remaining)
+    assert remaining['select_t_roots']==0
+    assert len(binary.with_suffix('.trace').read_text().splitlines())==5
+    assert sum(e['stage']=='provider_retry' for e in log.read())==2
+    assert sum(e['stage']=='construction_targeted_correction' for e in log.read())==1
+    stages=[json.loads(e['payload_json']) for e in model_events(log) if e['stage']=='select_t_roots']
+    assert [p['attempt'] for p in stages]==[1,2,2,2]
+
+
+@pytest.mark.parametrize('mode',['ok','exit','timeout'])
+def test_private_auth_snapshot_cleanup_and_source_unchanged(cli,mode):
+    make,set_mode,_,binary=cli
+    source=binary.parent/'home/.claude/.credentials.json'
+    original=source.read_bytes()
+    calls,log=make()
+    set_mode(mode)
+    if mode=='ok':
+        calls.formalise(Proposition('p','P'))
+    else:
+        with pytest.raises(Rejected): calls.formalise(Proposition('p','P'))
+    assert source.read_bytes()==original
+    traces=[json.loads(row) for row in binary.with_suffix('.trace').read_text().splitlines()]
+    assert all(not Path(t['config_dir']).exists() for t in traces)
+    assert calls.provider.auth_mode=='config-link'
+    from ara.runtime.export import methodology
+    text=methodology(log.path)
+    assert 'private 0600 OAuth snapshot' in text and 'Same-user processes' in text
+    assert 'offline-token' not in text and 'offline-refresh-token' not in text
+
+
+def test_config_auth_has_no_token_in_same_user_process_environment(cli,monkeypatch):
+    import subprocess
+    make,_,_,binary=cli
+    original=subprocess.Popen
+    observed=[]
+    class Observe(original):
+        def __init__(self, command, *args, **kwargs):
+            super().__init__(command,*args,**kwargs)
+            if command[0]==str(binary) and '-p' in command:
+                shown=subprocess.check_output(['ps','eww','-o','args=','-p',str(self.pid)])
+                observed.append(b'offline-token' not in shown and b'offline-refresh-token' not in shown)
+    monkeypatch.setattr(subprocess,'Popen',Observe)
+    calls,log=make()
+    calls.formalise(Proposition('p','P'))
+    assert observed==[True,True]
+
+
+def test_environment_only_login_is_explicitly_disclosed(cli):
+    make,_,_,binary=cli
+    (binary.parent/'home/.claude/.credentials.json').unlink()
+    calls,log=make()
+    assert calls.provider.auth_mode=='env'
+    from ara.runtime.export import methodology
+    assert 'same-user environment inspection permitted' in methodology(log.path)
+
+
+@pytest.mark.parametrize('location',['structured','key','routing','nested_result'])
+def test_every_decoded_credential_string_is_checked(cli,location):
+    make,set_mode,_,binary=cli
+    source=binary.read_text()
+    injection={
+        'structured': "value['formula']['name']=token",
+        'key': "value={token:{'P':['Q']}}",
+        'routing': "result['modelUsage']={'claude-'+token:{}}",
+        'nested_result': "result['result']=json.dumps({'P':[token]})",
+    }[location]
+    if location in ('structured','key'):
+        source=source.replace("if mode=='secret_encoded': value['formula']['name']=token", "if mode=='secret_encoded': "+injection)
+    else:
+        source=source.replace("if mode=='secret_encoded': value['formula']['name']=token", "if mode=='secret_encoded': pass")
+        source=source.replace('encoded=json.dumps(result)', "if mode=='secret_encoded': "+injection+"\nencoded=json.dumps(result)")
+    binary.write_text(source)
+    calls,log=make()
+    set_mode('secret_encoded')
+    with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
+    assert 'offline-token' not in log.path.read_text()
+    assert not list(calls.cache.path.glob('*.json'))
+    assert model_events(log)[-1]['usage']['input_tokens']==10
+
+
+def test_credential_with_json_special_characters_is_checked(cli):
+    make,set_mode,_,binary=cli
+    source=binary.parent/'home/.claude/.credentials.json'
+    auth=json.loads(source.read_text())
+    auth['claudeAiOauth']['accessToken']='off"line\\token'
+    source.write_text(json.dumps(auth))
+    calls,log=make()
+    set_mode('secret_encoded')
+    with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
+    assert not list(calls.cache.path.glob('*.json'))
+    assert model_events(log)[-1]['usage']['input_tokens']==10

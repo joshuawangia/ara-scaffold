@@ -68,6 +68,8 @@ class ClaudeCodeProvider:
         self.version = None
         self.identity = self._identity()
         self.forbidden = self._forbidden(options)
+        self._oauth, self._env_token, self._secrets = self._authentication()
+        self.auth_mode = 'config-link' if self._oauth is not None else 'env'
 
     def _identity(self):
         values = []
@@ -161,30 +163,96 @@ class ClaudeCodeProvider:
                 'schema_transport': 'Full stage schema except the draft-2020-12 declaration; local Draft202012Validator remains authoritative.',
                 'effective_prompt_note': 'Not byte-identical to API: Anthropic SDK prefix, runtime instructions, environment and StructuredOutput tool remain.',
                 'system_prompt': self.system_for(kind), 'web_retrieval': 'disabled; search_evidence refuses',
-                'operator_identity_output_scan': True}
+                'operator_identity_output_scan': True, 'credential_output_scan': 'raw and recursive decoded strings, including cache replay',
+                'auth_mode': self.auth_mode,
+                'auth_transport': ('private 0600 OAuth snapshot; no token in child environment; deleted after each call; refresh disabled; inference-only CLI scope metadata'
+                                   if self.auth_mode == 'config-link' else 'environment token; same-user environment inspection permitted'),
+                'auth_threat_model': 'Same-user processes already can read the machine credential file. Credentials never enter argv, logs or cache. Private file permissions and process isolation protect against other unprivileged users; root is outside this boundary.'}
+
+    def _authentication(self):
+        source = Path(os.environ.get('CLAUDE_CONFIG_DIR', str(Path.home()/'.claude')))/'.credentials.json'
+        env_token = os.environ.get('CLAUDE_CODE_OAUTH_TOKEN')
+        secrets = {env_token} if env_token else set()
+        try:
+            oauth = json.loads(source.read_text())['claudeAiOauth']
+            if not isinstance(oauth, dict) or not isinstance(oauth.get('accessToken'), str) or not oauth['accessToken']:
+                raise ValueError()
+            secrets.update(v for k, v in oauth.items() if 'token' in k.lower() and isinstance(v, str) and v)
+            # Copy authentication data only. No MCP credentials or operator settings.
+            # Omit refresh credentials: a child must not rotate the machine login.
+            if not isinstance(oauth.get('scopes'), list) or 'user:inference' not in oauth['scopes']:
+                raise ValueError()
+            snapshot = {k: oauth[k] for k in ('accessToken', 'expiresAt', 'subscriptionType',
+                                             'subscriptionTypeSource', 'rateLimitTier') if k in oauth}
+            # Match env-token mode's inference-only discovery: profile scope makes
+            # the CLI fetch account identity and inject it into model context.
+            # This limits CLI behavior, not the token's server-side permissions.
+            snapshot['scopes'] = ['user:inference']
+            return snapshot, None, frozenset(secrets)
+        except FileNotFoundError:
+            if env_token:
+                return None, env_token, frozenset(secrets)
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        raise ClaudeCodeError('subscription_login_unavailable')
 
     def _environment(self, config_dir, maximum):
-        # Only the login token crosses from the original Claude configuration.
-        # It lives in the child environment, never in argv, receipts or files.
-        token = os.environ.get('CLAUDE_CODE_OAUTH_TOKEN')
-        if not token:
-            credentials = Path(os.environ.get('CLAUDE_CONFIG_DIR', str(Path.home()/'.claude')))/'.credentials.json'
-            try:
-                token = json.loads(credentials.read_text())['claudeAiOauth']['accessToken']
-            except (OSError, ValueError, KeyError, TypeError):
-                raise ClaudeCodeError('subscription_login_unavailable') from None
-        if not isinstance(token, str) or not token:
-            raise ClaudeCodeError('subscription_login_unavailable')
         env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
-        env.update(CLAUDE_CONFIG_DIR=str(config_dir), CLAUDE_CODE_OAUTH_TOKEN=token,
+        env.update(CLAUDE_CONFIG_DIR=str(config_dir),
                    CLAUDE_CODE_DISABLE_AUTO_MEMORY='1', CLAUDE_CODE_MAX_OUTPUT_TOKENS=str(maximum),
                    DISABLE_TELEMETRY='1', DISABLE_ERROR_REPORTING='1')
+        if self._oauth is not None:
+            # A private snapshot, rather than a symlink/hardlink that the CLI could
+            # write through to the original. TemporaryDirectory removes it on exit.
+            path = config_dir/'.credentials.json'
+            with open(path, 'x', opener=lambda name, flags: os.open(name, flags, 0o600)) as stream:
+                json.dump({'claudeAiOauth': self._oauth}, stream)
+        else:
+            env['CLAUDE_CODE_OAUTH_TOKEN'] = self._env_token
         return env
 
     def scan_output(self, value):
-        folded = value.casefold()
-        if any(term.casefold() in folded for term in self.identity):
-            raise ClaudeCodeError('operator_identity_in_output')
+        def strings(node):
+            if isinstance(node, dict):
+                for key, child in node.items():
+                    yield from strings(key)
+                    yield from strings(child)
+            elif isinstance(node, list):
+                for child in node:
+                    yield from strings(child)
+            elif isinstance(node, str):
+                yield node
+                # Cache content and CLI result fields may themselves contain JSON.
+                if node.lstrip().startswith(('{', '[', '"')):
+                    try:
+                        decoded = json.loads(node)
+                    except (ValueError, RecursionError):
+                        return
+                    yield from strings(decoded)
+        for text in strings(value):
+            if any(secret in text for secret in self._secrets):
+                raise ClaudeCodeError('credential_in_cli_output')
+            folded = text.casefold()
+            if any(term.casefold() in folded for term in self.identity):
+                raise ClaudeCodeError('operator_identity_in_output')
+
+    def _accounted_response(self, data, receipt, model):
+        # Only validated numeric fields and locally generated routing data survive
+        # rejection. Never copy unscanned CLI model/session/content strings here.
+        usage = Response.usage_fields(data['usage'])
+        if not {'input_tokens', 'output_tokens'} <= data['usage'].keys() or not all(
+                type(n) is int and n >= 0 for n in usage.to_dict().values()):
+            raise ValueError()
+        equivalent = data['total_cost_usd']
+        _positive(equivalent, 'reported_cost', zero=True)
+        return {'model': model, 'stop_reason': 'end_turn', 'content': [],
+                'usage': {'input_tokens': usage.input_tokens, 'output_tokens': usage.output_tokens,
+                          'cache_read_input_tokens': usage.cache_read_tokens,
+                          'cache_creation_input_tokens': usage.cache_write_tokens,
+                          'server_tool_use': {'web_search_requests': usage.server_tool_uses}},
+                'cli': receipt, 'provider': self.provider_kind,
+                'subscription_usage': {'cost_equivalent_usd': equivalent,
+                                       'basis': 'CLI reported list-price equivalent; not measured API USD'}}
 
     def _check_canary(self, value, debug, receipt):
         from jsonschema import Draft202012Validator
@@ -260,12 +328,22 @@ class ClaudeCodeProvider:
             receipt.update(exit_status=result.returncode, wall_seconds=time.monotonic()-started)
             debug = debug_path.read_text() if debug_path.exists() else ''
             # No debug/response containing a credential or identity is ever persisted.
-            if env['CLAUDE_CODE_OAUTH_TOKEN'] in result.stdout + result.stderr + debug:
-                raise ClaudeCodeError('credential_in_cli_output', receipt=receipt)
+            raw_leak = any(secret in result.stdout + result.stderr + debug for secret in self._secrets)
             try:
                 data = json.loads(result.stdout)
                 if not isinstance(data, dict):
                     raise ValueError()
+                try:
+                    if raw_leak:
+                        raise ClaudeCodeError('credential_in_cli_output')
+                    self.scan_output(data)
+                except ClaudeCodeError as exc:
+                    try:
+                        accounted = self._accounted_response(data, receipt, model)
+                    except (ValueError, TypeError, KeyError, AttributeError):
+                        accounted = None
+                    raise ClaudeCodeError(exc.code, receipt=receipt, response=accounted) from None
+                raw = self._accounted_response(data, receipt, model)
                 session = str(uuid.UUID(data['session_id']))
                 if session != session_id:
                     raise ValueError()
@@ -275,28 +353,15 @@ class ClaudeCodeProvider:
                     raise ValueError()
                 served = next(iter(models)) if len(models) == 1 else None
                 receipt.update(session_id=session, served_model=served, served_models=list(models))
-                usage = Response.usage_fields(data['usage'])
-                if not {'input_tokens', 'output_tokens'} <= data['usage'].keys() or not all(
-                        type(n) is int and n >= 0 for n in usage.to_dict().values()):
-                    raise ValueError()
-                equivalent = data['total_cost_usd']
-                _positive(equivalent, 'reported_cost', zero=True)
             except (ValueError, TypeError, KeyError, AttributeError):
+                if raw_leak:
+                    raise ClaudeCodeError('credential_in_cli_output', receipt=receipt) from None
                 limited = bool(re.search(r'(?:rate|usage)[ _-]limit|you.ve hit your limit',
                                          result.stdout + result.stderr, re.IGNORECASE))
                 raise ClaudeCodeError('cli_usage_limit' if limited else
                                       'cli_invalid_json_receipt' if not result.returncode else 'cli_exit_error',
                                       receipt=receipt, retryable=limited) from None
-            raw = {'model': served or model, 'stop_reason': 'end_turn', 'content': [],
-                   'usage': {'input_tokens': usage.input_tokens, 'output_tokens': usage.output_tokens,
-                             'cache_read_input_tokens': usage.cache_read_tokens,
-                             'cache_creation_input_tokens': usage.cache_write_tokens},
-                   'cli': receipt, 'provider': self.provider_kind,
-                   'subscription_usage': {'cost_equivalent_usd': equivalent, 'basis': 'CLI reported list-price equivalent; not measured API USD'}}
-            try:
-                self.scan_output(json.dumps(data, ensure_ascii=False))
-            except ClaudeCodeError as exc:
-                raise ClaudeCodeError(exc.code, receipt=receipt, response=raw) from None
+            raw['model'] = served or model
             diagnostic = json.dumps(data, ensure_ascii=False).casefold()
             if result.returncode or data.get('is_error') or data.get('subtype') != 'success':
                 limited = data.get('api_error_status') == 429 or any(word in diagnostic for word in ('rate limit', 'usage limit', 'usage_limit', 'rate_limit', "you've hit your limit"))
@@ -305,7 +370,7 @@ class ClaudeCodeProvider:
             if served != model:
                 raise ClaudeCodeError('cli_model_mismatch', receipt=receipt, response=raw)
             if (data.get('stop_reason') not in ('tool_use', 'end_turn') or 'structured_output' not in data
-                    or data.get('permission_denials') or usage.server_tool_uses):
+                    or data.get('permission_denials') or Response(raw).usage.server_tool_uses):
                 raise ClaudeCodeError('cli_incomplete_output', receipt=receipt, response=raw)
             if canary:
                 try:

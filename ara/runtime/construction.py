@@ -129,7 +129,7 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
     if remaining[kind] is None:
         return calls.call(kind, inputs, check)
     try:
-        return calls._call_once(kind, inputs, check)
+        return calls._transport_call(kind, inputs, check, attempt=1)
     except InvalidOutput as exc:
         if not remaining[kind]:
             raise
@@ -166,7 +166,7 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
             schema = json.loads((calls.root / 'schemas' / f'{kind}.json').read_text())
             Draft202012Validator(schema).validate(merged)
             return check(merged)
-        return calls._call_once(kind, request, corrected, attempt=2)
+        return calls._transport_call(kind, request, corrected, attempt=2)
 
 
 def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: bool = False,

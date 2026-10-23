@@ -28,6 +28,9 @@ class Cache:
         path = self.path / f'{key}.json'
         return json.loads(path.read_text()) if path.exists() else None
 
+    def discard(self, key: str) -> None:
+        (self.path / f'{key}.json').unlink(missing_ok=True)
+
     def put(self, key: str, value: dict) -> None:
         path = self.path / f'{key}.json'
         try:

@@ -106,7 +106,8 @@ def methodology(log_path: Path) -> str:
                                              if e['stage'] == kind}) for kind in served_by_kind},
         'claude_code': [{key: p.get(key) for key in ('cli_version', 'isolation_flags', 'fresh_cwd_and_config',
                          'token_estimate_method', 'usd_cap_policy', 'effective_prompt_note',
-                         'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport')}
+                         'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport',
+                         'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan')}
                        for _, p in cli_calls[:1]],
         'isolation_preflights': [p.get('isolation') for e, p in cli_calls if e['stage'] == 'isolation_canary'],
         'subscription_usage': {'cost_equivalent_usd': sum(p.get('subscription_usage', {}).get('cost_equivalent_usd', 0)

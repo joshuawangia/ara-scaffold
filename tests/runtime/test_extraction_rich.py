@@ -289,8 +289,14 @@ def test_construction_final_capacity_guard(rig, monkeypatch, case):
                             if kind == 'propose_targets' and any(e['stage'] == 'build_t_batch_accepted' for e in calls.log.read()) else estimate(kind, *args))
         error, message = BudgetStop, 'working T downstream token budget'
     else:
-        calls.config['working_t_symbol_token_budget'] = 1
-        calls.config['working_t_symbol_growth_tokens_per_item'] = 0
+        estimate = provider.estimate
+        def oversized_catalogue(kind, prompt, schema, maximum):
+            inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+            measured = estimate(kind, prompt, schema, maximum)
+            if kind == 'build_t_batch' and inputs.get('shared_symbols'):
+                return TokenUsage(input_tokens=measured.input_tokens + 16001, output_tokens=maximum)
+            return measured
+        monkeypatch.setattr(provider, 'estimate', oversized_catalogue)
         error, message = Rejected, 'shared symbol token allowance'
     with pytest.raises(error, match=message):
         prepare_commitments(calls, load_bank(ROOT / 'bank'), path.read_text(), 'P')

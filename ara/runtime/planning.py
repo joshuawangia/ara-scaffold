@@ -98,3 +98,24 @@ def plan_extraction(config, log, papers, root, counter):
     log.record('extraction_plan_complete', **report)
     print(canonical(dict(counter=report['counter'], totals=totals)), flush=True)
     return report
+
+
+def plan_construction(config, log, literature, root, topic, audience, counter):
+    """The native global construction plan, with generation disabled in two ways."""
+    from ara.runtime.construction import construct
+    settings = copy.deepcopy(config)
+    settings.update(token_cap=0, cost_cap_usd=0, extraction_cost_cap_usd=0)
+    calls = ModelCalls(settings, CountingProvider(settings, counter), log,
+                       Cache(log.path.parent / 'planning-cache'), root, topic)
+    plan = construct(calls, literature, audience, plan_only=True)
+    largest = max((b['input_tokens'] for b in plan['batches']), default=0)
+    report = dict(plan=plan, counter='provider_count_tokens' if counter == 'provider' else 'local_estimate_utf8_bytes_div_4',
+                  generation_calls=0, audience=audience, max_request_tokens=largest,
+                  context_reserved_tokens=largest + settings['extracted_build_t_max_output_tokens'] + settings['working_t_symbol_token_budget'],
+                  limits=dict(batch=plan['budget']['batch_input_bound'], context=settings['model_context_token_bound'],
+                              working=settings['working_t_token_budget'], symbols=settings['working_t_symbol_token_budget']),
+                  note='Native selection windows and global allocation only. No model relevance or formulas are predicted. '
+                       'Closure payload sizes are conservative UTF-8 bounds. Exact chosen formalization and search requests are rechecked live.')
+    save_immutable(log.path.parent / 'construction-plan.json', canonical(report))
+    log.record('construction_plan_complete', **report)
+    return report

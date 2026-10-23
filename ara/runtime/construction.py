@@ -17,8 +17,8 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v6'
-CLOSURE_VERSION = 'directional-prerequisites-v1'
+PLAN_VERSION = 'rich-working-t-v7'
+CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
 @dataclass(frozen=True)
@@ -169,7 +169,7 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
         return calls._call_once(kind, request, corrected, attempt=2)
 
 
-def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSet:
+def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: bool = False):
     from ara.runtime.calls import require
     corrections = calls.config.get('construction_targeted_corrections')
     if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
@@ -198,6 +198,13 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     base_inputs = {'publication_roster': json.loads(literature[len(HEADER):]).get('publication_roster', []), 'plan': metadata, 'audience': audience, 'shared_symbols': []}
     items = {item['id']: item for item in all_items}
     dependencies = evidence_dependencies(items)
+    from ara.runtime.closure_budget import budget_plan, depth_cut, payload_token_bound
+    # Compute each distinct closure once. Payload bounds are local, deterministic
+    # byte counts; provider counts still govern every complete request.
+    full_closures = {id: prerequisite_closure(items, [id]) for id in items}
+    costs = {id: dict(items=len(ids), evidence_payload_token_bound=payload_token_bound(items, ids))
+             for id, ids in full_closures.items()}
+    allocation = None
     def grouped(ids):
         selected = set(ids)
         return [evidence_window(p, selected)
@@ -207,23 +214,45 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     def selection_request(inputs, window_items):
         root_ids, groups = selection_inventory(window_items)
         aliases = {id: alias for alias, id in root_ids.items()}
-        return {**inputs, 'selection_groups': groups, 'papers': [
+        return {**inputs, 'selection_groups': groups,
+                'closure_costs': {alias: costs[id] for alias, id in root_ids.items()},
+                'closure_cost_counter': 'conservative UTF-8 byte bound on evidence payload; not a full request count',
+                'window_budget': allocation, 'papers': [
             {**p, 'items': [{**i, 'root_id': aliases[i['id']]} for i in p['items']]}
             for p in inputs['papers']]}
+    count_cache = {}
     def count(ids):
+        key = tuple(ids)
+        if key in count_cache:
+            return count_cache[key]
         inputs = inputs_for(grouped(ids), 0, metadata['working_t_token_budget'])
         formal = calls.count_request('build_t_batch', inputs).input_tokens
         roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).input_tokens
-        return max(formal, roots)
-    windows = counted_windows(list(items), count, input_bound, lambda: calls.budget.stop(
+        count_cache[key] = max(formal, roots)
+        return count_cache[key]
+    windows = counted_windows(list(items), count, max(1, input_bound - 2048), lambda: calls.budget.stop(
         'build_t_batch oversized source batch: indivisible evidence record; no truncation', 'build_t_batch'))
+    target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
+    wrapper = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}}).input_tokens
+    copy_total = 0
+    for ids in windows:
+        floor = [dict(id=id, text=evidence_text(items[id]), citation=items[id]['citation'],
+                      formula={'op': 'atom', 'name': 'P'}) for id in ids]
+        copy_total += max(0, calls.count_request('propose_targets', {**target_inputs,
+            'commitments': {'commitments': floor}}).input_tokens - wrapper)
+    allocation = budget_plan(calls.config, len(windows), copy_total / max(1, len(items)), wrapper, input_bound)
+    count_cache.clear()
     batches = [Batch(index, tuple(p['source_id'] for p in grouped(ids)), canonical(grouped(ids)),
                      count(ids), metadata['working_t_token_budget']) for index, ids in enumerate(windows)]
-    plan = {**metadata, 'batches': [dict(index=b.index, source_ids=b.source_ids, input_tokens=b.input_tokens,
+    require(all(b.input_tokens <= input_bound for b in batches), 'budget metadata exceeds selection batch bound')
+    plan = {**metadata, 'budget': allocation, 'batches': [dict(index=b.index, source_ids=b.source_ids, input_tokens=b.input_tokens,
                                        allowance=b.allowance, content_hash=digest(b.papers_json)) for b in batches]}
     plan_id = digest(canonical(plan))
     calls.log.record('build_t_plan', plan_id=plan_id, plan=plan)
     save_immutable(calls.log.path.parent / f'build-t-plan-{plan_id}.json', canonical(plan))
+    calls.log.record('build_t_budget_plan', plan_id=plan_id, **allocation)
+    if plan_only:
+        return plan
     symbols = []
     results = []
     window_omissions = []
@@ -259,22 +288,62 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             require(not set(roots) & excluded and set(roots) | excluded == set(window_items), 'working T evidence inventory mismatch')
             return {**data, 'roots': roots}, omitted
         selection, omitted = construction_call(calls, 'select_t_roots', selection_inputs, select, remaining)
-        window_omissions.extend(omitted)
         selected_ids = prerequisite_closure(items, selection['roots'])
         require(all(dependencies[id] <= selected_ids for id in selected_ids), 'working T drops premise/link/qualification')
+        full_ids = set(selected_ids)
+        def closure_record(ids, support, depth, omissions):
+            return {'rule_version': CLOSURE_VERSION, 'graph_hash': digest(canonical(items)),
+                    'roots': selection['roots'], 'added_ids': sorted(ids - set(selection['roots'])),
+                    'full_inventory': sorted(ids), 'uncut_inventory': sorted(full_ids),
+                    'support_omitted': support, 'cut_depth': depth, 'window_budget': allocation,
+                    'empty_reason': ('mandatory root context exceeds window budget' if selection['roots'] and not ids
+                                     else selection['relevance'] if not ids else None),
+                    'already_formalized': sorted(ids & materialized), 'inventory': sorted(ids - materialized),
+                    'relevance': selection['relevance'], 'omitted': omissions}
+        def formalization_inputs(closure):
+            # Full omission inventories stay logged; the formalizer needs only the
+            # fixed included IDs, exact prior context and the omitted frontier.
+            formal_closure = {key: value for key, value in closure.items()
+                              if key not in ('uncut_inventory', 'omitted')}
+            formal_closure['uncut_items'] = len(full_ids)
+            existing = {c['id']: c for c in prior if c['id'] in closure['already_formalized']}
+            return {**inputs, 'closure': formal_closure, 'papers': grouped(closure['inventory']),
+                    'existing_commitments': [existing[id] for id in closure['already_formalized']],
+                    'supporting_evidence': [items[id] for id in closure['already_formalized']],
+                    'new_symbol_token_allowance': symbol_budget,
+                    'window_working_token_allowance': allocation['window_copy_token_budget'],
+                    'window_new_symbol_token_allowance': allocation['symbol_available_tokens'] // max(1, len(batches))}
+        def fits(ids):
+            if not ids:
+                return True
+            if (len(ids) > allocation['per_window_commitments'] or
+                    payload_token_bound(items, ids) > input_bound - 8192):
+                return False
+            support = {id: sorted(dependencies[id] - ids) for id in ids if dependencies[id] - ids}
+            floor = [dict(id=id, text=evidence_text(items[id], support.get(id)), citation=items[id]['citation'],
+                          formula={'op': 'atom', 'name': 'P'}) for id in sorted(ids - materialized)]
+            copied = calls.count_request('propose_targets', {**target_inputs,
+                'commitments': {'commitments': floor}}).input_tokens - wrapper
+            if copied + len(floor) * allocation['symbol_tokens_per_commitment'] > allocation['window_copy_token_budget']:
+                return False
+            trial = formalization_inputs(closure_record(ids, support, len(items), []))
+            return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound
+        support_omitted = {}
+        cut_depth = None
+        if not fits(selected_ids):
+            selected_ids, support_omitted, cut_depth = depth_cut(items, selection['roots'], dependencies, fits)
+        # All roots are a single model-selected bundle. No relevance ranking in code.
+        # If mandatory context cannot fit, the window contributes nothing.
+        cut_omissions = [dict(evidence_id=id, reason='budget depth cut: support omitted')
+                         for id in sorted(full_ids - selected_ids)]
+        omitted = [o for o in omitted if o['evidence_id'] not in full_ids] + cut_omissions
+
         omitted = [o for o in omitted if o['evidence_id'] not in selected_ids]
-        closure = {'rule_version': CLOSURE_VERSION, 'graph_hash': digest(canonical(items)),
-                   'roots': selection['roots'], 'added_ids': sorted(selected_ids - set(selection['roots'])),
-                   'full_inventory': sorted(selected_ids),
-                   'already_formalized': sorted(selected_ids & materialized),
-                   'inventory': sorted(selected_ids - materialized), 'relevance': selection['relevance'], 'omitted': omitted}
+        window_omissions.extend(o for o in omitted if o['evidence_id'] in window_items)
+        closure = closure_record(selected_ids, support_omitted, cut_depth, omitted)
         calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
         selected_ids -= materialized
-        existing_commitments = {c.id: c.to_dict() for r in results for c in r.commitments.commitments
-                                if c.id in closure['already_formalized']}
-        inputs = {**inputs, 'closure': closure, 'papers': grouped(selected_ids),
-                  'existing_commitments': [existing_commitments[id] for id in closure['already_formalized']],
-                  'supporting_evidence': [items[id] for id in closure['already_formalized']]}
+        inputs = formalization_inputs(closure)
         if not selected_ids:
             result = BatchResult(batch.index, CommitmentSet(()), canonical({'omitted': omitted, 'closure': closure}))
             results.append(result)
@@ -283,7 +352,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             continue
         # Count exact copied evidence with a minimal formula envelope. Actual formulas
         # remain model-authored; the cumulative accepted result is checked separately.
-        floor = [dict(id=id, text=evidence_text(items[id]), citation=items[id]['citation'],
+        floor = [dict(id=id, text=evidence_text(items[id], support_omitted.get(id)), citation=items[id]['citation'],
                       formula={'op': 'atom', 'name': 'P'}) for id in sorted(selected_ids)]
         projected = calls.count_request('propose_targets', {**target_inputs,
             'commitments': {'commitments': prior + floor}})
@@ -291,7 +360,7 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
         empty_catalog = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
         current_catalog = calls.count_request('build_t_batch', catalog_inputs)
         catalog_tokens = current_catalog.input_tokens - empty_catalog.input_tokens
-        growth = len(selected_ids) * calls.config.get('working_t_symbol_growth_tokens_per_item', 256)
+        growth = len(selected_ids) * allocation['symbol_tokens_per_commitment']
         calls.log.record('build_t_capacity_preflight', plan_id=plan_id, index=batch.index,
                          working_input_tokens=current.input_tokens, working_available=available,
                          closure_copy_input_tokens=projected.input_tokens, catalogue_tokens=catalog_tokens,
@@ -310,13 +379,13 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             ids = [c['id'] for c in data['commitments']]
             require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
             commitments = CommitmentSet.from_dict({'commitments': [
-                {**c, 'text': evidence_text(items[c['id']]), 'citation': items[c['id']]['citation']}
+                {**c, 'text': evidence_text(items[c['id']], support_omitted.get(c['id'])), 'citation': items[c['id']]['citation']}
                 for c in data['commitments']]})
             selected = {c.id for c in commitments.commitments}
             for c in commitments.commitments:
                 require(c.citation == items[c.id]['citation'], 'T citation not in extracted literature')
                 # Text carries attribution and provenance from immutable evidence, not a lossy rewrite.
-                require(c.text == evidence_text(items[c.id]), 'working T changed evidence or attribution')
+                require(c.text == evidence_text(items[c.id], support_omitted.get(c.id)), 'working T changed evidence or attribution')
             require(len({c.citation for c in commitments.commitments}) == len(commitments.commitments), 'duplicate batch citation')
             names = [s['name'] for s in symbols + data['new_symbols']]
             require(len(set(names)) == len(names), 'duplicate symbol definition')
@@ -340,10 +409,15 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
             cumulative = calls.count_request('propose_targets', {**target_inputs,
                 'commitments': {'commitments': prior + commitments.to_dict()['commitments']}})
             require(cumulative.input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
+            require(cumulative.input_tokens - current.input_tokens <= allocation['window_copy_token_budget'],
+                    'working T window token allowance exceeded')
             catalog_inputs = {**inputs, 'papers': [], 'shared_symbols': symbols + data['new_symbols']}
             without = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
             with_catalog = calls.count_request('build_t_batch', catalog_inputs)
             require(with_catalog.input_tokens - without.input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
+            require(with_catalog.input_tokens - without.input_tokens - catalog_tokens <=
+                    allocation['symbol_available_tokens'] // max(1, len(batches)),
+                    'shared symbol window token allowance exceeded')
             return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
                 'bindings': bindings, 'omitted': omitted, 'closure': closure}))
         result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
@@ -375,5 +449,6 @@ def construct(calls: ModelCalls, literature: str, audience: str) -> CommitmentSe
     return merged
 
 
-def evidence_text(item: dict) -> str:
-    return f"[{item['attribution']}; {item['attributed_to']}; {item['kind']}] {item['text']}"
+def evidence_text(item: dict, omitted_support: list[str] | None = None) -> str:
+    prefix = ('[assumed_premise; support_omitted; omitted_support_ids=' + canonical(omitted_support) + '] ' if omitted_support else '')
+    return prefix + f"[{item['attribution']}; {item['attributed_to']}; {item['kind']}] {item['text']}"

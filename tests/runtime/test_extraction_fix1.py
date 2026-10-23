@@ -198,8 +198,12 @@ class CapacityServer:
             value = graph(inputs['source_id'])
             self.values[inputs['source_id']] = value
         elif prompt.startswith('ROLE: select_t_roots'):
-            from rich_fixture import batch_response
-            value = batch_response(inputs)
+            # The source inventory is complete; working T intentionally selects
+            # bounded roots, with the other evidence explicitly accounted for.
+            cap = inputs['window_budget']['per_window_commitments']
+            roots = [id for id, cost in inputs['closure_costs'].items() if cost['items'] <= cap][:1]
+            value = dict(roots=roots, relevance='P', omissions=[dict(group_id=g['group_id'], reason='Q')
+                         for g in inputs['selection_groups'] if set(g['root_ids']) - set(roots)])
         elif prompt.startswith('ROLE: build_t_batch'):
             from rich_fixture import batch_response
             assert request['max_tokens'] == 64000
@@ -243,8 +247,8 @@ def test_capacity53_maximum_through_cli(rig, tmp_path):
     assert main(['run', '--config', str(config_path), '--topic', 'P', '--literature', str(artifact),
                  '--run-dir', str(downstream)], calls_factory=factory) == 0
     commitments = json.loads((downstream / 'commitments.json').read_text())['commitments']
-    assert len(commitments) == 424
-    assert {c['citation'].split(':')[0] for c in commitments} == {r['id'] for r in records}
+    assert 0 < len(commitments) < 424
+    assert {c['citation'].split(':')[0] for c in commitments} <= {r['id'] for r in records}
     log = EventLog(downstream / 'events.jsonl')
     admissions = [json.loads(e['payload_json']) for e in log.read()
                   if e['stage'] == 'context_admission' and json.loads(e['payload_json'])['kind'] == 'build_t_batch']
@@ -256,10 +260,14 @@ def test_capacity53_maximum_through_cli(rig, tmp_path):
     from ara.runtime.construction import BatchResult, merge_batches
     from ara.types import CommitmentSet
     plan = next(json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'build_t_plan')
+    assert len(commitments) <= plan['plan']['budget']['projected_t_commitments']
+    accounted = next(json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'build_t_evidence_accounted')
+    assert len(accounted['selected_ids']) + len(accounted['omitted']) == 424
+    assert set(accounted['selected_ids']) == {c['id'] for c in commitments}
     results = []
     for b in plan['plan']['batches']:
         raw = json.loads((downstream / f"build-t-{plan['plan_id']}-{b['index']}.json").read_text())
-        results.append(BatchResult(b['index'], CommitmentSet.from_dict({'commitments': raw['commitments']}), canonical(raw)))
+        results.append(BatchResult(b['index'], CommitmentSet.from_dict({'commitments': raw.get('commitments', [])}), canonical(raw)))
     assert merge_batches(tuple(reversed(results)), len(results)).to_dict()['commitments'] == commitments
     before = len(server.requests)
     replay = factory(config, log, 'P').build_t(artifact.read_text(), 'runtime audience')

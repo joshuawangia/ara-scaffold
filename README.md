@@ -551,3 +551,19 @@ payloads referenced through the same interned definitions as state deltas. The
 report resolves those references only after authentication and preserves the raw
 receipts alongside the expanded terminal graphs. This keeps long repeated premise
 text from multiplying across alternative routes; it does not omit any route.
+
+Construction uses a global working/copy/catalogue allocation and 20% headroom.
+Selection sees each root's full closure size and a conservative UTF-8 payload token
+bound. If necessary, code cuts at a complete prerequisite depth while retaining
+qualifiers and inference endpoints. Frontier commitments are explicitly marked
+`assumed_premise; support_omitted` with omitted support IDs; methodology discloses
+that routes using these premises are conditional. An oversized mandatory bundle
+or an irrelevant window may contribute nothing. Actual output and complete
+requests are still counted and may refuse; no model quality guarantee is implied.
+
+Before generation, use `ara plan-construction --literature <path> --topic <text>
+--audience '' --profile pilot --config <path> --run-dir <empty-path>
+--token-counter provider`. This shares the native allocation and free provider
+counter with generation disabled. `--token-counter local` needs no network but
+reports byte/4 estimates, not provider measurements. Neither command selects roots
+or predicts the actual frozen T. The full source and every cut remain inspectable.

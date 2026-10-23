@@ -78,6 +78,7 @@ def test_windows_keep_only_selected_metadata(rig, monkeypatch):
 
 def test_large_single_graph_windows_close_against_full_evidence(rig, monkeypatch):
     calls, provider, path = rich_calls(rig, monkeypatch)
+    calls.config.update(working_t_token_budget=200000, working_t_symbol_token_budget=32000)
     data = json.loads(path.read_text()[len(HEADER):])
     paper = data['papers'][0]
     original = copy.deepcopy(paper['items'])
@@ -101,13 +102,18 @@ def test_large_single_graph_windows_close_against_full_evidence(rig, monkeypatch
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     t = prepare_commitments(calls, load_bank(ROOT/'bank'), HEADER + json.dumps(data), 'P')
-    assert {c.id for c in t.commitments} == {i['id'] for i in original}
+    expected = {i['id'] for i in original if i['id'].endswith((':f', ':qual', ':j', ':r', ':d'))}
+    assert {c.id for c in t.commitments} == expected
     assert sum(kind == 'select_t_roots' for kind, _ in seen) > 2
     assert sum(kind == 'build_t_batch' for kind, _ in seen) == 1
     events = calls.log.read()
     ledger = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_evidence_accounted')
-    assert set(ledger['selected_ids']) == {i['id'] for i in original}
-    assert {o['evidence_id'] for o in ledger['omitted']} == {i['id'] for i in decoys}
+    assert set(ledger['selected_ids']) == expected
+    assert {o['evidence_id'] for o in ledger['omitted']} == {i['id'] for i in paper['items']} - expected
+    closure = next(json.loads(e['payload_json']) for e in events
+                   if e['stage'] == 'build_t_closure' and json.loads(e['payload_json'])['roots'])
+    assert set(closure['uncut_inventory']) == {i['id'] for i in original}
+    assert closure['support_omitted'] == {'p:r1-2:r': ['p:r1-2:i']}
     assert sum(e['stage'] == 'commitments_frozen' for e in events) == 1
 
 
@@ -157,7 +163,7 @@ def test_oversized_selected_closure_refuses_before_formalization(rig, monkeypatc
     sent = []
     def estimate(kind, prompt, schema, maximum):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
-        if kind == 'build_t_batch' and inputs.get('closure'):
+        if kind == 'build_t_batch' and inputs.get('closure') and any(e['stage'] == 'build_t_closure' for e in calls.log.read()):
             return TokenUsage(input_tokens=70001, output_tokens=maximum)
         return original(kind, prompt, schema, maximum)
     def complete(kind, prompt, schema, maximum):

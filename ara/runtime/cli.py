@@ -69,6 +69,14 @@ def parser() -> argparse.ArgumentParser:
     plan.add_argument('--paper-id', action='append', default=[])
     plan.add_argument('--profile', choices=('extraction', 'extraction-full'), default='extraction-full')
     plan.add_argument('--token-counter', choices=('local', 'provider'), default='local')
+    construction = sub.add_parser('plan-construction', help='count native construction allocation; generation disabled')
+    construction.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
+    construction.add_argument('--literature', type=Path, required=True)
+    construction.add_argument('--topic', required=True)
+    construction.add_argument('--audience', default='')
+    construction.add_argument('--run-dir', type=Path, required=True)
+    construction.add_argument('--profile', choices=('pilot', 'extraction-full'), default='pilot')
+    construction.add_argument('--token-counter', choices=('local', 'provider'), default='local')
     report = sub.add_parser('report', help='render verified run receipts offline; no model calls')
     report.add_argument('--run-dir', type=Path, action='append', required=True)
     report.add_argument('--out', type=Path, required=True)
@@ -138,6 +146,18 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 import_receipts(log, read_checkpoint(origin), origin)
             calls = calls_factory(config, log, 'P')
             print(json.dumps(schema_preflight(calls)))
+            return 0
+        if args.command == 'plan-construction':
+            from ara.runtime.planning import plan_construction
+            config = yaml.safe_load(args.config.read_text())
+            config.update(config[args.profile])
+            if args.run_dir.exists() and any(args.run_dir.iterdir()):
+                raise ValueError('new planning directory must be empty')
+            log = EventLog(args.run_dir / 'events.jsonl')
+            log.human('plan-construction', json.dumps(raw_args), argv=raw_args, reported_minutes=args.human_minutes)
+            report = plan_construction(config, log, args.literature.read_text(), ROOT, args.topic,
+                                       args.audience, args.token_counter)
+            print(json.dumps(report))
             return 0
         if args.command == 'plan-extraction':
             from ara.runtime.planning import plan_extraction

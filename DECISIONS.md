@@ -1795,3 +1795,41 @@ incomplete import is still rejected by its declared event count. Nothing is
 silently repaired or discarded. Single-event writes use the same append path.
 Transitive verification shares a checkpoint memo only within one operation;
 there is no persistent cache that could hide later ancestor tampering.
+
+## S1 — Budgeted prerequisite depth before the single freeze
+
+Construction v7 allocates a global selected T before root selection. Its per-window
+commitment cap is the minimum of working copy plus formula-growth capacity,
+catalogue capacity, and the formalization bound, divided across counted windows.
+It measures the copied source envelope, reserves 20% working/catalogue headroom,
+and uses at least ceil(10471/45)=233 symbol tokens per commitment from the recorded
+paired catalogue count. A lower configured reservation cannot erase that observed
+cost. This is a planning assumption, not a guarantee of future model growth.
+Actual accepted copy/formula and symbol growth must also fit each window's share;
+the prior global and exact-request guards remain authoritative.
+
+Every candidate carries full directional closure item count and a conservative
+UTF-8 byte token upper bound on its evidence payload (explicitly not an API count
+of the full request). Whole selection and formalization requests retain provider
+counts. The model chooses relevant roots against the allocation. Deterministic
+breadth/depth expansion retains the deepest complete prerequisite layer that fits
+item, payload and counted copy/formalization limits, always closing incoming qualifications/distinctions and
+inference endpoints. A minimum root bundle that cannot fit contributes nothing;
+code never chooses a different relevant root. Cycles terminate at a fixed point.
+
+Frontier items carry assumed_premise/support_omitted and exact omitted direct
+support IDs in their commitment text. Original attributed text and citations
+remain intact; the immutable graph is never rewritten. Full omitted inventories,
+uncut closure, cut depth and reasons stay in receipts, with compact fixed included
+inventory passed to formalization. Methodology exposes the conditional-premise
+policy and each omitted-support edge. A later overlap reuses the first accepted
+commitment unchanged, including its conservative assumption disclosure; no silent
+upgrade is made. Empty windows are logged, but an entirely empty T still refuses.
+One construction lifecycle, one merge, one freeze; no engine license changes.
+
+The no-generation plan-construction CLI shares native planning, accepts an explicit
+empty audience, and offers local estimates or the provider's free token counter.
+Zero spend/token caps and a provider that refuses generation enforce its boundary.
+It reports an allocation, not invented relevance choices, formulas or search proof.
+Formalization chunking is deferred: bounded inventories retain exact request guards,
+and splitting would need dependency-cycle and correction/symbol receipt semantics.

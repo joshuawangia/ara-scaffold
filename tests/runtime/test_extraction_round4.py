@@ -82,7 +82,12 @@ def test_zero_roots_accounted_without_formalization(rig, monkeypatch):
 
 def test_closure_preflight_before_formalization(rig, monkeypatch):
     calls, provider, path = rich_calls(rig, monkeypatch)
-    calls.config['working_t_token_budget'] = 1
+    estimate = provider.estimate
+    def counted(kind, *args):
+        if kind == 'propose_targets' and any(e['stage'] == 'build_t_closure' for e in calls.log.read()):
+            return TokenUsage(input_tokens=100001)
+        return estimate(kind, *args)
+    monkeypatch.setattr(provider, 'estimate', counted)
     sent = []
     def complete(kind, prompt, schema, maximum):
         sent.append(kind)
@@ -102,7 +107,7 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     from ara.runtime.grounding import ground_outcome
     second = ground_outcome(Paper('q', '{}', 'Q', (PageText(1, 'P Q R F(x)'),)), second, calls.log)
     value['papers'].append(second)
-    calls.config.update(working_t_token_budget=10000, working_t_symbol_token_budget=19000)
+    calls.config.update(working_t_token_budget=20000, working_t_symbol_token_budget=24000)
     allowances = []
     original = provider.estimate
     def estimate(kind, prompt, schema, maximum):
@@ -127,7 +132,7 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     monkeypatch.setattr(provider, 'complete', complete)
     t = prepare_commitments(calls, load_bank(ROOT / 'bank'), HEADER + json.dumps(value), 'P')
     assert len(t.commitments) == 16
-    assert 0 < allowances[1] < allowances[0] < 10000
+    assert 0 < allowances[1] < allowances[0] < 20000
     events = calls.log.read()
     merged = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_merged')
     assert len(merged['symbols']) == 16
@@ -140,6 +145,11 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
 def test_catalogue_growth_preflight_precedes_formalization(rig, monkeypatch):
     calls, provider, path = rich_calls(rig, monkeypatch)
     calls.config.update(working_t_symbol_growth_tokens_per_item=256, working_t_symbol_token_budget=1000)
+    # Independently test the final defensive preflight if an allocation is wrong.
+    from ara.runtime import closure_budget
+    original_plan = closure_budget.budget_plan
+    monkeypatch.setattr(closure_budget, 'budget_plan', lambda *args: {
+        **original_plan(*args), 'per_window_commitments': 8})
     with pytest.raises(Rejected, match='shared symbol token allowance preflight'):
         calls.build_t(path.read_text(), 'P')
     model = [e['stage'] for e in calls.log.read() if e['label'] == 'MODEL']

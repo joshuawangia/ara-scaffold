@@ -101,7 +101,11 @@ def methodology(log_path: Path) -> str:
     summary = {
         **split_totals(events),
         'extraction': extraction_summary,
-        'construction': {'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
+        'construction': {'support_omitted': [dict(index=p['index'], evidence_id=id, omitted_support_ids=ids)
+                         for e in events if e['stage'] == 'build_t_closure'
+                         for p in [json.loads(e['payload_json'])] for id, ids in p.get('support_omitted', {}).items()],
+                         'support_policy': 'Budget-cut frontier items are attributed assumed premises (support_omitted); routes using them are conditional on those premises. Immutable full sources retain omitted support.',
+                         'plans': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_plan'],
                          'batches': sum(e['stage'] == 'build_t_batch_accepted' for e in events),
                          'freezes': sum(e['stage'] == 'commitments_frozen' for e in events),
                          'closure': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_closure']},

@@ -17,7 +17,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v7'
+PLAN_VERSION = 'rich-working-t-v8'
 CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
@@ -170,7 +170,8 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
 
 
 def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: bool = False):
-    from ara.runtime.calls import require
+    from ara.runtime.calls import Rejected, require
+    from ara.runtime.budget import BudgetStop
     corrections = calls.config.get('construction_targeted_corrections')
     if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
         raise ValueError('construction_targeted_corrections must be 0 or 1')
@@ -230,8 +231,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).input_tokens
         count_cache[key] = max(formal, roots)
         return count_cache[key]
-    windows = counted_windows(list(items), count, max(1, input_bound - 2048), lambda: calls.budget.stop(
-        'build_t_batch oversized source batch: indivisible evidence record; no truncation', 'build_t_batch'))
+    partition_bound = max(1, input_bound - 2048)
+    def partition_count(ids):
+        measured = count(ids)
+        # Keep an indivisible oversized record as its own window. The plan records
+        # its real count and execution omits it before dispatch, without truncation.
+        return min(measured, partition_bound) if len(ids) == 1 else measured
+    windows = counted_windows(list(items), partition_count, partition_bound, lambda: None)
     target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
     wrapper = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}}).input_tokens
     copy_total = 0
@@ -244,7 +250,6 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     count_cache.clear()
     batches = [Batch(index, tuple(p['source_id'] for p in grouped(ids)), canonical(grouped(ids)),
                      count(ids), metadata['working_t_token_budget']) for index, ids in enumerate(windows)]
-    require(all(b.input_tokens <= input_bound for b in batches), 'budget metadata exceeds selection batch bound')
     plan = {**metadata, 'budget': allocation, 'batches': [dict(index=b.index, source_ids=b.source_ids, input_tokens=b.input_tokens,
                                        allowance=b.allowance, content_hash=digest(b.papers_json)) for b in batches]}
     plan_id = digest(canonical(plan))
@@ -257,180 +262,236 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     results = []
     window_omissions = []
     materialized = set()
+    exhausted = None
+    refusal_reasons = []
+    def skip(batch, window_items, reason, selection, closure):
+        omitted = [dict(evidence_id=id, reason=reason) for id in sorted(window_items)]
+        window_omissions.extend(omitted)
+        receipt = dict(omitted=omitted, roots=selection.get('roots', []), closure=closure, reason=reason)
+        result = BatchResult(batch.index, CommitmentSet(()), canonical(receipt))
+        results.append(result)
+        calls.log.record('build_t_batch_skipped', plan_id=plan_id, index=batch.index, **receipt)
+        save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}-skipped-{digest(result.receipt_json)}.json', result.receipt_json)
+
     for batch in batches:
         group = json.loads(batch.papers_json)
         window_items = {item['id']: item for paper in group for item in paper['items']}
-        prior = [c.to_dict() for r in results for c in r.commitments.commitments]
-        target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
-        current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})
-        available = metadata['working_t_token_budget'] - current.input_tokens
-        inputs = {**inputs_for(group, batch.index, max(0, available)), 'plan_id': plan_id,
-                  'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
-        root_ids, selection_groups = selection_inventory(window_items)
-        groups_by_id = {g['group_id']: g for g in selection_groups}
-        selection_inputs = selection_request(inputs, window_items)
-        calls.log.record('build_t_selection_inventory', plan_id=plan_id, index=batch.index,
-                         root_ids=root_ids, groups=selection_groups, graph_hash=digest(canonical(items)))
-        def select(data):
-            short_roots = data['roots']
-            require(len(set(short_roots)) == len(short_roots) and
-                    set(short_roots) <= set(root_ids), 'invalid selection roots')
-            roots = [root_ids[id] for id in short_roots]
-            require(bool(data['relevance'].strip()), 'empty selection reason')
-            omitted_groups = [g['group_id'] for g in data['omissions']]
-            require(len(omitted_groups) == len(set(omitted_groups)) and
-                    set(omitted_groups) <= set(groups_by_id), 'invalid omission group inventory')
-            require(all(g['reason'].strip() for g in data['omissions']), 'empty omission reason')
-            omitted = [dict(evidence_id=root_ids[id], reason=g['reason']) for g in data['omissions']
-                       for id in groups_by_id[g['group_id']]['root_ids'] if id not in short_roots]
-            excluded = {o['evidence_id'] for o in omitted}
-            require(len(omitted) == len(excluded), 'duplicate omission id')
-            require(not set(roots) & excluded and set(roots) | excluded == set(window_items), 'working T evidence inventory mismatch')
-            return {**data, 'roots': roots}, omitted
-        selection, omitted = construction_call(calls, 'select_t_roots', selection_inputs, select, remaining)
-        selected_ids = prerequisite_closure(items, selection['roots'])
-        require(all(dependencies[id] <= selected_ids for id in selected_ids), 'working T drops premise/link/qualification')
-        full_ids = set(selected_ids)
-        def closure_record(ids, support, depth, omissions):
-            return {'rule_version': CLOSURE_VERSION, 'graph_hash': digest(canonical(items)),
-                    'roots': selection['roots'], 'added_ids': sorted(ids - set(selection['roots'])),
-                    'full_inventory': sorted(ids), 'uncut_inventory': sorted(full_ids),
-                    'support_omitted': support, 'cut_depth': depth, 'window_budget': allocation,
-                    'empty_reason': ('mandatory root context exceeds window budget' if selection['roots'] and not ids
-                                     else selection['relevance'] if not ids else None),
-                    'already_formalized': sorted(ids & materialized), 'inventory': sorted(ids - materialized),
-                    'relevance': selection['relevance'], 'omitted': omissions}
-        def formalization_inputs(closure):
-            # Full omission inventories stay logged; the formalizer needs only the
-            # fixed included IDs, exact prior context and the omitted frontier.
-            formal_closure = {key: value for key, value in closure.items()
-                              if key not in ('uncut_inventory', 'omitted')}
-            formal_closure['uncut_items'] = len(full_ids)
-            existing = {c['id']: c for c in prior if c['id'] in closure['already_formalized']}
-            return {**inputs, 'closure': formal_closure, 'papers': grouped(closure['inventory']),
-                    'existing_commitments': [existing[id] for id in closure['already_formalized']],
-                    'supporting_evidence': [items[id] for id in closure['already_formalized']],
-                    'new_symbol_token_allowance': symbol_budget,
-                    'window_working_token_allowance': allocation['window_copy_token_budget'],
-                    'window_new_symbol_token_allowance': allocation['symbol_available_tokens'] // max(1, len(batches))}
-        def fits(ids):
-            if not ids:
-                return True
-            if (len(ids) > allocation['per_window_commitments'] or
-                    payload_token_bound(items, ids) > input_bound - 8192):
-                return False
-            support = {id: sorted(dependencies[id] - ids) for id in ids if dependencies[id] - ids}
-            floor = [dict(id=id, text=evidence_text(items[id], support.get(id)), citation=items[id]['citation'],
-                          formula={'op': 'atom', 'name': 'P'}) for id in sorted(ids - materialized)]
-            copied = calls.count_request('propose_targets', {**target_inputs,
-                'commitments': {'commitments': floor}}).input_tokens - wrapper
-            if copied + len(floor) * allocation['symbol_tokens_per_commitment'] > allocation['window_copy_token_budget']:
-                return False
-            trial = formalization_inputs(closure_record(ids, support, len(items), []))
-            return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound
-        support_omitted = {}
-        cut_depth = None
-        if not fits(selected_ids):
-            selected_ids, support_omitted, cut_depth = depth_cut(items, selection['roots'], dependencies, fits)
-        # All roots are a single model-selected bundle. No relevance ranking in code.
-        # If mandatory context cannot fit, the window contributes nothing.
-        cut_omissions = [dict(evidence_id=id, reason='budget depth cut: support omitted')
-                         for id in sorted(full_ids - selected_ids)]
-        omitted = [o for o in omitted if o['evidence_id'] not in full_ids] + cut_omissions
-
-        omitted = [o for o in omitted if o['evidence_id'] not in selected_ids]
-        window_omissions.extend(o for o in omitted if o['evidence_id'] in window_items)
-        closure = closure_record(selected_ids, support_omitted, cut_depth, omitted)
-        calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
-        selected_ids -= materialized
-        inputs = formalization_inputs(closure)
-        if not selected_ids:
-            result = BatchResult(batch.index, CommitmentSet(()), canonical({'omitted': omitted, 'closure': closure}))
-            results.append(result)
-            calls.log.record('build_t_batch_skipped', plan_id=plan_id, index=batch.index, omitted=omitted)
-            save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
+        selection, closure = {}, None
+        if exhausted:
+            skip(batch, window_items, exhausted, selection, closure)
             continue
-        # Count exact copied evidence with a minimal formula envelope. Actual formulas
-        # remain model-authored; the cumulative accepted result is checked separately.
-        floor = [dict(id=id, text=evidence_text(items[id], support_omitted.get(id)), citation=items[id]['citation'],
-                      formula={'op': 'atom', 'name': 'P'}) for id in sorted(selected_ids)]
-        projected = calls.count_request('propose_targets', {**target_inputs,
-            'commitments': {'commitments': prior + floor}})
-        catalog_inputs = {**inputs, 'papers': []}
-        empty_catalog = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
-        current_catalog = calls.count_request('build_t_batch', catalog_inputs)
-        catalog_tokens = current_catalog.input_tokens - empty_catalog.input_tokens
-        growth = len(selected_ids) * allocation['symbol_tokens_per_commitment']
-        calls.log.record('build_t_capacity_preflight', plan_id=plan_id, index=batch.index,
-                         working_input_tokens=current.input_tokens, working_available=available,
-                         closure_copy_input_tokens=projected.input_tokens, catalogue_tokens=catalog_tokens,
-                         catalogue_growth_reservation=growth, catalogue_limit=symbol_budget,
-                         note='Minimal formula envelope and configurable growth reservation; actual output rechecked.')
-        require(projected.input_tokens <= metadata['working_t_token_budget'], 'working T closure preflight exceeded')
-        require(catalog_tokens + growth <= symbol_budget, 'shared symbol token allowance preflight exceeded')
-        inputs = {**inputs, 'working_token_allowance': available,
-                  'new_symbol_token_allowance': symbol_budget - catalog_tokens}
-        closure_count = calls.count_request('build_t_batch', {**inputs, 'shared_symbols': []})
-        if closure_count.input_tokens > input_bound:
-            calls.budget.stop('selected closure exceeds bounded formalization; no truncation; reselect roots', 'build_t_batch')
-        calls.count_request('build_t_batch', inputs, admission=True)
-        # The actual growing catalogue and plan identity are counted again, including retries.
-        def check(data):
-            ids = [c['id'] for c in data['commitments']]
-            require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
-            commitments = CommitmentSet.from_dict({'commitments': [
-                {**c, 'text': evidence_text(items[c['id']], support_omitted.get(c['id'])), 'citation': items[c['id']]['citation']}
-                for c in data['commitments']]})
-            selected = {c.id for c in commitments.commitments}
-            for c in commitments.commitments:
-                require(c.citation == items[c.id]['citation'], 'T citation not in extracted literature')
-                # Text carries attribution and provenance from immutable evidence, not a lossy rewrite.
-                require(c.text == evidence_text(items[c.id], support_omitted.get(c.id)), 'working T changed evidence or attribution')
-            require(len({c.citation for c in commitments.commitments}) == len(commitments.commitments), 'duplicate batch citation')
-            names = [s['name'] for s in symbols + data['new_symbols']]
-            require(len(set(names)) == len(names), 'duplicate symbol definition')
-            catalog = {s['name']: s for s in symbols + data['new_symbols']}
-            used = {}
-            for c in commitments.commitments:
-                for name, kind, arity in formula_symbols(c.formula):
-                    require(name in catalog, 'undeclared formula symbol')
-                    require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity, 'symbol signature mismatch')
-                    used.setdefault(name, set()).add(c.id)
-            alignments = data['alignments']
-            aligned = [a['name'] for a in alignments]
-            valid_alignments = (len(set(aligned)) == len(aligned) and
-                set(aligned) == set(used) & {s['name'] for s in symbols} and all(a['reason'].strip() for a in alignments))
-            require(valid_alignments, 'symbol alignment evidence mismatch')
-            bindings = [dict(name=name, evidence_ids=sorted(ids)) for name, ids in sorted(used.items())]
-            for symbol in data['new_symbols']:
-                require(bool(symbol['definition'].strip()) and set(symbol['evidence_ids']) <= selected and
-                        bool(symbol['evidence_ids']), 'symbol definition lacks evidence')
-                require(symbol['name'] in used, 'unused symbol definition')
-            cumulative = calls.count_request('propose_targets', {**target_inputs,
-                'commitments': {'commitments': prior + commitments.to_dict()['commitments']}})
-            require(cumulative.input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
-            require(cumulative.input_tokens - current.input_tokens <= allocation['window_copy_token_budget'],
-                    'working T window token allowance exceeded')
-            catalog_inputs = {**inputs, 'papers': [], 'shared_symbols': symbols + data['new_symbols']}
-            without = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
-            with_catalog = calls.count_request('build_t_batch', catalog_inputs)
-            require(with_catalog.input_tokens - without.input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
-            require(with_catalog.input_tokens - without.input_tokens - catalog_tokens <=
-                    allocation['symbol_available_tokens'] // max(1, len(batches)),
-                    'shared symbol window token allowance exceeded')
-            return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
-                'bindings': bindings, 'omitted': omitted, 'closure': closure}))
-        result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
-        data = json.loads(result.receipt_json)
-        symbols += data['new_symbols']
-        materialized.update(selected_ids)
-        results.append(result)
-        calls.log.record('build_t_batch_accepted', plan_id=plan_id, index=batch.index,
-                         source_ids=batch.source_ids, output_hash=digest(result.receipt_json),
-                         evidence_ids=[c.id for c in result.commitments.commitments], omitted=data['omitted'])
-        save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
+        if batch.input_tokens > input_bound:
+            reason = 'oversized source batch: counted selection window exceeds input bound; no truncation'
+            refusal_reasons.append(reason)
+            skip(batch, window_items, reason, selection, closure)
+            continue
+        try:
+            prior = [c.to_dict() for r in results for c in r.commitments.commitments]
+            target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
+            current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})
+            available = metadata['working_t_token_budget'] - current.input_tokens
+            catalog_probe = {**base_inputs, 'papers': [], 'shared_symbols': symbols}
+            catalog_tokens = (calls.count_request('build_t_batch', catalog_probe).input_tokens -
+                              calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).input_tokens)
+            if catalog_tokens > symbol_budget:
+                calls.budget.stop('accepted catalogue exceeds global budget on recount', 'build_t_batch')
+            symbol_available = symbol_budget - catalog_tokens
+            windows_left = len(batches) - batch.index
+            # Reserve the original headroom as a soft target; accepted output may borrow it.
+            working_share = max(0, int(metadata['working_t_token_budget'] * (1 - allocation['headroom_fraction'])) - current.input_tokens) // windows_left
+            symbol_share = max(0, int(symbol_budget * (1 - allocation['headroom_fraction'])) - catalog_tokens) // windows_left
+            window_budget = {**allocation, 'window_copy_token_budget': working_share,
+                             'symbol_available_tokens': max(0, symbol_available),
+                             'window_symbol_token_budget': symbol_share,
+                             'per_window_commitments': min(
+                                 working_share // (allocation['copy_tokens_per_commitment'] + allocation['symbol_tokens_per_commitment']),
+                                 symbol_share // allocation['symbol_tokens_per_commitment'])}
+            calls.log.record('build_t_window_budget', plan_id=plan_id, index=batch.index,
+                             working_input_tokens=current.input_tokens, catalogue_tokens=catalog_tokens,
+                             working_remaining=available, symbol_remaining=symbol_available,
+                             remaining_windows=windows_left, budget=window_budget)
+            if available <= 0 or symbol_available <= 0:
+                exhausted = 'global working T capacity exhausted' if available <= 0 else 'global catalogue capacity exhausted'
+                calls.log.record('build_t_global_exhaustion', plan_id=plan_id, index=batch.index,
+                                 reason=exhausted, accepted_ids=sorted(materialized),
+                                 note='Freeze only previously accepted work; remaining windows are omitted.')
+                skip(batch, window_items, exhausted, selection, closure)
+                continue
+            inputs = {**inputs_for(group, batch.index, max(0, available)), 'plan_id': plan_id,
+                      'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
+            root_ids, selection_groups = selection_inventory(window_items)
+            groups_by_id = {g['group_id']: g for g in selection_groups}
+            selection_inputs = {**selection_request(inputs, window_items), 'window_budget': window_budget}
+            calls.log.record('build_t_selection_inventory', plan_id=plan_id, index=batch.index,
+                             root_ids=root_ids, groups=selection_groups, graph_hash=digest(canonical(items)))
+            def select(data):
+                short_roots = data['roots']
+                require(len(set(short_roots)) == len(short_roots) and
+                        set(short_roots) <= set(root_ids), 'invalid selection roots')
+                roots = [root_ids[id] for id in short_roots]
+                require(bool(data['relevance'].strip()), 'empty selection reason')
+                omitted_groups = [g['group_id'] for g in data['omissions']]
+                require(len(omitted_groups) == len(set(omitted_groups)) and
+                        set(omitted_groups) <= set(groups_by_id), 'invalid omission group inventory')
+                require(all(g['reason'].strip() for g in data['omissions']), 'empty omission reason')
+                omitted = [dict(evidence_id=root_ids[id], reason=g['reason']) for g in data['omissions']
+                           for id in groups_by_id[g['group_id']]['root_ids'] if id not in short_roots]
+                excluded = {o['evidence_id'] for o in omitted}
+                require(len(omitted) == len(excluded), 'duplicate omission id')
+                require(not set(roots) & excluded and set(roots) | excluded == set(window_items), 'working T evidence inventory mismatch')
+                return {**data, 'roots': roots}, omitted
+            selection, omitted = construction_call(calls, 'select_t_roots', selection_inputs, select, remaining)
+            selected_ids = prerequisite_closure(items, selection['roots'])
+            require(all(dependencies[id] <= selected_ids for id in selected_ids), 'working T drops premise/link/qualification')
+            full_ids = set(selected_ids)
+            def closure_record(ids, support, depth, omissions):
+                return {'rule_version': CLOSURE_VERSION, 'graph_hash': digest(canonical(items)),
+                        'roots': selection['roots'], 'added_ids': sorted(ids - set(selection['roots'])),
+                        'full_inventory': sorted(ids), 'uncut_inventory': sorted(full_ids),
+                        'support_omitted': support, 'cut_depth': depth, 'window_budget': window_budget,
+                        'empty_reason': ('mandatory root context exceeds window budget' if selection['roots'] and not ids
+                                         else selection['relevance'] if not ids else None),
+                        'already_formalized': sorted(ids & materialized), 'inventory': sorted(ids - materialized),
+                        'relevance': selection['relevance'], 'omitted': omissions}
+            def formalization_inputs(closure):
+                # Full omission inventories stay logged; the formalizer needs only the
+                # fixed included IDs, exact prior context and the omitted frontier.
+                formal_closure = {key: value for key, value in closure.items()
+                                  if key not in ('uncut_inventory', 'omitted')}
+                formal_closure['uncut_items'] = len(full_ids)
+                existing = {c['id']: c for c in prior if c['id'] in closure['already_formalized']}
+                return {**inputs, 'closure': formal_closure, 'papers': grouped(closure['inventory']),
+                        'existing_commitments': [existing[id] for id in closure['already_formalized']],
+                        'supporting_evidence': [items[id] for id in closure['already_formalized']],
+                        'new_symbol_token_allowance': symbol_budget,
+                        'window_working_token_allowance': working_share,
+                        'window_new_symbol_token_allowance': symbol_share}
+            def fits(ids):
+                if not ids:
+                    return True
+                if (len(ids) > window_budget['per_window_commitments'] or
+                        payload_token_bound(items, ids) > input_bound - 8192):
+                    return False
+                support = {id: sorted(dependencies[id] - ids) for id in ids if dependencies[id] - ids}
+                floor = [dict(id=id, text=evidence_text(items[id], support.get(id)), citation=items[id]['citation'],
+                              formula={'op': 'atom', 'name': 'P'}) for id in sorted(ids - materialized)]
+                copied = calls.count_request('propose_targets', {**target_inputs,
+                    'commitments': {'commitments': floor}}).input_tokens - wrapper
+                if copied + len(floor) * allocation['symbol_tokens_per_commitment'] > working_share:
+                    return False
+                trial = formalization_inputs(closure_record(ids, support, len(items), []))
+                return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound
+            support_omitted = {}
+            cut_depth = None
+            if not fits(selected_ids):
+                selected_ids, support_omitted, cut_depth = depth_cut(items, selection['roots'], dependencies, fits)
+            # All roots are a single model-selected bundle. No relevance ranking in code.
+            # If mandatory context cannot fit, the window contributes nothing.
+            cut_omissions = [dict(evidence_id=id, reason='budget depth cut: support omitted')
+                             for id in sorted(full_ids - selected_ids)]
+            omitted = [o for o in omitted if o['evidence_id'] not in full_ids] + cut_omissions
+
+            omitted = [o for o in omitted if o['evidence_id'] not in selected_ids]
+            closure = closure_record(selected_ids, support_omitted, cut_depth, omitted)
+            calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
+            selected_ids -= materialized
+            inputs = formalization_inputs(closure)
+            if not selected_ids:
+                window_omissions.extend(o for o in omitted if o['evidence_id'] in window_items)
+                result = BatchResult(batch.index, CommitmentSet(()), canonical({'omitted': omitted, 'closure': closure}))
+                results.append(result)
+                calls.log.record('build_t_batch_skipped', plan_id=plan_id, index=batch.index, omitted=omitted)
+                save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
+                continue
+            # Count exact copied evidence with a minimal formula envelope. Actual formulas
+            # remain model-authored; the cumulative accepted result is checked separately.
+            floor = [dict(id=id, text=evidence_text(items[id], support_omitted.get(id)), citation=items[id]['citation'],
+                          formula={'op': 'atom', 'name': 'P'}) for id in sorted(selected_ids)]
+            projected = calls.count_request('propose_targets', {**target_inputs,
+                'commitments': {'commitments': prior + floor}})
+            catalog_inputs = {**inputs, 'papers': []}
+            empty_catalog = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
+            current_catalog = calls.count_request('build_t_batch', catalog_inputs)
+            catalog_tokens = current_catalog.input_tokens - empty_catalog.input_tokens
+            growth = len(selected_ids) * allocation['symbol_tokens_per_commitment']
+            calls.log.record('build_t_capacity_preflight', plan_id=plan_id, index=batch.index,
+                             working_input_tokens=current.input_tokens, working_available=available,
+                             closure_copy_input_tokens=projected.input_tokens, catalogue_tokens=catalog_tokens,
+                             catalogue_growth_reservation=growth, catalogue_limit=symbol_budget,
+                             note='Minimal formula envelope and configurable growth reservation; actual output rechecked.')
+            require(projected.input_tokens <= metadata['working_t_token_budget'], 'working T closure preflight exceeded')
+            require(catalog_tokens + growth <= symbol_budget, 'shared symbol token allowance preflight exceeded')
+            inputs = {**inputs, 'working_token_allowance': available,
+                      'new_symbol_token_allowance': symbol_budget - catalog_tokens}
+            closure_count = calls.count_request('build_t_batch', {**inputs, 'shared_symbols': []})
+            if closure_count.input_tokens > input_bound:
+                raise Rejected('selected closure exceeds bounded formalization; no truncation; reselect roots')
+            calls.count_request('build_t_batch', inputs, admission=True)
+            # The actual growing catalogue and plan identity are counted again, including retries.
+            def check(data):
+                ids = [c['id'] for c in data['commitments']]
+                require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
+                commitments = CommitmentSet.from_dict({'commitments': [
+                    {**c, 'text': evidence_text(items[c['id']], support_omitted.get(c['id'])), 'citation': items[c['id']]['citation']}
+                    for c in data['commitments']]})
+                selected = {c.id for c in commitments.commitments}
+                for c in commitments.commitments:
+                    require(c.citation == items[c.id]['citation'], 'T citation not in extracted literature')
+                    # Text carries attribution and provenance from immutable evidence, not a lossy rewrite.
+                    require(c.text == evidence_text(items[c.id], support_omitted.get(c.id)), 'working T changed evidence or attribution')
+                require(len({c.citation for c in commitments.commitments}) == len(commitments.commitments), 'duplicate batch citation')
+                names = [s['name'] for s in symbols + data['new_symbols']]
+                require(len(set(names)) == len(names), 'duplicate symbol definition')
+                catalog = {s['name']: s for s in symbols + data['new_symbols']}
+                used = {}
+                for c in commitments.commitments:
+                    for name, kind, arity in formula_symbols(c.formula):
+                        require(name in catalog, 'undeclared formula symbol')
+                        require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity, 'symbol signature mismatch')
+                        used.setdefault(name, set()).add(c.id)
+                alignments = data['alignments']
+                aligned = [a['name'] for a in alignments]
+                valid_alignments = (len(set(aligned)) == len(aligned) and
+                    set(aligned) == set(used) & {s['name'] for s in symbols} and all(a['reason'].strip() for a in alignments))
+                require(valid_alignments, 'symbol alignment evidence mismatch')
+                bindings = [dict(name=name, evidence_ids=sorted(ids)) for name, ids in sorted(used.items())]
+                for symbol in data['new_symbols']:
+                    require(bool(symbol['definition'].strip()) and set(symbol['evidence_ids']) <= selected and
+                            bool(symbol['evidence_ids']), 'symbol definition lacks evidence')
+                    require(symbol['name'] in used, 'unused symbol definition')
+                cumulative = calls.count_request('propose_targets', {**target_inputs,
+                    'commitments': {'commitments': prior + commitments.to_dict()['commitments']}})
+                require(cumulative.input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
+                require(cumulative.input_tokens + calls.config.get('propose_targets_max_output_tokens', calls.config['max_output_tokens']) <=
+                        calls.config['model_context_token_bound'], 'working T downstream context allowance exceeded')
+                catalog_inputs = {**inputs, 'papers': [], 'shared_symbols': symbols + data['new_symbols']}
+                without = calls.count_request('build_t_batch', {**catalog_inputs, 'shared_symbols': []})
+                with_catalog = calls.count_request('build_t_batch', catalog_inputs)
+                require(with_catalog.input_tokens - without.input_tokens <= symbol_budget, 'shared symbol token allowance exceeded')
+                borrowing = dict(
+                    working_borrowed_tokens=max(0, cumulative.input_tokens - current.input_tokens - working_share),
+                    symbols_borrowed_tokens=max(0, with_catalog.input_tokens - without.input_tokens - catalog_tokens - symbol_share))
+                return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
+                    'bindings': bindings, 'omitted': omitted, 'closure': closure, 'borrowing': borrowing}))
+            result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
+            data = json.loads(result.receipt_json)
+            if any(data['borrowing'].values()):
+                calls.log.record('build_t_share_borrowed', plan_id=plan_id, index=batch.index, **data['borrowing'])
+            window_omissions.extend(o for o in omitted if o['evidence_id'] in window_items)
+            symbols += data['new_symbols']
+            materialized.update(selected_ids)
+            results.append(result)
+            calls.log.record('build_t_batch_accepted', plan_id=plan_id, index=batch.index,
+                             source_ids=batch.source_ids, output_hash=digest(result.receipt_json),
+                             evidence_ids=[c.id for c in result.commitments.commitments], omitted=data['omitted'])
+            save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
+        except (Rejected, BudgetStop) as exc:
+            if isinstance(exc, BudgetStop) and exc.scope != 'window':
+                raise
+            refusal_reasons.append(str(exc))
+            skip(batch, window_items, str(exc), selection, closure)
     merged = merge_batches(tuple(results), len(batches))
-    require(bool(merged.commitments), 'empty working T after accounted omissions')
+    require(bool(merged.commitments), 'empty working T after accounted omissions' + (': ' + '; '.join(refusal_reasons) if refusal_reasons else ''))
     final_omissions = [o for o in window_omissions if o['evidence_id'] not in materialized]
     omitted_ids = [o['evidence_id'] for o in final_omissions]
     require(len(omitted_ids) == len(set(omitted_ids)) and
@@ -441,6 +502,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         'count': calls.config['target_candidates'], 'named_position': None}, admission=True)
     if measured.input_tokens > metadata['working_t_token_budget']:
         calls.budget.stop('working T downstream token budget exceeded before freeze', 'build_t_batch')
+    catalog_probe = {**base_inputs, 'papers': [], 'shared_symbols': symbols}
+    final_catalog = (calls.count_request('build_t_batch', catalog_probe).input_tokens -
+                     calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).input_tokens)
+    if final_catalog > symbol_budget:
+        calls.budget.stop('accepted catalogue exceeds global budget before freeze', 'build_t_batch')
     calls.log.record('build_t_merged', plan_id=plan_id, commitments=merged.to_dict(), symbols=symbols,
                      input_tokens=measured.input_tokens, source_ids=[p['source_id'] for p in papers],
                      note='One construction lifecycle, one freeze; explicit model omissions retained in batch receipts.')

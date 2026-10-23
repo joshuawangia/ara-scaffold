@@ -123,7 +123,8 @@ def test_counted_capacity_refuses_explicitly(rig, monkeypatch, case):
     calls, provider, path = rich_calls(rig, monkeypatch)
     if case == 'batch':
         calls.config['build_t_batch_input_tokens'] = 1
-        with pytest.raises(BudgetStop, match='oversized source batch'):
+        from ara.runtime.calls import Rejected
+        with pytest.raises(Rejected, match='empty working T.*oversized source batch'):
             calls.build_t(path.read_text(), 'P')
         assert provider.calls == 1
     else:

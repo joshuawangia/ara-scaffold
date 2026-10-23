@@ -131,8 +131,7 @@ def test_plan_cli_cannot_generate(rig, monkeypatch, tmp_path, capsys):
 
 
 @pytest.mark.parametrize('kind', ['working', 'symbols'])
-def test_actual_output_cannot_consume_later_allocations(rig, monkeypatch, kind):
-    from ara.runtime.calls import Rejected
+def test_actual_output_borrows_within_global_limits(rig, monkeypatch, kind):
     from ara.types import TokenUsage
     calls, provider, path = rich_calls(rig, monkeypatch)
     estimate = provider.estimate
@@ -146,9 +145,12 @@ def test_actual_output_cannot_consume_later_allocations(rig, monkeypatch, kind):
             return TokenUsage(input_tokens=measured.input_tokens + 13000, output_tokens=maximum)
         return measured
     monkeypatch.setattr(provider, 'estimate', oversized)
-    with pytest.raises(Rejected, match='window token allowance exceeded'):
-        prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
-    assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())
+    result = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
+    assert result.commitments
+    events = calls.log.read()
+    borrowed = [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_share_borrowed']
+    assert len(borrowed) == 1 and borrowed[0][kind + '_borrowed_tokens'] > 0
+    assert sum(e['stage'] == 'commitments_frozen' for e in events) == 1
 
 
 def test_counted_formalization_bound_cuts_before_dispatch(rig, monkeypatch):

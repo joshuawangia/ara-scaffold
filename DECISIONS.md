@@ -1833,3 +1833,35 @@ Zero spend/token caps and a provider that refuses generation enforce its boundar
 It reports an allocation, not invented relevance choices, formulas or search proof.
 Formalization chunking is deferred: bounded inventories retain exact request guards,
 and splitting would need dependency-cycle and correction/symbol receipt semantics.
+
+
+## S2 — Soft construction shares and accounted window refusal
+
+Construction v8 supersedes S1's hard actual-output window shares. The initial
+count-only allocation retains its arithmetic and headroom. Before each window,
+count accepted working T and the catalogue again, subtract actual use, and divide
+the remaining planned capacity across the remaining windows. Headroom is a soft
+target: faithful output may borrow it within hard global working/catalogue and
+context bounds. Log accepted borrowing only after validation and accounting.
+The next window's allowance reflects that consumption, including unused capacity
+released by empty or refused windows. Closure depth still follows planning targets.
+
+Selection/formalization refusals and exhausted corrections omit the window with
+roots, closure (when available), reason, and evidence IDs retained in receipts.
+Invalid selection candidates remain in model-response logs; they do not become
+trusted roots. An indivisible oversized input is retained as an oversized window
+in the plan and omitted before dispatch. Context admission remains hard for each
+initial/correction request, with construction-local refusal scoped to that window.
+Campaign caps, unknown spend, provider/counter/logging errors remain fatal; the
+skip path does not catch general operational exceptions. Correction allowances
+retain their existing lifecycle scope, and no additional retry spending is added.
+Refusal receipts have content-addressed names so a new refusal on recount cannot
+overwrite a prior accepted artifact.
+
+When measured global working or catalogue capacity reaches zero, omit remaining
+windows without dispatch, disclose exhaustion, and return only previously
+accepted commitments through the existing merge and single freeze. Recount final
+working T, catalogue and downstream context before that freeze. Zero accepted
+commitments still fail. An oversized candidate is a window refusal, not evidence
+that every future candidate would exceed the remaining global capacity. Partial
+construction completion does not guarantee downstream search capacity or success.

@@ -424,7 +424,11 @@ class ModelCalls:
                 maximum = self.config['extracted_build_t_max_output_tokens']
         prompt = self.render(kind, inputs)[1]
         schema = self.response_schema(kind, inputs)
-        estimate = self.provider.estimate(kind, prompt, schema, maximum)
+        try:
+            estimate = self.provider.estimate(kind, prompt, schema, maximum)
+        except ValueError as exc:
+            # Counter failures during output validation are operational, not model errors.
+            raise RuntimeError('token counting failed') from exc
         # The search reservation includes future tool iterations. Admission concerns
         # the counted initial context; each iteration is separately bounded by the service.
         initial = estimate.input_tokens - (self.config['model_context_token_bound'] * estimate.server_tool_uses
@@ -435,7 +439,8 @@ class ModelCalls:
                         decision='fits' if fits else 'refused', prompt=prompt)
         if admission and not fits:
             self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind,
-                             scope='paper' if kind == 'extract_paper' else 'run')
+                             scope=('paper' if kind == 'extract_paper' else
+                                    'window' if kind in ('select_t_roots', 'build_t_batch') else 'run'))
         return estimate
 
     def extract_paper(self, paper: Paper, *, salvaged=(), salvage_only=False) -> PaperExtraction:

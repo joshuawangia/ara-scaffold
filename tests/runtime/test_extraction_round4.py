@@ -145,11 +145,9 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
 def test_catalogue_growth_preflight_precedes_formalization(rig, monkeypatch):
     calls, provider, path = rich_calls(rig, monkeypatch)
     calls.config.update(working_t_symbol_growth_tokens_per_item=256, working_t_symbol_token_budget=1000)
-    # Independently test the final defensive preflight if an allocation is wrong.
+    # Independently test the final defensive preflight if a cut is wrong.
     from ara.runtime import closure_budget
-    original_plan = closure_budget.budget_plan
-    monkeypatch.setattr(closure_budget, 'budget_plan', lambda *args: {
-        **original_plan(*args), 'per_window_commitments': 8})
+    monkeypatch.setattr(closure_budget, 'depth_cut', lambda items, *args: (set(items), {}, 0))
     with pytest.raises(Rejected, match='shared symbol token allowance preflight'):
         calls.build_t(path.read_text(), 'P')
     model = [e['stage'] for e in calls.log.read() if e['label'] == 'MODEL']

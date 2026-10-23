@@ -69,7 +69,7 @@ def test_root_allowance_is_counted_before_dispatch_and_cache(rig, monkeypatch):
         return original(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'estimate', estimate)
     before = provider.calls
-    with pytest.raises(BudgetStop, match='context bound'): calls.build_t(path.read_text(), 'P')
+    with pytest.raises(Rejected, match='context bound'): calls.build_t(path.read_text(), 'P')
     assert seen == [16384] and provider.calls == before
 
 
@@ -164,7 +164,7 @@ def test_targeted_correction_recounts_context(rig, monkeypatch):
         return Response(response(value))
     monkeypatch.setattr(provider, 'estimate', estimate)
     monkeypatch.setattr(provider, 'complete', complete)
-    with pytest.raises(BudgetStop, match='context bound'): calls.build_t(path.read_text(), 'P')
+    with pytest.raises(Rejected, match='context bound'): calls.build_t(path.read_text(), 'P')
     assert sent == ['select_t_roots']
     assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())
 

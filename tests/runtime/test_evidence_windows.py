@@ -102,7 +102,8 @@ def test_large_single_graph_windows_close_against_full_evidence(rig, monkeypatch
         return Response(response(value))
     monkeypatch.setattr(provider, 'complete', complete)
     t = prepare_commitments(calls, load_bank(ROOT/'bank'), HEADER + json.dumps(data), 'P')
-    expected = {i['id'] for i in original if i['id'].endswith((':f', ':qual', ':j', ':r', ':d'))}
+    # Earlier empty windows release their unused shares to this root's full closure.
+    expected = {i['id'] for i in original}
     assert {c.id for c in t.commitments} == expected
     assert sum(kind == 'select_t_roots' for kind, _ in seen) > 2
     assert sum(kind == 'build_t_batch' for kind, _ in seen) == 1
@@ -113,7 +114,7 @@ def test_large_single_graph_windows_close_against_full_evidence(rig, monkeypatch
     closure = next(json.loads(e['payload_json']) for e in events
                    if e['stage'] == 'build_t_closure' and json.loads(e['payload_json'])['roots'])
     assert set(closure['uncut_inventory']) == {i['id'] for i in original}
-    assert closure['support_omitted'] == {'p:r1-2:r': ['p:r1-2:i']}
+    assert closure['support_omitted'] == {}
     assert sum(e['stage'] == 'commitments_frozen' for e in events) == 1
 
 
@@ -171,8 +172,8 @@ def test_oversized_selected_closure_refuses_before_formalization(rig, monkeypatc
         return Response(response(batch_response(json.loads(prompt.split('\nINPUT_JSON\n')[1]))))
     monkeypatch.setattr(provider, 'estimate', estimate)
     monkeypatch.setattr(provider, 'complete', complete)
-    from ara.runtime.budget import BudgetStop
-    with pytest.raises(BudgetStop, match='selected closure'):
+    from ara.runtime.calls import Rejected
+    with pytest.raises(Rejected, match='empty working T.*selected closure'):
         prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), 'P')
     assert sent == ['select_t_roots']
     assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())

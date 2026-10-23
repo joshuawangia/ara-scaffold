@@ -166,7 +166,7 @@ CASES += [
 CASES += [
     ('full_profile_caps', 'ara/runtime/cli.py', 'if missing_caps:', 'if False:', 'tests/runtime/test_extraction_round4.py::test_full_profile_refuses_unset_caps_before_provider'),
     ('empty_range_disposition', 'ara/runtime/calls.py', "bool(data.get('empty_reason', '').strip())", 'True', 'tests/runtime/test_extraction_round4.py::test_empty_range_requires_disposition_and_preserves_aggregate[ ]'),
-    ('empty_root_accounting', 'ara/runtime/construction.py', "require(bool(merged.commitments), 'empty working T after accounted omissions')", 'pass', 'tests/runtime/test_extraction_round4.py::test_zero_roots_accounted_without_formalization'),
+    ('empty_root_accounting', 'ara/runtime/construction.py', "require(bool(merged.commitments),", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_zero_roots_accounted_without_formalization'),
     ('closure_preflight', 'ara/runtime/construction.py', "require(projected.input_tokens <= metadata['working_t_token_budget'],", 'require(True,', 'tests/runtime/test_extraction_round4.py::test_closure_preflight_before_formalization'),
     ('window_inventory', 'ara/runtime/windows.py', 'values[:middle]', 'values[1:middle]', 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
     ('full_graph_closure', 'ara/runtime/construction.py', "prerequisite_closure(items, selection['roots'])", "prerequisite_closure(window_items, selection['roots'])", 'tests/runtime/test_evidence_windows.py::test_large_single_graph_windows_close_against_full_evidence'),
@@ -614,13 +614,14 @@ CASES += [
     ('bounded_methodology', 'ara/runtime/export.py',
      "p.get('support_omitted', {}).items()", '{}.items()',
      'tests/runtime/test_bounded_closure.py::test_native_cut_disclosed_in_frozen_text_receipt_and_methodology'),
-    ('bounded_working_output', 'ara/runtime/construction.py',
-     "require(cumulative.input_tokens - current.input_tokens <= allocation['window_copy_token_budget'],",
-     'require(True,',
-     'tests/runtime/test_bounded_closure.py::test_actual_output_cannot_consume_later_allocations[working]'),
-    ('bounded_symbol_output', 'ara/runtime/construction.py',
-     "require(with_catalog.input_tokens - without.input_tokens - catalog_tokens <=", 'require(0 <=',
-     'tests/runtime/test_bounded_closure.py::test_actual_output_cannot_consume_later_allocations[symbols]'),
+    ('soft_working_output', 'ara/runtime/construction.py',
+     "require(cumulative.input_tokens <= metadata['working_t_token_budget'],",
+     "require(cumulative.input_tokens - current.input_tokens <= working_share,",
+     'tests/runtime/test_bounded_closure.py::test_actual_output_borrows_within_global_limits[working]'),
+    ('soft_symbol_output', 'ara/runtime/construction.py',
+     "require(with_catalog.input_tokens - without.input_tokens <= symbol_budget,",
+     "require(with_catalog.input_tokens - without.input_tokens - catalog_tokens <= symbol_share,",
+     'tests/runtime/test_bounded_closure.py::test_actual_output_borrows_within_global_limits[symbols]'),
     ('bounded_exact_request_cut', 'ara/runtime/construction.py',
      "return calls.count_request('build_t_batch', {**trial, 'shared_symbols': []}).input_tokens <= input_bound",
      'return True',
@@ -628,6 +629,52 @@ CASES += [
     ('bounded_zero_window', 'ara/runtime/construction.py',
      'if not selected_ids:', 'if False:',
      'tests/runtime/test_bounded_closure.py::test_zero_root_window_can_precede_contributing_window'),
+]
+
+
+
+CASES += [
+    ('soft_recompute', 'ara/runtime/construction.py',
+     'windows_left = len(batches) - batch.index', 'windows_left = len(batches)',
+     'tests/runtime/test_construction_shares.py::test_borrowing_recounts_and_recomputes_before_next_dispatch'),
+    ('soft_recount', 'ara/runtime/construction.py',
+     "current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})",
+     "current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}})",
+     'tests/runtime/test_construction_shares.py::test_borrowing_recounts_and_recomputes_before_next_dispatch'),
+    ('soft_window_skip', 'ara/runtime/construction.py',
+     'refusal_reasons.append(str(exc))', 'raise',
+     'tests/runtime/test_construction_shares.py::test_window_refusal_is_accounted_and_later_window_succeeds[formalization]'),
+    ('soft_context_skip', 'ara/runtime/calls.py',
+     "'window' if kind in ('select_t_roots', 'build_t_batch') else 'run'", "'run'",
+     'tests/runtime/test_construction_shares.py::test_window_refusal_is_accounted_and_later_window_succeeds[correction_context]'),
+    ('soft_exhaustion', 'ara/runtime/construction.py',
+     'if available <= 0 or symbol_available <= 0:', 'if False:',
+     'tests/runtime/test_construction_shares.py::test_global_exhaustion_freezes_accepted_work_once'),
+    ('soft_global_working', 'ara/runtime/construction.py',
+     "require(cumulative.input_tokens <= metadata['working_t_token_budget'],", 'require(True,',
+     'tests/runtime/test_construction_shares.py::test_window_refusal_is_accounted_and_later_window_succeeds[working]'),
+    ('soft_campaign_stop', 'ara/runtime/construction.py',
+     "if isinstance(exc, BudgetStop) and exc.scope != 'window':", 'if False:',
+     'tests/runtime/test_construction_shares.py::test_operational_and_campaign_failures_do_not_freeze[campaign]'),
+    ('soft_exhaustion_disclosure', 'ara/runtime/export.py',
+     "if e['stage'] == 'build_t_global_exhaustion'", 'if False',
+     'tests/runtime/test_construction_shares.py::test_global_exhaustion_freezes_accepted_work_once'),
+]
+
+CASES += [
+    ('soft_indivisible_window', 'ara/runtime/construction.py',
+     'return min(measured, partition_bound) if len(ids) == 1 else measured', 'return measured',
+     'tests/runtime/test_construction_shares.py::test_indivisible_oversized_window_is_skipped_without_losing_later_work'),
+    ('soft_final_catalogue', 'ara/runtime/construction.py',
+     'if final_catalog > symbol_budget:', 'if False:',
+     'tests/runtime/test_construction_shares.py::test_catalogue_recount_cannot_freeze_over_global_bound[3]'),
+]
+
+
+CASES += [
+    ('soft_counter_failure', 'ara/runtime/calls.py',
+     "raise RuntimeError('token counting failed') from exc", 'raise',
+     'tests/runtime/test_construction_shares.py::test_post_response_counter_error_is_not_a_window_refusal'),
 ]
 
 

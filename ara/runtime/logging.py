@@ -5,6 +5,7 @@ import fcntl
 import json
 import math
 import os
+from hashlib import sha256
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
@@ -23,16 +24,26 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def read_log(path: Path) -> list[dict]:
+def pin_file(inputs, path, checksum):
+    if inputs is not None:
+        key = str(Path(path).absolute())
+        if inputs.setdefault(key, checksum) != checksum:
+            raise LogTampered('verified input changed during verification')
+
+
+def read_log(path: Path, *, inputs=None) -> list[dict]:
     """Verify the entire chain; export can operate on this file alone."""
     previous = '0' * 64
     records = []
+    hasher = sha256()
     try:
-        with Path(path).open() as stream:
+        with Path(path).open('rb') as stream:
             for index, line in enumerate(stream):
+                if inputs is not None:
+                    hasher.update(line)
                 row = json.loads(line)
                 checksum = row.pop('hash')
-                if (not line.endswith('\n') or row['seq'] != index or
+                if (not line.endswith(b'\n') or row['seq'] != index or
                         row['previous'] != previous or digest(canonical(row)) != checksum):
                     raise LogTampered('log chain was modified')
                 RunEvent.from_dict(row['event'])
@@ -40,6 +51,7 @@ def read_log(path: Path) -> list[dict]:
                 records.append({**row, 'hash': checksum})
     except (KeyError, TypeError, json.JSONDecodeError, ValueError) as exc:
         raise LogTampered('invalid or modified log') from exc
+    pin_file(inputs, path, hasher.hexdigest())
     return records
 
 

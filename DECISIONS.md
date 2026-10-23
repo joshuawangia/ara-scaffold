@@ -2033,3 +2033,30 @@ Budget refuses new paid admission on reopen and methodology labels main-chain
 totals incomplete, directing inspection to the durable journals. This is a
 fail-closed boundary, not automatic interrupted-search replay. The round-six
 acceptance of scheduler-ordered worker events is superseded by this decision.
+
+## Persistent extraction-lineage verification receipts
+
+Native run startup writes an immutable verification receipt under
+cache_dir/lineage-verification after full artifact reconstruction and recursive
+origin verification. The receipt records the verifier version and code hashes,
+Python version, result, origin pin, event digest, and SHA-256 of the exact bytes
+of the artifact, sidecar, and every visited source log and separate anchor.
+Referenced paths retain symlink spelling so retargeting remains detectable.
+Every source anchor must agree with its entire log, including unpinned suffixes.
+
+Reuse requires matching verifier identity, artifact/origin binding, all input
+hashes and the loaded event digest; hashes are checked again after event loading.
+A stale, missing or corrupt receipt falls back to full verification. Invalid
+lineage refuses before model setup or import. A known extracted artifact cannot
+be relabelled as human input by changing its header. Public verification/import
+APIs retain full validation; only the validated startup path uses the internal
+append helper to avoid verifying the same lineage twice.
+
+Each run chains the full receipt, receipt digest, receipt-log checkpoint and
+reuse decision into its own log before importing unchanged original events.
+Receipt integrity uses the existing local hash-chain and separate-anchor trust
+model, not signatures: jointly rewriting a receipt chain and its anchor is not
+cryptographic authentication. Source histories must remain stable during startup;
+hash rechecks detect observed changes, not an adversarial change-and-restore
+between reads. This cache covers lineage verification and import only, not
+construction restoration, planning, generation or search.

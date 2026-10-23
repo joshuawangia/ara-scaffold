@@ -3,7 +3,8 @@ from pathlib import Path
 import json
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.logging import now, read_log
+from hashlib import sha256
+from ara.runtime.logging import now, pin_file, read_log
 from ara.types import RunEvent
 
 IMPORT_STAGE = 'extraction_provenance_import'
@@ -20,7 +21,7 @@ def checkpoint(path, records=None):
     return dict(source_log=str(Path(path).resolve()), records=len(records), last_hash=records[-1]['hash'])
 
 
-def read_checkpoint(origin, active=frozenset(), memo=None):
+def read_checkpoint(origin, active=frozenset(), memo=None, *, inputs=None):
     memo = {} if memo is None else memo
     key = canonical(origin)
     if key in active:
@@ -28,11 +29,17 @@ def read_checkpoint(origin, active=frozenset(), memo=None):
     if key in memo:
         return memo[key]
     count = origin['records']
-    rows = read_log(Path(origin['source_log']))
+    path = Path(origin['source_log'])
+    rows = read_log(path, inputs=inputs) if inputs is not None else read_log(path)
+    anchor = path.with_suffix('.anchor')
+    content = anchor.read_bytes()
+    if content.decode().splitlines() != [r['hash'] for r in rows]:
+        raise ValueError('origin log/anchor mismatch')
+    pin_file(inputs, anchor, sha256(content).hexdigest())
     if type(count) is not int or count <= 0 or len(rows) < count or rows[count-1]['hash'] != origin['last_hash']:
         raise ValueError('extraction provenance checkpoint mismatch')
     events = tuple(row['event'] for row in rows[:count])
-    verify_imports(events, active | {key}, memo)
+    verify_imports(events, active | {key}, memo, inputs=inputs)
     memo[key] = events
     return events
 
@@ -51,7 +58,7 @@ def unique_events(events, seen):
     return result
 
 
-def verify_imports(events, active=frozenset(), memo=None):
+def verify_imports(events, active=frozenset(), memo=None, *, inputs=None):
     memo = {} if memo is None else memo
     seen = set()
     for index, event in enumerate(events):
@@ -62,7 +69,7 @@ def verify_imports(events, active=frozenset(), memo=None):
                 raise ValueError('incomplete origin receipt import')
             copied = tuple(events[index+1:index+1+count])
             if 'origin' in data:
-                original = read_checkpoint(data['origin'], active, memo)
+                original = read_checkpoint(data['origin'], active, memo, inputs=inputs)
                 if data['receipt_id'] != digest(canonical(original)) or list(copied) != unique_events(original, seen):
                     raise ValueError('origin receipt import does not match pinned events')
             elif data.get('receipt_id') != digest(canonical(copied)):
@@ -74,10 +81,15 @@ def verify_imports(events, active=frozenset(), memo=None):
 def import_receipts(log, events, origin=None):
     memo = {}
     verify_imports(events, memo=memo)
-    receipt_id = digest(canonical(events))
-    existing = log.read()
     if origin is not None and tuple(events) != read_checkpoint(origin, memo=memo):
         raise ValueError('origin receipt events mismatch')
+    _append_receipts(log, events, origin)
+
+
+def _append_receipts(log, events, origin):
+    """Append after full verification or a verified, hash-matched lineage receipt."""
+    receipt_id = digest(canonical(events))
+    existing = log.read()
     if any(e['stage'] == IMPORT_STAGE and json.loads(e['payload_json']).get('receipt_id') == receipt_id
            for e in existing):
         return

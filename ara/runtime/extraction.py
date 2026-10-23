@@ -455,14 +455,23 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
     return path
 
 
-def literature_provenance(path: Path, text: str) -> tuple[dict, ...]:
+def literature_provenance(path: Path, text: str, *, inputs=None) -> tuple[dict, ...]:
     """Validate the generated artifact against its pinned source-log prefix."""
     if text.startswith('# ARA extracted literature') and not text.startswith(HEADER):
         raise ValueError('unsupported extraction artifact version; regenerate rich v2 evidence')
     if not text.startswith(HEADER):
         return ()
-    provenance = json.loads(path.with_suffix('.provenance.json').read_text())
-    events = read_checkpoint(provenance)
+    from ara.runtime.logging import pin_file
+    if inputs is not None:
+        content = path.read_bytes()
+        if content.decode() != text:
+            raise ValueError('extracted literature changed during verification')
+        pin_file(inputs, path, sha256(content).hexdigest())
+    sidecar = path.with_suffix('.provenance.json')
+    content = sidecar.read_bytes()
+    pin_file(inputs, sidecar, sha256(content).hexdigest())
+    provenance = json.loads(content)
+    events = read_checkpoint(provenance, inputs=inputs)
     complete = json.loads(events[-1]['payload_json'])
     outcomes = extraction_outcomes(events)
     if events[-1]['stage'] != 'extraction_completed' or complete['literature_sha256'] != digest(text) or assemble(outcomes) != text:

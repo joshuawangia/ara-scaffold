@@ -662,3 +662,12 @@ entries. Receipts and methodology show the actual requested/served stage models
 and providers. Model pricing/accounting must be configured for the selected backend.
 The `claude_code` provider can use these same keys once its implementation is
 registered in `ara.runtime.cli.make_provider`; it is not supplied by this change.
+Native `ara run --literature ...` caches extraction-lineage verification receipts
+under `cache_dir/lineage-verification`. Cold startup fully verifies the artifact,
+recursive logs and anchors. Later starts reuse the receipt only when the verifier
+identity and every recorded file hash match; changed inputs trigger full
+verification and invalid lineage refuses before model setup. Every run logs the
+receipt and reuse decision without changing inherited model receipts or charges.
+Deleting this cache safely forces full verification. Receipts use local hash
+chains with separate anchors, not signed authentication. The optimization does
+not skip construction restoration or any downstream work.

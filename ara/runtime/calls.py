@@ -307,17 +307,23 @@ class ModelCalls:
         from ara.runtime.claude_code import ClaudeCodeError
         provider = self._for_construction_stage(kind, inputs, attempt=attempt).provider
         unclassified_retries = 0
+        auth_retries = 0
         for retry in range(getattr(provider, 'retries', 0) + 1):
             try:
                 return self._call_once(kind, inputs, check, attempt=attempt)
             except ClaudeCodeError as exc:
                 unclassified = exc.code == 'cli_exit_error' and exc.receipt.get('exit_status') == 1
-                if not exc.retryable or retry == provider.retries or (unclassified and unclassified_retries >= 1):
+                auth = exc.code == 'cli_auth_error'
+                if (not exc.retryable or retry == provider.retries
+                        or (unclassified and unclassified_retries >= 1) or (auth and auth_retries >= 1)):
                     raise Rejected(exc.code) from None
                 if unclassified:
                     unclassified_retries += 1
+                if auth:
+                    auth_retries += 1
                 delay = min(30, provider.backoff * 2 ** retry)
-                self.log.record('unclassified_exit_retry' if unclassified else 'provider_retry', kind=kind, next_attempt=retry + 2,
+                event = 'auth_refresh_retry' if auth else ('unclassified_exit_retry' if unclassified else 'provider_retry')
+                self.log.record(event, kind=kind, next_attempt=retry + 2,
                                 delay_seconds=delay, reason=exc.code)
                 time.sleep(delay)
         raise AssertionError('unreachable')

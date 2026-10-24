@@ -64,7 +64,7 @@ def classify_failure(data, stderr):
     if 'schema' in matches:
         return 'cli_invalid_schema', False, 'schema'
     if status in (401, 403) or 'auth' in matches:
-        return 'cli_auth_error', False, 'auth'
+        return 'cli_auth_error', True, 'auth'
     if (type(status) is int and 400 <= status < 500 and status != 429) or 'request' in matches:
         return 'cli_invalid_request', False, 'request'
     if subtype == 'error_max_budget_usd':
@@ -124,8 +124,10 @@ class ClaudeCodeProvider:
         self.version = None
         self.identity = self._identity()
         self.forbidden = self._forbidden(options)
-        self._oauth, self._env_token, self._secrets = self._authentication()
-        self.auth_mode = 'config-link' if self._oauth is not None else 'env'
+        source = Path(os.environ.get('CLAUDE_CONFIG_DIR', str(Path.home()/'.claude')))/'.credentials.json'
+        self._credential_source = source if source.exists() else None
+        self.auth_mode = 'env'
+        self._authentication()
 
     def _identity(self):
         values = []
@@ -237,53 +239,41 @@ class ClaudeCodeProvider:
                 'system_prompt': self.system_for(kind), 'web_retrieval': 'disabled; search_evidence refuses',
                 'operator_identity_output_scan': True, 'credential_output_scan': 'raw and recursive decoded strings, including cache replay',
                 'auth_mode': self.auth_mode,
-                'auth_transport': ('private 0600 OAuth snapshot; no token in child environment; deleted after each call; refresh disabled; inference-only CLI scope metadata'
-                                   if self.auth_mode == 'config-link' else 'environment token; same-user environment inspection permitted'),
+                'auth_transport': ('read-only credential file opened fresh per call; access token only in child environment; no token files or refresh credentials; same-user environment inspection permitted'
+                                   if self._credential_source is not None else 'environment token read fresh per call; same-user environment inspection permitted'),
                 'auth_threat_model': 'Same-user processes already can read the machine credential file. Credentials never enter argv, logs or cache. Private file permissions and process isolation protect against other unprivileged users; root is outside this boundary.'}
 
     def _authentication(self):
-        source = Path(os.environ.get('CLAUDE_CONFIG_DIR', str(Path.home()/'.claude')))/'.credentials.json'
         env_token = os.environ.get('CLAUDE_CODE_OAUTH_TOKEN')
         secrets = {env_token} if env_token else set()
+        if self._credential_source is None:
+            if env_token:
+                return env_token, frozenset(secrets)
+            raise ClaudeCodeError('subscription_login_unavailable')
         try:
-            oauth = json.loads(source.read_text())['claudeAiOauth']
+            # Open the path anew, so atomic host replacements are visible.
+            oauth = json.loads(self._credential_source.read_text())['claudeAiOauth']
             if not isinstance(oauth, dict) or not isinstance(oauth.get('accessToken'), str) or not oauth['accessToken']:
                 raise ValueError()
-            secrets.update(v for k, v in oauth.items() if 'token' in k.lower() and isinstance(v, str) and v)
-            # Copy authentication data only. No MCP credentials or operator settings.
-            # Omit refresh credentials: a child must not rotate the machine login.
             if not isinstance(oauth.get('scopes'), list) or 'user:inference' not in oauth['scopes']:
                 raise ValueError()
-            snapshot = {k: oauth[k] for k in ('accessToken', 'expiresAt', 'subscriptionType',
-                                             'subscriptionTypeSource', 'rateLimitTier') if k in oauth}
-            # Match env-token mode's inference-only discovery: profile scope makes
-            # the CLI fetch account identity and inject it into model context.
-            # This limits CLI behavior, not the token's server-side permissions.
-            snapshot['scopes'] = ['user:inference']
-            return snapshot, None, frozenset(secrets)
-        except FileNotFoundError:
-            if env_token:
-                return None, env_token, frozenset(secrets)
+            secrets.update(v for k, v in oauth.items() if 'token' in k.lower() and isinstance(v, str) and v)
+            return oauth['accessToken'], frozenset(secrets)
         except (OSError, ValueError, KeyError, TypeError):
-            pass
-        raise ClaudeCodeError('subscription_login_unavailable')
+            raise ClaudeCodeError('subscription_login_unavailable') from None
 
     def _environment(self, config_dir, maximum):
+        access_token, secrets = self._authentication()
         env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
         env.update(CLAUDE_CONFIG_DIR=str(config_dir),
+                   CLAUDE_CODE_OAUTH_TOKEN=access_token,
                    CLAUDE_CODE_DISABLE_AUTO_MEMORY='1', CLAUDE_CODE_MAX_OUTPUT_TOKENS=str(maximum),
                    DISABLE_TELEMETRY='1', DISABLE_ERROR_REPORTING='1')
-        if self._oauth is not None:
-            # A private snapshot, rather than a symlink/hardlink that the CLI could
-            # write through to the original. TemporaryDirectory removes it on exit.
-            path = config_dir/'.credentials.json'
-            with open(path, 'x', opener=lambda name, flags: os.open(name, flags, 0o600)) as stream:
-                json.dump({'claudeAiOauth': self._oauth}, stream)
-        else:
-            env['CLAUDE_CODE_OAUTH_TOKEN'] = self._env_token
-        return env
+        return env, secrets
 
-    def scan_output(self, value):
+    def scan_output(self, value, *, secrets=None):
+        if secrets is None:
+            _, secrets = self._authentication()
         def strings(node):
             if isinstance(node, dict):
                 for key, child in node.items():
@@ -302,7 +292,7 @@ class ClaudeCodeProvider:
                         return
                     yield from strings(decoded)
         for text in strings(value):
-            if any(secret in text for secret in self._secrets):
+            if any(secret in text for secret in secrets):
                 raise ClaudeCodeError('credential_in_cli_output')
             folded = text.casefold()
             if any(term.casefold() in folded for term in self.identity):
@@ -369,7 +359,7 @@ class ClaudeCodeProvider:
             for parent in (cwd, *cwd.parents):
                 if any((parent/name).exists() for name in ('AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md')):
                     raise ClaudeCodeError('isolation_ancestor_instructions')
-            env = self._environment(config_dir, maximum)
+            env, secrets = self._environment(config_dir, maximum)
             if self.version is None:
                 try:
                     version = subprocess.run([self.binary, '--version'], capture_output=True, text=True,
@@ -401,7 +391,7 @@ class ClaudeCodeProvider:
             receipt.update(exit_status=result.returncode, wall_seconds=time.monotonic()-started)
             debug = debug_path.read_text() if debug_path.exists() else ''
             # No debug/response containing a credential or identity is ever persisted.
-            raw_leak = any(secret in result.stdout + result.stderr + debug for secret in self._secrets)
+            raw_leak = any(secret in result.stdout + result.stderr + debug for secret in secrets)
             data = None
             try:
                 data = json.loads(result.stdout)
@@ -413,7 +403,7 @@ class ClaudeCodeProvider:
                 try:
                     if raw_leak:
                         raise ClaudeCodeError('credential_in_cli_output')
-                    self.scan_output(data)
+                    self.scan_output(data, secrets=secrets)
                 except ClaudeCodeError as exc:
                     receipt.update(failure_class=exc.code, retryable=False)
                     try:

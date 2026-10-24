@@ -2281,3 +2281,35 @@ historical-inclusive admission. Existing methodology local/inherited totals and
 new token_cap_policy metadata disclose the distinction; STOP events include total,
 local and imported tokens. No log is rewritten, historical receipt discarded,
 or API dollar cap changed.
+
+
+## Omega round 7 — One unclassified retry and scrubbed exit diagnostics
+
+The operator explicitly permits one retry of an unclassified CLI exit 1. This
+supersedes round 6's blanket non-retryable classification for unknown exits.
+Mark only exit 1 retryable and enforce a separate one-retry counter inside the
+native transport loop, logging unclassified_exit_retry with attempt, delay and
+reason. Keep the configured total retry budget and retries=0 authoritative.
+Auth, permission, schema, request/context-size, budget and credential/identity
+failures remain non-retryable. Other unknown exit statuses do not gain retries.
+All attempt accounting and admission run before retry, including explicit unknown
+usage reservations; one cheap retry is not evidence that a failure is transient.
+
+Retain sanitized JSON subtype/error category and the first stderr line, bounded
+to 200 characters after redaction. Decode two layers of JSON/percent escaping;
+suppress remaining encoded text. Remove known credential values, case-insensitive
+operator identities, bearer credentials and key/token/password assignments before
+truncation. Explicit echo markers or shared prompt/system fragments suppress the
+whole line. This conservative rule can hide benign text; it does not claim to
+recognize arbitrary paraphrases or novel encodings. Useful non-echo diagnostics
+such as a prompt-size error remain available. Subtype and category fields pass
+through the same sanitizer. Raw CLI errors and subsequent stderr lines are not
+retained. Security rejection retains measured usage and scrubbed metadata without
+storing the rejected content, and its receipt states non-retryable.
+
+Offline production-subprocess tests cover repeated failure and recovery after one
+retry, disabled retries, other exit codes, malformed receipts with reservation
+accounting, auth/request categories, first-line retention, JSON/percent credential
+encoding, identity, partial prompt echoes, JSON diagnostic fields and redaction
+across the truncation boundary. No live or paid calls are part of round 7. Existing
+historical exit-1 causes remain unrecoverable; new metadata helps future diagnosis.

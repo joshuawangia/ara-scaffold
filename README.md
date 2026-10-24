@@ -728,10 +728,22 @@ completion may have CLI `stop_reason: tool_use`.
 process retries, with logged exponential backoff capped at 30 seconds. The same
 bounded retry path handles CLI turn exhaustion, structured-output retry exhaustion,
 timeouts and identified transient server/connection failures. Schema, invalid
-request and authentication failures are not retried. Unknown exit failures remain
-non-retryable. Receipts retain enumerated failure class/subtype, numeric API status
-and stderr byte count, never raw diagnostic text or prompt echoes. Admission
-is repeated for every attempt. Concurrent requests reserve tokens atomically.
+request and authentication failures are not retried. An unclassified exit 1 gets
+at most one retry per transport call, logged as `unclassified_exit_retry`, within
+the configured retry budget; `retries: 0` disables it. Other unclassified exit
+statuses are not retried. Admission is repeated for every attempt, including
+retries with unknown usage charged at reservation. Concurrent requests reserve
+tokens atomically.
+
+Exit receipts retain the CLI JSON subtype/error category and `stderr_first_line`,
+plus numeric status and byte count. Diagnostics are decoded for JSON/percent
+escapes, scrubbed of known credentials and operator identities, then truncated
+to 200 characters. Bearer/key/token/password patterns are also redacted. Explicit
+prompt echoes and matching prompt/system fragments suppress the whole diagnostic
+line; other useful messages remain. Only the first line survives. Unresolved
+encoding is suppressed. Scrubbing is conservative and can hide benign text;
+raw diagnostic bodies and unsanitized stderr are never retained. Existing
+credential/identity rejection remains authoritative and non-retryable.
 There is no free CLI token counter. The versioned calibration table uses per-kind
 p99 measured API tokens/UTF-8-byte ratios with 5% margin, plus runtime overhead
 measured from retained CLI receipts. Source/event hashes and numeric pairs are in

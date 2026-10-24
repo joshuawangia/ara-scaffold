@@ -11,6 +11,7 @@ import tempfile
 import threading
 import time
 import uuid
+from urllib.parse import unquote
 
 from ara.runtime.cache import canonical, digest
 from ara.runtime.providers import Response, stage_settings
@@ -34,7 +35,7 @@ ESTIMATE_METHOD = METHOD
 
 
 class ClaudeCodeError(RuntimeError):
-    """Only enumerated diagnostics and validated numeric receipts may escape."""
+    """Only scrubbed diagnostics and validated receipts may escape."""
     def __init__(self, code, *, receipt=None, response=None, retryable=False):
         super().__init__(code)
         self.code, self.receipt, self.response, self.retryable = code, receipt or {}, response, retryable
@@ -42,15 +43,19 @@ class ClaudeCodeError(RuntimeError):
 
 def classify_failure(data, stderr):
     """Classify diagnostics without retaining provider text or prompt echoes."""
-    diagnostic = json.dumps({k: data.get(k) for k in ('errors', 'result')}).casefold() + stderr.casefold()
+    diagnostic = json.dumps({k: data.get(k) for k in ('subtype', 'errors', 'error', 'error_type', 'result')}).casefold() + stderr.casefold()
     status = data.get('api_error_status')
     subtype = data.get('subtype')
     if re.search(r'invalid.{0,30}schema|schema.{0,30}(?:invalid|unsupported)', diagnostic):
         return 'cli_invalid_schema', False
-    if status in (401, 403) or re.search(r'authentication.{0,20}(?:failed|error)|invalid api key|not logged in', diagnostic):
+    if status in (401, 403) or re.search(
+            r'authentication.{0,20}(?:failed|error)|authorization_error|permission_error|invalid api key|not logged in', diagnostic):
         return 'cli_auth_error', False
-    if status == 400 or 'invalid_request_error' in diagnostic:
+    if (type(status) is int and 400 <= status < 500 and status != 429) or any(
+            term in diagnostic for term in ('invalid_request_error', 'context_length_exceeded', 'prompt too long')):
         return 'cli_invalid_request', False
+    if subtype == 'error_max_budget_usd':
+        return 'cli_budget_limit', False
     if status == 429 or re.search(r'(?:rate|usage)[ _-]limit|you.ve hit your limit', diagnostic):
         return 'cli_usage_limit', True
     if subtype in ('error_max_turns', 'error_max_structured_output_retries'):
@@ -61,12 +66,19 @@ def classify_failure(data, stderr):
     return 'cli_exit_error', False
 
 
-def failure_receipt(data, stderr, receipt):
+def failure_receipt(data, stderr, receipt, sanitize):
     code, retryable = classify_failure(data, stderr)
-    subtype = data.get('subtype')
+    if code == 'cli_exit_error' and receipt.get('exit_status') == 1:
+        retryable = True
+    category = data.get('error_type')
+    if not isinstance(category, str) and isinstance(data.get('error'), dict):
+        category = data['error'].get('type')
+    if not isinstance(category, str) and isinstance(data.get('errors'), list):
+        category = next((e.get('type') for e in data['errors'] if isinstance(e, dict) and isinstance(e.get('type'), str)), None)
     receipt.update(failure_class=code, retryable=retryable,
-                   failure_subtype=subtype if subtype in ('error_during_execution', 'error_max_turns',
-                       'error_max_structured_output_retries', 'error_max_budget_usd') else 'unclassified',
+                   failure_subtype=sanitize(data.get('subtype')) or 'unclassified',
+                   error_category=sanitize(category) or code,
+                   stderr_first_line=sanitize(stderr),
                    stderr_bytes=len(stderr.encode()))
     if type(data.get('api_error_status')) is int and 100 <= data['api_error_status'] <= 599:
         receipt['api_error_status'] = data['api_error_status']
@@ -262,6 +274,44 @@ class ClaudeCodeProvider:
             env['CLAUDE_CODE_OAUTH_TOKEN'] = self._env_token
         return env
 
+    def sanitize_diagnostic(self, value, prompt, system):
+        """Retain a bounded first line; uncertain prompt echoes lose the whole line."""
+        if not isinstance(value, str):
+            return ''
+        # Decode JSON escapes before matching, including escaped credential values.
+        escape = r'\\(?:u[0-9a-fA-F]{4}|["\\/bfnrt])'
+        for _ in range(2):
+            value = unquote(value)
+            value = re.sub(escape, lambda match: json.loads('"' + match[0] + '"'), value)
+        if re.search(escape + r'|%[0-9a-fA-F]{2}', value):
+            return '[REDACTED: encoded diagnostic]'
+        value = value.encode('utf-8', errors='replace').decode('utf-8')
+        line = value.splitlines()[0] if value.splitlines() else ''
+        line = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', line)
+        for secret in sorted(self._secrets, key=len, reverse=True):
+            line = line.replace(secret, '[REDACTED]')
+        for identity in sorted(self.identity, key=len, reverse=True):
+            line = re.sub(re.escape(identity), '[REDACTED]', line, flags=re.IGNORECASE)
+        line = re.sub(r'(?i)(\bBearer\s+)[^\s,"\']+', r'\1[REDACTED]', line)
+        line = re.sub(r'(?i)((?:api[_-]?key|(?:access[_-]?|refresh[_-]?)?token|password)\s*[:=]\s*["\']?)[^\s,"\']+',
+                      r'\1[REDACTED]', line)
+        if re.search(r'\b(?:prompt\s*[:=]|prompt.*echo|echo.*prompt|input_json|(?:system|user)[_ ]message\s*[:=])',
+                     line, re.IGNORECASE):
+            return '[REDACTED: prompt echo]'
+        # Detect truncated/reformatted echoes as well as complete prompt lines.
+        visible = line[:207].casefold()
+        for source in (prompt, system):
+            folded = source.casefold().strip()
+            if not folded:
+                continue
+            if len(folded) < 8:
+                echoed = re.search(r'(?<!\w)' + re.escape(folded) + r'(?!\w)', visible)
+            else:
+                echoed = any(visible[i:i+8] in folded for i in range(len(visible)-7))
+            if echoed:
+                return '[REDACTED: prompt echo]'
+        return line[:200]
+
     def scan_output(self, value):
         def strings(node):
             if isinstance(node, dict):
@@ -288,7 +338,7 @@ class ClaudeCodeProvider:
                 raise ClaudeCodeError('operator_identity_in_output')
 
     def _accounted_response(self, data, receipt, model):
-        # Only validated numeric fields and locally generated routing data survive
+        # Only validated usage, routing and already scrubbed diagnostics survive
         # rejection. Never copy unscanned CLI model/session/content strings here.
         usage = Response.usage_fields(data['usage'])
         if not {'input_tokens', 'output_tokens'} <= data['usage'].keys() or not all(
@@ -377,6 +427,9 @@ class ClaudeCodeProvider:
             except OSError:
                 raise ClaudeCodeError('cli_launch_failed', receipt=receipt) from None
             receipt.update(exit_status=result.returncode, wall_seconds=time.monotonic()-started)
+            sanitize = lambda value: self.sanitize_diagnostic(value, prompt, self.system_for(kind))
+            if result.returncode:
+                receipt['stderr_first_line'] = sanitize(result.stderr)
             debug = debug_path.read_text() if debug_path.exists() else ''
             # No debug/response containing a credential or identity is ever persisted.
             raw_leak = any(secret in result.stdout + result.stderr + debug for secret in self._secrets)
@@ -385,11 +438,15 @@ class ClaudeCodeProvider:
                 data = json.loads(result.stdout)
                 if not isinstance(data, dict):
                     raise ValueError()
+                failure = None
+                if result.returncode or data.get('is_error') or data.get('subtype') != 'success':
+                    failure = failure_receipt(data, result.stderr, receipt, sanitize)
                 try:
                     if raw_leak:
                         raise ClaudeCodeError('credential_in_cli_output')
                     self.scan_output(data)
                 except ClaudeCodeError as exc:
+                    receipt.update(failure_class=exc.code, retryable=False)
                     try:
                         accounted = self._accounted_response(data, receipt, model)
                     except (ValueError, TypeError, KeyError, AttributeError):
@@ -411,14 +468,14 @@ class ClaudeCodeProvider:
                 if raw_leak:
                     raise ClaudeCodeError('credential_in_cli_output', receipt=receipt) from None
                 code, retryable = failure_receipt(data if isinstance(data, dict) else {'result': result.stdout},
-                                                  result.stderr, receipt)
+                                                  result.stderr, receipt, sanitize)
                 if code == 'cli_exit_error' and not result.returncode:
                     code = 'cli_invalid_json_receipt'
                     receipt['failure_class'] = code
                 raise ClaudeCodeError(code, receipt=receipt, retryable=retryable) from None
             raw['model'] = served or model
             if result.returncode or data.get('is_error') or data.get('subtype') != 'success':
-                code, retryable = failure_receipt(data, result.stderr, receipt)
+                code, retryable = failure
                 raise ClaudeCodeError(code, receipt=receipt, response=raw, retryable=retryable)
             if served != model:
                 raise ClaudeCodeError('cli_model_mismatch', receipt=receipt, response=raw)

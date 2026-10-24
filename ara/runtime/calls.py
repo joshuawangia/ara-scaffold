@@ -306,14 +306,18 @@ class ModelCalls:
     def _transport_call(self, kind, inputs, check, *, attempt):
         from ara.runtime.claude_code import ClaudeCodeError
         provider = self._for_construction_stage(kind, inputs, attempt=attempt).provider
+        unclassified_retries = 0
         for retry in range(getattr(provider, 'retries', 0) + 1):
             try:
                 return self._call_once(kind, inputs, check, attempt=attempt)
             except ClaudeCodeError as exc:
-                if not exc.retryable or retry == provider.retries:
+                unclassified = exc.code == 'cli_exit_error' and exc.receipt.get('exit_status') == 1
+                if not exc.retryable or retry == provider.retries or (unclassified and unclassified_retries >= 1):
                     raise Rejected(exc.code) from None
+                if unclassified:
+                    unclassified_retries += 1
                 delay = min(30, provider.backoff * 2 ** retry)
-                self.log.record('provider_retry', kind=kind, next_attempt=retry + 2,
+                self.log.record('unclassified_exit_retry' if unclassified else 'provider_retry', kind=kind, next_attempt=retry + 2,
                                 delay_seconds=delay, reason=exc.code)
                 time.sleep(delay)
         raise AssertionError('unreachable')

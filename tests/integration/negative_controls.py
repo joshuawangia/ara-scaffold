@@ -1014,6 +1014,35 @@ CASES += [
 ]
 
 
+CASES += [
+    ('cli_subtype_auth_request_classification', 'ara/runtime/claude_code.py',
+     "('subtype', 'errors', 'error', 'error_type', 'result')",
+     "('errors', 'error', 'error_type', 'result')",
+     'tests/runtime/test_claude_code.py::test_json_error_categories_are_not_retried'),
+    ('cli_unclassified_retry_enabled', 'ara/runtime/claude_code.py',
+     "if code == 'cli_exit_error' and receipt.get('exit_status') == 1:", 'if False:',
+     'tests/runtime/test_claude_code.py::test_unclassified_exit_retries_once_with_named_event'),
+    ('cli_unclassified_retry_once', 'ara/runtime/calls.py',
+     'unclassified_retries >= 1', 'False',
+     'tests/runtime/test_claude_code.py::test_unclassified_exit_retries_once_with_named_event'),
+    ('cli_stderr_credential_scrub', 'ara/runtime/claude_code.py',
+     "line = line.replace(secret, '[REDACTED]')", 'pass',
+     'tests/runtime/test_claude_code.py::test_exit_diagnostic_scrubs_before_truncation'),
+    ('cli_stderr_identity_scrub', 'ara/runtime/claude_code.py',
+     "line = re.sub(re.escape(identity), '[REDACTED]', line, flags=re.IGNORECASE)", 'pass',
+     'tests/runtime/test_claude_code.py::test_exit_diagnostic_scrubs_before_truncation'),
+    ('cli_stderr_prompt_scrub', 'ara/runtime/claude_code.py',
+     'if echoed:', 'if False:',
+     'tests/runtime/test_claude_code.py::test_exit_diagnostic_scrubs_before_truncation'),
+    ('cli_stderr_truncation', 'ara/runtime/claude_code.py',
+     'return line[:200]', 'return line',
+     'tests/runtime/test_claude_code.py::test_exit_diagnostic_scrubs_before_truncation'),
+    ('cli_json_diagnostic_scrub', 'ara/runtime/claude_code.py',
+     'error_category=sanitize(category) or code', 'error_category=category or code',
+     'tests/runtime/test_claude_code.py::test_json_diagnostic_fields_are_scrubbed_too'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

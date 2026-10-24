@@ -2418,3 +2418,53 @@ failure, disabled retries, unknown usage, and replacement during an in-flight
 call. Controls protect fresh reads, access-token-only handoff and retry bounds.
 The authorized live proof is a canary and one placeholder stage call; no API
 spending, full pilot restart or credential rotation is authorized.
+
+## Omega round 10 — Codex subscription transport
+
+O10.1. `codex_cli` extends the native ModelCalls/provider seam alongside
+`claude_code`. Extraction remains Opus 5 API work; construction/search may pin
+an explicit `gpt-*` model per stage. `extract_paper` and web-evidence acquisition
+refuse on the subscription transport. Provider errors reuse bounded retry and
+reservation/actual accounting, including one credential re-read after auth
+failure. Missing ChatGPT auth refuses; an API key is never a fallback.
+
+O10.2. Each request starts Codex CLI 0.163.0 `exec` with `--ephemeral`,
+`--ignore-user-config`, `--ignore-rules`, `--skip-git-repo-check`, `--json`,
+`--output-schema`, pinned `-m`, read-only sandbox, never approval, disabled web,
+MCP, shell, apps, plugins, hooks, memory, goals, multi-agent, images, and plan/input
+helpers. Linux bubblewrap is mandatory and hides host home directories, /tmp,
+/run and process state. The empty cwd and fresh HOME carry no operator context.
+CODEX_HOME starts with only a symlink to a read-only bind of the current auth
+file. Its runtime-generated state is isolated in tmpfs and discarded with the
+process; making the entire home read-only prevents this CLI from starting.
+The source is opened anew per call; scanning and the mount use the same inode,
+so atomic host replacements cannot race the credential output scan. No token
+copy is written. The CLI refresh URL is set to an unsupported `disabled://`
+scheme, preventing credential rotation as well as denying source writes. These
+controls are version-specific: another CLI version refuses pending revalidation.
+
+O10.3. Event parsing accepts only known lifecycle, reasoning, final-message and
+error events. Nonfatal CLI warning items accompanying a completed turn retain
+only a numeric count; terminal errors still reject. Every tool/file/command/web event and unknown event rejects the
+response before retention. Error text and reasoning never enter receipts or
+cache. Diagnostics carry only fixed categories and validated numeric metadata.
+Successful model JSON is scanned for current credentials and runtime git name/
+email. The isolation canary additionally scans discovered forbidden names,
+including global AGENTS and memory paths. Local schema validation remains
+mandatory; the CLI schema is not the acceptance authority.
+
+O10.4. Seed estimates reuse the measured API receipts table and conservatively
+retain the prior two-request reservation and runtime overhead. Anthropic and
+Codex tokenizers differ: this seed is not a proven Codex bound. Single-turn
+Codex input (including cached input exactly once) updates the same run-local,
+model/kind-scoped factors upward only. No free counter is claimed. Dollar caps
+exclude subscription calls; reported subscription USD equivalent is unavailable,
+not measured zero. Codex has no hard output-token flag; configured output sizes
+are admission reservations, and actual overages can stop the run afterward.
+
+O10.5. Model IDs from CLI events are checked against the requested pin. When
+Codex omits the served model, it remains explicitly `unverified` in receipts and
+methodology. The request pin is never fabricated as a serving receipt. Live
+subscription isolation, the tool-invitation canary, stage acceptance and any
+account-specific model availability require the external Round 10 report's
+executed evidence; fake-binary tests alone do not establish them.

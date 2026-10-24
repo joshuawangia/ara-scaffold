@@ -42,7 +42,7 @@ class Budget:
         self._lock = RLock()
         self._reservations = set()
         self._halted = None
-        self.subscription = config.get('provider') == 'claude_code'
+        self.subscription = config.get('provider') in ('claude_code', 'codex_cli')
         self.rates = config['pricing'].get(config['model'], {}) if self.subscription else config['pricing'][config['model']]
         for rates in config['pricing'].values():
             for name, value in rates.items():
@@ -104,7 +104,7 @@ class Budget:
         return result
 
     def response_cost(self, raw: dict) -> Decimal:
-        if raw.get('provider') == 'claude_code':
+        if raw.get('provider') in ('claude_code', 'codex_cli'):
             return Decimal(0)
         served_model = raw['model']
         # Validate the served model even for a zero-token refusal or cache entry.

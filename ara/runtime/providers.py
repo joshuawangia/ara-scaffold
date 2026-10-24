@@ -261,7 +261,7 @@ def provider_error_evidence(exc: Exception, prompt: str = '') -> dict:
     """
     from ara.runtime.claude_code import ClaudeCodeError
     if isinstance(exc, ClaudeCodeError):
-        return {'provider': 'claude_code', 'error_type': exc.code, 'message': 'CLI diagnostic suppressed.',
+        return {'provider': getattr(exc, 'provider_kind', 'claude_code'), 'error_type': exc.code, 'message': 'CLI diagnostic suppressed.',
                 'cli': exc.receipt, 'retryable': exc.retryable}
     import re
     body = getattr(exc, 'body', None)

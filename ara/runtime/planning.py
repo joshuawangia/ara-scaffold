@@ -17,6 +17,9 @@ class CountingProvider:
         if counter == 'provider' and config.get('provider') == 'claude_code':
             from ara.runtime.claude_code import ClaudeCodeProvider
             self.provider = ClaudeCodeProvider(config)
+        elif counter == 'provider' and config.get('provider') == 'codex_cli':
+            from ara.runtime.codex_cli import CodexCLIProvider
+            self.provider = CodexCLIProvider(config)
         else:
             self.provider = AnthropicProvider(config) if counter == 'provider' else None
         if hasattr(self.provider, 'initial_context_tokens'):

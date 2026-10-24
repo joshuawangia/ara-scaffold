@@ -100,7 +100,7 @@ def methodology(log_path: Path) -> str:
         'origin': 'SYSTEM/MODEL',
         'upstream_receipts_imported': any(e['stage'] == 'extraction_provenance_import' for e in events),
     }
-    cli_calls = [(e, p) for e, p in routing if p.get('provider') == 'claude_code']
+    cli_calls = [(e, p) for e, p in routing if p.get('provider') in ('claude_code', 'codex_cli')]
     provider_methods = {
         'requested_models_by_stage': {kind: sorted({e['model_id'] for e in calls if e['stage'] == kind}) for kind in served_by_kind},
         'providers_by_stage': {kind: sorted({p.get('provider', 'anthropic_or_mock_legacy') for e, p in routing
@@ -109,15 +109,22 @@ def methodology(log_path: Path) -> str:
                          'token_estimate_method', 'calibration', 'usd_cap_policy', 'token_cap_policy', 'effective_prompt_note',
                          'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport',
                          'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan')}
-                       for _, p in cli_calls[:1]],
+                       for _, p in cli_calls if p.get('provider') == 'claude_code'][:1],
+        'codex_cli': [{key:p.get(key) for key in ('cli_version', 'isolation_flags', 'fresh_cwd_and_config',
+                         'token_estimate_method', 'calibration', 'usd_cap_policy', 'token_cap_policy', 'effective_prompt_note',
+                         'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport',
+                         'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan', 'served_model_policy',
+                         'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note')}
+                       for _,p in cli_calls if p.get('provider') == 'codex_cli'][:1],
         'token_cap_policies': sorted({p.get('token_cap_policy', 'legacy_history_inclusive') for _, p in cli_calls}),
         'estimate_observations': [json.loads(e['payload_json']) for e in events if e['stage']=='provider_estimate_observation'],
         'isolation_preflights': [p.get('isolation') for e, p in cli_calls if e['stage'] == 'isolation_canary'],
-        'subscription_usage': {'cost_equivalent_usd': sum(p.get('subscription_usage', {}).get('cost_equivalent_usd', 0)
+        'subscription_usage': {'cost_equivalent_usd': sum((p.get('subscription_usage', {}).get('cost_equivalent_usd') or 0)
                                   for e, p in cli_calls if not p.get('cache_hit')),
-                               'note': 'CLI-reported subscription list-price equivalent, not measured API USD; dollar caps do not apply. Token-cap policy is recorded per call; imported and local usage remain separately reported.'},
+                               'cost_equivalent_unavailable_calls': sum(p.get('subscription_usage', {}).get('cost_equivalent_usd') is None for e,p in cli_calls if not p.get('cache_hit')),
+                               'note': 'Codex does not report a cost equivalent; missing amounts are unknown. CLI-reported subscription list-price equivalent, not measured API USD; dollar caps do not apply. Token-cap policy is recorded per call; imported and local usage remain separately reported.'},
         'stage_transport_note': ('Extraction retains its imported API receipts when present. '
-                                'Construction and search stages listed as claude_code use fresh headless subagent sessions. '
+                                'Construction and search stages listed as claude_code or codex_cli use fresh headless subagent sessions. '
                                 'Stages absent from the log are not claimed as executed.') if cli_calls else None,
     }
     summary = {

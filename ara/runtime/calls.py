@@ -200,7 +200,7 @@ class ModelCalls:
         self._ensure_provider_ready(force=True)
 
     def _subscription(self):
-        return getattr(self.provider, 'provider_kind', None) == 'claude_code'
+        return getattr(self.provider, 'provider_kind', None) in ('claude_code', 'codex_cli')
 
     def _ensure_provider_ready(self, *, force=False):
         with self._stage_provider_lock:

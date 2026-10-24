@@ -145,3 +145,15 @@ claude_code:
   retry_backoff_seconds: 1
   # Supplement the runtime inventory with private project names in local config.
   forbidden_terms: []
+
+# ChatGPT subscription transport (Linux, bubblewrap, pinned Codex CLI 0.163.0).
+# Select provider: codex_cli with an explicit gpt-* model; no API-key fallback.
+# Extraction remains Opus 5 via API. Per-stage construction/search settings may
+# select codex_cli. The isolation canary runs automatically before stage calls.
+codex_cli:
+  concurrency: 4
+  timeout_seconds: 300
+  retries: 2
+  retry_backoff_seconds: 1
+  # auth_file: /path/to/existing/ChatGPT/auth.json (default CODEX_HOME/auth.json)
+  forbidden_terms: []

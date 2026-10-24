@@ -930,7 +930,7 @@ CASES += [
      "range(getattr(provider, 'retries', 0) + 1)", "range(getattr(self.provider, 'retries', 0) + 1)",
      'tests/runtime/test_provider_integration.py::test_api_run_subscription_stage_canary_accounting_and_retries[True]'),
     ('mixed_served_api_price', 'ara/runtime/budget.py',
-     "if raw.get('provider') == 'claude_code':", 'if self.subscription:',
+     "if raw.get('provider') in ('claude_code', 'codex_cli'):", 'if self.subscription:',
      'tests/runtime/test_provider_integration.py::test_subscription_run_api_stage_retains_prices_and_cap'),
 ]
 
@@ -1069,6 +1069,37 @@ CASES += [
      'tests/runtime/test_claude_code.py::test_auth_reread_retry_is_once_and_accounted'),
 ]
 
+
+
+CASES += [
+    ('codex_goal_tools_disabled', 'ara/runtime/codex_cli.py',
+     "'hooks', 'memories', 'goals', 'multi_agent'", "'hooks', 'memories', 'multi_agent'",
+     'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),
+    ('codex_tool_event_gate', 'ara/runtime/codex_cli.py',
+     'if rejection: reject(rejection)', 'if False: reject(rejection)',
+     'tests/runtime/test_codex_cli.py::test_tool_event_rejected_without_echo'),
+    ('codex_unknown_event_gate', 'ara/runtime/codex_cli.py',
+     'elif kind not in SAFE_EVENTS:', 'elif False:',
+     'tests/runtime/test_codex_cli.py::test_suppressed_failures'),
+    ('codex_readonly_auth', 'ara/runtime/codex_cli.py',
+     "'--ro-bind',f'/proc/self/fd/{credential.fileno()}'", "'--bind',f'/proc/self/fd/{credential.fileno()}'",
+     'tests/runtime/test_codex_cli.py::test_fresh_credential_and_read_only_link'),
+    ('codex_no_api_key', 'ara/runtime/codex_cli.py',
+     "or document.get('OPENAI_API_KEY')", 'or False',
+     'tests/runtime/test_codex_cli.py::test_api_key_refused'),
+    ('codex_stage_model_pin', 'ara/runtime/codex_cli.py',
+     "'-m',model", "'-m','gpt-5.4'",
+     'tests/runtime/test_codex_cli.py::test_stage_model_pin'),
+    ('codex_context_gate', 'ara/runtime/codex_cli.py',
+     "if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md', 'tools')):",
+     'if False:', 'tests/runtime/test_codex_cli.py::test_isolation_canary_rejects_context'),
+    ('codex_diagnostics_suppressed', 'ara/runtime/codex_cli.py',
+     'events = []', "receipt['stderr'] = stderr; events = []",
+     'tests/runtime/test_codex_cli.py::test_suppressed_failures'),
+    ('codex_refresh_endpoint_disabled', 'ara/runtime/codex_cli.py',
+     "'CODEX_REFRESH_TOKEN_URL_OVERRIDE':'disabled://refresh'", "'CODEX_REFRESH_TOKEN_URL_OVERRIDE':'https://example.invalid'",
+     'tests/runtime/test_codex_cli.py::test_fresh_credential_and_read_only_link'),
+]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

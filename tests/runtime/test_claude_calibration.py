@@ -99,3 +99,71 @@ def test_correction_provider_reuses_run_calibration(cli, tmp_path):
     assert len(rows)==4 and rows[0]['underestimated']
     assert all(r['factor_before']>=rows[0]['factor_after'] for r in rows[1:])
     assert all(r['estimated_initial_input_tokens']>=30005 for r in rows[1:])
+
+
+def test_two_turn_pilot_usage_does_not_inflate_initial_context(cli):
+    make, _, _, _ = cli
+    calls, _ = make()
+    provider = calls.provider
+    prompt = 'P' * 21640
+    estimate = provider.estimate('build_t_batch', prompt, {}, 64000)
+    assert provider.initial_context_tokens(estimate) == 12922
+    row = provider.observe('build_t_batch', prompt, {}, estimate,
+                           {'usage': {'input_tokens': 30294, 'output_tokens': 1000},
+                            'cli': {'num_turns': 2}})
+    assert provider.estimate('build_t_batch', prompt, {}, 64000) == estimate
+    assert row['comparison'] == 'aggregate_input_vs_aggregate_reservation'
+    assert row['estimated_input_tokens'] == 89844
+    assert not row['underestimated']
+
+
+def test_canary_learns_fixed_overhead_without_changing_text_factor(cli):
+    make, _, _, _ = cli
+    calls, _ = make()
+    provider = calls.provider
+    before = provider.calibration_state.factor(provider.model, 'isolation_canary')
+    estimate = provider.estimate('isolation_canary', 'P', {}, 4096)
+    row = provider.observe('isolation_canary', 'P', {}, estimate,
+                           {'usage': {'input_tokens': 2000, 'output_tokens': 10},
+                            'cli': {'num_turns': 1}})
+    assert row['runtime_overhead_after'] >= 2000
+    assert provider.calibration_state.factor(provider.model, 'isolation_canary') == before
+    assert provider.initial_context_tokens(provider.estimate('build_t_batch', 'P', {}, 64000)) >= 2000
+
+
+def test_old_mismatched_observations_are_not_restored():
+    from ara.runtime.claude_estimation import CalibrationState, TABLE_HASH
+    state = CalibrationState()
+    state.restore([{'stage':'provider_estimate_observation','label':'SYSTEM','payload_json':json.dumps({
+        'calibration_sha256':TABLE_HASH, 'model':'claude-opus-5-5', 'kind':'build_t_batch', 'factor_after':1.424, 'runtime_overhead_after':949})}])
+    assert state.factor('claude-opus-5-5','build_t_batch') == .553224
+
+
+def test_aggregate_overshoot_updates_aggregate_without_doubling_context(cli):
+    make, _, _, _ = cli
+    calls, _ = make()
+    provider = calls.provider
+    estimate = provider.estimate('build_t_batch', 'P'*1000, {}, 100)
+    row = provider.observe('build_t_batch','P'*1000,{},estimate,
+                           {'usage':{'input_tokens':10000,'output_tokens':10},'cli':{'num_turns':2}})
+    after = provider.estimate('build_t_batch','P'*1000,{},100)
+    assert row['underestimated']
+    assert row['estimated_input_tokens'] == estimate.input_tokens
+    assert after.input_tokens >= 10000
+    assert provider.initial_context_tokens(after) < 10000
+
+
+def test_imported_observations_do_not_train_a_new_run(tmp_path):
+    from ara.runtime.claude_estimation import CalibrationState, TABLE_HASH, OBSERVATION_VERSION
+    from ara.runtime.logging import EventLog
+    from ara.runtime.provenance import import_receipts
+    history = EventLog(tmp_path/'history/events.jsonl')
+    history.record('provider_estimate_observation', calibration_sha256=TABLE_HASH,
+                   observation_version=OBSERVATION_VERSION, model='claude-opus-5-5',
+                   kind='build_t_batch', factor_after=1.424, runtime_overhead_after=5000)
+    log = EventLog(tmp_path/'new/events.jsonl')
+    import_receipts(log, history.read())
+    state = CalibrationState()
+    state.restore(log.read())
+    assert state.factor('claude-opus-5-5', 'build_t_batch') == .553224
+    assert state.overhead('claude-opus-5-5') == 949

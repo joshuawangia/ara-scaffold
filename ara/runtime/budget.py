@@ -10,6 +10,7 @@ from ara.runtime.cache import canonical, digest
 from ara.runtime.logging import EventLog, pending_search_publications
 from ara.types import TokenUsage
 from ara.runtime.providers import Response
+from ara.runtime.provenance import imported_event_indices
 
 
 class UnpricedModel(ValueError):
@@ -54,7 +55,10 @@ class Budget:
             raise ValueError('extraction cost cap must be finite and nonnegative')
         if type(config['token_cap']) is not int or config['token_cap'] < 0:
             raise ValueError('token cap must be a nonnegative integer')
-        self.used_tokens = sum(tokens(TokenUsage.from_dict(e['usage'])) for e in log.read())
+        events = log.read()
+        inherited = imported_event_indices(events)
+        self.imported_tokens = sum(tokens(TokenUsage.from_dict(events[i]['usage'])) for i in inherited)
+        self.used_tokens = sum(tokens(TokenUsage.from_dict(e['usage'])) for e in events)
         self.used_cost = sum((Decimal(str(e['cost_usd'])) for e in log.read()), Decimal(0))
         if pending_search_publications(log.read()):
             self.stop('unpublished search accounting; inspect durable search journals', 'resume')
@@ -125,6 +129,8 @@ class Budget:
             if scope == 'run':
                 self._halted = reason
             state = {**details, 'scope': scope, 'reason': reason, 'stage': stage, 'tokens': self.used_tokens,
+                     'local_tokens': self.used_tokens - self.imported_tokens,
+                     'imported_tokens': self.imported_tokens,
                      'cost_usd': float(self.used_cost), 'status': 'STOPPED'}
             self.log.record(stage, 'STOP', **{k: v for k, v in state.items() if k != 'stage'})
             (self.log.path.parent / 'partial.json').write_text(canonical(state))
@@ -139,12 +145,15 @@ class Budget:
         with self._lock:
             return sum(tokens(r.usage) for r in self._reservations)
 
+    def cap_tokens(self, subscription):
+        return self.used_tokens - (self.imported_tokens if subscription else 0)
+
     def before(self, usage: TokenUsage, stage: str, model: str | None = None, *, subscription: bool | None = None) -> None:
         subscription = self.subscription if subscription is None else subscription
         if not subscription and stage == 'extract_paper' and self.extraction_cost() + sum(r.cost for r in self._reservations if r.stage == stage) + self.cost(usage, model=model, subscription=subscription) > Decimal(str(
                 self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
             self.stop('extraction cost cap: request reservation exceeds remaining cost', stage)
-        if self.used_tokens + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:
+        if self.cap_tokens(subscription) + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:
             self.stop('token cap: request reservation exceeds remaining tokens', stage)
         if not subscription and self.used_cost + sum(r.cost for r in self._reservations) + self.cost(usage, model=model, subscription=subscription) > Decimal(str(self.config['cost_cap_usd'])):
             self.stop('cost cap: request reservation exceeds remaining cost', stage)
@@ -181,7 +190,7 @@ class Budget:
             if not subscription and stage == 'extract_paper' and self.extraction_cost() > Decimal(str(
                     self.config.get('extraction_cost_cap_usd', self.config['cost_cap_usd']))):
                 self.stop('extraction cost cap exceeded by actual usage', stage)
-            if self.used_tokens > self.config['token_cap']:
+            if self.cap_tokens(subscription) > self.config['token_cap']:
                 self.stop('token cap exceeded by actual usage', stage)
             if not subscription and self.used_cost > Decimal(str(self.config['cost_cap_usd'])):
                 self.stop('cost cap exceeded by actual usage', stage)

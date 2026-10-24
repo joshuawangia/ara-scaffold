@@ -27,7 +27,7 @@ CASES = [
     ('full_schema_prompt', 'ara/runtime/calls.py', "if kind != 'search_evidence':", 'if False:', 'tests/runtime/test_calls.py::test_full_local_schema_reaches_provider_and_log'),
     ('compound_arguments', 'ara/runtime/providers.py', "result['minItems'] = min(1, value['minItems'])", 'pass', 'tests/runtime/test_provider.py::test_compound_generation_cannot_omit_all_arguments'),
     ('validation_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", 'attempts = 1', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[False]'),
-    ('retry_admission', 'ara/runtime/budget.py', "if self.used_tokens + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:", 'if False:', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[True]'),
+    ('retry_admission', 'ara/runtime/budget.py', "if self.cap_tokens(subscription) + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:", 'if False:', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[True]'),
     ('negative_audit_is_final', 'ara/runtime/calls.py', "if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):", 'if validating:', 'tests/runtime/test_calls.py::test_audit_rejects_extra_step'),
     ('route_artifacts', 'ara/runtime/orchestration.py', "save_route(calls.log.path.parent / 'routes', route)", 'pass', 'tests/integration/test_cli_e2e.py'),
     ('provider_not_projection', 'ara/runtime/providers.py', "'allOf', 'not'", "'allOf'", 'tests/runtime/test_provider.py::test_live_observed_not_constraint_projected_but_locally_enforced'),
@@ -910,7 +910,7 @@ CASES += [
      'tests/runtime/test_claude_code.py::test_bounded_logged_retry[rate]'),
     ('cli_concurrency', 'ara/runtime/claude_code.py', 'threading.BoundedSemaphore(self.concurrency)', 'threading.BoundedSemaphore(64)',
      'tests/runtime/test_claude_code.py::test_configurable_concurrency_and_fresh_sessions[2]'),
-    ('cli_concurrent_admission', 'ara/runtime/budget.py', "if self.used_tokens + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:", 'if False:',
+    ('cli_concurrent_admission', 'ara/runtime/budget.py', "if self.cap_tokens(subscription) + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:", 'if False:',
      'tests/runtime/test_claude_code.py::test_concurrent_budget_admission_cannot_oversubscribe'),
 ]
 
@@ -988,6 +988,29 @@ CASES += [
      'tests/runtime/test_claude_calibration.py::test_live_usage_tightens_later_calls_without_invalidating_cache'),
     ('construction_scarce_slots', 'ara/runtime/closure_budget.py', 'if scarce:', 'if False:',
      'tests/runtime/test_construction_shares.py::test_zero_initial_share_discloses_zero_cap_without_dispatch[0.01]'),
+]
+
+
+CASES += [
+    ('cli_like_for_like', 'ara/runtime/claude_estimation.py',
+     'estimated = initial if first_turn else aggregate', 'estimated = initial',
+     'tests/runtime/test_claude_calibration.py::test_two_turn_pilot_usage_does_not_inflate_initial_context'),
+    ('cli_fixed_overhead', 'ara/runtime/claude_estimation.py',
+     'self._overheads[model] = overhead_after', 'pass',
+     'tests/runtime/test_claude_calibration.py::test_canary_learns_fixed_overhead_without_changing_text_factor'),
+    ('cli_observation_version', 'ara/runtime/claude_estimation.py',
+     "or row.get('observation_version') != OBSERVATION_VERSION", '',
+     'tests/runtime/test_claude_calibration.py::test_old_mismatched_observations_are_not_restored'),
+    ('cli_local_token_cap', 'ara/runtime/budget.py',
+     'self.used_tokens - (self.imported_tokens if subscription else 0)', 'self.used_tokens',
+     'tests/runtime/test_claude_code.py::test_subscription_token_cap_excludes_only_imported_history'),
+    ('cli_transient_exit_retry', 'ara/runtime/claude_code.py',
+     "return 'cli_max_turns' if subtype == 'error_max_turns' else 'cli_structured_output_retries', True",
+     "return 'cli_max_turns' if subtype == 'error_max_turns' else 'cli_structured_output_retries', False",
+     'tests/runtime/test_claude_code.py::test_transient_exit_retries_to_success_without_losing_usage'),
+    ('cli_deterministic_schema_exit', 'ara/runtime/claude_code.py',
+     "return 'cli_invalid_schema', False", "return 'cli_invalid_schema', True",
+     'tests/runtime/test_claude_code.py::test_exit_one_classification_preserves_usage_and_bounds_retries'),
 ]
 
 

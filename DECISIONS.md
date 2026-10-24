@@ -2234,3 +2234,50 @@ windows, and checks the appropriate fixed per-window cap. Existing global
 recounts and closure/mandatory-bundle checks remain authoritative. Allocation
 and the multiplier cap permit existing soft borrowing; they do not guarantee
 all funded windows contribute.
+
+
+## Omega round 6 — Comparable usage and local subscription admission
+
+Round 5 incorrectly compared aggregate CLI input against initial context. The
+pilot's first build_t_batch receipt had 30,294 aggregate input, an initial
+estimate of 12,922, and an aggregate reservation of 89,844. That is not an
+aggregate underestimate. The correction raised the factor anyway, causing
+context refusals. The old regression tested that inflation as desirable and
+therefore failed to protect the actual counting contract.
+
+Keep the measured claude-code-input-v1 table and separate 949-token runtime
+constant. Version live observation semantics as like-for-like-v2. When the CLI
+reports num_turns=1, aggregate input is the first-turn input and can be compared
+with initial context. Otherwise compare aggregate input with the aggregate
+reservation, including the output-replay allowance. Infer a factor increase
+only from excess over the corresponding fixed overhead and replay. Single-turn
+canaries can raise fixed runtime overhead separately; multi-turn canaries cannot
+identify it and retain the existing measured constant. Both quantities remain
+upward-only. Ignore old mismatched observations and imported observations on
+restore; retain matching local observations for same-run recovery.
+
+Replaying all 12 pilot formalization receipts under this contract leaves the
+factor 0.553224 with zero aggregate overshoots. All 70 planned windows fit; all
+54 windows with recorded post-plan formalization requests also fit when recounted.
+The pilot actually recorded 42 context skips and 16 closure/selection skips.
+This counterfactual does not rerun model choices, assert first-turn measurements
+that were never retained, or guarantee successful contribution from every window.
+
+The old provider discarded stderr and CLI failure subtypes. Its two measured
+exit-1 receipts cannot distinguish turn exhaustion, schema rejection or an
+execution failure. New failure receipts preserve safe enumerated categories and
+numeric status/turn metadata. Retry identified transient server/connection errors,
+timeouts, max-turn exhaustion and structured-output retry exhaustion on the native
+bounded backoff path (default three attempts). Keep schema, request, authentication
+and unclassified failures non-retryable. Never retain raw errors or stderr, which
+may echo prompts or credentials. New tests distinguish deterministic failure from
+transient failure and verify that each attempt is accounted before retry.
+
+The subscription cap governs local run work. Retain used_tokens as total history
+plus local usage; identify imported ranges from native provenance markers and
+subtract only their token usage for subscription admission and actual-usage stops.
+Pending and unknown reservations remain charged. Mixed-provider API calls retain
+historical-inclusive admission. Existing methodology local/inherited totals and
+new token_cap_policy metadata disclose the distinction; STOP events include total,
+local and imported tokens. No log is rewritten, historical receipt discarded,
+or API dollar cap changed.

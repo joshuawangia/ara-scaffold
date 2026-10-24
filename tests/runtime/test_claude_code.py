@@ -68,7 +68,7 @@ if not canary and mode=='timeout': time.sleep(5)
 if not canary and mode=='slow': time.sleep(.3)
 if not canary and mode=='invalid_json': print('SECRET PROMPT ECHO'); sys.exit(0)
 if not canary and mode=='exit': print('SECRET PROMPT ECHO',file=sys.stderr); sys.exit(7)
-if not canary and mode=='plain_rate': print('rate limit SECRET PROMPT ECHO',file=sys.stderr); sys.exit(1)
+if not canary and mode in ('plain_rate','plain_stdout_rate'): print('rate limit SECRET PROMPT ECHO',file=sys.stdout if mode=='plain_stdout_rate' else sys.stderr); sys.exit(1)
 schema=json.loads(arg('--json-schema'))
 assert '$schema' not in schema
 if canary:
@@ -92,7 +92,7 @@ else:
  if mode.startswith('construction_correction_'): value={'roots':[],'relevance':'P','omissions':[]}
 usage={'input_tokens':10,'output_tokens':5,'cache_read_input_tokens':2,'cache_creation_input_tokens':3}
 result={'type':'result','subtype':'success','is_error':False,'stop_reason':'tool_use','terminal_reason':'completed',
- 'session_id':arg('--session-id'),'usage':usage,'modelUsage':{arg('--model'):{'inputTokens':10,'outputTokens':5}},
+ 'num_turns':1,'session_id':arg('--session-id'),'usage':usage,'modelUsage':{arg('--model'):{'inputTokens':10,'outputTokens':5}},
  'total_cost_usd':0.125,'structured_output':value,'result':json.dumps(value)}
 if not canary and mode=='wrong_model': result['modelUsage']={'claude-opus-4-8':{}}
 if not canary and mode=='missing_output': result.pop('structured_output')
@@ -177,7 +177,7 @@ def test_provider_errors_never_echo_output(cli,mode):
     assert not list(calls.cache.path.glob('*.json'))
 
 
-@pytest.mark.parametrize('mode',['rate','usage','plain_rate'])
+@pytest.mark.parametrize('mode',['rate','usage','plain_rate','plain_stdout_rate'])
 def test_bounded_logged_retry(cli,mode):
     make,set_mode,_,binary=cli
     calls,log=make()
@@ -186,7 +186,7 @@ def test_bounded_logged_retry(cli,mode):
     assert len(binary.with_suffix('.trace').read_text().splitlines())==4
     assert sum(e['stage']=='provider_retry' for e in log.read())==2
     assert len(model_events(log))==4
-    if mode!='plain_rate':
+    if mode not in ('plain_rate','plain_stdout_rate'):
         assert calls.budget.used_tokens==80
     else:
         assert calls.budget.used_tokens>80
@@ -518,3 +518,79 @@ def test_credential_with_json_special_characters_is_checked(cli):
     with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
     assert not list(calls.cache.path.glob('*.json'))
     assert model_events(log)[-1]['usage']['input_tokens']==10
+
+
+@pytest.mark.parametrize('subscription', [True, False])
+def test_subscription_token_cap_excludes_only_imported_history(cli, tmp_path, subscription):
+    from ara.runtime.budget import Budget
+    from ara.runtime.provenance import import_receipts
+    from ara.types import RunEvent, TokenUsage
+    from ara.runtime.logging import now
+    from decimal import Decimal
+    _, _, config, _ = cli
+    history = EventLog(tmp_path/'history/events.jsonl')
+    history.emit(RunEvent(now(), 'formalise', 'MODEL', usage=TokenUsage(input_tokens=1000),
+                          payload_json=json.dumps({'cache_hit':False})))
+    log = EventLog(tmp_path/'cap/events.jsonl')
+    import_receipts(log, history.read())
+    config['token_cap'] = 100
+    budget = Budget(config, log)
+    assert budget.used_tokens == 1000
+    if not subscription:
+        with pytest.raises(BudgetStop, match='token cap'):
+            budget.reserve(TokenUsage(input_tokens=1), 'formalise', subscription=False)
+        return
+    reservation = budget.reserve(TokenUsage(input_tokens=60), 'formalise', subscription=True)
+    assert budget.imported_tokens == 1000
+    log.emit(RunEvent(now(), 'formalise', 'MODEL', usage=TokenUsage(input_tokens=60),
+                      payload_json=json.dumps({'cache_hit':False})))
+    reopened = Budget(config, log)
+    assert reopened.used_tokens == 1060 and reopened.imported_tokens == 1000
+    reopened.after('formalise', subscription=True)
+    reopened.charge(TokenUsage(input_tokens=41), Decimal(0))
+    with pytest.raises(BudgetStop, match='token cap exceeded by actual usage'):
+        reopened.after('formalise', subscription=True)
+    stop = json.loads(log.read()[-1]['payload_json'])
+    assert stop['local_tokens'] == 101 and stop['imported_tokens'] == 1000
+    budget.settle(reservation, TokenUsage(input_tokens=60), Decimal(0))
+    budget.after('formalise', subscription=True)
+    with pytest.raises(BudgetStop, match='token cap'):
+        budget.reserve(TokenUsage(input_tokens=41), 'formalise', subscription=True)
+
+
+@pytest.mark.parametrize('subtype,status,diagnostic,code,attempts', [
+    ('error_max_turns', None, 'Reached max turns SECRET PROMPT ECHO', 'cli_max_turns', 3),
+    ('error_during_execution', 503, 'overloaded SECRET PROMPT ECHO', 'cli_transient_error', 3),
+    ('error_during_execution', 400, 'invalid JSON schema SECRET PROMPT ECHO', 'cli_invalid_schema', 1),
+    ('error_during_execution', 401, 'authentication failed SECRET PROMPT ECHO', 'cli_auth_error', 1),
+    ('error_during_execution', None, 'SECRET PROMPT ECHO', 'cli_exit_error', 1),
+])
+def test_exit_one_classification_preserves_usage_and_bounds_retries(cli, subtype, status, diagnostic, code, attempts):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype=" + repr(subtype) +
+                 ",is_error=True,api_error_status=" + repr(status) + ",errors=[" + repr(diagnostic) +
+                 "])\n print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match=code):
+        calls.formalise(Proposition('p','P'))
+    assert len(model_events(log)) == attempts + 1
+    assert sum(e['stage']=='provider_retry' for e in log.read()) == attempts-1
+    assert calls.budget.used_tokens == 20*(attempts+1)
+    payload = json.loads(model_events(log)[-1]['payload_json'])
+    assert payload['cli']['failure_class'] == code
+    assert payload['cli']['failure_subtype'] == subtype
+    assert 'SECRET PROMPT ECHO' not in log.path.read_text()
+
+
+def test_transient_exit_retries_to_success_without_losing_usage(cli):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary and len(trace.read_text().splitlines()) == 2:\n"
+                 " result.update(subtype='error_max_turns',is_error=True)\n"
+                 " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    assert calls.formalise(Proposition('p','P')).name == 'P'
+    assert [json.loads(e['payload_json'])['status'] for e in model_events(log)] == ['accepted','rejected','accepted']
+    assert calls.budget.used_tokens == 60
+    assert sum(e['stage']=='provider_retry' for e in log.read()) == 1

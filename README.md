@@ -735,15 +735,17 @@ statuses are not retried. Admission is repeated for every attempt, including
 retries with unknown usage charged at reservation. Concurrent requests reserve
 tokens atomically.
 
-Exit receipts retain the CLI JSON subtype/error category and `stderr_first_line`,
-plus numeric status and byte count. Diagnostics are decoded for JSON/percent
-escapes, scrubbed of known credentials and operator identities, then truncated
-to 200 characters. Bearer/key/token/password patterns are also redacted. Explicit
-prompt echoes and matching prompt/system fragments suppress the whole diagnostic
-line; other useful messages remain. Only the first line survives. Unresolved
-encoding is suppressed. Scrubbing is conservative and can hide benign text;
-raw diagnostic bodies and unsanitized stderr are never retained. Existing
-credential/identity rejection remains authoritative and non-retryable.
+Exit diagnostics retain only the exit status, an explicitly allowlisted CLI JSON
+failure subtype, a fixed recognized-category label and numeric metadata. The
+subtype allowlist is `error_during_execution`, `error_max_turns`,
+`error_max_structured_output_retries` and `error_max_budget_usd`; other subtype
+values are omitted. A fixed pattern table and numeric statuses classify errors
+in memory as schema, auth, request, rate/usage limit, timeout, transient,
+max-turn, structured-output or budget-limit categories, or `unknown`.
+No stderr line, stdout diagnostic, arbitrary error category or other diagnostic
+text is retained. The former first-line sanitizer was removed after ordinary
+quoted credentials and short prompt echoes bypassed it. Existing credential and
+identity rejection still prevents unsafe content from being accepted.
 There is no free CLI token counter. The versioned calibration table uses per-kind
 p99 measured API tokens/UTF-8-byte ratios with 5% margin, plus runtime overhead
 measured from retained CLI receipts. Source/event hashes and numeric pairs are in

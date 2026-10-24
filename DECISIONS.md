@@ -2313,3 +2313,28 @@ accounting, auth/request categories, first-line retention, JSON/percent credenti
 encoding, identity, partial prompt echoes, JSON diagnostic fields and redaction
 across the truncation boundary. No live or paid calls are part of round 7. Existing
 historical exit-1 causes remain unrecoverable; new metadata helps future diagnosis.
+
+
+## Omega round 8 — Suppress free-text CLI diagnostics (kappa2 F1)
+
+Kappa2 reproduced three leaks in the round-7 first-line sanitizer: quoted JSON
+token and password assignments absent from the known-secret inventory, and a
+short literal prompt echo. This supersedes round 7's diagnostic-retention design.
+Delete the sanitizer and retain no stderr/stdout diagnostic text. Recognize
+failure categories in memory with a fixed pattern table and numeric statuses;
+only fixed enum labels leave that boundary. Preserve JSON subtype only on exact
+membership in the known four-value failure-subtype allowlist. Unknown subtypes
+are omitted. Receipt exit status and numeric usage/status/turn/byte/time metadata
+remain available, along with the existing validated routing fields. Prompt
+knowledge is unnecessary for diagnostic suppression. No diagnostic captures or
+arbitrary JSON error values reach provider-error or MODEL event receipts.
+
+Keep the round-7 unclassified exit-1 retry bound, deterministic auth/request
+refusal, admission and measured/unknown accounting. Transport timeouts expose
+only their timeout category and numeric timing; their captured streams are not
+retained. Existing credential/identity output rejection remains authoritative.
+The three kappa2 subprocess probes now check both native event surfaces, with
+additional probes for arbitrary JSON diagnostic fields and recognized-category
+projection. Replace controls for removed scrubbing/truncation code with controls
+for wholesale text suppression, subtype allowlisting and category enumeration.
+No historical log rewriting or live/paid calls are part of round 8.

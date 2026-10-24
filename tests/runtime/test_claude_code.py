@@ -618,38 +618,73 @@ def test_unclassified_exit_retries_once_with_named_event(cli, retries, exit_stat
     assert calls.budget.used_tokens == 20*(expected+1)
 
 
-@pytest.mark.parametrize('line,expected', [
-    ("'worker stopped unexpectedly'", 'worker stopped unexpectedly'),
-    ("'prompt too long'", 'prompt too long'),
-    ("'worker stopped: '+''.join('%%%02X'%ord(c) for c in token)", 'worker stopped: [REDACTED]'),
-    ("'worker stopped: '+token", 'worker stopped: [REDACTED]'),
-    ("'worker stopped: Operator Sentinel / SENTINEL@example.invalid'", 'worker stopped: [REDACTED] / [REDACTED]'),
-    ("'worker stopped: '+''.join(r'\\u%04x'%ord(c) for c in token)", 'worker stopped: [REDACTED]'),
-    ("'worker stopped: '+prompt[:80]", '[REDACTED: prompt echo]'),
-    ("'SECRET PROMPT ECHO'", '[REDACTED: prompt echo]'),
-    ("'worker stopped\\nsecond line must not be retained'", 'worker stopped'),
-    ("'x'*260", 'x'*200),
-    ("'x'*195+token", 'x'*195+'[REDA'),
-    ("'Authorization: Bearer unknown-token-value'", 'Authorization: Bearer [REDACTED]'),
-    ("'token=unknown-token-value'", 'token=[REDACTED]'),
+@pytest.mark.parametrize('diagnostic', [
+    '{"token":"new-secret-value"}',
+    '{"password":"new-secret-value"}',
+    'invalid value: P',
 ])
-def test_exit_diagnostic_scrubs_before_truncation(cli, line, expected):
+def test_kappa2_diagnostics_never_retain_free_text(cli, diagnostic):
     make, _, _, binary = cli
     calls, log = make()
-    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True,error={'type':'runtime_error'})\n"
-                 " print(" + line + ",file=sys.stderr)\n print(json.dumps(result)); sys.exit(1)\n")
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " print(" + repr(diagnostic) + ",file=sys.stderr)\n print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match='cli_exit_error'):
+        calls.formalise(Proposition('p','P'))
+    receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert 'stderr_first_line' not in receipt
+    assert receipt['failure_subtype'] == 'error_during_execution'
+    assert receipt['error_category'] == 'unknown'
+    assert receipt['stderr_bytes'] == len((diagnostic+'\n').encode())
+    # Inspect both provider_error and MODEL event payloads, not just the helper.
+    for event in log.read():
+        payload = json.loads(event['payload_json'])
+        assert diagnostic not in json.dumps(payload, ensure_ascii=False)
+        assert 'new-secret-value' not in json.dumps(payload)
+        assert 'stderr_first_line' not in json.dumps(payload)
+
+
+@pytest.mark.parametrize('field', ['subtype', 'error_type', 'error', 'errors', 'result'])
+def test_json_diagnostics_are_suppressed(cli, field):
+    make, _, _, binary = cli
+    calls, log = make()
+    diagnostic = '{"token":"new-secret-value"}'
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " result[" + repr(field) + "]=" + repr(diagnostic) + "\n"
+                 " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match='cli_exit_error'):
+        calls.formalise(Proposition('p','P'))
+    receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert receipt['error_category'] == 'unknown'
+    if field == 'subtype':
+        assert 'failure_subtype' not in receipt
+    else:
+        assert receipt['failure_subtype'] == 'error_during_execution'
+    assert 'new-secret-value' not in log.path.read_text()
+
+
+@pytest.mark.parametrize('diagnostic,category', [
+    ('rate limit invalid value: P', 'rate_limit'),
+    ('usage limit invalid value: P', 'usage_limit'),
+    ('authentication error invalid value: P', 'auth'),
+    ('request timed out invalid value: P', 'timeout'),
+    ('invalid schema invalid value: P', 'schema'),
+    ('overloaded invalid value: P', 'transient'),
+    ('prompt too long invalid value: P', 'request'),
+])
+def test_exit_diagnostic_retains_only_recognized_category(cli, diagnostic, category):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " print(" + repr(diagnostic) + ",file=sys.stderr)\n print(json.dumps(result)); sys.exit(1)\n")
     binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
     with pytest.raises(Rejected):
         calls.formalise(Proposition('p','P'))
     receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
-    assert receipt['stderr_first_line'] == expected
-    assert len(receipt['stderr_first_line']) <= 200
-    assert receipt['failure_subtype'] == 'error_during_execution'
-    assert receipt['error_category'] == 'runtime_error'
-    retained = json.dumps(receipt)
-    assert 'offline-token' not in retained and 'Operator Sentinel' not in retained
-    assert 'sentinel@example.invalid' not in retained.casefold()
-    assert 'second line must not be retained' not in retained
+    assert receipt['error_category'] == category
+    assert 'stderr_first_line' not in receipt
+    assert diagnostic not in log.path.read_text()
 
 
 def test_unclassified_non_json_exit_retries_once_and_accounts_reservations(cli):
@@ -666,7 +701,8 @@ def test_unclassified_non_json_exit_retries_once_and_accounts_reservations(cli):
     assert sum(e['stage']=='unclassified_exit_retry' for e in log.read()) == 1
     assert calls.budget.used_tokens == 20+2*sum(estimate.to_dict().values())
     assert all(json.loads(e['payload_json'])['accounting']=='reservation_unknown_actual' for e in events[1:])
-    assert all(json.loads(e['payload_json'])['cli']['stderr_first_line']=='worker stopped' for e in events[1:])
+    assert all('stderr_first_line' not in json.loads(e['payload_json'])['cli'] for e in events[1:])
+    assert 'worker stopped' not in log.path.read_text()
 
 
 @pytest.mark.parametrize('category,code', [('authentication_error','cli_auth_error'),('authorization_error','cli_auth_error'),
@@ -685,10 +721,12 @@ def test_json_error_categories_are_not_retried(cli, category, code, field):
     assert len(model_events(log)) == 2
     assert not any(e['stage'] in ('provider_retry','unclassified_exit_retry') for e in log.read())
     receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
-    assert receipt['failure_subtype' if field == 'subtype' else 'error_category'] == category
+    assert receipt['error_category'] == ('auth' if code == 'cli_auth_error' else 'request')
+    if field == 'subtype':
+        assert 'failure_subtype' not in receipt
 
 
-def test_json_diagnostic_fields_are_scrubbed_too(cli):
+def test_security_rejection_suppresses_json_diagnostics(cli):
     make, _, _, binary = cli
     calls, log = make()
     injection = ("if not canary:\n result.update(subtype='error_worker_crash',is_error=True,error={'type':token})\n"
@@ -697,7 +735,7 @@ def test_json_diagnostic_fields_are_scrubbed_too(cli):
     with pytest.raises(Rejected, match='credential_in_cli_output'):
         calls.formalise(Proposition('p','P'))
     receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
-    assert receipt['failure_subtype'] == 'error_worker_crash'
-    assert receipt['error_category'] == '[REDACTED]'
+    assert 'failure_subtype' not in receipt
+    assert receipt['error_category'] == 'unknown'
     assert receipt['retryable'] is False
     assert 'offline-token' not in log.path.read_text()

@@ -936,7 +936,7 @@ CASES += [
 
 
 CASES += [
-    ('cli_decoded_credentials', 'ara/runtime/claude_code.py', 'self.scan_output(data)', 'pass',
+    ('cli_decoded_credentials', 'ara/runtime/claude_code.py', 'self.scan_output(data, secrets=secrets)', 'pass',
      'tests/runtime/test_claude_code.py::test_json_escaped_credential_rejected_before_retention'),
     ('cli_cached_credentials', 'ara/runtime/calls.py', "self.provider.scan_output(saved['raw'])", 'pass',
      'tests/runtime/test_claude_code.py::test_cached_credential_rejected_without_logging_and_evicted'),
@@ -946,12 +946,14 @@ CASES += [
     ('cli_correction_transport', 'ara/runtime/construction.py',
      'calls._transport_call(kind, request, corrected, attempt=2)', 'calls._call_once(kind, request, corrected, attempt=2)',
      'tests/runtime/test_claude_code.py::test_targeted_construction_retry_does_not_spend_more_corrections'),
-    ('cli_config_inference_scope', 'ara/runtime/claude_code.py',
-     "snapshot['scopes'] = ['user:inference']", "snapshot['scopes'] = oauth['scopes']",
-     'tests/runtime/test_claude_code.py::test_private_auth_snapshot_cleanup_and_source_unchanged'),
-    ('cli_config_auth_environment', 'ara/runtime/claude_code.py',
-     "env.update(CLAUDE_CONFIG_DIR=str(config_dir),", "env.update(CLAUDE_CODE_OAUTH_TOKEN=self._oauth['accessToken'], CLAUDE_CONFIG_DIR=str(config_dir),",
-     'tests/runtime/test_claude_code.py::test_config_auth_has_no_token_in_same_user_process_environment'),
+    ('cli_access_token_only', 'ara/runtime/claude_code.py',
+     "return oauth['accessToken'], frozenset(secrets)",
+     "return oauth['refreshToken'], frozenset(secrets)",
+     'tests/runtime/test_claude_code.py::test_only_access_token_reaches_child_environment'),
+    ('cli_live_credential_read', 'ara/runtime/claude_code.py',
+     "oauth = json.loads(self._credential_source.read_text())['claudeAiOauth']",
+     "oauth = self.__dict__.setdefault('_cached_oauth', json.loads(self._credential_source.read_text())['claudeAiOauth'])",
+     'tests/runtime/test_claude_code.py::test_credential_file_replaced_between_calls_is_read_fresh'),
 ]
 
 
@@ -1018,7 +1020,7 @@ CASES += [
     ('cli_subtype_auth_request_classification', 'ara/runtime/claude_code.py',
      "('subtype', 'errors', 'error', 'error_type', 'result')",
      "('errors', 'error', 'error_type', 'result')",
-     'tests/runtime/test_claude_code.py::test_json_error_categories_are_not_retried'),
+     'tests/runtime/test_claude_code.py::test_json_error_categories_follow_retry_policy'),
     ('cli_unclassified_retry_enabled', 'ara/runtime/claude_code.py',
      "if code == 'cli_exit_error' and receipt.get('exit_status') == 1:", 'if False:',
      'tests/runtime/test_claude_code.py::test_unclassified_exit_retries_once_with_named_event'),
@@ -1036,6 +1038,16 @@ CASES += [
      'error_category=category, stderr_bytes=len(stderr.encode())',
      "error_category=data.get('error_type', category), stderr_bytes=len(stderr.encode())",
      'tests/runtime/test_claude_code.py::test_json_diagnostics_are_suppressed'),
+]
+
+
+CASES += [
+    ('cli_auth_retry_enabled', 'ara/runtime/claude_code.py',
+     "return 'cli_auth_error', True, 'auth'", "return 'cli_auth_error', False, 'auth'",
+     'tests/runtime/test_claude_code.py::test_auth_reread_retry_is_once_and_accounted'),
+    ('cli_auth_retry_once', 'ara/runtime/calls.py',
+     'auth_retries >= 1', 'False',
+     'tests/runtime/test_claude_code.py::test_auth_reread_retry_is_once_and_accounted'),
 ]
 
 

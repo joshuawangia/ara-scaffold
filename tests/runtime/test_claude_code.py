@@ -437,7 +437,7 @@ def test_targeted_construction_retry_does_not_spend_more_corrections(cli,mode):
 
 
 @pytest.mark.parametrize('mode',['ok','exit','timeout'])
-def test_private_auth_snapshot_cleanup_and_source_unchanged(cli,mode):
+def test_live_auth_source_unchanged_and_no_token_files(cli,mode):
     make,set_mode,_,binary=cli
     source=binary.parent/'home/.claude/.credentials.json'
     original=source.read_bytes()
@@ -450,24 +450,28 @@ def test_private_auth_snapshot_cleanup_and_source_unchanged(cli,mode):
     assert source.read_bytes()==original
     traces=[json.loads(row) for row in binary.with_suffix('.trace').read_text().splitlines()]
     assert all(not Path(t['config_dir']).exists() for t in traces)
-    assert calls.provider.auth_mode=='config-link'
+    assert calls.provider.auth_mode=='env'
     from ara.runtime.export import methodology
     text=methodology(log.path)
-    assert 'private 0600 OAuth snapshot' in text and 'Same-user processes' in text
+    assert 'read-only credential file' in text and 'Same-user processes' in text
     assert 'offline-token' not in text and 'offline-refresh-token' not in text
 
 
-def test_config_auth_has_no_token_in_same_user_process_environment(cli,monkeypatch):
+def test_only_access_token_reaches_child_environment(cli,monkeypatch):
     import subprocess
     make,_,_,binary=cli
     original=subprocess.Popen
     observed=[]
     class Observe(original):
         def __init__(self, command, *args, **kwargs):
-            super().__init__(command,*args,**kwargs)
             if command[0]==str(binary) and '-p' in command:
-                shown=subprocess.check_output(['ps','eww','-o','args=','-p',str(self.pid)])
-                observed.append(b'offline-token' not in shown and b'offline-refresh-token' not in shown)
+                env=kwargs['env']
+                assert env['CLAUDE_CODE_OAUTH_TOKEN']=='offline-token'
+                assert 'offline-refresh-token' not in json.dumps(env)
+                assert 'offline-token' not in json.dumps(command)
+                assert not (Path(env['CLAUDE_CONFIG_DIR'])/'.credentials.json').exists()
+                observed.append(True)
+            super().__init__(command,*args,**kwargs)
     monkeypatch.setattr(subprocess,'Popen',Observe)
     calls,log=make()
     calls.formalise(Proposition('p','P'))
@@ -562,7 +566,7 @@ def test_subscription_token_cap_excludes_only_imported_history(cli, tmp_path, su
     ('error_max_turns', None, 'Reached max turns SECRET PROMPT ECHO', 'cli_max_turns', 3),
     ('error_during_execution', 503, 'overloaded SECRET PROMPT ECHO', 'cli_transient_error', 3),
     ('error_during_execution', 400, 'invalid JSON schema SECRET PROMPT ECHO', 'cli_invalid_schema', 1),
-    ('error_during_execution', 401, 'authentication failed SECRET PROMPT ECHO', 'cli_auth_error', 1),
+    ('error_during_execution', 401, 'authentication failed SECRET PROMPT ECHO', 'cli_auth_error', 2),
     ('error_during_execution', 422, 'invalid request SECRET PROMPT ECHO', 'cli_invalid_request', 1),
     ('error_during_execution', None, 'SECRET PROMPT ECHO', 'cli_exit_error', 2),
 ])
@@ -576,7 +580,7 @@ def test_exit_one_classification_preserves_usage_and_bounds_retries(cli, subtype
     with pytest.raises(Rejected, match=code):
         calls.formalise(Proposition('p','P'))
     assert len(model_events(log)) == attempts + 1
-    assert sum(e['stage'] in ('provider_retry','unclassified_exit_retry') for e in log.read()) == attempts-1
+    assert sum(e['stage'] in ('provider_retry','unclassified_exit_retry','auth_refresh_retry') for e in log.read()) == attempts-1
     assert calls.budget.used_tokens == 20*(attempts+1)
     payload = json.loads(model_events(log)[-1]['payload_json'])
     assert payload['cli']['failure_class'] == code
@@ -709,7 +713,7 @@ def test_unclassified_non_json_exit_retries_once_and_accounts_reservations(cli):
                                              ('permission_error','cli_auth_error'),('invalid_request_error','cli_invalid_request'),
                                              ('context_length_exceeded','cli_invalid_request')])
 @pytest.mark.parametrize('field', ['error', 'subtype'])
-def test_json_error_categories_are_not_retried(cli, category, code, field):
+def test_json_error_categories_follow_retry_policy(cli, category, code, field):
     make, _, _, binary = cli
     calls, log = make()
     injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True,error={'type':"+repr(category)+"})\n"
@@ -718,7 +722,9 @@ def test_json_error_categories_are_not_retried(cli, category, code, field):
     binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
     with pytest.raises(Rejected, match=code):
         calls.formalise(Proposition('p','P'))
-    assert len(model_events(log)) == 2
+    auth = code == 'cli_auth_error'
+    assert len(model_events(log)) == (3 if auth else 2)
+    assert sum(e['stage']=='auth_refresh_retry' for e in log.read()) == int(auth)
     assert not any(e['stage'] in ('provider_retry','unclassified_exit_retry') for e in log.read())
     receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
     assert receipt['error_category'] == ('auth' if code == 'cli_auth_error' else 'request')
@@ -739,3 +745,65 @@ def test_security_rejection_suppresses_json_diagnostics(cli):
     assert receipt['error_category'] == 'unknown'
     assert receipt['retryable'] is False
     assert 'offline-token' not in log.path.read_text()
+
+
+
+def test_credential_file_replaced_between_calls_is_read_fresh(cli):
+    make,_,_,binary=cli
+    calls,log=make()
+    calls.formalise(Proposition('p','P'))
+    source=binary.parent/'home/.claude/.credentials.json'
+    auth=json.loads(source.read_text())
+    auth['claudeAiOauth']['accessToken']='offline-replaced-token'
+    replacement=source.with_suffix('.replacement')
+    replacement.write_text(json.dumps(auth)); replacement.chmod(0o600)
+    replacement.replace(source)
+    injection="if not canary: assert token == 'offline-replaced-token', 'stale credential'\n"
+    binary.write_text(binary.read_text().replace('schema=json.loads',injection+'schema=json.loads'))
+    assert calls.formalise(Proposition('q','P')).name=='P'
+    assert len(model_events(log))==3
+    assert 'offline-replaced-token' not in log.path.read_text()
+    assert source.read_text()==json.dumps(auth)
+
+
+@pytest.mark.parametrize('recovers,retries,measured,attempts', [
+    (True,3,True,2), (False,3,True,2), (False,0,True,1), (True,3,False,2),
+])
+def test_auth_reread_retry_is_once_and_accounted(cli,recovers,retries,measured,attempts):
+    make,_,config,binary=cli
+    config['claude_code']['retries']=retries
+    calls,log=make()
+    injection=("if not canary and (token == 'offline-token' or not "+repr(recovers)+"):\n"
+               " source=Path.home()/'.claude/.credentials.json'\n"
+               " auth=json.loads(source.read_text()); auth['claudeAiOauth']['accessToken']='offline-replaced-token'\n"
+               " replacement=source.with_suffix('.replacement'); replacement.write_text(json.dumps(auth)); replacement.chmod(0o600); replacement.replace(source)\n"
+               " result.update(subtype='error_during_execution',is_error=True,api_error_status=401)\n"
+               +(" result.pop('usage')\n" if not measured else '')+
+               " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)',injection+'encoded=json.dumps(result)'))
+    estimate=calls.count_request('formalise', {'proposition':Proposition('p','P').to_dict()}).reservation
+    if recovers:
+        assert calls.formalise(Proposition('p','P')).name=='P'
+    else:
+        with pytest.raises(Rejected,match='cli_auth_error'): calls.formalise(Proposition('p','P'))
+    assert len(model_events(log))==attempts+1
+    assert sum(e['stage']=='auth_refresh_retry' for e in log.read())==attempts-1
+    assert not any(e['stage']=='provider_retry' for e in log.read())
+    assert calls.budget.used_tokens==(20*(attempts+1) if measured else 40+sum(estimate.to_dict().values()))
+    assert 'offline-replaced-token' not in log.path.read_text()
+    assert 'offline-token' not in log.path.read_text()
+
+
+def test_inflight_credential_is_scanned_after_host_replacement(cli,monkeypatch):
+    make,_,_,binary=cli
+    calls,log=make()
+    monkeypatch.delenv('CLAUDE_CODE_OAUTH_TOKEN')
+    injection=("if not canary:\n"
+               " source=Path.home()/'.claude/.credentials.json'\n"
+               " auth=json.loads(source.read_text()); auth['claudeAiOauth']['accessToken']='offline-replaced-token'\n"
+               " source.write_text(json.dumps(auth))\n"
+               " result['result']=json.dumps({'P':token})\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)',injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
+    assert 'offline-token' not in log.path.read_text()
+    assert not list(calls.cache.path.glob('*.json'))

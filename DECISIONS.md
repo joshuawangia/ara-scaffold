@@ -2338,3 +2338,43 @@ additional probes for arbitrary JSON diagnostic fields and recognized-category
 projection. Replace controls for removed scrubbing/truncation code with controls
 for wholesale text suppression, subtype allowlisting and category enumeration.
 No historical log rewriting or live/paid calls are part of round 8.
+
+
+## Omega round 9 — Read current host credentials and retry auth once
+
+Pilot 3 recorded three 401/cli_auth_error receipts after a host credential-file
+replacement. Its token values were not compared, so the stale-snapshot cause
+remains a supported hypothesis, not a historical proof. The provider did cache
+its first authentication read for its lifetime. Remove that state: retain only
+the selected credential path and reopen it read-only for each subprocess. Atomic
+host replacements are visible without recreating the provider. A selected file
+that disappears or becomes malformed fails explicitly instead of falling back
+to an old environment token. Environment-only logins remain supported and are
+read afresh from this process's environment.
+
+The live reference is the source path, not a writable filesystem symlink to
+host credentials. Token values are never cached in provider attributes or copied
+to child files. Use the previously authorized environment transport, passing
+only the access token for that call. Refresh tokens are never handed to the
+child. This supersedes the old private-copy/no-environment preference: a normal
+symlink would permit writes/refresh, and the requested no-token-persistence rule
+rules out private token copies. Same-user environment visibility remains within
+the round-3 threat model; methodology discloses it. The source is opened only for
+reading; ARA never refreshes or rotates the credential.
+
+Keep call-local secret values for raw and decoded output scanning so a host
+replacement during an in-flight call does not disable its leakage guard. Cache
+replay scans current credential values. No token values enter logs, argv, cache,
+reports or provider state. Per-call environments and scanners are independent
+under provider concurrency.
+
+cli_auth_error is eligible for one bounded retry per transport call, logged as
+auth_refresh_retry, after ordinary attempt accounting. The next subprocess reads
+the credential source again. The event names re-reading, not credential refresh.
+Configured total retries, retries=0, admission, unknown reservations, schema and
+request refusal, and the separate one-unclassified-retry cap remain authoritative.
+Tests simulate host replacements between calls and after 401, persistent auth
+failure, disabled retries, unknown usage, and replacement during an in-flight
+call. Controls protect fresh reads, access-token-only handoff and retry bounds.
+The authorized live proof is a canary and one placeholder stage call; no API
+spending, full pilot restart or credential rotation is authorized.

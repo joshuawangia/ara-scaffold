@@ -687,15 +687,16 @@ fresh `claude -p` sessions through the usual `ModelCalls` boundary.
 
 The machine must have Claude Code, an existing subscription login (or
 `CLAUDE_CODE_OAUTH_TOKEN` in the environment), and both `git config user.name`
-and `git config user.email`. Each process uses a private 0600 copy of the existing
-OAuth authentication fields in a fresh config directory, deleted after the call.
-Refresh tokens, MCP credentials and operator settings are excluded. The copy
-advertises only the existing inference scope to suppress CLI profile discovery
-(this does not change the token's server permissions); no OAuth
-token is passed in the child environment when this file is available. If only
-an environment login exists, the disclosed fallback passes that token through
-the environment. Same-user processes can already read the original credential
-file and may inspect an environment-only login; this is not a blanket promise
+and `git config user.email`. The provider keeps a live reference to the credential
+file path and opens it read-only before every subprocess, including retries.
+Atomic host-side replacements become visible on the next call. It never caches
+credential values in provider state or creates a token file/link for the child.
+Only the current access token is passed in the per-call environment; refresh
+tokens, MCP credentials and operator settings are excluded. An environment-only
+login is read fresh from the process environment when no file source was selected.
+A missing or malformed selected file fails explicitly, without falling back to
+an old environment token. Same-user processes can already read the original
+credential file and may inspect the child environment; this is not a promise
 about `ps` visibility. Credentials are excluded from argv, logs and caches.
 It creates a separate empty cwd for every process, checks ancestor instruction
 files, and uses safe mode, no user setting sources, no MCP, no slash commands,
@@ -728,7 +729,11 @@ completion may have CLI `stop_reason: tool_use`.
 process retries, with logged exponential backoff capped at 30 seconds. The same
 bounded retry path handles CLI turn exhaustion, structured-output retry exhaustion,
 timeouts and identified transient server/connection failures. Schema, invalid
-request and authentication failures are not retried. An unclassified exit 1 gets
+request failures are not retried. A `cli_auth_error` gets at most one retry,
+logged as `auth_refresh_retry`, with a fresh read of the host credential source.
+This event means re-read only: ARA never refreshes or rotates credentials. The
+configured retry limit still applies and `retries: 0` disables this retry. An
+unclassified exit 1 gets
 at most one retry per transport call, logged as `unclassified_exit_retry`, within
 the configured retry budget; `retries: 0` disables it. Other unclassified exit
 statuses are not retried. Admission is repeated for every attempt, including

@@ -2275,3 +2275,106 @@ failure recovery/exhaustion, global cancellation, durable accounting and the
 native CLI run-to-select-to-compose path. The twenty-search equivalence and
 forced-publication-schedule proofs remain required. No live speedup or completed
 pilot claim follows from this offline change.
+
+## Omega round 6 — Comparable usage and local subscription admission
+
+Round 5 incorrectly compared aggregate CLI input against initial context. The
+pilot's first build_t_batch receipt had 30,294 aggregate input, an initial
+estimate of 12,922, and an aggregate reservation of 89,844. That is not an
+aggregate underestimate. The correction raised the factor anyway, causing
+context refusals. The old regression tested that inflation as desirable and
+therefore failed to protect the actual counting contract.
+
+Keep the measured claude-code-input-v1 table and separate 949-token runtime
+constant. Version live observation semantics as like-for-like-v2. When the CLI
+reports num_turns=1, aggregate input is the first-turn input and can be compared
+with initial context. Otherwise compare aggregate input with the aggregate
+reservation, including the output-replay allowance. Infer a factor increase
+only from excess over the corresponding fixed overhead and replay. Single-turn
+canaries can raise fixed runtime overhead separately; multi-turn canaries cannot
+identify it and retain the existing measured constant. Both quantities remain
+upward-only. Ignore old mismatched observations and imported observations on
+restore; retain matching local observations for same-run recovery.
+
+Replaying all 12 pilot formalization receipts under this contract leaves the
+factor 0.553224 with zero aggregate overshoots. All 70 planned windows fit; all
+54 windows with recorded post-plan formalization requests also fit when recounted.
+The pilot actually recorded 42 context skips and 16 closure/selection skips.
+This counterfactual does not rerun model choices, assert first-turn measurements
+that were never retained, or guarantee successful contribution from every window.
+
+The old provider discarded stderr and CLI failure subtypes. Its two measured
+exit-1 receipts cannot distinguish turn exhaustion, schema rejection or an
+execution failure. New failure receipts preserve safe enumerated categories and
+numeric status/turn metadata. Retry identified transient server/connection errors,
+timeouts, max-turn exhaustion and structured-output retry exhaustion on the native
+bounded backoff path (default three attempts). Keep schema, request, authentication
+and unclassified failures non-retryable. Never retain raw errors or stderr, which
+may echo prompts or credentials. New tests distinguish deterministic failure from
+transient failure and verify that each attempt is accounted before retry.
+
+The subscription cap governs local run work. Retain used_tokens as total history
+plus local usage; identify imported ranges from native provenance markers and
+subtract only their token usage for subscription admission and actual-usage stops.
+Pending and unknown reservations remain charged. Mixed-provider API calls retain
+historical-inclusive admission. Existing methodology local/inherited totals and
+new token_cap_policy metadata disclose the distinction; STOP events include total,
+local and imported tokens. No log is rewritten, historical receipt discarded,
+or API dollar cap changed.
+
+
+## Omega round 7 — One unclassified retry and scrubbed exit diagnostics
+
+The operator explicitly permits one retry of an unclassified CLI exit 1. This
+supersedes round 6's blanket non-retryable classification for unknown exits.
+Mark only exit 1 retryable and enforce a separate one-retry counter inside the
+native transport loop, logging unclassified_exit_retry with attempt, delay and
+reason. Keep the configured total retry budget and retries=0 authoritative.
+Auth, permission, schema, request/context-size, budget and credential/identity
+failures remain non-retryable. Other unknown exit statuses do not gain retries.
+All attempt accounting and admission run before retry, including explicit unknown
+usage reservations; one cheap retry is not evidence that a failure is transient.
+
+Retain sanitized JSON subtype/error category and the first stderr line, bounded
+to 200 characters after redaction. Decode two layers of JSON/percent escaping;
+suppress remaining encoded text. Remove known credential values, case-insensitive
+operator identities, bearer credentials and key/token/password assignments before
+truncation. Explicit echo markers or shared prompt/system fragments suppress the
+whole line. This conservative rule can hide benign text; it does not claim to
+recognize arbitrary paraphrases or novel encodings. Useful non-echo diagnostics
+such as a prompt-size error remain available. Subtype and category fields pass
+through the same sanitizer. Raw CLI errors and subsequent stderr lines are not
+retained. Security rejection retains measured usage and scrubbed metadata without
+storing the rejected content, and its receipt states non-retryable.
+
+Offline production-subprocess tests cover repeated failure and recovery after one
+retry, disabled retries, other exit codes, malformed receipts with reservation
+accounting, auth/request categories, first-line retention, JSON/percent credential
+encoding, identity, partial prompt echoes, JSON diagnostic fields and redaction
+across the truncation boundary. No live or paid calls are part of round 7. Existing
+historical exit-1 causes remain unrecoverable; new metadata helps future diagnosis.
+
+
+## Omega round 8 — Suppress free-text CLI diagnostics (kappa2 F1)
+
+Kappa2 reproduced three leaks in the round-7 first-line sanitizer: quoted JSON
+token and password assignments absent from the known-secret inventory, and a
+short literal prompt echo. This supersedes round 7's diagnostic-retention design.
+Delete the sanitizer and retain no stderr/stdout diagnostic text. Recognize
+failure categories in memory with a fixed pattern table and numeric statuses;
+only fixed enum labels leave that boundary. Preserve JSON subtype only on exact
+membership in the known four-value failure-subtype allowlist. Unknown subtypes
+are omitted. Receipt exit status and numeric usage/status/turn/byte/time metadata
+remain available, along with the existing validated routing fields. Prompt
+knowledge is unnecessary for diagnostic suppression. No diagnostic captures or
+arbitrary JSON error values reach provider-error or MODEL event receipts.
+
+Keep the round-7 unclassified exit-1 retry bound, deterministic auth/request
+refusal, admission and measured/unknown accounting. Transport timeouts expose
+only their timeout category and numeric timing; their captured streams are not
+retained. Existing credential/identity output rejection remains authoritative.
+The three kappa2 subprocess probes now check both native event surfaces, with
+additional probes for arbitrary JSON diagnostic fields and recognized-category
+projection. Replace controls for removed scrubbing/truncation code with controls
+for wholesale text suppression, subtype allowlisting and category enumeration.
+No historical log rewriting or live/paid calls are part of round 8.

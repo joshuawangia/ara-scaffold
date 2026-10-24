@@ -10,6 +10,19 @@ from ara.types import RunEvent
 IMPORT_STAGE = 'extraction_provenance_import'
 
 
+def imported_event_indices(events):
+    """Receipt ranges are history, including nested legacy imports."""
+    inherited = set()
+    for index, event in enumerate(events):
+        if event['stage'] != IMPORT_STAGE:
+            continue
+        count = json.loads(event['payload_json'])['records']
+        if type(count) is not int or count < 0 or index + count >= len(events):
+            raise ValueError('incomplete origin receipt import')
+        inherited.update(range(index + 1, index + 1 + count))
+    return inherited
+
+
 def checkpoint(path, records=None):
     if records is None:
         records = read_log(path)
@@ -100,7 +113,7 @@ def _append_receipts(log, events, origin):
     marker = RunEvent(now(), IMPORT_STAGE, 'SYSTEM', payload_json=canonical(dict(
                records=len(copied), receipt_id=receipt_id,
                **({'origin': origin} if origin is not None else {}),
-               note='Original receipts, not new dispatches; inherited charges count in this run.')))
+               note='Original receipts, not new dispatches; retained in total accounting. Subscription token admission excludes imported history.')))
     log.emit_many([marker, *(RunEvent.from_dict(event) for event in copied)])
 
 

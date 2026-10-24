@@ -68,7 +68,7 @@ if not canary and mode=='timeout': time.sleep(5)
 if not canary and mode=='slow': time.sleep(.3)
 if not canary and mode=='invalid_json': print('SECRET PROMPT ECHO'); sys.exit(0)
 if not canary and mode=='exit': print('SECRET PROMPT ECHO',file=sys.stderr); sys.exit(7)
-if not canary and mode=='plain_rate': print('rate limit SECRET PROMPT ECHO',file=sys.stderr); sys.exit(1)
+if not canary and mode in ('plain_rate','plain_stdout_rate'): print('rate limit SECRET PROMPT ECHO',file=sys.stdout if mode=='plain_stdout_rate' else sys.stderr); sys.exit(1)
 schema=json.loads(arg('--json-schema'))
 assert '$schema' not in schema
 if canary:
@@ -92,7 +92,7 @@ else:
  if mode.startswith('construction_correction_'): value={'roots':[],'relevance':'P','omissions':[]}
 usage={'input_tokens':10,'output_tokens':5,'cache_read_input_tokens':2,'cache_creation_input_tokens':3}
 result={'type':'result','subtype':'success','is_error':False,'stop_reason':'tool_use','terminal_reason':'completed',
- 'session_id':arg('--session-id'),'usage':usage,'modelUsage':{arg('--model'):{'inputTokens':10,'outputTokens':5}},
+ 'num_turns':1,'session_id':arg('--session-id'),'usage':usage,'modelUsage':{arg('--model'):{'inputTokens':10,'outputTokens':5}},
  'total_cost_usd':0.125,'structured_output':value,'result':json.dumps(value)}
 if not canary and mode=='wrong_model': result['modelUsage']={'claude-opus-4-8':{}}
 if not canary and mode=='missing_output': result.pop('structured_output')
@@ -177,7 +177,7 @@ def test_provider_errors_never_echo_output(cli,mode):
     assert not list(calls.cache.path.glob('*.json'))
 
 
-@pytest.mark.parametrize('mode',['rate','usage','plain_rate'])
+@pytest.mark.parametrize('mode',['rate','usage','plain_rate','plain_stdout_rate'])
 def test_bounded_logged_retry(cli,mode):
     make,set_mode,_,binary=cli
     calls,log=make()
@@ -186,7 +186,7 @@ def test_bounded_logged_retry(cli,mode):
     assert len(binary.with_suffix('.trace').read_text().splitlines())==4
     assert sum(e['stage']=='provider_retry' for e in log.read())==2
     assert len(model_events(log))==4
-    if mode!='plain_rate':
+    if mode not in ('plain_rate','plain_stdout_rate'):
         assert calls.budget.used_tokens==80
     else:
         assert calls.budget.used_tokens>80
@@ -518,3 +518,224 @@ def test_credential_with_json_special_characters_is_checked(cli):
     with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
     assert not list(calls.cache.path.glob('*.json'))
     assert model_events(log)[-1]['usage']['input_tokens']==10
+
+
+@pytest.mark.parametrize('subscription', [True, False])
+def test_subscription_token_cap_excludes_only_imported_history(cli, tmp_path, subscription):
+    from ara.runtime.budget import Budget
+    from ara.runtime.provenance import import_receipts
+    from ara.types import RunEvent, TokenUsage
+    from ara.runtime.logging import now
+    from decimal import Decimal
+    _, _, config, _ = cli
+    history = EventLog(tmp_path/'history/events.jsonl')
+    history.emit(RunEvent(now(), 'formalise', 'MODEL', usage=TokenUsage(input_tokens=1000),
+                          payload_json=json.dumps({'cache_hit':False})))
+    log = EventLog(tmp_path/'cap/events.jsonl')
+    import_receipts(log, history.read())
+    config['token_cap'] = 100
+    budget = Budget(config, log)
+    assert budget.used_tokens == 1000
+    if not subscription:
+        with pytest.raises(BudgetStop, match='token cap'):
+            budget.reserve(TokenUsage(input_tokens=1), 'formalise', subscription=False)
+        return
+    reservation = budget.reserve(TokenUsage(input_tokens=60), 'formalise', subscription=True)
+    assert budget.imported_tokens == 1000
+    log.emit(RunEvent(now(), 'formalise', 'MODEL', usage=TokenUsage(input_tokens=60),
+                      payload_json=json.dumps({'cache_hit':False})))
+    reopened = Budget(config, log)
+    assert reopened.used_tokens == 1060 and reopened.imported_tokens == 1000
+    reopened.after('formalise', subscription=True)
+    reopened.charge(TokenUsage(input_tokens=41), Decimal(0))
+    with pytest.raises(BudgetStop, match='token cap exceeded by actual usage'):
+        reopened.after('formalise', subscription=True)
+    stop = json.loads(log.read()[-1]['payload_json'])
+    assert stop['local_tokens'] == 101 and stop['imported_tokens'] == 1000
+    budget.settle(reservation, TokenUsage(input_tokens=60), Decimal(0))
+    budget.after('formalise', subscription=True)
+    with pytest.raises(BudgetStop, match='token cap'):
+        budget.reserve(TokenUsage(input_tokens=41), 'formalise', subscription=True)
+
+
+@pytest.mark.parametrize('subtype,status,diagnostic,code,attempts', [
+    ('error_max_turns', None, 'Reached max turns SECRET PROMPT ECHO', 'cli_max_turns', 3),
+    ('error_during_execution', 503, 'overloaded SECRET PROMPT ECHO', 'cli_transient_error', 3),
+    ('error_during_execution', 400, 'invalid JSON schema SECRET PROMPT ECHO', 'cli_invalid_schema', 1),
+    ('error_during_execution', 401, 'authentication failed SECRET PROMPT ECHO', 'cli_auth_error', 1),
+    ('error_during_execution', 422, 'invalid request SECRET PROMPT ECHO', 'cli_invalid_request', 1),
+    ('error_during_execution', None, 'SECRET PROMPT ECHO', 'cli_exit_error', 2),
+])
+def test_exit_one_classification_preserves_usage_and_bounds_retries(cli, subtype, status, diagnostic, code, attempts):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype=" + repr(subtype) +
+                 ",is_error=True,api_error_status=" + repr(status) + ",errors=[" + repr(diagnostic) +
+                 "])\n print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match=code):
+        calls.formalise(Proposition('p','P'))
+    assert len(model_events(log)) == attempts + 1
+    assert sum(e['stage'] in ('provider_retry','unclassified_exit_retry') for e in log.read()) == attempts-1
+    assert calls.budget.used_tokens == 20*(attempts+1)
+    payload = json.loads(model_events(log)[-1]['payload_json'])
+    assert payload['cli']['failure_class'] == code
+    assert payload['cli']['failure_subtype'] == subtype
+    assert 'SECRET PROMPT ECHO' not in log.path.read_text()
+
+
+def test_transient_exit_retries_to_success_without_losing_usage(cli):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary and len(trace.read_text().splitlines()) == 2:\n"
+                 " result.update(subtype='error_max_turns',is_error=True)\n"
+                 " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    assert calls.formalise(Proposition('p','P')).name == 'P'
+    assert [json.loads(e['payload_json'])['status'] for e in model_events(log)] == ['accepted','rejected','accepted']
+    assert calls.budget.used_tokens == 60
+    assert sum(e['stage']=='provider_retry' for e in log.read()) == 1
+
+
+@pytest.mark.parametrize('retries,exit_status,recovers,expected', [
+    (3,1,False,2), (3,1,True,2), (0,1,False,1), (3,7,False,1),
+])
+def test_unclassified_exit_retries_once_with_named_event(cli, retries, exit_status, recovers, expected):
+    make, _, config, binary = cli
+    config['claude_code']['retries'] = retries
+    calls, log = make()
+    condition = 'not canary' + (' and len(trace.read_text().splitlines()) == 2' if recovers else '')
+    injection = ("if " + condition + ":\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " print(json.dumps(result)); sys.exit(" + str(exit_status) + ")\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    if recovers:
+        assert calls.formalise(Proposition('p','P')).name == 'P'
+    else:
+        with pytest.raises(Rejected, match='cli_exit_error'):
+            calls.formalise(Proposition('p','P'))
+    assert len(model_events(log)) == expected+1
+    assert sum(e['stage']=='unclassified_exit_retry' for e in log.read()) == expected-1
+    assert calls.budget.used_tokens == 20*(expected+1)
+
+
+@pytest.mark.parametrize('diagnostic', [
+    '{"token":"new-secret-value"}',
+    '{"password":"new-secret-value"}',
+    'invalid value: P',
+])
+def test_kappa2_diagnostics_never_retain_free_text(cli, diagnostic):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " print(" + repr(diagnostic) + ",file=sys.stderr)\n print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match='cli_exit_error'):
+        calls.formalise(Proposition('p','P'))
+    receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert 'stderr_first_line' not in receipt
+    assert receipt['failure_subtype'] == 'error_during_execution'
+    assert receipt['error_category'] == 'unknown'
+    assert receipt['stderr_bytes'] == len((diagnostic+'\n').encode())
+    # Inspect both provider_error and MODEL event payloads, not just the helper.
+    for event in log.read():
+        payload = json.loads(event['payload_json'])
+        assert diagnostic not in json.dumps(payload, ensure_ascii=False)
+        assert 'new-secret-value' not in json.dumps(payload)
+        assert 'stderr_first_line' not in json.dumps(payload)
+
+
+@pytest.mark.parametrize('field', ['subtype', 'error_type', 'error', 'errors', 'result'])
+def test_json_diagnostics_are_suppressed(cli, field):
+    make, _, _, binary = cli
+    calls, log = make()
+    diagnostic = '{"token":"new-secret-value"}'
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " result[" + repr(field) + "]=" + repr(diagnostic) + "\n"
+                 " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match='cli_exit_error'):
+        calls.formalise(Proposition('p','P'))
+    receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert receipt['error_category'] == 'unknown'
+    if field == 'subtype':
+        assert 'failure_subtype' not in receipt
+    else:
+        assert receipt['failure_subtype'] == 'error_during_execution'
+    assert 'new-secret-value' not in log.path.read_text()
+
+
+@pytest.mark.parametrize('diagnostic,category', [
+    ('rate limit invalid value: P', 'rate_limit'),
+    ('usage limit invalid value: P', 'usage_limit'),
+    ('authentication error invalid value: P', 'auth'),
+    ('request timed out invalid value: P', 'timeout'),
+    ('invalid schema invalid value: P', 'schema'),
+    ('overloaded invalid value: P', 'transient'),
+    ('prompt too long invalid value: P', 'request'),
+])
+def test_exit_diagnostic_retains_only_recognized_category(cli, diagnostic, category):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True)\n"
+                 " print(" + repr(diagnostic) + ",file=sys.stderr)\n print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected):
+        calls.formalise(Proposition('p','P'))
+    receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert receipt['error_category'] == category
+    assert 'stderr_first_line' not in receipt
+    assert diagnostic not in log.path.read_text()
+
+
+def test_unclassified_non_json_exit_retries_once_and_accounts_reservations(cli):
+    make, _, config, binary = cli
+    config['claude_code']['retries'] = 3
+    calls, log = make()
+    injection = "if not canary:\n print('worker stopped',file=sys.stderr); sys.exit(1)\n"
+    binary.write_text(binary.read_text().replace('schema=json.loads', injection+'schema=json.loads'))
+    estimate = calls.count_request('formalise', {'proposition':Proposition('p','P').to_dict()}).reservation
+    with pytest.raises(Rejected, match='cli_exit_error'):
+        calls.formalise(Proposition('p','P'))
+    events = model_events(log)
+    assert len(events) == 3
+    assert sum(e['stage']=='unclassified_exit_retry' for e in log.read()) == 1
+    assert calls.budget.used_tokens == 20+2*sum(estimate.to_dict().values())
+    assert all(json.loads(e['payload_json'])['accounting']=='reservation_unknown_actual' for e in events[1:])
+    assert all('stderr_first_line' not in json.loads(e['payload_json'])['cli'] for e in events[1:])
+    assert 'worker stopped' not in log.path.read_text()
+
+
+@pytest.mark.parametrize('category,code', [('authentication_error','cli_auth_error'),('authorization_error','cli_auth_error'),
+                                             ('permission_error','cli_auth_error'),('invalid_request_error','cli_invalid_request'),
+                                             ('context_length_exceeded','cli_invalid_request')])
+@pytest.mark.parametrize('field', ['error', 'subtype'])
+def test_json_error_categories_are_not_retried(cli, category, code, field):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype='error_during_execution',is_error=True,error={'type':"+repr(category)+"})\n"
+                 " result.update(" + repr({"subtype": category, "error": None} if field == "subtype" else {}) + ")\n"
+                 " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match=code):
+        calls.formalise(Proposition('p','P'))
+    assert len(model_events(log)) == 2
+    assert not any(e['stage'] in ('provider_retry','unclassified_exit_retry') for e in log.read())
+    receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert receipt['error_category'] == ('auth' if code == 'cli_auth_error' else 'request')
+    if field == 'subtype':
+        assert 'failure_subtype' not in receipt
+
+
+def test_security_rejection_suppresses_json_diagnostics(cli):
+    make, _, _, binary = cli
+    calls, log = make()
+    injection = ("if not canary:\n result.update(subtype='error_worker_crash',is_error=True,error={'type':token})\n"
+                 " print(json.dumps(result)); sys.exit(1)\n")
+    binary.write_text(binary.read_text().replace('encoded=json.dumps(result)', injection+'encoded=json.dumps(result)'))
+    with pytest.raises(Rejected, match='credential_in_cli_output'):
+        calls.formalise(Proposition('p','P'))
+    receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
+    assert 'failure_subtype' not in receipt
+    assert receipt['error_category'] == 'unknown'
+    assert receipt['retryable'] is False
+    assert 'offline-token' not in log.path.read_text()

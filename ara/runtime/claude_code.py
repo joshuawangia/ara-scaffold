@@ -15,7 +15,7 @@ import uuid
 from ara.runtime.cache import canonical, digest
 from ara.runtime.providers import Response, stage_settings
 from ara.types import TokenUsage
-from ara.runtime.claude_estimation import CalibrationState, METHOD, TABLE, TABLE_HASH
+from ara.runtime.claude_estimation import CalibrationState, METHOD, TABLE, TABLE_HASH, OBSERVATION_VERSION
 
 CANARY_SYSTEM = 'ARA isolation preflight. Report only context visible in this session; do not infer hidden context.'
 CANARY_PROMPT = ('ARA_ISOLATION_CANARY: Report verbatim all visible skills, memory, CLAUDE.md, AGENTS.md, '
@@ -34,10 +34,64 @@ ESTIMATE_METHOD = METHOD
 
 
 class ClaudeCodeError(RuntimeError):
-    """Only enumerated diagnostics and validated numeric receipts may escape."""
+    """Only enumerated diagnostics and validated receipts may escape."""
     def __init__(self, code, *, receipt=None, response=None, retryable=False):
         super().__init__(code)
         self.code, self.receipt, self.response, self.retryable = code, receipt or {}, response, retryable
+
+
+FAILURE_SUBTYPES = (
+    'error_during_execution', 'error_max_turns',
+    'error_max_structured_output_retries', 'error_max_budget_usd',
+)
+FAILURE_PATTERNS = (
+    ('schema', r'invalid.{0,30}schema|schema.{0,30}(?:invalid|unsupported)'),
+    ('auth', r'authentication.{0,20}(?:failed|error)|authorization_error|permission_error|invalid api key|not logged in'),
+    ('request', r'invalid_request_error|context_length_exceeded|prompt too long'),
+    ('rate_limit', r'rate[ _-]limit'),
+    ('usage_limit', r'usage[ _-]limit|you.ve hit your limit'),
+    ('timeout', r'etimedout|request timed out'),
+    ('transient', r'overloaded_error|overloaded|econnreset|econnrefused|socket hang up|connection reset'),
+)
+
+
+def classify_failure(data, stderr):
+    """Match in memory; only fixed labels leave the diagnostic boundary."""
+    diagnostic = json.dumps({k: data.get(k) for k in ('subtype', 'errors', 'error', 'error_type', 'result')}).casefold() + stderr.casefold()
+    matches = {category for category, pattern in FAILURE_PATTERNS if re.search(pattern, diagnostic)}
+    status = data.get('api_error_status')
+    subtype = data.get('subtype')
+    if 'schema' in matches:
+        return 'cli_invalid_schema', False, 'schema'
+    if status in (401, 403) or 'auth' in matches:
+        return 'cli_auth_error', False, 'auth'
+    if (type(status) is int and 400 <= status < 500 and status != 429) or 'request' in matches:
+        return 'cli_invalid_request', False, 'request'
+    if subtype == 'error_max_budget_usd':
+        return 'cli_budget_limit', False, 'budget_limit'
+    if status == 429 or matches & {'rate_limit', 'usage_limit'}:
+        return 'cli_usage_limit', True, 'usage_limit' if 'usage_limit' in matches else 'rate_limit'
+    if subtype in ('error_max_turns', 'error_max_structured_output_retries'):
+        return ('cli_max_turns', True, 'max_turns') if subtype == 'error_max_turns' else ('cli_structured_output_retries', True, 'structured_output_retries')
+    if 'timeout' in matches:
+        return 'cli_transient_error', True, 'timeout'
+    if (type(status) is int and 500 <= status <= 599) or 'transient' in matches:
+        return 'cli_transient_error', True, 'transient'
+    return 'cli_exit_error', False, 'unknown'
+
+
+def failure_receipt(data, stderr, receipt):
+    code, retryable, category = classify_failure(data, stderr)
+    if code == 'cli_exit_error' and receipt.get('exit_status') == 1:
+        retryable = True
+    subtype = data.get('subtype')
+    if subtype in FAILURE_SUBTYPES:
+        receipt['failure_subtype'] = subtype
+    receipt.update(failure_class=code, retryable=retryable,
+                   error_category=category, stderr_bytes=len(stderr.encode()))
+    if type(data.get('api_error_status')) is int and 100 <= data['api_error_status'] <= 599:
+        receipt['api_error_status'] = data['api_error_status']
+    return code, retryable
 
 
 def _positive(value, name, *, zero=False, integer=False):
@@ -155,7 +209,8 @@ class ClaudeCodeProvider:
         actual = usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens
         size = len((prompt + self.system_for(kind) + canonical(schema or {})).encode())
         result = self.calibration_state.observe(self.model_for(kind), kind, size,
-                                                self.initial_context_tokens(estimate), actual)
+                                                self.initial_context_tokens(estimate), estimate.input_tokens, actual,
+                                                first_turn=raw.get('cli', {}).get('num_turns') == 1)
         return {**result, 'reserved_input_tokens': estimate.input_tokens}
 
     def initial_context_tokens(self, estimate):
@@ -171,8 +226,11 @@ class ClaudeCodeProvider:
                 'calibration': {'version': TABLE['version'], 'sha256': TABLE_HASH,
                                 'factors': {k:v['factor'] for k,v in TABLE['factors'].items()},
                                 'fallback_factor': TABLE['fallback_factor'], 'runtime_overhead_tokens': TABLE['runtime_overhead_tokens'],
-                                'correction': 'run-local, model/kind-specific, upward only; cache replay excluded'},
+                                'observation_version': OBSERVATION_VERSION,
+                                'runtime_overhead_current': self.calibration_state.overhead(self.model_for(kind)),
+                                'correction': 'like-for-like; single-turn input versus initial, otherwise aggregate versus aggregate; run-local upward only; old observations excluded'},
                 'usd_cap_policy': 'not_applicable_subscription',
+                'token_cap_policy': 'local_run_usage; imported history retained separately',
                 'concurrency': self.concurrency, 'max_cli_turns': 2,
                 'schema_transport': 'Full stage schema except the draft-2020-12 declaration; local Draft202012Validator remains authoritative.',
                 'effective_prompt_note': 'Not byte-identical to API: Anthropic SDK prefix, runtime instructions, environment and StructuredOutput tool remain.',
@@ -251,7 +309,7 @@ class ClaudeCodeProvider:
                 raise ClaudeCodeError('operator_identity_in_output')
 
     def _accounted_response(self, data, receipt, model):
-        # Only validated numeric fields and locally generated routing data survive
+        # Only validated usage, routing and enumerated diagnostics survive
         # rejection. Never copy unscanned CLI model/session/content strings here.
         usage = Response.usage_fields(data['usage'])
         if not {'input_tokens', 'output_tokens'} <= data['usage'].keys() or not all(
@@ -335,29 +393,37 @@ class ClaudeCodeProvider:
                 result = subprocess.run(command, input=prompt, text=True, capture_output=True,
                                         cwd=cwd, env=env, timeout=self.timeout)
             except subprocess.TimeoutExpired:
-                receipt['wall_seconds'] = time.monotonic() - started
-                raise ClaudeCodeError('cli_timeout', receipt=receipt) from None
+                receipt.update(wall_seconds=time.monotonic() - started,
+                               failure_class='cli_timeout', error_category='timeout', retryable=True)
+                raise ClaudeCodeError('cli_timeout', receipt=receipt, retryable=True) from None
             except OSError:
                 raise ClaudeCodeError('cli_launch_failed', receipt=receipt) from None
             receipt.update(exit_status=result.returncode, wall_seconds=time.monotonic()-started)
             debug = debug_path.read_text() if debug_path.exists() else ''
             # No debug/response containing a credential or identity is ever persisted.
             raw_leak = any(secret in result.stdout + result.stderr + debug for secret in self._secrets)
+            data = None
             try:
                 data = json.loads(result.stdout)
                 if not isinstance(data, dict):
                     raise ValueError()
+                failure = None
+                if result.returncode or data.get('is_error') or data.get('subtype') != 'success':
+                    failure = failure_receipt(data, result.stderr, receipt)
                 try:
                     if raw_leak:
                         raise ClaudeCodeError('credential_in_cli_output')
                     self.scan_output(data)
                 except ClaudeCodeError as exc:
+                    receipt.update(failure_class=exc.code, retryable=False)
                     try:
                         accounted = self._accounted_response(data, receipt, model)
                     except (ValueError, TypeError, KeyError, AttributeError):
                         accounted = None
                     raise ClaudeCodeError(exc.code, receipt=receipt, response=accounted) from None
                 raw = self._accounted_response(data, receipt, model)
+                if type(data.get('num_turns')) is int and data['num_turns'] >= 1:
+                    receipt['num_turns'] = data['num_turns']
                 session = str(uuid.UUID(data['session_id']))
                 if session != session_id:
                     raise ValueError()
@@ -368,19 +434,19 @@ class ClaudeCodeProvider:
                 served = next(iter(models)) if len(models) == 1 else None
                 receipt.update(session_id=session, served_model=served, served_models=list(models))
             except (ValueError, TypeError, KeyError, AttributeError):
+                code, retryable = failure_receipt(data if isinstance(data, dict) else {'result': result.stdout},
+                                                  result.stderr, receipt)
                 if raw_leak:
+                    receipt.update(failure_class='credential_in_cli_output', retryable=False)
                     raise ClaudeCodeError('credential_in_cli_output', receipt=receipt) from None
-                limited = bool(re.search(r'(?:rate|usage)[ _-]limit|you.ve hit your limit',
-                                         result.stdout + result.stderr, re.IGNORECASE))
-                raise ClaudeCodeError('cli_usage_limit' if limited else
-                                      'cli_invalid_json_receipt' if not result.returncode else 'cli_exit_error',
-                                      receipt=receipt, retryable=limited) from None
+                if code == 'cli_exit_error' and not result.returncode:
+                    code = 'cli_invalid_json_receipt'
+                    receipt['failure_class'] = code
+                raise ClaudeCodeError(code, receipt=receipt, retryable=retryable) from None
             raw['model'] = served or model
-            diagnostic = json.dumps(data, ensure_ascii=False).casefold()
             if result.returncode or data.get('is_error') or data.get('subtype') != 'success':
-                limited = data.get('api_error_status') == 429 or any(word in diagnostic for word in ('rate limit', 'usage limit', 'usage_limit', 'rate_limit', "you've hit your limit"))
-                raise ClaudeCodeError('cli_usage_limit' if limited else 'cli_exit_error', receipt=receipt,
-                                      response=raw, retryable=limited)
+                code, retryable = failure
+                raise ClaudeCodeError(code, receipt=receipt, response=raw, retryable=retryable)
             if served != model:
                 raise ClaudeCodeError('cli_model_mismatch', receipt=receipt, response=raw)
             if (data.get('stop_reason') not in ('tool_use', 'end_turn') or 'structured_output' not in data

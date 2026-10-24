@@ -742,8 +742,29 @@ completion may have CLI `stop_reason: tool_use`.
 
 `claude_code.concurrency` defaults to 4 processes per provider instance;
 `timeout_seconds` defaults to 300. Rate/usage errors receive at most two fresh
-process retries, with logged exponential backoff capped at 30 seconds. Admission
-is repeated for every attempt. Concurrent requests reserve tokens atomically.
+process retries, with logged exponential backoff capped at 30 seconds. The same
+bounded retry path handles CLI turn exhaustion, structured-output retry exhaustion,
+timeouts and identified transient server/connection failures. Schema, invalid
+request and authentication failures are not retried by the transport. Native
+search still permits its one final job attempt after the initial queue drains;
+that is separate from the per-call transport retry budget. An unclassified exit 1 gets
+at most one retry per transport call, logged as `unclassified_exit_retry`, within
+the configured retry budget; `retries: 0` disables it. Other unclassified exit
+statuses are not retried. Admission is repeated for every attempt, including
+retries with unknown usage charged at reservation. Concurrent requests reserve
+tokens atomically.
+
+Exit diagnostics retain only the exit status, an explicitly allowlisted CLI JSON
+failure subtype, a fixed recognized-category label and numeric metadata. The
+subtype allowlist is `error_during_execution`, `error_max_turns`,
+`error_max_structured_output_retries` and `error_max_budget_usd`; other subtype
+values are omitted. A fixed pattern table and numeric statuses classify errors
+in memory as schema, auth, request, rate/usage limit, timeout, transient,
+max-turn, structured-output or budget-limit categories, or `unknown`.
+No stderr line, stdout diagnostic, arbitrary error category or other diagnostic
+text is retained. The former first-line sanitizer was removed after ordinary
+quoted credentials and short prompt echoes bypassed it. Existing credential and
+identity rejection still prevents unsafe content from being accepted.
 There is no free CLI token counter. The versioned calibration table uses per-kind
 p99 measured API tokens/UTF-8-byte ratios with 5% margin, plus runtime overhead
 measured from retained CLI receipts. Source/event hashes and numeric pairs are in
@@ -752,9 +773,14 @@ Unknown kinds use the largest calibrated factor. This is an estimate, not a
 hard tokenizer bound. The aggregate reservation still covers two turns and one
 output replay. Initial context and cumulative token caps remain enforced.
 After each uncached response with valid measured usage, an observation compares
-CLI aggregate input (including cache) with the initial estimate. Overshoots raise
-the model/kind factor for later calls, never lower it; stage providers share the
-run state and reopening the same run restores matching-version observations.
+like quantities: a reported one-turn call's input against its initial estimate;
+otherwise aggregate input (including cache) against its aggregate reservation.
+Fixed runtime overhead is a separate measured constant. One-turn canaries can
+raise that constant without inflating the text factor. Aggregate overshoots adjust
+the text factor only after removing the reserved output replay and fixed overhead.
+Stage providers share run state; reopening restores matching-version local
+observations. Imported observations and the old aggregate/initial comparisons
+never train a new run. Factors and overhead can only increase.
 In-flight reservations are not retroactively enlarged. Actual usage remains the
 accounting authority. Missing usage consumes the reservation and stays incomplete.
 
@@ -765,7 +791,10 @@ Actual closures, symbols and global limits are still checked; an allocation is
 not a guarantee that a window contributes.
 
 CLI reported cost equivalents appear under `subscription_usage`; they are not
-measured API USD. Dollar caps do not govern subscription calls. Original imported
+measured API USD. Dollar caps do not govern subscription calls. Subscription token caps apply to
+local run usage, including pending reservations and unknown-usage reservations;
+imported history remains separately reported and included in total accounting.
+API token admission retains its historical-inclusive policy. Original imported
 API charges remain visible in methodology, and cached subscription receipts do
 not add new usage. Each call records requested/served model, CLI version, tokens,
 wall time, exit status and session id; unsafe error text is suppressed.

@@ -45,7 +45,9 @@ assert args[0]=='exec'
 assert all(k in args for k in ['--ephemeral','--ignore-user-config','--skip-git-repo-check','--json','--ignore-rules'])
 assert arg('-s')=='read-only'
 assert 'approval_policy="never"' in args and 'features.shell_tool=false' in args
+assert any(a.startswith('model_instructions_file=') for a in args)
 assert 'features.goals=false' in args
+assert 'skills.bundled.enabled=false' in args and 'skills.include_instructions=false' in args
 assert not list(Path.cwd().iterdir())
 assert Path(arg('-C'))==Path.cwd()
 assert not Path(__OPERATOR_HOME__).exists()
@@ -288,3 +290,33 @@ def test_nonfatal_warning_retains_only_count(codex):
     row=[e for e in log.read() if e['label']=='MODEL'][-1]
     assert json.loads(row['payload_json'])['cli']['warning_events']==1
     assert not any(item['type']=='error' for item in json.loads(row['response'])['content'])
+
+
+def test_auth_source_required_without_worker_home_fallback(codex, monkeypatch):
+    from ara.runtime.codex_cli import CodexCLIProvider, CodexCLIError
+    config, auth, write, tmp = codex
+    monkeypatch.setenv('CODEX_HOME', str(auth.parent))
+    del config['codex_cli']['auth_file']
+    with pytest.raises(CodexCLIError, match='subscription_auth_file_required'):
+        CodexCLIProvider(config)
+
+
+def test_configured_auth_does_not_open_worker_login(codex, monkeypatch):
+    from ara.runtime.codex_cli import CodexCLIProvider
+    config, auth, write, tmp = codex
+    selected = tmp/'subscription/auth.json'
+    selected.parent.mkdir()
+    selected.write_bytes(auth.read_bytes())
+    config['codex_cli']['auth_file'] = str(selected)
+    monkeypatch.setenv('CODEX_HOME', str(auth.parent))
+    original = Path.open
+    def guarded(path, *args, **kwargs):
+        assert path != auth, 'worker credential file must not be opened'
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'open', guarded)
+    provider = CodexCLIProvider(config)
+    assert provider._credential_source == selected
+    selected.unlink()
+    from ara.runtime.codex_cli import CodexCLIError
+    with pytest.raises(CodexCLIError, match='subscription_login_required'):
+        provider._authentication()

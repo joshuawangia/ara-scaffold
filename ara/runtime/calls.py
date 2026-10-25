@@ -272,7 +272,8 @@ class ModelCalls:
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
         if kind == 'isolation_canary':
             from ara.runtime.claude_code import CANARY_PROMPT
-            return CANARY_PROMPT, CANARY_PROMPT
+            prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
+            return prompt, prompt
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
         if kind != 'search_evidence':
             # The service grammar is a compact projection. Show the model every

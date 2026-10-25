@@ -2468,3 +2468,23 @@ methodology. The request pin is never fabricated as a serving receipt. Live
 subscription isolation, the tool-invitation canary, stage acceptance and any
 account-specific model availability require the external Round 10 report's
 executed evidence; fake-binary tests alone do not establish them.
+
+## Omega round 11 — Separate ChatGPT credential source
+
+O11.1. `codex_cli.auth_file` is mandatory and is configured to the operator's
+separate ChatGPT login at `/home/dev/.config/ara/codex-home/auth.json`. A missing
+path setting refuses before opening credentials; neither CODEX_HOME nor the
+worker's default ~/.codex login is a fallback. Explicit missing/malformed/API-key
+credentials continue to refuse. The source is still opened fresh per call and
+mounted read-only from that descriptor. No copy, logging, refresh or rotation
+is added. Existing fresh-read and bounded-auth-retry tests remain authoritative.
+
+O11.2. Live checks exposed bundled CLI skills despite disabled host discovery.
+Disable both bundled skills and their instruction block explicitly. Replace the
+coding-agent model instructions with a minimal task-only file in the temporary
+read-only mount, retaining stage developer instructions and the native prompt.
+The Codex canary now explicitly requests an empty string for absent callable
+tools, as it already does for absent operator context. No nonempty canary field
+or tool event is waived: the original context and event rejection checks remain.
+Live acceptance, account-specific model availability and any remaining blocker
+are recorded in the external Round 11 report, not inferred from offline tests.

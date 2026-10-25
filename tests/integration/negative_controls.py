@@ -1101,6 +1101,20 @@ CASES += [
      'tests/runtime/test_codex_cli.py::test_fresh_credential_and_read_only_link'),
 ]
 
+CASES += [
+    ('codex_model_instructions_isolated', 'ara/runtime/codex_cli.py',
+     "'model_instructions_file='+canonical(str(instructions_path))", "'developer_instructions='+canonical(str(instructions_path))",
+     'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),
+    ('codex_bundled_skills_disabled', 'ara/runtime/codex_cli.py',
+     "'skills.bundled.enabled=false'", "'skills.bundled.enabled=true'",
+     'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),
+    ('codex_no_worker_auth_fallback', 'ara/runtime/codex_cli.py',
+     "auth_file = options.get('auth_file')",
+     "auth_file = options.get('auth_file', str(Path(os.environ['CODEX_HOME'])/'auth.json'))",
+     'tests/runtime/test_codex_cli.py::test_auth_source_required_without_worker_home_fallback'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

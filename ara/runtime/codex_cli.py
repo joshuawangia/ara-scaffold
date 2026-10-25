@@ -18,12 +18,13 @@ import time
 import uuid
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.claude_code import ClaudeCodeError, ClaudeCodeProvider, CANARY_SCHEMA, _positive, failure_receipt
+from ara.runtime.claude_code import ClaudeCodeError, ClaudeCodeProvider, CANARY_SCHEMA, CANARY_PROMPT, _positive, failure_receipt
 from ara.runtime.claude_estimation import CalibrationState
 from ara.runtime.providers import Response, stage_settings
 
 # These controls are verified for this CLI version. Fail closed after upgrades.
 CLI_VERSION = 'codex-cli 0.163.0'
+MODEL_INSTRUCTIONS = 'Process the supplied request and return only JSON matching the response schema. Use only context actually supplied in this session.'
 DISABLED_FEATURES = ('shell_tool', 'unified_exec', 'shell_snapshot', 'apps', 'plugins',
     'hooks', 'memories', 'goals', 'multi_agent', 'multi_agent_v2', 'browser_use', 'computer_use',
     'image_generation', 'view_image', 'skill_search', 'sleep_tool', 'workspace_dependencies')
@@ -31,6 +32,7 @@ ISOLATION_FLAGS = ['--ephemeral', '--ignore-user-config', '--ignore-rules', '--s
     '--json', '-s', 'read-only', '-c', 'approval_policy="never"',
     '-c', 'suppress_unstable_features_warning=true', '-c', 'project_doc_max_bytes=0', '-c', 'web_search="disabled"',
     '-c', 'mcp_servers={}', '-c', 'memories.use_memories=false', '-c', 'memories.generate_memories=false',
+    '-c', 'skills.bundled.enabled=false', '-c', 'skills.include_instructions=false',
     '-c', 'features.skip_host_skill_discovery=true', '-c', 'tools.update_plan.enabled=false',
     '-c', 'tools.experimental_request_user_input.enabled=false',
     '-c', 'analytics.enabled=false', '-c', 'feedback.enabled=false',
@@ -48,6 +50,7 @@ class CodexCLIError(ClaudeCodeError):
 class CodexCLIProvider(ClaudeCodeProvider):
     """Reuse admission/calibration/scanning, with a distinct wire and isolation."""
     provider_kind = 'codex_cli'
+    canary_prompt = CANARY_PROMPT + ' Use an empty string for absent tools too. Report actual callable tools only; do not infer tools from general descriptions.'
     estimate_method = 'API-receipt UTF-8 calibration seed; different Codex tokenizer; upward-only like-for-like correction; no free counter'
 
     def __init__(self, config):
@@ -66,8 +69,10 @@ class CodexCLIProvider(ClaudeCodeProvider):
         self.identity = self._identity()
         self.forbidden = (*self._forbidden(options), str(Path.home()/'.codex/AGENTS.md'),
                           str(Path.home()/'.codex/memories'))
-        self._credential_source = Path(options.get('auth_file',
-            Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))/'auth.json')).absolute()
+        auth_file = options.get('auth_file')
+        if not isinstance(auth_file, str) or not auth_file.strip():
+            raise CodexCLIError('subscription_auth_file_required')
+        self._credential_source = Path(auth_file).expanduser().absolute()
         self.auth_mode = 'chatgpt'
         self._authentication()
 
@@ -112,7 +117,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
         metadata = super().metadata(kind)
         metadata.update(isolation_flags=ISOLATION_FLAGS, max_cli_turns=1,
             schema_transport='Stage schema passed to --output-schema; local Draft202012Validator authoritative.',
-            effective_prompt_note='Codex built-in system prefix plus stage developer instructions and exact native stage prompt; not API byte-identical.',
+            effective_prompt_note='Minimal task-only model instructions replace coding-agent defaults; stage developer instructions and native stage prompt retained; not API byte-identical.',
             auth_transport='Per-call read-only bind of current host auth file, linked from temporary in-memory CODEX_HOME; no credential copy.',
             auth_threat_model='Linux mount/PID namespace hides operator homes; auth writes denied; refresh endpoint disabled; no credential rotation.',
             served_model_policy='CLI model event when reported; otherwise explicitly unverified, never inferred from -m.',
@@ -223,6 +228,8 @@ class CodexCLIProvider(ClaudeCodeProvider):
             base = Path(directory)
             cwd, home, config = base/'cwd', base/'home', base/'config'
             for path in (cwd, home, config): path.mkdir()
+            instructions_path = base/'instructions.txt'
+            instructions_path.write_text(MODEL_INSTRUCTIONS)
             schema_path = base/'schema.json'
             schema_path.write_text(canonical({k:v for k,v in schema.items() if k!='$schema'}))
             _, secrets = self._authentication(credential)  # Scan exactly the inode mounted for this call.
@@ -245,7 +252,8 @@ class CodexCLIProvider(ClaudeCodeProvider):
                     raise CodexCLIError('cli_version_unsupported')
                 self.version=CLI_VERSION
             command = [*wrapper,'exec',*ISOLATION_FLAGS,'-C',str(cwd),'-m',model,
-                '--output-schema',str(schema_path),'-c','developer_instructions='+canonical(self.system_for(kind)),
+                '--output-schema',str(schema_path),'-c','model_instructions_file='+canonical(str(instructions_path)),
+                '-c','developer_instructions='+canonical(self.system_for(kind)),
                 '-c','model_reasoning_effort='+canonical(stage_settings(self.config,kind)['effort']),'-']
             receipt = {'version':self.version, 'exit_status':None, 'requested_model':model, 'served_model':None}
             started=time.monotonic()

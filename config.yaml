@@ -155,5 +155,6 @@ codex_cli:
   timeout_seconds: 300
   retries: 2
   retry_backoff_seconds: 1
-  # auth_file: /path/to/existing/ChatGPT/auth.json (default CODEX_HOME/auth.json)
+  # Required separate ChatGPT login; never inherit the worker CODEX_HOME.
+  auth_file: /home/dev/.config/ara/codex-home/auth.json
   forbidden_terms: []

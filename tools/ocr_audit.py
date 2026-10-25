@@ -1,0 +1,74 @@
+"""Local-only intake audit; content and per-page receipts stay in ignored runs/."""
+import argparse
+from dataclasses import asdict
+import json
+from pathlib import Path
+import time
+import unicodedata
+
+from ara.runtime.cache import canonical
+from ara.runtime.extraction import load_papers
+from ara.runtime.logging import EventLog
+from ara.runtime.ocr import LocalOCR, recover_papers
+
+
+def character_classes(text):
+    result = {}
+    for char in text:
+        category = unicodedata.category(char)
+        result[category] = result.get(category, 0) + 1
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--manifest', type=Path, required=True)
+    parser.add_argument('--fulltext-dir', type=Path, required=True)
+    parser.add_argument('--run-dir', type=Path, required=True)
+    parser.add_argument('--cache', type=Path, default=Path('cache/ocr'))
+    parser.add_argument('--paper-id', action='append', default=[])
+    args = parser.parse_args()
+    root = Path('runs').resolve()
+    if not args.run_dir.resolve().is_relative_to(root):
+        parser.error('--run-dir must be under the checkout runs/ directory')
+    if args.run_dir.exists() and any(args.run_dir.iterdir()):
+        parser.error('--run-dir must be empty')
+    log = EventLog(args.run_dir / 'events.jsonl')
+    log.human('ocr-audit', canonical({k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}))
+    start = time.perf_counter()
+    papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
+    initialization = time.perf_counter()
+    engine = LocalOCR(args.cache)
+    init_seconds = time.perf_counter() - initialization
+    summaries = []
+    for paper in papers:
+        recovered = recover_papers((paper,), args.fulltext_dir, log, args.cache, engine=engine)[0]
+        records = [json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'extraction_ocr_page']
+        records = [row for row in records if row['source_id'] == paper.source_id]
+        affected = set(paper.affected_pages)
+        structural = []
+        for row in records:
+            original = paper.pages[row['page'] - 1].text
+            structural.append({k:v for k,v in row.items() if k not in ('text','line_confidences')} |
+                              dict(original_words=len(original.split()), ocr_words=len(row['text'].split()),
+                                   original_classes=character_classes(original), ocr_classes=character_classes(row['text'])))
+        targeted = [row for row in records if row['page'] in affected]
+        summary = dict(source_id=paper.source_id, pdf_sha256=paper.pdf_sha256,
+                       affected=len(affected), attempted=len(targeted),
+                       recovered=sum(row['recovered'] for row in targeted),
+                       still_flagged=len(set(recovered.affected_pages)),
+                       confidence=sum(row['confidence'] for row in targeted)/len(targeted) if targeted else None,
+                       seconds=sum(row['seconds'] for row in targeted),
+                       blank_controls=len(records)-len(targeted),
+                       blank_seconds=sum(row['seconds'] for row in records if row['page'] not in affected),
+                       unavailable=recovered.unavailable)
+        (args.run_dir / f'{paper.source_id}.json').write_text(canonical(dict(summary=summary, pages=structural,
+            original=asdict(paper), recovered=asdict(recovered))))
+        summaries.append(summary)
+        (args.run_dir / 'summary.json').write_text(canonical(dict(engine=engine.identity, papers=summaries,
+            initialization_seconds=init_seconds, elapsed_seconds=time.perf_counter()-start)))
+        print(canonical(summary), flush=True)
+
+
+if __name__ == '__main__':
+    main()

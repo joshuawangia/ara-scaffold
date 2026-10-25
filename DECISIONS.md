@@ -2508,3 +2508,87 @@ context checks passed, and the separate 0600 ChatGPT credential file was
 unchanged. This supersedes the prior nonempty-tools preflight blocker under
 the operator's revised rule; it does not waive any operator-context check.
 Full verification and precise live measurements are in the external report.
+
+## Rho2: local OCR fallback at PDF intake
+
+OCR1. The normal `extract` and `plan-extraction` CLI paths now default to local
+OCR for pages with native glyph, encoding, sparse-image, visual-only or empty
+text diagnostics. Healthy text-layer pages remain byte-for-byte unchanged.
+`--ocr off` explicitly retains the prior text-only intake, including for reuse
+of older extraction artifacts. OCR runs before reuse validation, strict missing
+policy, grounding, and model requests; it is not an alternative extraction
+pipeline. Genuinely blank pages retain the existing blank-page classification
+when OCR finds no usable text. A failed OCR attempt never clears a nonblank
+coverage diagnostic. OCR setup/inference errors log their exception class and
+abort; there is no implicit download or cloud fallback.
+
+OCR2. Current official sources checked on 2026-10-25 identify PaddleOCR 3.7.0,
+PP-OCRv6 (tiny/small/medium), PP-StructureV3, and PaddleOCR-VL-1.6 (0.9B).
+Select Baidu's PP-OCRv6 tiny detector and recognizer, PaddleOCR 3.7.0,
+PaddlePaddle 3.3.1, PaddleX 3.7.2, and PDFium via pypdfium2 5.14.0 on CPU.
+This box has 16 AMD EPYC virtual cores and 62 GiB RAM, without an NVIDIA GPU.
+The model cards license both selected weights Apache-2.0; PaddleOCR,
+PaddlePaddle and PaddleX code are Apache-2.0. pypdfium2 is Apache-2.0/BSD-3-Clause
+with bundled PDFium/dependency notices; retain distribution license files.
+The official olmOCR README requires a recent NVIDIA GPU with at least 12 GiB
+VRAM for local inference, so it is not an evidenced better fit on this box.
+No cross-model accuracy benchmark or academic-formula completeness is claimed.
+The upstream OCR metrics use different evaluation sets across generations;
+release claims do not establish accuracy on this corpus.
+
+Sources:
+- https://github.com/PaddlePaddle/PaddleOCR
+- https://github.com/PaddlePaddle/PaddleOCR/blob/main/docs/version3.x/pipeline_usage/OCR.en.md
+- https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det/tree/d3177d4e5551463292a61e27cfca2b53e7c3fe9d
+- https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_rec/tree/0736086f72f666350ebcdc0c3a504eeac89cdfad
+- https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6
+- https://github.com/allenai/olmocr#requirements
+- https://pypdfium2.readthedocs.io/en/stable/readme.html#licensing
+
+OCR3. Pin Python 3.13.7 and direct dependencies exactly; commit the uv lockfile
+for transitive package versions and distribution hashes. PaddleX requires
+PyYAML 6.0.2, replacing the former 6.0.3 lock; other existing package versions
+are retained. Optional `ocr` dependencies keep ordinary tests lightweight.
+`tools/fetch_ocr_models.py` downloads only fixed public model URLs, verifies
+archive SHA-256 and every inference/configuration file against the committed
+`ocr_models.json`, and stores them in ignored `cache/ocr/`. Intake verifies
+those files again and supplies only local paths and rendered arrays to OCR.
+It blocks Python socket connections during synchronous initialization/inference.
+This guard is scoped to the single-threaded CLI; it is not a general sandbox
+for arbitrary native code. The real audit additionally runs inside an isolated
+Linux network namespace. No document is sent to an OCR service.
+
+OCR4. Render physical pages at 200 DPI, cap detection at 4000 pixels on the
+longest side, use four CPU threads and explicitly
+disable MKL-DNN. The accelerated configuration failed the local synthetic probe
+with Paddle's `ConvertPirAttribute2RuntimeAttribute` NotImplementedError;
+acceleration is not silently retried. Keep every detected recognition line
+(score filter zero). Policy `local-ocr-v1` replaces a page only with nonempty
+output, character-weighted confidence >= 0.95, <= 5% characters on lines below
+0.8 confidence, no private-use/replacement/control characters, >= 98% of the
+usable original character count, >= 98% multiset recall of normalized Latin
+word tokens, and no loss of original Unicode mathematical-symbol counts.
+These are conservative structural admission checks, not calibrated semantic
+confidence, reading-order proof, or a guarantee of complete formulas. Unmapped
+glyph identities cannot be verified by text comparison. Do not call threshold
+recovery a semantic completeness result.
+
+OCR5. Each attempt logs physical page, original diagnostics, selected source,
+engine/version, combined locked-model manifest hash, text hashes, metrics,
+recognition output, line scores, and elapsed time. Published paper provenance
+and hashed model inputs carry deterministic decisions and model identity;
+elapsed timing stays only in logs so it cannot invalidate otherwise identical
+reuse. Successful OCR text flows through existing citation/grounding contracts.
+Strict `--missing refuse` still rejects remaining affected pages. Reuse rejects
+changed OCR provenance; an old partial extraction is not relabelled recovered.
+Offline tests use synthetic placeholder content and fakes; the local model test
+is opt-in. Production-wire mutations must go red, restore, and return green.
+
+CPU selection evidence: medium recognized a dense page in 66.55 seconds with
+unscaled detection (47.57 seconds at a 1280-pixel detector cap). Tiny at 1280
+pixels took 3.99 seconds but retained only 94.68% of known Latin word tokens;
+that configuration is rejected. Tiny at a 4000-pixel cap took 6.16 seconds on
+the same physical page, retaining all known Latin word tokens and 99.88% of
+usable characters. Choose the tiny CPU variant and require 98% token/character
+preservation. This is one-page configuration evidence, not a comparative
+accuracy benchmark. The final corpus audit uses only that selected configuration.

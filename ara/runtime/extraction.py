@@ -94,6 +94,7 @@ class Paper:
     pages: tuple[PageText, ...]
     unavailable: str | None = None
     diagnostics: tuple[PageDiagnostic, ...] = ()
+    ocr_provenance_json: str = '[]'
 
     @property
     def affected_pages(self) -> tuple[int, ...]:
@@ -110,7 +111,8 @@ class Paper:
     def inputs(self) -> dict:
         return {'source_id': self.source_id, 'record': json.loads(self.record_json),
                 'pdf_sha256': self.pdf_sha256, 'pages': [asdict(p) for p in self.readable_pages],
-                'page_diagnostics': [asdict(d) for d in self.diagnostics]}
+                'page_diagnostics': [asdict(d) for d in self.diagnostics],
+                **({'ocr_provenance': json.loads(self.ocr_provenance_json)} if self.ocr_provenance_json != '[]' else {})}
 
 
 @dataclass(frozen=True)
@@ -222,6 +224,8 @@ def load_papers(manifest: Path, fulltext_dir: Path, selected: tuple[str, ...] = 
                 if any(0xE000 <= ord(c) <= 0xF8FF or 0xF0000 <= ord(c) <= 0xFFFFD or
                        0x100000 <= ord(c) <= 0x10FFFD for c in text):
                     diagnostics.append(PageDiagnostic(i, 'private_use_glyphs', chars))
+                if '\ufffd' in text or any(ord(c) < 32 and c not in '\n\r\t' for c in text):
+                    diagnostics.append(PageDiagnostic(i, 'encoding_warning', chars))
                 pages.append(PageText(i, text))
             unavailable = 'empty_pdf' if not pages else None
             paper = Paper(record['id'], canonical(record), checksum, tuple(pages), unavailable, tuple(diagnostics))
@@ -240,6 +244,8 @@ def literature_entry(outcome: dict) -> dict:
     entry = {key: outcome[key] for key in ('source_id', 'status', 'items')}
     entry['schema_version'] = EXTRACTION_VERSION
     entry['pdf_sha256'] = outcome.get('pdf_sha256')
+    if outcome.get('ocr_provenance'):
+        entry['ocr_provenance'] = outcome['ocr_provenance']
     if outcome.get('reason'):
         entry['reason'] = outcome['reason']
     if outcome['status'] == 'failed':
@@ -364,7 +370,8 @@ def extract(calls: ModelCalls, papers: tuple[Paper, ...], *, missing: str = 'rec
                 'pdf_sha256': paper.pdf_sha256, 'pages': len(paper.pages),
                 'page_diagnostics': [asdict(d) for d in paper.diagnostics],
                 'affected_pages': list(paper.affected_pages),
-                'input_sha256': digest(canonical(paper.inputs()))}
+                'input_sha256': digest(canonical(paper.inputs())),
+                **({'ocr_provenance': json.loads(paper.ocr_provenance_json)} if paper.ocr_provenance_json != '[]' else {})}
         if paper.affected_pages and missing == 'refuse':
             calls.log.record('extraction_outcome', **base, status='partial', reason='strict_incomplete_coverage', items=[])
             raise ValueError(f'{paper.source_id}: extraction refused: partial text coverage')
@@ -514,6 +521,8 @@ def validate_reused_paper(paper, outcome, acceptance):
                     affected_pages=list(paper.affected_pages))
     if not paper.pdf_sha256 or any(outcome.get(k) != v for k, v in expected.items()):
         raise ValueError('resume paper identity mismatch')
+    if paper.ocr_provenance_json != '[]' and outcome.get('ocr_provenance') != json.loads(paper.ocr_provenance_json):
+        raise ValueError('resume OCR provenance mismatch')
     if outcome.get('input_sha256', digest(canonical(paper.inputs()))) != digest(canonical(paper.inputs())):
         raise ValueError('resume paper input mismatch')
     if compatible_v4 or compatible_v5:

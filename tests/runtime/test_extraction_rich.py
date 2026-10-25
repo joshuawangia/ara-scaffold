@@ -6,6 +6,7 @@ import pytest
 from test_extraction import rig, offline, register, pdf, response, ROOT
 from test_extraction_fix1 import add_image
 from ara.runtime.cli import main
+from ara.runtime.logging import EventLog
 from ara.runtime.extraction import load_papers
 
 
@@ -34,12 +35,15 @@ def test_strict_partial_cli(rig, tmp_path, mixed):
     def factory(config, log, topic):
         from ara.runtime.calls import ModelCalls
         return ModelCalls(config, provider, log, calls.cache, ROOT, topic)
-    assert main(['extract', '--config', str(config), '--manifest', str(manifest),
+    assert main(['extract', '--ocr', 'off', '--config', str(config), '--manifest', str(manifest),
                  '--fulltext-dir', str(fulltext), '--paper-id', 'p', '--missing', 'refuse',
                  '--run-dir', str(directory)], calls_factory=factory) == 2
     assert provider.calls == 0
     assert not (directory / 'literature.extracted.txt').exists()
-    assert 'partial' in (directory / 'events.jsonl').read_text()
+    outcomes = [json.loads(e['payload_json']) for e in EventLog(directory / 'events.jsonl').read()
+                if e['stage'] == 'extraction_outcome']
+    assert outcomes[-1]['status'] == 'partial'
+    assert outcomes[-1]['reason'] == 'strict_incomplete_coverage'
 
 
 def rich_calls(rig, monkeypatch):

@@ -802,3 +802,65 @@ API token admission retains its historical-inclusive policy. Original imported
 API charges remain visible in methodology, and cached subscription receipts do
 not add new usage. Each call records requested/served model, CLI version, tokens,
 wall time, exit status and session id; unsafe error text is suppressed.
+
+### Local OCR fallback
+
+`ara extract` and `ara plan-extraction` default to `--ocr local`: only pages
+with glyph/encoding, visual-only, sparse-image, or empty-text diagnostics are
+rendered locally. Healthy text-layer pages are unchanged. Install the pinned
+CPU stack and download the hash-pinned public weights once:
+
+```bash
+uv sync --locked --extra ocr
+uv run --locked --extra ocr python tools/fetch_ocr_models.py
+```
+
+Python is pinned in `.python-version`; use that interpreter for the OCR extra.
+Weights live in ignored `cache/ocr/`; override with `--ocr-cache PATH` on the
+extraction/planning commands (or `--cache PATH` on the download/audit tools).
+Intake never downloads weights or uses a cloud OCR endpoint. Missing dependencies,
+missing/corrupt models, and inference failures abort explicitly. `--ocr off`
+selects the previous text-only behavior, useful when reusing historical artifacts.
+OCR changes the hashed input identity, so old extraction outcomes cannot be
+silently reused as OCR-derived evidence.
+
+The default is PaddleOCR 3.7.0 with Baidu PP-OCRv6 tiny models on CPU. Every
+attempt logs the physical page, engine/version, weights hash, original diagnostic,
+confidence and structural checks, chosen source, output, and timing. Accepted
+pages carry `selected: ocr` provenance through published literature and retain
+physical page citations. Remaining warnings still make the paper partial;
+`--missing refuse` rejects them. Blank pages remain separately disclosed.
+
+Recovery requires weighted confidence >= 0.95, at most 5% characters in lines
+below 0.8 confidence, no bad glyphs, at least 98% character/token preservation,
+and no loss of known mathematical symbols. These checks do **not** prove all
+content, formula fidelity, or reading order. Inspect remaining diagnostics and
+OCR evidence before treating a source as complete.
+
+Offline default tests use fakes. To exercise installed weights on a generated
+placeholder raster PDF without networking:
+
+```bash
+ARA_TEST_LOCAL_OCR=1 unshare -Urn .venv/bin/python -m pytest -q tests/runtime/test_ocr.py
+```
+
+`unshare -Urn` is a Linux validation command; the normal runtime also blocks
+Python connections around synchronous OCR. A CPU-only audit makes no extraction
+provider calls and writes content only under ignored `runs/`:
+
+```bash
+unshare -Urn .venv/bin/python tools/ocr_audit.py \
+  --manifest literature/manifest.yaml --fulltext-dir literature/fulltext \
+  --run-dir runs/ocr-audit
+```
+
+Use repeated `--paper-id` to audit a subset. The audit records per-paper recovery,
+remaining flags, mean confidence, timing, word counts and character classes;
+empty-page controls are separate from affected-page totals. Run production-wire
+controls only after pytest has finished, with no other test/mutation runner:
+
+```bash
+uv run --locked --extra ocr pytest -q
+uv run --locked --extra ocr python tools/ocr_negative_controls.py
+uv run --locked --extra ocr python tools/negative_controls.py
+```

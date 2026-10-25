@@ -53,6 +53,8 @@ def parser() -> argparse.ArgumentParser:
     extraction.add_argument('--run-dir', type=Path, required=True)
     extraction.add_argument('--provider', choices=('anthropic', 'mock', 'claude_code', 'codex_cli'))
     extraction.add_argument('--paper-id', action='append', default=[])
+    extraction.add_argument('--ocr', choices=('local', 'off'), default='local', help='local OCR fallback on diagnosed pages (default: local)')
+    extraction.add_argument('--ocr-cache', type=Path, default=Path('cache/ocr'))
     extraction.add_argument('--missing', choices=('record-only', 'refuse'), default='record-only')
     extraction.add_argument('--estimate-only', action='store_true')
     extraction.add_argument('--salvage-only', action='store_true', help='Publish verified accepted ranges without model calls')
@@ -69,6 +71,8 @@ def parser() -> argparse.ArgumentParser:
     gate.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'), default='refuse')
     plan = sub.add_parser('plan-extraction')
     plan.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
+    plan.add_argument('--ocr', choices=('local', 'off'), default='local')
+    plan.add_argument('--ocr-cache', type=Path, default=Path('cache/ocr'))
     plan.add_argument('--manifest', type=Path, required=True)
     plan.add_argument('--fulltext-dir', type=Path, required=True)
     plan.add_argument('--run-dir', type=Path, required=True)
@@ -244,6 +248,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             log.human('plan-extraction', json.dumps(raw_args), argv=raw_args, reported_minutes=args.human_minutes)
             log.record('extraction_planning_started', config=config, counter=args.token_counter)
             papers = load_papers(args.manifest, args.fulltext_dir, tuple(args.paper_id))
+            log.record('extraction_ocr_policy', mode=args.ocr)
+            if args.ocr == 'local':
+                from ara.runtime.ocr import recover_papers
+                papers = recover_papers(papers, args.fulltext_dir, log, args.ocr_cache)
             report = plan_extraction(config, log, papers, ROOT, args.token_counter)
             return 2 if report['totals']['refused'] else 0
         if args.command == 'extract':
@@ -273,6 +281,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 excluded[source] = reason
             selected = tuple(dict.fromkeys([*args.paper_id, *excluded])) if args.paper_id else ()
             papers = load_papers(args.manifest, args.fulltext_dir, selected)
+            log.record('extraction_ocr_policy', mode=args.ocr)
+            if args.ocr == 'local':
+                from ara.runtime.ocr import recover_papers
+                papers = recover_papers(papers, args.fulltext_dir, log, args.ocr_cache)
             if not set(excluded) <= {p.source_id for p in papers}:
                 raise ValueError('excluded paper is absent from manifest')
             reused = resume_papers(log, papers, args.resume_from, config, ROOT, revalidate_only=args.salvage_only) if args.resume_from and not args.estimate_only else {}

@@ -18,7 +18,7 @@ CASES = [
      'test_calls.py::test_unknown_cache_ttl_uses_expensive_rate'),
     ('interactive_time', 'cli.py', "log.human('feedback', text, elapsed_seconds=elapsed)", "log.human('feedback', text, elapsed_seconds=0)",
      'test_cli.py::test_interactive_input_measures_prompt_to_accept'),
-    ('schema', 'calls.py', 'Draft202012Validator(schema).validate(data)', 'pass # disabled validation',
+    ('schema', 'calls.py', 'validate_local(schema, data, self.config)', 'pass # disabled validation',
      'test_calls.py::test_invalid_schema_rejected_logged_not_cached'),
     ('cache', 'calls.py', 'saved = self.cache.get(key)', 'saved = None',
      'test_calls.py::test_cache_hit_identical_no_provider_call'),

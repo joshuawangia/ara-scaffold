@@ -45,7 +45,7 @@ CASES = [
     ('fallback_rate_validation', 'ara/runtime/budget.py', "for rates in config['pricing'].values():", 'for rates in [self.rates]:', 'tests/runtime/test_fallbacks.py::test_fallback_rates_are_validated'),
     ('ambiguous_iteration', 'ara/runtime/budget.py', "if fallback and not iteration.get('model'):", 'if False:', 'tests/runtime/test_fallbacks.py::test_ambiguous_iteration_model_stops'),
     ('fallback_off', 'ara/runtime/providers.py', "if fallbacks and fallbacks != 'off':", 'if True:', 'tests/runtime/test_fallbacks.py::test_fallback_request_shape[off]'),
-    ('extraction_schema', 'ara/runtime/calls.py', 'Draft202012Validator(schema).validate(data)', "None if kind == 'extract_paper' else Draft202012Validator(schema).validate(data)", 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[extra]'),
+    ('extraction_schema', 'ara/runtime/calls.py', 'validate_local(schema, data, self.config)', "None if kind == 'extract_paper' else validate_local(schema, data, self.config)", 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[extra]'),
     ('extraction_attribution', 'schemas/extract_paper.json', '"author_claim",', '"P", "author_claim",', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[attribution]'),
     ('extraction_source', 'ara/runtime/calls.py', "require(data['source_id'] == paper.source_id,", 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[source]'),
     ('extraction_item_source', 'ara/runtime/calls.py', 'require(item.source_id == paper.source_id,', 'require(True,', 'tests/runtime/test_extraction.py::test_schema_and_reference_rejection[item_source]'),
@@ -117,7 +117,7 @@ CASES += [
 
 CASES.append(('rich_nullable_provider_schema', 'schemas/extract_paper.json', '"type": "string",\n                "enum": [\n                  "paper_stated"', '"type": ["string", "null"],\n                "enum": [\n                  "paper_stated"', 'tests/runtime/test_provider.py::test_rich_nullable_enum_matches_provider_grammar'))
 
-CASES += [('batch_wire_grammar', 'ara/runtime/providers.py', "encoded_formulas=kind == 'build_t_batch'", 'encoded_formulas=False', 'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'), ('batch_wire_decode', 'ara/runtime/calls.py', "item['formula'] = json.loads(item['formula'])", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'), ('batch_wire_invalid_json', 'ara/runtime/calls.py', "raise Rejected('invalid encoded formula JSON') from exc", 'raise', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
+CASES += [('batch_wire_grammar', 'ara/runtime/providers.py', "encoded_formulas=kind == 'build_t_batch'", 'encoded_formulas=False', 'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'), ('batch_wire_decode', 'ara/runtime/calls.py', "item['formula'] = decode_response(item['formula'])", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'), ('batch_wire_invalid_json', 'ara/runtime/calls.py', "raise Rejected('invalid encoded formula JSON') from exc", 'raise', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
 
 CASES.append(('batch_bound_variables', 'ara/runtime/construction.py', "require(term.kind != 'variable' or term.name in bound,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_batch_variables_cannot_bypass_symbol_contract[False]'))
 
@@ -1140,7 +1140,7 @@ CASES += [
      "data = self.provider.normalize_output(schema, data)", 'data = data',
      'tests/runtime/test_codex_cli.py::test_strict_wire_preflight_and_local_authority'),
     ('codex_local_authority', 'ara/runtime/calls.py',
-     'Draft202012Validator(schema).validate(data)', 'pass # bypass native validation',
+     'validate_local(schema, data, self.config)', 'pass # bypass native validation',
      'tests/runtime/test_codex_cli.py::test_strict_wire_preflight_and_local_authority'),
     ('codex_preflight_live_receipt', 'ara/runtime/codex_preflight.py',
      "or cli.get('wire_schema_hash')!=case['wire_schema_hash']", 'or False',
@@ -1155,6 +1155,33 @@ CASES += [
      'require_codex_preflight(config, ROOT)\n            directory =', 'pass\n            directory =',
      'tests/runtime/test_codex_cli.py::test_codex_pilot_requires_preflight_before_provider'),
 ]
+
+
+CASES += [
+    ('local_formula_fast_rejection', 'ara/runtime/validation.py',
+     "            _fields(item, branch, path)", "            pass # omit structural formula guard",
+     'tests/runtime/test_local_validation.py::test_stall_shape_rejected_before_recursive_validation'),
+    ('local_discriminated_recursion', 'ara/runtime/validation.py',
+     '        choices = tagged_branches(branches)', '        choices = None',
+     'tests/runtime/test_local_validation.py::test_each_formula_node_is_validated_once'),
+    ('local_depth_guard', 'ara/runtime/validation.py',
+     "        if depth > limits['local_validation_max_depth']:", '        if False:',
+     'tests/runtime/test_local_validation.py::test_complexity_rejection_enters_correction[local_validation_max_depth]'),
+    ('local_node_guard', 'ara/runtime/validation.py',
+     "    limits = guard_complexity(value, config, deadline=deadline)", "    limits = _limits(config)",
+     'tests/runtime/test_local_validation.py::test_complexity_limit_is_explicit[local_validation_max_nodes-8]'),
+    ('local_deadline_rejection', 'ara/runtime/validation.py',
+     "        process.communicate()\n        _reject('local_validation_timeout_seconds exceeded', validator='local_validation_timeout_seconds')",
+     "        process.communicate()\n        return None",
+     'tests/runtime/test_local_validation.py::test_hard_deadline_works_in_search_threads'),
+    ('local_json_decoder_depth', 'ara/runtime/validation.py',
+     '    except RecursionError:', '    except KeyError:',
+     'tests/runtime/test_local_validation.py::test_json_parser_depth_refusal_enters_correction'),
+    ('local_native_authority', 'ara/runtime/validation.py',
+     "            LinearValidator(request['schema']).validate(request['value'])", '            pass',
+     'tests/runtime/test_local_validation.py::test_valid_deep_formula_and_native_constraints'),
+]
+
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

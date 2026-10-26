@@ -162,9 +162,9 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
                 changed = changed or bool(updates)
                 merged[field] = list({**baseline[field], **updates}.values())
             require(changed, 'empty construction correction')
-            from jsonschema import Draft202012Validator
+            from ara.runtime.validation import validate_local
             schema = json.loads((calls.root / 'schemas' / f'{kind}.json').read_text())
-            Draft202012Validator(schema).validate(merged)
+            validate_local(schema, merged, calls.config)
             return check(merged)
         return calls._transport_call(kind, request, corrected, attempt=2)
 

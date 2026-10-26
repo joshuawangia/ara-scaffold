@@ -1,7 +1,7 @@
 """Versioned OpenAI-strict wire projection; native Draft 2020-12 stays authoritative."""
 from copy import deepcopy
 
-from jsonschema import Draft202012Validator
+from ara.runtime.validation import LinearValidator, normalize_local, encode_local, validate_local, tagged_branches
 
 VERSION = 'ara-openai-strict-v1'
 # Constraints outside this vocabulary remain in the native schema and prompt.
@@ -56,12 +56,22 @@ def _resolve(schema, root):
 
 def _map_value(schema, value, *, encode):
     root = schema
-    local_validator = Draft202012Validator(root)
-    wire_validator = Draft202012Validator(strict_schema(root))
-    def visit(node, item):
+    local_validator = LinearValidator(root)
+    wire_validator = LinearValidator(strict_schema(root))
+    def visit(node, item, tagged_valid=False):
         node = _resolve(node, root)
         branches = node.get('oneOf', node.get('anyOf'))
         if branches:
+            choices = tagged_branches(branches)
+            if choices:
+                selected = choices.get(item.get('op')) if isinstance(item, dict) and isinstance(item.get('op'), str) else None
+                if selected is None:
+                    return deepcopy(item)
+                branch = selected[1]
+                validator = local_validator if encode else wire_validator
+                if tagged_valid or validator.evolve(schema=branch if encode else strict_schema(branch)).is_valid(item):
+                    return visit(branch, item, tagged_valid=True)
+                return deepcopy(item)
             validator = local_validator if encode else wire_validator
             for branch in branches:
                 candidate = branch if encode else strict_schema(branch)
@@ -70,7 +80,7 @@ def _map_value(schema, value, *, encode):
             # Preserve malformed data for authoritative local rejection.
             return deepcopy(item)
         if isinstance(item, dict) and (node.get('type')=='object' or 'properties' in node):
-            result = deepcopy(item)
+            result = {name:deepcopy(child) for name,child in item.items() if name not in node.get('properties', {})}
             required = set(node.get('required', []))
             for name, child in node.get('properties', {}).items():
                 if name not in item:
@@ -79,24 +89,24 @@ def _map_value(schema, value, *, encode):
                     continue
                 if (not encode and item[name] is None and name not in required
                         and not local_validator.evolve(schema=child).is_valid(None)):
-                    del result[name]
+                    continue
                 else:
-                    result[name] = visit(child, item[name])
+                    result[name] = visit(child, item[name], tagged_valid)
             return result
         if isinstance(item, list) and 'items' in node:
-            return [visit(node['items'], child) for child in item]
+            return [visit(node['items'], child, tagged_valid) for child in item]
         return deepcopy(item)
     return visit(schema, value)
 
 
-def normalize_output(schema, value):
+def normalize_output(schema, value, config=None):
     """Remove only wire-added null sentinels; preserve native nulls and bad fields."""
-    return _map_value(schema, value, encode=False)
+    return normalize_local(schema, value, config)
 
 
 def wire_value(schema, value):
     """Represent optional omissions as null for deterministic preflight examples."""
-    return _map_value(schema, value, encode=True)
+    return encode_local(schema, value)
 
 
 def placeholder(schema):
@@ -127,5 +137,5 @@ def placeholder(schema):
             return None
         raise ValueError('No placeholder for untyped Codex schema')
     value = sample(schema)
-    Draft202012Validator(schema).validate(value)
+    validate_local(schema, value)
     return value

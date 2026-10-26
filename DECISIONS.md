@@ -2797,3 +2797,24 @@ same union verdict, and the unchanged full native constraints still apply.
 The guarantee concerns local schema/normalization work; model calls, domain
 callbacks, and solver work retain their separate existing budgets. No live pilot
 completion is implied by the offline equivalence and deadline tests.
+
+## S8: Frozen construction catalogue interface
+
+`CommitmentSet` and `commitments.json` retain their strict legacy format. Rich
+construction also writes immutable `frozen-t.json` with `schema_version` equal to
+`frozen-t-v1`, `commitments` equal to `CommitmentSet.to_dict()`, and
+`symbol_catalogue`. The catalogue has `schema_version: symbol-catalogue-v1`,
+`commitments_sha256`, `symbols`, `sha256`, and `catalogue_id`. Symbol entries retain
+`name`, `kind`, `arity`, `definition`, and `evidence_ids`; symbols are sorted by
+name and evidence IDs sorted and unique. Definitions remain model judgments.
+
+`commitments_sha256` hashes canonical `CommitmentSet.to_dict()`. Catalogue
+`sha256` hashes the object containing only `schema_version`,
+`commitments_sha256`, and `symbols`; `catalogue_id` is `sha256:` plus that hex
+hash. All hashes are SHA256 over UTF-8 `ara.runtime.cache.canonical`: sorted
+object keys, compact separators, unescaped Unicode, no NaN. Array order is
+significant. No formula/text equivalence normalization is performed. Consumers
+must verify identity, binding and signatures when metadata exists. Absence of
+`frozen-t.json` means legacy semantic catalogue unavailable; it does not license
+inventing definitions or ignoring corrupt metadata. Construction owns persistence;
+search owns loading metadata and incorporating identity in model/cache inputs.

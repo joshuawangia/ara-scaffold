@@ -18,7 +18,7 @@ import unicodedata
 
 from ara.runtime.cache import canonical, digest
 
-POLICY = 'local-ocr-v1'
+POLICY = 'local-ocr-v2'
 ENGINE = 'PaddleOCR/PP-OCRv6_tiny'
 VERSION = '3.7.0'
 LOCK = Path(__file__).with_name('ocr_models.json')
@@ -28,21 +28,37 @@ LOCK = Path(__file__).with_name('ocr_models.json')
 class OCRResult:
     lines: tuple[str, ...]
     scores: tuple[float, ...]
+    confidence_units: tuple[tuple[int, float], ...] = ()
+    complete: bool = True
+    confidence_basis: str = 'recognition_lines'
+    generation_json: str = '{}'
 
     def __post_init__(self):
         if len(self.lines) != len(self.scores) or any(not isinstance(s, str) for s in self.lines):
             raise ValueError('invalid OCR line/score shape')
         if any(not math.isfinite(s) or not 0 <= s <= 1 for s in self.scores):
             raise ValueError('invalid OCR confidence')
+        if any(type(n) is not int or n < 0 or not math.isfinite(p) or not 0 <= p <= 1
+               for n, p in self.confidence_units):
+            raise ValueError('invalid OCR confidence units')
 
     @property
     def text(self):
         return '\n'.join(self.lines)
 
     @property
+    def units(self):
+        return self.confidence_units or tuple((len(s.strip()), p) for s, p in zip(self.lines, self.scores))
+
+    @property
     def confidence(self):
-        total = sum(len(s.strip()) for s in self.lines)
-        return sum(len(s.strip()) * c for s, c in zip(self.lines, self.scores)) / total if total else 0.0
+        total = sum(n for n, _ in self.units)
+        return sum(n * p for n, p in self.units) / total if total else 0.0
+
+    @property
+    def low_confidence_share(self):
+        total = sum(n for n, _ in self.units)
+        return sum(n for n, p in self.units if p < 0.8) / total if total else 1.0
 
 
 class OCREngine(Protocol):
@@ -56,27 +72,72 @@ def bad_character(c: str) -> bool:
         unicodedata.category(c) == 'Cc' and c not in '\n\r\t')
 
 
+def clean_spans(text: str) -> tuple[str, ...]:
+    """Do not turn a damaged whitespace span into apparently trustworthy fragments."""
+    return tuple(span for span in unicodedata.normalize('NFKC', text).split()
+                 if not any(bad_character(c) for c in span))
+
+
+def clean_tokens(text: str) -> Counter:
+    text = ' '.join(clean_spans(text))
+    text = unicodedata.normalize('NFKC', normalize_latex_symbols(text))
+    # LaTeX control words are markup, not recovered prose tokens.
+    text = re.sub(r'\\(?:begin|end)\{[^}]*\}', ' ', text)
+    text = re.sub(r'\\[A-Za-z]+', ' ', text)
+    # Count whole Unicode alphanumeric tokens; never salvage fragments of damaged spans.
+    return Counter(token.casefold() for token in re.findall(r'[^\W_]+', text))
+
+
+LATEX_SYMBOLS = {
+    'forall': '∀', 'exists': '∃', 'neg': '¬', 'lnot': '¬', 'land': '∧', 'wedge': '∧',
+    'lor': '∨', 'vee': '∨', 'models': '⊨', 'vDash': '⊨', 'vdash': '⊢',
+    'notmodels': '⊭', 'nvDash': '⊭', 'nvdash': '⊬', 'bot': '⊥', 'top': '⊤',
+    'rightarrow': '→', 'to': '→', 'Rightarrow': '⇒', 'implies': '⇒',
+    'leftrightarrow': '↔', 'Leftrightarrow': '⇔', 'iff': '⇔', 'in': '∈',
+    'notin': '∉', 'subset': '⊂', 'subseteq': '⊆', 'supset': '⊃', 'supseteq': '⊇',
+    'cup': '∪', 'cap': '∩', 'le': '≤', 'leq': '≤', 'ge': '≥', 'geq': '≥',
+    'ne': '≠', 'neq': '≠', 'equiv': '≡', 'approx': '≈', 'times': '×',
+    'pm': '±', 'div': '÷', 'infty': '∞', 'setminus': '∖',
+    'alpha': 'α', 'beta': 'β', 'gamma': 'γ', 'delta': 'δ', 'epsilon': 'ε',
+    'varepsilon': 'ϵ', 'zeta': 'ζ', 'eta': 'η', 'theta': 'θ', 'vartheta': 'ϑ',
+    'iota': 'ι', 'kappa': 'κ', 'lambda': 'λ', 'mu': 'μ', 'nu': 'ν', 'xi': 'ξ',
+    'omicron': 'ο', 'pi': 'π', 'varpi': 'ϖ', 'rho': 'ρ', 'varrho': 'ϱ',
+    'sigma': 'σ', 'varsigma': 'ς', 'tau': 'τ', 'upsilon': 'υ', 'phi': 'ϕ',
+    'varphi': 'φ', 'chi': 'χ', 'psi': 'ψ', 'omega': 'ω',
+    'Gamma': 'Γ', 'Delta': 'Δ', 'Theta': 'Θ', 'Lambda': 'Λ', 'Xi': 'Ξ',
+    'Pi': 'Π', 'Sigma': 'Σ', 'Upsilon': 'Υ', 'Phi': 'Φ', 'Psi': 'Ψ', 'Omega': 'Ω',
+}
+
+
+def normalize_latex_symbols(text: str) -> str:
+    text = re.sub(r'\\not\s*\\models\b', '⊭', text)
+    return re.sub(r'\\([A-Za-z]+)', lambda m: LATEX_SYMBOLS.get(m[1], m[0]), text)
+
+
+def math_symbols(text: str) -> Counter:
+    return Counter(c for c in normalize_latex_symbols(text) if unicodedata.category(c) == 'Sm')
+
+
 def decision(original: str, result: OCRResult) -> dict:
     """Conservative page-level admission, not a semantic completeness verdict."""
     text = result.text
+    spans = clean_spans(original)
     old = ''.join(c for c in original if not c.isspace() and not bad_character(c))
     new = ''.join(c for c in text if not c.isspace())
-    tokens = lambda s: Counter(re.findall(r'[a-zA-Z]{2,}', unicodedata.normalize('NFKC', s).lower()))
-    before, after = tokens(original), tokens(text)
+    before, after = clean_tokens(original), clean_tokens(text)
     recall = sum((before & after).values()) / sum(before.values()) if before else 1.0
-    symbols = lambda s: Counter(c for c in s if unicodedata.category(c) == 'Sm')
-    missing_symbols = sum((symbols(original) - symbols(text)).values())
-    low_chars = sum(len(s.strip()) for s, c in zip(result.lines, result.scores) if c < 0.8)
-    total_chars = sum(len(s.strip()) for s in result.lines)
-    low_share = low_chars / total_chars if total_chars else 1.0
+    missing_symbols = sum((math_symbols(original) - math_symbols(text)).values())
+    low_share = result.low_confidence_share
     length_ratio = len(new) / len(old) if old else 1.0
-    recovered = (bool(new) and result.confidence >= 0.95 and low_share <= 0.05
+    recovered = (result.complete and bool(new) and result.confidence >= 0.95 and low_share <= 0.05
                  and not any(bad_character(c) for c in text)
                  and length_ratio >= 0.98 and recall >= 0.98 and missing_symbols == 0)
     return dict(policy=POLICY, recovered=recovered, selected='ocr' if recovered else 'text_layer',
                 confidence=result.confidence, low_confidence_char_share=low_share,
+                complete=result.complete, confidence_basis=result.confidence_basis,
                 retained_token_share=recall, character_ratio=length_ratio,
-                missing_math_symbols=missing_symbols,
+                missing_math_symbols=missing_symbols, clean_original_tokens=sum(before.values()),
+                excluded_original_spans=len(original.split()) - len(spans),
                 original_text_sha256=digest(original), ocr_text_sha256=digest(text))
 
 
@@ -132,24 +193,29 @@ class LocalOCR:
     def recognize(self, pdf: bytes, page: int) -> OCRResult:
         with offline_network():
             import numpy as np
-            import pypdfium2 as pdfium
-            with pdfium.PdfDocument(pdf) as document:
-                physical = document[page - 1]
-                try:
-                    bitmap = physical.render(scale=200 / 72)
-                    try:
-                        pixels = np.array(bitmap.to_pil().convert('RGB'))[:, :, ::-1].copy()
-                    finally:
-                        bitmap.close()
-                finally:
-                    physical.close()
+            pixels = np.array(render_page(pdf, page))[:, :, ::-1].copy()
             rows = list(self.pipeline.predict(pixels))
         if len(rows) != 1:
             raise ValueError('OCR must return exactly one physical page')
         return OCRResult(tuple(rows[0]['rec_texts']), tuple(float(s) for s in rows[0]['rec_scores']))
 
 
-def recover_papers(papers, fulltext_dir: Path, log, cache: Path, *, engine: OCREngine | None = None):
+def render_page(pdf: bytes, page: int):
+    import pypdfium2 as pdfium
+    with pdfium.PdfDocument(pdf) as document:
+        physical = document[page - 1]
+        try:
+            bitmap = physical.render(scale=200 / 72)
+            try:
+                return bitmap.to_pil().convert('RGB')
+            finally:
+                bitmap.close()
+        finally:
+            physical.close()
+
+
+def recover_papers(papers, fulltext_dir: Path, log, cache: Path, *, engine: OCREngine | None = None,
+                   vl_engine: OCREngine | None = None, use_vl: bool = True):
     """Recover diagnosed pages before strict policy, grounding and reuse validation."""
     from ara.runtime.extraction import PageText
     recovered_papers = []
@@ -173,14 +239,24 @@ def recover_papers(papers, fulltext_dir: Path, log, cache: Path, *, engine: OCRE
                 if page.page not in candidates:
                     pages.append(page)
                     continue
-                start = time.perf_counter()
-                result = engine.recognize(raw, page.page)
-                record = dict(page=page.page, **engine.identity, **decision(page.text, result),
-                              original_diagnostics=[asdict(d) for d in paper.diagnostics if d.page == page.page])
-                log.record('extraction_ocr_page', source_id=paper.source_id, **record,
-                           seconds=time.perf_counter() - start, text=result.text,
-                           line_confidences=list(result.scores))
-                records.append(record)
+                for tier in (1, 2):
+                    if tier == 2:
+                        if record['recovered'] or not use_vl or page.page not in paper.affected_pages:
+                            break
+                        if vl_engine is None:
+                            from ara.runtime.ocr_vl import LocalVLOCR
+                            vl_engine = LocalVLOCR(cache)
+                    active = engine if tier == 1 else vl_engine
+                    start = time.perf_counter()
+                    result = active.recognize(raw, page.page)
+                    record = dict(page=page.page, tier=tier, **active.identity, **decision(page.text, result),
+                                  original_diagnostics=[asdict(d) for d in paper.diagnostics if d.page == page.page])
+                    log.record('extraction_ocr_page', source_id=paper.source_id, **record,
+                               seconds=time.perf_counter() - start, text=result.text,
+                               line_confidences=list(result.scores),
+                               confidence_units=list(result.confidence_units),
+                               generation=json.loads(result.generation_json))
+                    records.append(record)
                 if record['recovered']:
                     pages.append(PageText(page.page, result.text))
                     diagnostics = [d for d in diagnostics if d.page != page.page]

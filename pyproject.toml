@@ -26,6 +26,21 @@ ocr = [
     "pypdfium2==5.14.0",
 ]
 
+ocr-vl = [
+    "torch==2.14.1+cpu",
+    "torchvision==0.29.1+cpu",
+    "transformers==5.20.2",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
 [dependency-groups]
 dev = ["pytest==9.1.1"]
 
@@ -36,4 +51,4 @@ include = ["ara*"]
 testpaths = ["tests"]
 
 [tool.setuptools.package-data]
-"ara.runtime" = ["claude_code_calibration.json", "ocr_models.json"]
+"ara.runtime" = ["claude_code_calibration.json", "ocr_models.json", "ocr_vl_model.json"]

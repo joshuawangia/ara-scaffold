@@ -2592,3 +2592,66 @@ the same physical page, retaining all known Latin word tokens and 99.88% of
 usable characters. Choose the tiny CPU variant and require 98% token/character
 preservation. This is one-page configuration evidence, not a comparative
 accuracy benchmark. The final corpus audit uses only that selected configuration.
+
+## Rho2 Round 2: clean-token retention and local VL second tier
+
+OCR6. Policy `local-ocr-v2` compares whole Unicode alphanumeric tokens, including
+single-letter tokens and digits, after NFKC normalization and case folding.
+Exclude entire whitespace spans with private-use/replacement/control glyphs
+before tokenization; never salvage trustworthy-looking fragments from them.
+This is an explicit alphanumeric definition, not a dictionary quality claim:
+corrupted printable words without detectable bad glyphs may still be references.
+LaTeX command names and environment delimiters are markup, not recovered words.
+Keep the 0.98 token-recall and character-ratio thresholds, 0.95 confidence floor,
+and 0.05 low-confidence character-share ceiling. Keep the old usable-character
+denominator even in excluded token spans: removing that floor can admit missing
+content. Preserve mathematical symbols actually encoded by the original layer,
+including symbols within tainted spans; do not guess private glyph identities.
+Recognize an explicit finite set of standard LaTeX symbol spellings as equivalent
+Unicode symbols, including Greek letters in clean-token comparisons. This does not certify arbitrary formulas or their structure.
+
+OCR7. Add official PaddleOCR-VL-1.6 (0.9B) as a lazy second tier after rejection
+by PP-OCRv6 tiny on affected nonblank pages. Both engines use OCR6's same gate;
+healthy and tier-1-accepted pages do not invoke VL. Extraction and planning use
+two tiers by default; `--ocr-tiers 1` explicitly retains a single tier and
+`--ocr off` retains text-only intake. Each attempt retains its tier, engine,
+version, weights hash, policy and deterministic metrics in provenance; timings,
+outputs, token/line confidence units, EOS and generation lengths stay in logs.
+A final rejection keeps original text and diagnostics. Operational errors abort
+with a logged exception class; empty VL output is a logged rejection, not an
+operational exception. Strict missing policy and reuse identity remain native.
+
+OCR8. Pin official model revision c5630abae1d940eafe0697512a0325494b02ab42;
+`ocr_vl_model.json` locks all tokenizer/configuration files and the 1,917,255,968-byte
+safetensors file by SHA-256. Weight SHA-256:
+85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db.
+Combined manifest SHA-256:
+99033588ee048347de6cf29b67a9633c173abb92ef4f5ab41eb624f16140d71a.
+Use Transformers 5.20.2, PyTorch 2.14.1+cpu, torchvision 0.29.1+cpu and PDFium
+5.14.0; exact optional dependency versions and transitive distribution hashes
+are in uv.lock. CPU wheels come from the explicit PyTorch CPU index. Download
+once with `tools/fetch_ocr_models.py --vl`, verify every file before loading,
+use local-only paths with `trust_remote_code=False`, and retain license files.
+Model weights and PaddleOCR/Transformers code are Apache-2.0; PyTorch and
+torchvision have BSD-3-Clause primary licenses. PyTorch wheels also declare
+Apache-2.0, LLVM-exception, BSD-2-Clause, BSL-1.0 and MIT bundled components;
+retain their distribution notices. PDFium licensing remains as in OCR2. No paid calls
+or OCR document uploads are used. Full document inference is additionally
+validated inside an isolated Linux network namespace.
+
+OCR9. Use the model card's Transformers CPU path with BF16, SDPA, eight CPU
+threads, 200 DPI rendering, maximum 1,003,520 image pixels, deterministic greedy
+`OCR:` generation, KV cache and maximum 4096 new tokens. The official example
+supports element recognition/text spotting, not the full layout pipeline.
+Applying it to a complete physical page does not establish complete layout
+recovery. A CPU probe took 64.91 seconds for one page; a four-thread probe took
+81.07 seconds, so retain eight threads and audit all remaining pages. Timings
+are workload measurements, not a dedicated-host throughput guarantee.
+VL confidence is the actual generated-token softmax probability weighted by
+non-special decoded token character count; it is not PP-OCR recognition-line
+confidence or a calibrated probability of correctness. Enforce the same numeric
+thresholds and reject output that ends at the generation cap without EOS.
+High confidence, complete generation, and structural retention still cannot
+prove semantics, reading order, or meaning of unencoded symbols.
+
+Official source: https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6/tree/c5630abae1d940eafe0697512a0325494b02ab42

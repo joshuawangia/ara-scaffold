@@ -811,8 +811,8 @@ rendered locally. Healthy text-layer pages are unchanged. Install the pinned
 CPU stack and download the hash-pinned public weights once:
 
 ```bash
-uv sync --locked --extra ocr
-uv run --locked --extra ocr python tools/fetch_ocr_models.py
+uv sync --locked --extra ocr --extra ocr-vl
+uv run --locked --extra ocr --extra ocr-vl python tools/fetch_ocr_models.py --vl
 ```
 
 Python is pinned in `.python-version`; use that interpreter for the OCR extra.
@@ -824,16 +824,29 @@ selects the previous text-only behavior, useful when reusing historical artifact
 OCR changes the hashed input identity, so old extraction outcomes cannot be
 silently reused as OCR-derived evidence.
 
-The default is PaddleOCR 3.7.0 with Baidu PP-OCRv6 tiny models on CPU. Every
+Tier 1 uses PaddleOCR 3.7.0 with Baidu PP-OCRv6 tiny models on CPU. Rejected
+nonblank pages then use official PaddleOCR-VL-1.6 (0.9B), pinned to revision
+`c5630abae1d940eafe0697512a0325494b02ab42`, with Transformers and CPU-only PyTorch.
+VL loads lazily and uses the same gate. `--ocr-tiers 1` explicitly disables the
+second tier (only the `ocr` extra and tier-1 weights are then required).
+Every
 attempt logs the physical page, engine/version, weights hash, original diagnostic,
 confidence and structural checks, chosen source, output, and timing. Accepted
 pages carry `selected: ocr` provenance through published literature and retain
 physical page citations. Remaining warnings still make the paper partial;
 `--missing refuse` rejects them. Blank pages remain separately disclosed.
 
-Recovery requires weighted confidence >= 0.95, at most 5% characters in lines
-below 0.8 confidence, no bad glyphs, at least 98% character/token preservation,
-and no loss of known mathematical symbols. These checks do **not** prove all
+Policy `local-ocr-v2` requires weighted confidence >= 0.95, at most 5% characters
+in confidence units below 0.8, no bad glyphs, at least 98% character preservation,
+98% multiset recall of whole clean Unicode alphanumeric tokens, and no loss of
+mathematical symbols actually encoded by the text layer. Entire whitespace spans
+containing private-use, replacement, or invalid control glyphs are excluded from
+the token reference; their remaining characters still count toward the character
+floor. Standard LaTeX symbol commands, including Greek letters, count as their Unicode equivalents, and
+command names cannot replace missing prose tokens. Tier 1 scores recognition
+lines; VL scores generated tokens, weighted by decoded character length, and
+must finish with EOS. Truncation and empty generation are rejected. These
+confidence sources are not calibrated against each other. The checks do **not** prove all
 content, formula fidelity, or reading order. Inspect remaining diagnostics and
 OCR evidence before treating a source as complete.
 
@@ -841,7 +854,7 @@ Offline default tests use fakes. To exercise installed weights on a generated
 placeholder raster PDF without networking:
 
 ```bash
-ARA_TEST_LOCAL_OCR=1 unshare -Urn .venv/bin/python -m pytest -q tests/runtime/test_ocr.py
+ARA_TEST_LOCAL_OCR=1 ARA_TEST_LOCAL_VL=1 unshare -Urn .venv/bin/python -m pytest -q tests/runtime/test_ocr.py
 ```
 
 `unshare -Urn` is a Linux validation command; the normal runtime also blocks
@@ -854,13 +867,13 @@ unshare -Urn .venv/bin/python tools/ocr_audit.py \
   --run-dir runs/ocr-audit
 ```
 
-Use repeated `--paper-id` to audit a subset. The audit records per-paper recovery,
+Use repeated `--paper-id` to audit a subset, or `--tiers 1` for tier 1 only. The audit records per-paper recovery,
 remaining flags, mean confidence, timing, word counts and character classes;
 empty-page controls are separate from affected-page totals. Run production-wire
 controls only after pytest has finished, with no other test/mutation runner:
 
 ```bash
-uv run --locked --extra ocr pytest -q
-uv run --locked --extra ocr python tools/ocr_negative_controls.py
-uv run --locked --extra ocr python tools/negative_controls.py
+uv run --locked --extra ocr --extra ocr-vl pytest -q
+uv run --locked --extra ocr --extra ocr-vl python tools/ocr_negative_controls.py
+uv run --locked --extra ocr --extra ocr-vl python tools/negative_controls.py
 ```

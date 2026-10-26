@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--fulltext-dir', type=Path, required=True)
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--cache', type=Path, default=Path('cache/ocr'))
+    parser.add_argument('--tiers', type=int, choices=(1, 2), default=2)
     parser.add_argument('--paper-id', action='append', default=[])
     args = parser.parse_args()
     root = Path('runs').resolve()
@@ -41,8 +42,12 @@ def main():
     engine = LocalOCR(args.cache)
     init_seconds = time.perf_counter() - initialization
     summaries = []
+    vl_engine = None
+    if args.tiers == 2:
+        from ara.runtime.ocr_vl import LocalVLOCR
+        vl_engine = LocalVLOCR(args.cache)
     for paper in papers:
-        recovered = recover_papers((paper,), args.fulltext_dir, log, args.cache, engine=engine)[0]
+        recovered = recover_papers((paper,), args.fulltext_dir, log, args.cache, engine=engine, vl_engine=vl_engine, use_vl=args.tiers == 2)[0]
         records = [json.loads(e['payload_json']) for e in log.read() if e['stage'] == 'extraction_ocr_page']
         records = [row for row in records if row['source_id'] == paper.source_id]
         affected = set(paper.affected_pages)
@@ -52,14 +57,17 @@ def main():
             structural.append({k:v for k,v in row.items() if k not in ('text','line_confidences')} |
                               dict(original_words=len(original.split()), ocr_words=len(row['text'].split()),
                                    original_classes=character_classes(original), ocr_classes=character_classes(row['text'])))
-        targeted = [row for row in records if row['page'] in affected]
+        final = {row['page']: row for row in records}
+        targeted = [row for page, row in final.items() if page in affected]
         summary = dict(source_id=paper.source_id, pdf_sha256=paper.pdf_sha256,
                        affected=len(affected), attempted=len(targeted),
                        recovered=sum(row['recovered'] for row in targeted),
+                       recovered_tier1=sum(row['recovered'] and row['tier'] == 1 for row in targeted),
+                       recovered_vl=sum(row['recovered'] and row['tier'] == 2 for row in targeted),
                        still_flagged=len(set(recovered.affected_pages)),
                        confidence=sum(row['confidence'] for row in targeted)/len(targeted) if targeted else None,
-                       seconds=sum(row['seconds'] for row in targeted),
-                       blank_controls=len(records)-len(targeted),
+                       seconds=sum(row['seconds'] for row in records if row['page'] in affected),
+                       blank_controls=len(final)-len(targeted),
                        blank_seconds=sum(row['seconds'] for row in records if row['page'] not in affected),
                        unavailable=recovered.unavailable)
         (args.run_dir / f'{paper.source_id}.json').write_text(canonical(dict(summary=summary, pages=structural,

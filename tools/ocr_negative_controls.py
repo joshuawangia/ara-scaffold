@@ -7,6 +7,28 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = [
+    ('greek-equivalence', 'ara/runtime/ocr.py', "text = unicodedata.normalize('NFKC', normalize_latex_symbols(text))", 'text = text',
+     'test_standard_latex_greek_preserves_clean_alphanumeric_symbols'),
+    ('span-before-markup', 'ara/runtime/ocr.py', "text = ' '.join(clean_spans(text))", 'text = text',
+     'test_latex_markup_does_not_hide_a_damaged_original_span'),
+    ('alphanumeric-tokens', 'ara/runtime/ocr.py', "re.findall(r'[^\\W_]+', text)", "re.findall(r'[A-Za-z]{2,}', text)",
+     'test_clean_alphanumeric_tokens_are_not_reduced_to_latin_fragments'),
+    ('latex-prose', 'ara/runtime/ocr.py', "text = re.sub(r'\\\\[A-Za-z]+', ' ', text)", 'text = text',
+     'test_latex_control_words_cannot_replace_missing_prose_tokens'),
+    ('clean-spans', 'ara/runtime/ocr.py', 'if not any(bad_character(c) for c in span)', 'if True',
+     'test_damaged_spans_do_not_create_trusted_word_fragments'),
+    ('latex-symbols', 'ara/runtime/ocr.py', 'LATEX_SYMBOLS.get(m[1], m[0])', 'm[0]',
+     'test_standard_latex_is_an_encoding_of_the_same_math_symbol'),
+    ('cascade-after-rejection', 'ara/runtime/ocr.py', "if record['recovered'] or not use_vl", 'if True or not use_vl',
+     'test_second_tier_recovers_only_rejected_physical_page'),
+    ('keep-tier1-acceptance', 'ara/runtime/ocr.py', "if record['recovered'] or not use_vl", 'if not use_vl',
+     'test_second_tier_is_skipped_after_tier1_acceptance'),
+    ('vl-confidence', 'ara/runtime/ocr_vl.py', 'confidence_units=units', 'confidence_units=tuple((n, 1.0) for n, p in units)',
+     'test_vl_generation_records_actual_probabilities_and_eos'),
+    ('vl-completion', 'ara/runtime/ocr_vl.py', 'complete=ids[-1] in eos_ids', 'complete=True',
+     'test_vl_truncation_is_not_recovery_even_with_high_confidence'),
+    ('vl-weight-hash', 'ara/runtime/ocr_vl.py', "if actual != expected['sha256']:", 'if False:',
+     'test_vl_weight_hash_rejects_tampering'),
     ('fallback-only', 'ara/runtime/ocr.py', 'if page.page not in candidates:', 'if False:',
      'test_recovery_preserves_healthy_page_and_physical_citations'),
     ('confidence', 'ara/runtime/ocr.py', 'result.confidence >= 0.95', 'result.confidence >= 0.0',
@@ -33,7 +55,7 @@ CASES = [
 def main():
     if Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) != ROOT:
         raise RuntimeError('wrong checkout')
-    output = ROOT / 'runs/ocr-controls'
+    output = ROOT / 'runs/ocr-round2-controls'
     output.mkdir(parents=True, exist_ok=True)
     results = []
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}

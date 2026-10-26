@@ -21,26 +21,65 @@ def occurrences(sequence, anchor):
             if sequence[i:i + len(anchor)] == anchor]
 
 
-def insertion_confidence(result: OCRResult, start: int, end: int):
+def insertion_confidence(result: OCRResult, synthesized_ranges):
     ranges = result.character_confidences
     text = result.text
     values = []
-    for offset in range(start, end):
-        if text[offset].isspace():
-            continue
-        scores = [p for a, b, p in ranges if a <= offset < b]
-        if not scores:
-            return None, None
-        values.append(min(scores))
+    for start, end in synthesized_ranges:
+        for offset in range(start, end):
+            if text[offset].isspace():
+                continue
+            scores = [p for a, b, p in ranges if a <= offset < b]
+            if not scores:
+                return None, None
+            values.append(min(scores))
     if not values:
         return None, None
     return sum(values) / len(values), sum(p < 0.8 for p in values) / len(values)
 
 
-def preserves_clean_fragments(before: str, insertion: str) -> bool:
-    pattern = ''.join('.+?' if damaged else re.escape(''.join(chars))
-                      for damaged, chars in groupby(before, key=bad_character))
-    return re.fullmatch(pattern, insertion, flags=re.DOTALL) is not None
+def align_clean_fragments(before: str, insertion: str):
+    """Count exact full alignments (saturating at two) and locate glyph groups.
+
+    Clean groups consume their literal characters; damaged groups consume one
+    or more candidate characters. Prefix sums avoid enumerating wildcard paths.
+    The returned first path is usable only when the count is exactly one.
+    """
+    groups = [(damaged, ''.join(chars)) for damaged, chars in groupby(before, key=bad_character)]
+    size = len(insertion)
+    counts = [1] + [0] * size
+    parents = []
+    for damaged, fragment in groups:
+        following = [0] * (size + 1)
+        parent = {}
+        if damaged:
+            total, first = 0, None
+            for end in range(1, size + 1):
+                position = end - 1
+                if counts[position]:
+                    if first is None:
+                        first = position
+                    total = min(2, total + counts[position])
+                following[end] = total
+                if total:
+                    parent[end] = first
+        else:
+            for position, count in enumerate(counts):
+                if count and insertion.startswith(fragment, position):
+                    end = position + len(fragment)
+                    following[end] = count
+                    parent[end] = position
+        counts = following
+        parents.append(parent)
+    if not counts[size]:
+        return 0, ()
+    ranges, end = [], size
+    for index in range(len(groups) - 1, -1, -1):
+        start = parents[index][end]
+        if groups[index][0]:
+            ranges.append((start, end))
+        end = start
+    return counts[size], tuple(reversed(ranges))
 
 
 def repair_spans(original: str, result: OCRResult, *, accepted: dict | None = None):
@@ -126,23 +165,36 @@ def repair_spans(original: str, result: OCRResult, *, accepted: dict | None = No
             candidate = candidates[group.index(index)]
             a, b = a + candidate.start(), a + candidate.end()
         insertion = result.text[a:b]
-        confidence, low_share = insertion_confidence(result, a, b)
-        record.update(confidence=confidence, low_confidence_char_share=low_share,
-                      ocr_start=a, ocr_end=b, candidate_classes=character_classes(insertion))
+        record.update(ocr_start=a, ocr_end=b, candidate_classes=character_classes(insertion),
+                      confidence_scope='synthesized_nonwhitespace_characters', synthesized_ranges=[])
         if not result.complete:
             record['reason'] = 'incomplete_generation'
-        elif not insertion:
+            continue
+        if not insertion:
             record['reason'] = 'empty_insertion'
-        elif any(bad_character(c) for c in insertion):
+            continue
+        if any(bad_character(c) for c in insertion):
             record['reason'] = 'damaged_insertion'
-        elif confidence is None:
+            continue
+        if math_symbols(before) - math_symbols(insertion):
+            record['reason'] = 'encoded_symbol_loss'
+            continue
+        alignment_count, relative_ranges = align_clean_fragments(before, insertion)
+        record['clean_fragment_alignments'] = alignment_count
+        if alignment_count == 0:
+            record['reason'] = 'clean_fragment_changed'
+            continue
+        if alignment_count > 1:
+            record['reason'] = 'ambiguous_clean_fragments'
+            continue
+        synthesized_ranges = tuple((a + start, a + end) for start, end in relative_ranges)
+        confidence, low_share = insertion_confidence(result, synthesized_ranges)
+        record.update(synthesized_ranges=synthesized_ranges, confidence=confidence,
+                      low_confidence_char_share=low_share)
+        if confidence is None:
             record['reason'] = 'unmapped_confidence'
         elif confidence < 0.95 or low_share > 0.05:
             record['reason'] = 'low_confidence'
-        elif math_symbols(before) - math_symbols(insertion):
-            record['reason'] = 'encoded_symbol_loss'
-        elif not preserves_clean_fragments(before, insertion):
-            record['reason'] = 'clean_fragment_changed'
         else:
             record.update(accepted=True, reason='accepted', after_classes=character_classes(insertion))
             accepted[index] = insertion

@@ -830,7 +830,7 @@ flagged spans then use official PaddleOCR-VL-1.6 (0.9B), pinned to revision
 VL loads lazily. `--ocr-tiers 1` explicitly disables it (only the `ocr` extra and
 tier-1 weights are then required).
 
-Policy `local-ocr-v3-spans` preserves the text layer and replaces only damaged
+Policy `local-ocr-v4-spans` preserves the text layer and replaces only damaged
 whitespace runs containing private-use, replacement, or invalid control glyphs.
 Deterministic sequence alignment requires unique clean alphanumeric anchors on
 both sides in both texts, searching adjacent anchor lengths from three tokens
@@ -841,8 +841,13 @@ damaged run must also survive exactly and in order, with nonempty replacement
 text at each damaged glyph run; otherwise the proposed repair refuses. Accepted tier-1 repairs are retained
 while tier 2 attempts the remaining spans using the original coordinates.
 
-Each inserted span needs confidence >= 0.95, at most 5% of its non-whitespace
-characters in confidence units below 0.8, complete generation, no bad glyphs,
+Exact clean-fragment alignment must also be unique within the candidate span.
+Repeated clean fragments that admit multiple glyph-group boundaries refuse.
+Only newly synthesized non-whitespace characters at damaged glyph groups enter
+the confidence mean and low-score share; preserved clean characters cannot dilute
+either metric. Their absolute OCR ranges and alignment count are logged.
+Each inserted span needs confidence >= 0.95, at most 5% of synthesized characters
+in confidence units below 0.8, complete generation, no bad glyphs,
 and no loss of mathematical symbols encoded inside the original damaged span.
 Tier 1 uses the covering recognition-line scores. VL maps actual generated-token
 probabilities to decoded character ranges, conservatively combining byte-token

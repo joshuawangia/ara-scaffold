@@ -7,7 +7,12 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = [
-    ('clean-fragments', 'ara/runtime/ocr_spans.py', 'elif not preserves_clean_fragments(before, insertion):', 'elif False:',
+    ('synthesized-confidence', 'ara/runtime/ocr_spans.py',
+     'insertion_confidence(result, synthesized_ranges)', 'insertion_confidence(result, ((a, b),))',
+     'tests/runtime/test_ocr_spans.py::test_low_score_glyph_is_not_diluted_by_clean_fragment'),
+    ('fragment-ambiguity', 'ara/runtime/ocr_spans.py', 'if alignment_count > 1:', 'if False:',
+     'tests/runtime/test_ocr_spans.py::test_ambiguous_clean_fragment_alignment_refuses'),
+    ('clean-fragments', 'ara/runtime/ocr_spans.py', 'insertion.startswith(fragment, position)', 'True',
      'tests/runtime/test_ocr_spans.py::test_clean_characters_inside_tainted_span_cannot_change'),
     ('span-ambiguity', 'ara/runtime/ocr_spans.py', 'if not unique:', 'if False:',
      'tests/runtime/test_ocr_spans.py::test_anchor_ambiguity_refuses'),
@@ -17,7 +22,7 @@ CASES = [
      'tests/runtime/test_ocr_spans.py::test_span_repair_keeps_every_clean_character'),
     ('partial-repair-retained', 'ara/runtime/ocr.py', 'PageText(page.page, selected_text)', 'PageText(page.page, page.text)',
      'tests/runtime/test_ocr_spans.py::test_partial_span_success_is_retained_and_still_flagged'),
-    ('span-symbol-preserved', 'ara/runtime/ocr_spans.py', 'elif math_symbols(before) - math_symbols(insertion):', 'elif False:',
+    ('span-symbol-preserved', 'ara/runtime/ocr_spans.py', 'if math_symbols(before) - math_symbols(insertion):', 'if False:',
      'tests/runtime/test_ocr_spans.py::test_encoded_math_in_tainted_run_is_not_lost'),
     ('vl-tile-retry', 'ara/runtime/ocr_vl.py', 'if result.complete:', 'if True:',
      'tests/runtime/test_ocr_spans.py::test_vl_capped_page_retries_tiles_and_preserves_local_confidence'),
@@ -74,7 +79,7 @@ CASES = [
 def main():
     if Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) != ROOT:
         raise RuntimeError('wrong checkout')
-    output = ROOT / 'runs/ocr-round3-controls'
+    output = ROOT / 'runs/ocr-round4-controls'
     output.mkdir(parents=True, exist_ok=True)
     results = []
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}

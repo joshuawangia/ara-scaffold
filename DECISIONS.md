@@ -2702,3 +2702,30 @@ and punctuation inside spans as well as all surrounding clean intervals. Three
 regressions failed before this fix. Reuse inference, replay the final policy,
 and rerun the full suite and controls; the interrupted pre-fix suite/audit are
 not final evidence. Confidence and EOS alone cannot certify exact transcription.
+
+
+## Rho2 Round 4: synthesized-character confidence (tau2-F1)
+
+OCR15. Policy `local-ocr-v4-spans` computes admission confidence and the share
+below 0.8 only over newly synthesized non-whitespace characters corresponding
+to damaged glyph groups. Preserved clean fragments are source text, not new
+recognition evidence; they must not dilute uncertainty in a replacement.
+The numeric mean threshold 0.95 and low-score-share ceiling 0.05 are unchanged.
+
+OCR16. Count complete exact clean-fragment alignments with dynamic programming,
+saturating at two. Literal clean groups consume themselves; damaged glyph groups
+consume one or more OCR characters. Require exactly one full alignment before
+scoring; zero refuses changed clean fragments, and multiple alignments refuse
+ambiguous boundaries. Prefix sums avoid enumerating wildcard paths. Log the
+alignment count, confidence scope and absolute synthesized-character ranges.
+The external clean-token anchors, physical pages, partial diagnostics and
+cross-tier preservation rules remain unchanged.
+
+OCR17. Rebase the local OCR branch onto requested main 7e5219a, retaining both
+Omega's and Rho2's appended DECISIONS sections. No provider or credential action
+is authorized by this repair. Tests, existing local model checks and mutation
+runners execute offline; all source is restored after controls. The low-score
+replacement regressions (0.10 and 0.94), high-score acceptance with unscored clean
+text, ambiguous internal alignment and two separated glyph groups failed before
+the fix. Dedicated confidence-dilution and ambiguity mutation controls protect
+this admission boundary. See the external Round 4 report for final evidence.

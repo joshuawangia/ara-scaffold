@@ -18,7 +18,7 @@ import unicodedata
 
 from ara.runtime.cache import canonical, digest
 
-POLICY = 'local-ocr-v3-spans'
+POLICY = 'local-ocr-v4-spans'
 ENGINE = 'PaddleOCR/PP-OCRv6_tiny'
 VERSION = '3.7.0'
 LOCK = Path(__file__).with_name('ocr_models.json')

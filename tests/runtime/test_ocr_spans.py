@@ -197,3 +197,52 @@ def test_clean_characters_inside_tainted_span_cannot_change(candidate):
 def test_clean_characters_inside_tainted_span_are_retained():
     text, spans = repair('P S\ue001 R', OCRResult(('P S] R',), (0.999,)))
     assert text == 'P S] R' and spans[0]['accepted']
+
+
+@pytest.mark.parametrize('score', [0.10, 0.94])
+def test_low_score_glyph_is_not_diluted_by_clean_fragment(rig, score):
+    original = 'Q ' + 'P' * 30 + '\ue000 R'
+    candidate = 'Q ' + 'P' * 30 + 'S R'
+    result = OCRResult((candidate,), (0.99,), confidence_basis='generated_token_probabilities',
+                       confidence_ranges=((0, 32, 0.999), (32, 33, score), (33, 35, 0.999)))
+    calls, provider, paper, fulltext = flagged(rig, text=original)
+    updated = recover_papers((paper,), fulltext, calls.log, Path('unused'),
+                            engine=FakeOCR(OCRResult((candidate,), (0.1,))), vl_engine=FakeVL(result))[0]
+    assert updated.pages == paper.pages and updated.affected_pages == (2,)
+    record = json.loads(updated.ocr_provenance_json)[-1]
+    assert not record['recovered'] and record['selected'] == 'text_layer'
+    span = record['span_decisions'][0]
+    assert span['reason'] == 'low_confidence'
+    assert span['confidence'] == pytest.approx(score)
+    assert span['low_confidence_char_share'] == (1.0 if score < 0.8 else 0.0)
+    assert provider.calls == 0
+
+
+def test_high_score_glyph_ignores_unscored_clean_fragment(rig):
+    original = 'Q ' + 'P' * 30 + '\ue000 R'
+    candidate = 'Q ' + 'P' * 30 + 'S R'
+    result = OCRResult((candidate,), (0.99,), confidence_basis='generated_token_probabilities',
+                       confidence_ranges=((32, 33, 0.99),))
+    calls, _, paper, fulltext = flagged(rig, text=original)
+    updated = recover_papers((paper,), fulltext, calls.log, Path('unused'),
+                            engine=FakeOCR(OCRResult((candidate,), (0.1,))), vl_engine=FakeVL(result))[0]
+    assert updated.pages[1] == PageText(2, candidate) and not updated.affected_pages
+    span = json.loads(updated.ocr_provenance_json)[-1]['span_decisions'][0]
+    assert span['accepted'] and span['confidence'] == pytest.approx(0.99)
+    assert span['synthesized_ranges'] == [[32, 33]]
+
+
+def test_ambiguous_clean_fragment_alignment_refuses():
+    original = 'Q \ue000P\ue001 R'
+    text, spans = repair(original, OCRResult(('Q SPSPS R',), (0.999,)))
+    assert text == original and spans[0]['reason'] == 'ambiguous_clean_fragments'
+    assert spans[0]['clean_fragment_alignments'] == 2
+
+
+def test_unique_multiple_glyph_groups_exclude_clean_middle_score():
+    result = OCRResult(('Q SPS R',), (0.99,), confidence_basis='generated_token_probabilities',
+                       confidence_ranges=((2, 3, 0.99), (3, 4, 0.1), (4, 5, 0.99)))
+    text, spans = repair('Q \ue000P\ue001 R', result)
+    assert text == 'Q SPS R' and spans[0]['accepted']
+    assert spans[0]['confidence'] == pytest.approx(0.99)
+    assert spans[0]['synthesized_ranges'] == ((2, 3), (4, 5))

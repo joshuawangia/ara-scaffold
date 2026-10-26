@@ -128,6 +128,9 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
                 premise = both[positive.canonical()]
                 cut = Proposal('conjunction_elimination', (PremiseFill('conjunction', premise.canonical()),), f.canonical())
                 value = {'proposals': [cut.to_dict()]}
+            elif kind == 'formalise_slots':
+                value = {'slots': [dict(slot=p['slot'], formula=json.loads(p['text']))
+                                   for p in data['proposal']['premises']]}
             elif kind == 'formalise':
                 value = {'formula': json.loads(data['proposition']['text'])}
             elif kind == 'tier1_repair':

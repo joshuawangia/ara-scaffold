@@ -42,6 +42,7 @@ class RecordedFormaliser:
     """Replay only accepted formula receipts to recheck licenses, never search."""
     def __init__(self, events, root):
         self.formulas = defaultdict(deque)
+        self.slots = defaultdict(deque)
         schema = json.loads((root / 'schemas/formalise.json').read_text())
         for event in events:
             data = payload(event)
@@ -51,6 +52,25 @@ class RecordedFormaliser:
                 if data.get('provider') == 'codex_cli':
                     result = normalize_output(schema, result)
                 self.formulas[canonical(inputs['proposition'])].append(Formula.from_dict(result['formula']))
+
+            if event['stage'] == 'formalise_slots' and event['label'] == 'MODEL' and data.get('status') == 'accepted':
+                inputs = json.loads(event['prompt'].split('\nINPUT_JSON\n')[1])
+                result = json.loads(Response(json.loads(event['response'])).text())
+                if data.get('provider') == 'codex_cli':
+                    result = normalize_output(json.loads((root / 'schemas/formalise_slots.json').read_text()), result)
+                key = canonical([inputs['proposal'], inputs['goal'], inputs['bank_entry']])
+                self.slots[key].append((inputs, result))
+
+    def formalise_slots(self, proposal, goal, entry, commitments):
+        from ara.runtime.search_alignment import slot_bindings, validate_slots
+        saved = self.slots[canonical([proposal.to_dict(), goal.to_dict(), entry.to_dict()])]
+        require(bool(saved), 'search resume missing accepted joint formalisation receipt')
+        inputs, result = saved.popleft()
+        bindings = slot_bindings(proposal, commitments)
+        require(inputs['slot_bindings'] == bindings and
+                inputs['commitments_sha256'] == digest(canonical(commitments.to_dict())),
+                'search resume joint binding mismatch')
+        return validate_slots(result, proposal, entry, bindings, inputs['symbol_catalogue'])
 
     def formalise(self, proposition):
         saved = self.formulas[canonical(proposition.to_dict())]
@@ -99,7 +119,7 @@ def restore_result(directory, events, goal, commitments, bank, config, root):
     require(end['routes'] == [r.id for r in routes], 'search resume terminal route mismatch')
     result = SearchResult(goal, routes, independent_count(routes, commitments), end['nodes_created'], end['truncated'])
     formaliser = RecordedFormaliser(attempt, root)
-    licenser = Licenser(bank, formaliser, formaliser, config.get('solver_timeout_ms', 1000))
+    licenser = Licenser(bank, formaliser, formaliser, config.get('solver_timeout_ms', 1000), commitments)
     nodes = {r['node_id']: r for r in rows if r['action'] == 'node'}
     prunes = {(r['state_id'], r['node_id'], r['proposal_index']): r['reason']
               for r in rows if r['action'] == 'prune'}
@@ -253,6 +273,9 @@ def load_search_resume(log, bank, root):
     commitments = CommitmentSet.from_dict(frozen['commitments'])
     artifact = CommitmentSet.from_json((log.path.parent/'commitments.json').read_text())
     require(digest(artifact.to_json()) == digest(commitments.to_json()), 'search resume frozen T hash mismatch')
+    # A corrupt optional catalogue must fail before resume can create a provider.
+    from ara.runtime.search_alignment import catalogue_inputs
+    catalogue_inputs(log.path.parent, commitments)
     targets = tuple(Proposition.from_dict(p) for p in candidates['candidates'])
     require(bool(targets) and len({p.id for p in targets}) == len(targets) and all(p.formula for p in targets),
             'search resume invalid targets')

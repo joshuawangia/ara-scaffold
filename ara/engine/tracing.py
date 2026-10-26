@@ -32,6 +32,8 @@ class TraceRecorder:
                      conclusion_text_id=self.define('text', proposal.conclusion_text),
                      premises=[dict(slot=p.slot, text_id=self.define('text', p.text),
                                     t_id=p.t_id, scope_id=p.scope_id) for p in proposal.premises])
+        if proposal.conclusion_ref is not None:
+            value['conclusion_ref'] = proposal.conclusion_ref
         return self.define('proposal', value)
 
     def graph(self, graph):

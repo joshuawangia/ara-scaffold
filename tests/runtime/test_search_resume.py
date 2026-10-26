@@ -35,6 +35,10 @@ def stopped(tmp_path, monkeypatch, *, licensed=False, partial=False):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         if kind == 'map_leaf':
             value = {'t_id': 'open'}
+        elif kind == 'formalise_slots':
+            p, q = Formula('atom', name='P'), Formula('atom', name='Q')
+            value = {'slots': [dict(slot='conditional', formula=Formula('implies', (q, p)).to_dict()),
+                               dict(slot='antecedent', formula=q.to_dict())]}
         elif kind == 'formalise':
             p, q = Formula('atom', name='P'), Formula('atom', name='Q')
             value = {'formula': {'P': p, 'Q': q, 'R': Formula('implies', (q, p))}[

@@ -909,8 +909,14 @@ class ModelCalls:
             return construct(self, literature, audience)
         return self.call('build_t', {'literature': literature, 'audience': audience}, CommitmentSet.from_dict)
 
+    def search_vocabulary(self, commitments):
+        from ara.runtime.search_alignment import catalogue_inputs
+        return catalogue_inputs(self.log.path.parent, commitments)
+
     def propose_targets(self, commitments: CommitmentSet, count: int = 10,
                         named_position: str | None = None) -> tuple[Proposition, ...]:
+        from ara.runtime.search_alignment import symbols
+        vocabulary = self.search_vocabulary(commitments)
         def check(data):
             targets = tuple(Proposition.from_dict(p) for p in data['targets'])
             require(len(targets) == (1 if named_position is not None else count), 'wrong target count')
@@ -918,18 +924,59 @@ class ModelCalls:
             if named_position is not None:
                 require(targets[0].text == named_position, 'named position was changed')
             return targets
-        return self.call('propose_targets', {'commitments': commitments.to_dict(), 'count': count,
-                                            'named_position': named_position}, check)
+        inputs = dict(commitments=commitments.to_dict(), count=count,
+                      named_position=named_position, **vocabulary)
+        frozen = set().union(*(set(symbols(c.formula)) for c in commitments.commitments))
+        for attempt in range(2):
+            targets = self.call('propose_targets', inputs, check)
+            targets = tuple(p if p.formula else replace(p, formula=self.formalise(p, commitments=commitments))
+                            for p in targets)
+            disconnected = [p.id for p in targets if not set(symbols(p.formula)) & frozen]
+            self.log.record('target_vocabulary_preflight', attempt=attempt + 1, attempt_budget=2,
+                            disconnected=disconnected, catalogue_sha256=vocabulary['catalogue_sha256'],
+                            catalogue_status=vocabulary['catalogue_status'],
+                            status='disconnected' if disconnected else 'aligned')
+            if not disconnected:
+                break
+            inputs = {**inputs, 'vocabulary_feedback': dict(disconnected=disconnected,
+                previous_targets=[p.to_dict() for p in targets],
+                instruction='Reuse the frozen vocabulary with its definitions; preserve the target meaning.')}
+        return targets
 
     def propose_cuts(self, goal: Proposition, commitments: CommitmentSet,
                      bank: tuple[BankEntry, ...]) -> tuple[Proposal, ...]:
-        return self.call('propose_cuts', {'goal': goal.to_dict(), 'commitments': commitments.to_dict(),
-                         'bank': [b.to_dict() for b in bank]},
-                         lambda d: tuple(Proposal.from_dict(p) for p in d['proposals']))
+        from ara.runtime.search_alignment import slot_bindings
+        def check(data):
+            proposals = tuple(Proposal.from_dict(p) for p in data['proposals'])
+            require(len(proposals) <= 3, 'proposal batch exceeds three candidates')
+            require(len({p.to_json() for p in proposals}) == len(proposals), 'duplicate proposal in batch')
+            for proposal in proposals:
+                slot_bindings(proposal, commitments)
+                require(proposal.conclusion_text == goal.text,
+                        'current-goal reference text mismatch')
+            # Exact existing text is an identity binding, never a semantic similarity decision.
+            return tuple(replace(p, conclusion_ref='current_goal') for p in proposals)
+        return self.call('propose_cuts', dict(goal=goal.to_dict(), commitments=commitments.to_dict(),
+                         bank=[b.to_dict() for b in bank], proposal_limit=3, attempt_budget=1,
+                         **self.search_vocabulary(commitments)), check)
 
-    def formalise(self, proposition: Proposition) -> Formula:
-        return self.call('formalise', {'proposition': proposition.to_dict()},
-                         lambda d: Formula.from_dict(d['formula']))
+    def formalise(self, proposition: Proposition, *, commitments=None) -> Formula:
+        inputs = {'proposition': proposition.to_dict()}
+        if commitments is not None:
+            inputs.update(self.search_vocabulary(commitments))
+            inputs['vocabulary_instruction'] = 'Reuse catalogue definitions and signatures; preserve the proposition meaning.'
+        return self.call('formalise', inputs, lambda d: Formula.from_dict(d['formula']))
+
+    def formalise_slots(self, proposal, goal, entry, commitments):
+        from ara.runtime.search_alignment import slot_bindings, validate_slots, metavariable_bindings
+        bindings = slot_bindings(proposal, commitments)
+        vocabulary = self.search_vocabulary(commitments)
+        inputs = dict(proposal=proposal.to_dict(), goal=goal.to_dict(), bank_entry=entry.to_dict(),
+                      slot_bindings=bindings,
+                      shared_metavariables=metavariable_bindings(entry, goal, bindings),
+                      **vocabulary)
+        return self.call('formalise_slots', inputs,
+                         lambda d: validate_slots(d, proposal, entry, bindings, vocabulary['symbol_catalogue']))
 
     def map_leaf(self, leaf: Proposition, commitments: CommitmentSet) -> str:
         def check(data):

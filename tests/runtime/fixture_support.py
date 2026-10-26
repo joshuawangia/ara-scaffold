@@ -59,14 +59,17 @@ def canned(config):
             'usage': {'input_tokens': 5, 'output_tokens': 3}}
     add('build_t', {'literature': (ROOT / 'tests/fixtures/runtime/smoke-literature.txt').read_text(),
                     'audience': 'runtime audience'}, T.to_dict())
-    add('propose_targets', {'commitments': T.to_dict(), 'count': 2, 'named_position': None},
+    from ara.runtime.search_alignment import catalogue_inputs
+    vocabulary = catalogue_inputs(ROOT / 'tests/fixtures/runtime', T)
+    add('propose_targets', {'commitments': T.to_dict(), 'count': 2, 'named_position': None, **vocabulary},
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:
         for goal in (target, negate_proposition(target)):
             add('map_leaf', {'leaf': goal.to_dict(), 'commitments': T.to_dict()},
                 {'t_id': {'p': 't1', 'q': 't2'}.get(goal.id, 'open')})
-            add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': []}, {'proposals': []})
+            add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': [],
+                'proposal_limit': 3, 'attempt_budget': 1, **vocabulary}, {'proposals': []})
     route = RouteGraph('route:p', 'n:p', (RouteNode('n:p', TARGETS[0], 'leaf', 't1'),), 'CLOSED')
     add('write_essay', {'outline': calls.essay_outline(route), 'word_limit': 300, 'minimum_words': 150, 'feedback': []}, DRAFT)
     add('audit_essay', calls.audit_inputs(route, DRAFT),

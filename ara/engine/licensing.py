@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from ara.bank import Bank
 from ara.formal import entails
 from ara.ports import EventSink, Formaliser
-from ara.types import BankEntry, EngineDecision, Formula, Proposal, Proposition, RunEvent
+from ara.types import BankEntry, CommitmentSet, EngineDecision, Formula, Proposal, Proposition, RunEvent
 from ara.engine.matching import matches_schema
 
 
@@ -31,10 +31,11 @@ class License:
 
 
 class Licenser:
-    def __init__(self, bank: Bank, formaliser: Formaliser, sink: EventSink, timeout_ms: int = 1000):
+    def __init__(self, bank: Bank, formaliser: Formaliser, sink: EventSink, timeout_ms: int = 1000, commitments: CommitmentSet | None = None):
         if timeout_ms <= 0:
             raise ValueError('solver timeout must be positive')
         self.bank, self.formaliser, self.sink, self.timeout_ms = bank, formaliser, sink, timeout_ms
+        self.commitments = commitments
 
     def formalise(self, p: Proposition) -> Proposition:
         return p if p.formula is not None else replace(p, formula=self.formaliser.formalise(p))
@@ -53,11 +54,23 @@ class Licenser:
                 or any(not p.text.strip() for p in proposal.premises) or not proposal.conclusion_text.strip()):
             return result('SLOT_MISMATCH')
         goal = self.formalise(goal)
-        conclusion = self.formalise(Proposition('conclusion', proposal.conclusion_text))
+        if proposal.conclusion_ref == 'current_goal':
+            if proposal.conclusion_text != goal.text:
+                return result('CONCLUSION_REFERENCE_MISMATCH')
+            conclusion = goal
+        else:
+            # Historical proposals carry no reference and retain their recorded interpretation.
+            conclusion = self.formalise(Proposition('conclusion', proposal.conclusion_text))
         if conclusion.formula.canonical() != goal.formula.canonical():
             return result('CONCLUSION_MISMATCH')
         by_slot = {p.slot: p for p in proposal.premises}
-        premises = tuple(self.formalise(Proposition(s.id, by_slot[s.id].text)) for s in entry.premise_slots)
+        if proposal.conclusion_ref == 'current_goal':
+            premises = self.formaliser.formalise_slots(proposal, goal, entry, self.commitments)
+            if (tuple(p.id for p in premises) != tuple(s.id for s in entry.premise_slots)
+                    or any(p.text != by_slot[p.id].text or p.formula is None for p in premises)):
+                return result('SLOT_MISMATCH')
+        else:
+            premises = tuple(self.formalise(Proposition(s.id, by_slot[s.id].text)) for s in entry.premise_slots)
         fills = {p.id: p.formula for p in premises}
         schema = entry.formula_schema
         allowed_scopes = {}

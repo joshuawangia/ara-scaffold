@@ -2917,3 +2917,81 @@ finished, the full integration control runner produced 434/434 expected
 mutation failures and restored passes, including the new F2 control. All 187
 tracked-file hashes matched the pre-gate manifest after both gates. The diff
 check is clean. The fix remains a local commit; no push or paid call occurred.
+## S8: Frozen construction catalogue interface
+
+`CommitmentSet` and `commitments.json` retain their strict legacy format. Rich
+construction also writes immutable `frozen-t.json` with `schema_version` equal to
+`frozen-t-v1`, `commitments` equal to `CommitmentSet.to_dict()`, and
+`symbol_catalogue`. The catalogue has `schema_version: symbol-catalogue-v1`,
+`commitments_sha256`, `symbols`, `sha256`, and `catalogue_id`. Symbol entries retain
+`name`, `kind`, `arity`, `definition`, and `evidence_ids`; symbols are sorted by
+name and evidence IDs sorted and unique. Definitions remain model judgments.
+
+`commitments_sha256` hashes canonical `CommitmentSet.to_dict()`. Catalogue
+`sha256` hashes the object containing only `schema_version`,
+`commitments_sha256`, and `symbols`; `catalogue_id` is `sha256:` plus that hex
+hash. All hashes are SHA256 over UTF-8 `ara.runtime.cache.canonical`: sorted
+object keys, compact separators, unescaped Unicode, no NaN. Array order is
+significant. No formula/text equivalence normalization is performed. Consumers
+must verify identity, binding and signatures when metadata exists. Absence of
+`frozen-t.json` means legacy semantic catalogue unavailable; it does not license
+inventing definitions or ignoring corrupt metadata. Construction owns persistence;
+search owns loading metadata and incorporating identity in model/cache inputs.
+
+### Round 12 — shared search vocabulary and explicit formula bindings
+
+- Integrate Sigma's catalogue interface from `597b666`. `commitments.json` and
+  the strict `CommitmentSet` codec remain unchanged. Search validates the optional
+  `frozen-t.json` envelope, passes its symbols and catalogue/T hashes in cache
+  inputs, and refuses corrupt present metadata. Missing metadata is explicitly
+  `unavailable_legacy`; search does not fabricate semantic definitions.
+- New proposals carry `conclusion_ref=current_goal` after exact text validation.
+  Licensing binds that reference to the existing goal formula and still checks
+  canonical equality. A changed conclusion text cannot use the reference.
+  Historical proposals retain their previous canonical encoding and independent
+  formalization behavior for log replay; no old evidence is rewritten.
+- A single `formalise_slots` call interprets all slots together with the goal,
+  frozen catalogue, exact T-reference bindings and up to eight candidate shared
+  metavariable substitutions. The model cannot change a frozen slot formula.
+  Bank shape, solver entailment, scope rules and leaf equality remain independent
+  engine requirements. Deterministic forward checking explicitly converts its
+  canonical formulas out of the runtime reference contract.
+- Non-open proposal T IDs must exist and carry the exact frozen text, including
+  attribution. Runtime validation corrections receive the concrete rejected
+  output and reason; a reference does not silently authorize a paraphrase.
+- Target vocabulary preflight records disconnected IDs and permits exactly one
+  target-proposal correction with catalogue context. If still disconnected,
+  search retains the target and the explicit second failure receipt; it does not
+  assert reachability or silently replace a named target. Legacy runs without
+  semantic metadata still compare exact signatures present in T.
+- Select the brief's bounded-batch option: one search proposal batch per expanded
+  leaf, with up to three distinct proposals. `proposal_limit=3` and
+  `attempt_budget=1` describe search generation; the existing separately logged
+  runtime validation-attempt limit still applies to invalid responses. Empty
+  batches remain valid. Depth and node caps are unchanged.
+- Sealed traces preserve the current-goal reference. Offline resume replays joint
+  slot receipts and rechecks bindings/licenses without a provider. The new schema
+  joins the existing automatically enumerated Codex preflight manifest; an old
+  live schema proof will be stale. This round makes no live provider calls.
+- Placeholder regression: T contains P and P -> Q; the native preparation,
+  paired search, route publication and offline replay path closes Q, with both
+  leaves in T. Other regressions cover disconnected correction, catalogue cache
+  identity, corrupt/legacy metadata, joint open-slot entailment, changed frozen
+  bindings, reference correction, and a valid third proposal alternative.
+- Add production-wire negative controls for all five diagnosed causes, including
+  reference guards, catalogue/preflight propagation, batch size, joint slot and
+  metavariable propagation, T membership/text, and reference trace persistence.
+  Static mock request hashes were migrated offline for changed prompts and inputs.
+
+Round 12 verification: full pytest passed 1,056 tests with 4 existing opt-in
+skips (1,060 collected) in 864.28 seconds. After pytest completed, the full
+negative-control runner produced 446/446 expected mutation failures and restored
+passes, including all 12 new controls. All 193 pinned source/test/documentation
+hashes matched before and after both gates. Evidence is in `runs/xi-round12/`.
+The native placeholder regression closes Q from P and P -> Q and restores its
+licensed inference through offline resume. No live-model behavior or new
+real-corpus closure is claimed. This work is committed locally without a push.
+
+Finding disposition: all five diagnosed causes are addressed above: current-goal
+identity, frozen vocabulary/preflight, bounded proposal breadth, shared slot
+formalization, and validated T references. 5 findings, 5 placed.

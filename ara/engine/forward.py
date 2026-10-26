@@ -162,7 +162,7 @@ def forward_pass(leaves: tuple[Formula, ...], commitments: CommitmentSet, licens
                     canonical_proposal = replace(node.proposal,
                         premises=tuple(replace(fills[s.id], text=c.proposition.formula.canonical())
                                        for s, c in zip(entry.premise_slots, children)),
-                        conclusion_text=node.proposition.formula.canonical())
+                        conclusion_text=node.proposition.formula.canonical(), conclusion_ref=None)
                     license = checker.check(canonical_proposal, node.proposition)
                     if license.licensed and all(any(cq_supported(a, q.id, commitments) for a in node.cq_answers)
                                                for q in license.entry.critical_questions):

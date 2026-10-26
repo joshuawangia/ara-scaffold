@@ -20,6 +20,9 @@ class CutProposer(Protocol):
 class Formaliser(Protocol):
     def formalise(self, proposition: Proposition) -> Formula: ...
 
+    def formalise_slots(self, proposal: Proposal, goal: Proposition, entry: BankEntry,
+                        commitments: CommitmentSet) -> tuple[Proposition, ...]: ...
+
 
 class LeafMapper(Protocol):
     def map_leaf(self, leaf: Proposition, commitments: CommitmentSet) -> str:

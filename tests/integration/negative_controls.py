@@ -1206,6 +1206,22 @@ CASES += [
 ]
 
 
+CASES += [
+    ('search_goal_reference', 'ara/engine/licensing.py', '            conclusion = goal', "            conclusion = self.formalise(Proposition('conclusion', proposal.conclusion_text))", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
+    ('search_goal_reference_text', 'ara/engine/licensing.py', '            if proposal.conclusion_text != goal.text:', '            if False:', 'tests/runtime/test_search_alignment.py::test_explicit_goal_reference_does_not_override_changed_text'),
+    ('search_catalogue_inputs', 'ara/runtime/calls.py', 'return catalogue_inputs(self.log.path.parent, commitments)', "return dict(symbol_catalogue=None, catalogue_sha256=None, catalogue_status='unavailable_legacy', commitments_sha256=digest(canonical(commitments.to_dict())))", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
+    ('search_target_preflight', 'ara/runtime/calls.py', '            if not disconnected:', '            if True:', 'tests/runtime/test_search_alignment.py::test_target_preflight_retries_once_with_catalogue'),
+    ('search_proposal_batch', 'ara/runtime/calls.py', 'proposal_limit=3, attempt_budget=1,', 'proposal_limit=1, attempt_budget=1,', 'tests/runtime/test_search_alignment.py::test_three_proposal_batch_keeps_valid_alternative'),
+    ('search_proposal_batch_bound', 'ara/runtime/calls.py', "require(len(proposals) <= 3, 'proposal batch exceeds three candidates')", "require(True, 'proposal batch exceeds three candidates')", 'tests/runtime/test_search_alignment.py::test_proposal_batch_bound_is_enforced'),
+    ('search_joint_slots', 'ara/engine/licensing.py', 'premises = self.formaliser.formalise_slots(proposal, goal, entry, self.commitments)', 'premises = tuple(self.formalise(Proposition(s.id, by_slot[s.id].text)) for s in entry.premise_slots)', 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
+    ('search_shared_metavariables', 'ara/runtime/calls.py', 'shared_metavariables=metavariable_bindings(entry, goal, bindings),', 'shared_metavariables=[],', 'tests/runtime/test_search_alignment.py::test_joint_open_slots_share_goal_vocabulary_and_still_require_entailment'),
+    ('search_t_membership', 'ara/runtime/calls.py', '                slot_bindings(proposal, commitments)', '                pass', 'tests/runtime/test_search_alignment.py::test_proposal_reference_correction[id]'),
+    ('search_t_reference_text', 'ara/runtime/search_alignment.py', "require(fill.text == commitment.text, 'proposal T reference text mismatch: ' + fill.t_id)", "require(True, 'proposal T reference text mismatch: ' + fill.t_id)", 'tests/runtime/test_search_alignment.py::test_proposal_reference_correction[text]'),
+    ('search_frozen_slot_identity', 'ara/runtime/search_alignment.py', 'require(bound is None or formula.canonical() == Formula.from_dict(bound).canonical(),', 'require(True,', 'tests/runtime/test_search_alignment.py::test_joint_slots_cannot_change_frozen_binding'),
+    ('search_reference_trace', 'ara/engine/tracing.py', '        if proposal.conclusion_ref is not None:', '        if False:', 'tests/runtime/test_search_alignment.py::test_native_lifecycle_closure_and_offline_joint_replay'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

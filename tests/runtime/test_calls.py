@@ -146,12 +146,18 @@ def test_ports_return_typed_values_and_enforce_references(rig):
 
 
 def test_named_position_preserved(rig):
-    from ara.types import CommitmentSet
+    from ara.types import Commitment, CommitmentSet
     calls, provider, log = rig
-    commitments = CommitmentSet(())
-    inputs = {'commitments': commitments.to_dict(), 'count': 10, 'named_position': 'P'}
+    formula = Formula('atom', name='P')
+    commitments = CommitmentSet((Commitment('t', 'P', 'placeholder:1', formula),))
+    inputs = {'commitments': commitments.to_dict(), 'count': 10, 'named_position': 'P',
+              **calls.search_vocabulary(commitments)}
     register(calls, provider, 'propose_targets', inputs, {'targets': [{'id': 'p', 'text': 'P', 'formula': None}]})
-    assert calls.propose_targets(commitments, named_position='P') == (Proposition('p', 'P'),)
+    register(calls, provider, 'formalise', {'proposition': Proposition('p', 'P').to_dict(),
+             **calls.search_vocabulary(commitments),
+             'vocabulary_instruction': 'Reuse catalogue definitions and signatures; preserve the proposition meaning.'},
+             {'formula': formula.to_dict()})
+    assert calls.propose_targets(commitments, named_position='P') == (Proposition('p', 'P', formula),)
 
 
 def test_essay_bibliography_excluded_but_title_included(rig):

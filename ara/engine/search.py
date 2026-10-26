@@ -64,7 +64,7 @@ class Engine:
         self.bank, self.commitments, self.proposer = bank, commitments, proposer
         self.formaliser, self.leaf_mapper, self.cq_answerer = formaliser, leaf_mapper, cq_answerer
         self.repairer, self.sink, self.config = repairer, sink, config or EngineConfig()
-        self.licenser = Licenser(bank, formaliser, sink, self.config.solver_timeout_ms)
+        self.licenser = Licenser(bank, formaliser, sink, self.config.solver_timeout_ms, commitments)
         self._licenses: list[tuple[Proposal, License]] = []
         self._search_serial = 0
         self.traces = traces

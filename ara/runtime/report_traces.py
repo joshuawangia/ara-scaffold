@@ -21,7 +21,8 @@ def expand_proposal(ref, reference):
     if ref is None:
         return None
     value = reference('proposal', ref)
-    return dict(bank_id=value['bank_id'], conclusion_text=reference('text', value['conclusion_text_id']),
+    return dict(**({'conclusion_ref': value['conclusion_ref']} if 'conclusion_ref' in value else {}),
+                bank_id=value['bank_id'], conclusion_text=reference('text', value['conclusion_text_id']),
                 premises=[dict(slot=p['slot'], text=reference('text', p['text_id']),
                                t_id=p['t_id'], scope_id=p['scope_id']) for p in value['premises']])
 

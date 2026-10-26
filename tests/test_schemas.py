@@ -22,6 +22,7 @@ PAYLOADS = {
     'propose_targets': {'targets': [PROPOSITION]},
     'propose_cuts': {'proposals': [PROPOSAL]},
     'formalise': {'formula': P},
+    'formalise_slots': {'slots': [{'slot': 'antecedent', 'formula': P}]},
     'map_leaf': {'t_id': 'open'},
     'answer_cq': {'cq_id': 'cq1', 'answer': 'P', 'answered': True, 'supporting_t_ids': ['t1']},
     'tier1_repair': {'action': 'unresolved', 'detail': 'P', 'proposals': []},

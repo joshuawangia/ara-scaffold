@@ -265,6 +265,14 @@ class Proposal(Record):
     bank_id: str
     premises: tuple[PremiseFill, ...]
     conclusion_text: str
+    conclusion_ref: Literal['current_goal'] | None = None
+
+    def to_dict(self):
+        value = super().to_dict()
+        # Preserve the canonical encoding of historical proposals without references.
+        if self.conclusion_ref is None:
+            del value['conclusion_ref']
+        return value
 
 
 @dataclass(frozen=True)

@@ -43,12 +43,14 @@ class NativeEngine:
                         config=EngineConfig.from_mapping(calls.config), traces=SearchTraceFiles(calls.log))
 
     def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
+        if target.formula is None:
+            target = replace(target, formula=self.calls.formalise(target, commitments=commitments))
         return self._engine(commitments).analyse(target)
 
     def analyse_all(self, targets, commitments, concurrency, *, restored=None):
         restored = restored or {}
         # A missing formula must be resolved once before constructing its negation.
-        targets = tuple(t if t.formula else replace(t, formula=self.calls.formalise(t)) for t in targets)
+        targets = tuple(t if t.formula else replace(t, formula=self.calls.formalise(t, commitments=commitments)) for t in targets)
         jobs = []
         for target in targets:
             self.calls.log.record('analysis_started', target=target.to_dict())
@@ -92,6 +94,18 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
     commitments = calls.build_t(literature, audience)
+    # Rich construction exposes semantic metadata without changing the strict
+    # CommitmentSet codec or the legacy commitments.json artifact.
+    from ara.runtime.frozen_catalogue import frozen_artifact
+    import json
+    merged = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'build_t_merged']
+    if merged:
+        latest = merged[-1]
+        if latest['commitments'] != commitments.to_dict():
+            raise ValueError('frozen catalogue construction mismatch')
+        artifact = frozen_artifact(commitments, latest['symbols'])
+        save_immutable(calls.log.path.parent / 'frozen-t.json', canonical(artifact))
+        calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())
     calls.log.record('commitments_frozen', commitments=commitments.to_dict(), bank_version=bank.bank_version)
     return commitments
@@ -101,7 +115,7 @@ def prepare(calls: ModelCalls, bank: Bank, literature: str, audience: str,
             named_position: str | None = None) -> tuple[CommitmentSet, tuple[Proposition, ...]]:
     commitments = prepare_commitments(calls, bank, literature, audience)
     targets = calls.propose_targets(commitments, calls.config['target_candidates'], named_position)
-    targets = tuple(p if p.formula else replace(p, formula=calls.formalise(p)) for p in targets)
+    targets = tuple(p if p.formula else replace(p, formula=calls.formalise(p, commitments=commitments)) for p in targets)
     calls.log.record('candidates', candidates=[p.to_dict() for p in targets])
     return commitments, targets
 

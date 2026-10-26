@@ -14,10 +14,11 @@ def job_failure(exc):
         isinstance(exc, BudgetStop) and exc.scope != 'run')
 
 
-def run_search_jobs(log, jobs, concurrency, new_engine):
+def run_search_jobs(log, jobs, concurrency, new_engine, *, restored=None):
     publication = SearchPublication(log, [goal for _, goal in jobs])
     halted = Event()
-    results = [None] * len(jobs)
+    restored = restored or {}
+    results = [restored.get(i) for i in range(len(jobs))]
     attempts = [0] * len(jobs)
     failures = {}
     fatal = {}
@@ -34,7 +35,7 @@ def run_search_jobs(log, jobs, concurrency, new_engine):
                 halted.set()
             raise
 
-    pending = list(range(len(jobs)))
+    pending = [i for i in range(len(jobs)) if i not in restored]
     try:
         with ThreadPoolExecutor(max_workers=concurrency, thread_name_prefix='ara-search') as pool:
             for attempt in (1, 2):

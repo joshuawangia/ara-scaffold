@@ -45,7 +45,8 @@ class NativeEngine:
     def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
         return self._engine(commitments).analyse(target)
 
-    def analyse_all(self, targets, commitments, concurrency):
+    def analyse_all(self, targets, commitments, concurrency, *, restored=None):
+        restored = restored or {}
         # A missing formula must be resolved once before constructing its negation.
         targets = tuple(t if t.formula else replace(t, formula=self.calls.formalise(t)) for t in targets)
         jobs = []
@@ -54,9 +55,12 @@ class NativeEngine:
             for serial, goal in enumerate((target, negate_proposition(target))):
                 engine = self._engine(commitments)
                 engine._search_serial = serial
+                if len(jobs) in restored:
+                    engine._licenses.extend(restored[len(jobs)][1])
                 jobs.append((engine, goal))
         results, fatal = run_search_jobs(self.calls.log, jobs, concurrency,
-                                         lambda: self._engine(commitments))
+                                         lambda: self._engine(commitments),
+                                         restored={i: item[0] for i, item in restored.items()})
         for i in range(0, len(jobs), 2):
             positive, negative = jobs[i][0], jobs[i + 1][0]
             reason = 'run_stopped' if fatal else 'missing_search'
@@ -103,7 +107,7 @@ def prepare(calls: ModelCalls, bank: Bank, literature: str, audience: str,
 
 
 def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
-               targets: tuple[Proposition, ...]) -> tuple[RouteGraph, ...]:
+               targets: tuple[Proposition, ...], *, restored=None) -> tuple[RouteGraph, ...]:
     concurrency = calls.config.get('search_concurrency', 4)
     if type(concurrency) is not int or concurrency < 1:
         raise ValueError('search_concurrency must be a positive integer')
@@ -112,7 +116,7 @@ def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
         calls.log = calls.budget.log = writer
         try:
             if isinstance(engine, NativeEngine):
-                analyses = engine.analyse_all(targets, commitments, concurrency)
+                analyses = engine.analyse_all(targets, commitments, concurrency, restored=restored)
             else:
                 def sequential():
                     for target in targets:

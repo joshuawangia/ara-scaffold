@@ -355,7 +355,13 @@ def test_batch_variables_cannot_bypass_symbol_contract(rig, monkeypatch, locally
     from ara.runtime.calls import Rejected
     from ara.runtime.providers import Response
     from rich_fixture import batch_response
-    calls, provider, path = rich_calls(rig, monkeypatch)
+    # Isolate variable scope from inference-shape validation.
+    from ara.runtime.extraction import extract
+    calls, provider, papers, *_ = rig
+    value = graph()
+    value['items'] = value['items'][:2]
+    register(calls, provider, papers[0], value)
+    path = extract(calls, (papers[0],))
     def complete(kind, prompt, schema, maximum):
         inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         value = batch_response(inputs)

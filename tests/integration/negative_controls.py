@@ -1183,6 +1183,22 @@ CASES += [
 ]
 
 
+CASES += [
+    ('construction_structure_correction', 'ara/runtime/construction.py',
+     "            if not metrics['passed']:", "            if False:",
+     'tests/runtime/test_construction_structure.py::test_flat_batch_fails_gate_and_gets_exactly_one_correction[flat]'),
+    ('construction_endpoint_reuse', 'ara/runtime/construction_structure.py',
+     "if id in formulas and not conjuncts(formulas[id]) <= side:", "if False:",
+     'tests/runtime/test_construction_structure.py::test_nonflat_disconnected_inference_not_silently_accepted'),
+    ('frozen_catalogue_hash', 'ara/runtime/frozen_catalogue.py',
+     '    if catalogue != expected:', '    if False:',
+     'tests/runtime/test_frozen_catalogue.py::test_catalogue_refuses_tampering[definition]'),
+    ('frozen_catalogue_binding', 'ara/runtime/frozen_catalogue.py',
+     "or value['commitments'] != commitments.to_dict()", 'or False',
+     'tests/runtime/test_frozen_catalogue.py::test_catalogue_refuses_tampering[commitment]'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

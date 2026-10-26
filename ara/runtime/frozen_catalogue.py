@@ -51,7 +51,8 @@ def frozen_artifact(commitments: CommitmentSet, symbols: list[dict]) -> dict:
 
 def validate_frozen_artifact(value: dict, commitments: CommitmentSet) -> dict:
     """Return verified catalogue; reject corrupt/mismatched metadata, never downgrade."""
-    if (set(value) != {'schema_version', 'commitments', 'symbol_catalogue'} or
+    if (not isinstance(value, dict) or
+            set(value) != {'schema_version', 'commitments', 'symbol_catalogue'} or
             value['schema_version'] != 'frozen-t-v1' or value['commitments'] != commitments.to_dict()):
         raise ValueError('frozen T artifact mismatch')
     catalogue = value['symbol_catalogue']

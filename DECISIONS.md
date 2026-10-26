@@ -2818,3 +2818,30 @@ must verify identity, binding and signatures when metadata exists. Absence of
 `frozen-t.json` means legacy semantic catalogue unavailable; it does not license
 inventing definitions or ignoring corrupt metadata. Construction owns persistence;
 search owns loading metadata and incorporating identity in model/cache inputs.
+
+## S8 structure gate and bounded correction
+
+Rich construction plan v10 requires selected inferences to be conditionals using
+selected endpoint formulas in a shared vocabulary. The model owns source meaning,
+relational encoding, symbol definitions and qualification attachment. Code checks
+signatures and exact conjunct endpoint inclusion, not semantic equivalence.
+Qualifications remain separate unless the model finds source support for attaching
+them. Attributed source conditionals do not create bank licenses.
+
+Every completed formalization batch logs non-atomic fraction (atoms and predicates
+are atomic), symbol reuse rate (commitment/symbol bindings whose symbol occurs in
+another current or prior commitment, including constants), and conditional endpoint
+connections. Inference endpoints absent because of a disclosed support cut are
+not asserted to be connected. A failed gate gets one complete replacement request
+with item-specific feedback; shared catalogue entries remain immutable. This
+structure correction is separate from the configured validation-patch allowance
+and still undergoes normal schema, symbol, provenance and capacity checks. A still
+atomic batch with inference evidence is accepted with `flat_after_one_correction`,
+its failed gate retained in the receipt and methodology. A structured but invalid
+inference remains a refusal. Invalid provider output has no flatness exemption.
+
+The placeholder proof derives F(a) from P(a), Q(a), their attributed conditional
+to R(a), and the conditional from R(a) to F(a), without including R(a) or F(a) as
+premises. This establishes the executable seam, not faithful real-source encoding.
+Plan v10 intentionally prevents replaying old counted plans as this new policy;
+old frozen artifacts remain readable under the legacy/search compatibility path.

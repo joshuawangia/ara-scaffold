@@ -7,6 +7,25 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = [
+    ('clean-fragments', 'ara/runtime/ocr_spans.py', 'elif not preserves_clean_fragments(before, insertion):', 'elif False:',
+     'tests/runtime/test_ocr_spans.py::test_clean_characters_inside_tainted_span_cannot_change'),
+    ('span-ambiguity', 'ara/runtime/ocr_spans.py', 'if not unique:', 'if False:',
+     'tests/runtime/test_ocr_spans.py::test_anchor_ambiguity_refuses'),
+    ('span-confidence', 'ara/runtime/ocr_spans.py', 'confidence < 0.95 or low_share > 0.05', 'False',
+     'tests/runtime/test_ocr_spans.py::test_local_low_confidence_refuses_even_when_page_mean_is_high'),
+    ('clean-text-preserved', 'ara/runtime/ocr_spans.py', "return ''.join(pieces), records", 'return result.text, records',
+     'tests/runtime/test_ocr_spans.py::test_span_repair_keeps_every_clean_character'),
+    ('partial-repair-retained', 'ara/runtime/ocr.py', 'PageText(page.page, selected_text)', 'PageText(page.page, page.text)',
+     'tests/runtime/test_ocr_spans.py::test_partial_span_success_is_retained_and_still_flagged'),
+    ('span-symbol-preserved', 'ara/runtime/ocr_spans.py', 'elif math_symbols(before) - math_symbols(insertion):', 'elif False:',
+     'tests/runtime/test_ocr_spans.py::test_encoded_math_in_tainted_run_is_not_lost'),
+    ('vl-tile-retry', 'ara/runtime/ocr_vl.py', 'if result.complete:', 'if True:',
+     'tests/runtime/test_ocr_spans.py::test_vl_capped_page_retries_tiles_and_preserves_local_confidence'),
+    ('vl-tile-complete', 'ara/runtime/ocr_vl.py', 'complete=all(r.complete for r in results)', 'complete=True',
+     'tests/runtime/test_ocr_spans.py::test_tiled_result_refuses_if_any_tile_lacks_eos'),
+    ('span-count', 'ara/runtime/ocr.py', 'excluded_original_spans=len(tainted_spans(original))',
+     'excluded_original_spans=len(original.split()) - len(clean_spans(original))',
+     'tests/runtime/test_ocr_spans.py::test_tainted_span_count_is_not_changed_by_normalized_clean_whitespace'),
     ('greek-equivalence', 'ara/runtime/ocr.py', "text = unicodedata.normalize('NFKC', normalize_latex_symbols(text))", 'text = text',
      'test_standard_latex_greek_preserves_clean_alphanumeric_symbols'),
     ('span-before-markup', 'ara/runtime/ocr.py', "text = ' '.join(clean_spans(text))", 'text = text',
@@ -39,7 +58,7 @@ CASES = [
      'test_rejects_uncertain_or_lossy_ocr'),
     ('provenance', 'ara/runtime/ocr.py', 'ocr_provenance_json=canonical(records)', "ocr_provenance_json='[]'",
      'test_recovery_preserves_healthy_page_and_physical_citations'),
-    ('physical-page', 'ara/runtime/ocr.py', 'PageText(page.page, result.text)', 'PageText(1, result.text)',
+    ('physical-page', 'ara/runtime/ocr.py', 'PageText(page.page, selected_text)', 'PageText(1, selected_text)',
      'test_recovery_preserves_healthy_page_and_physical_citations'),
     ('weight-hash', 'ara/runtime/ocr.py', "sha256(path.read_bytes()).hexdigest() != expected", 'False',
      'test_hash_verification_rejects_missing_and_tampered_weights'),
@@ -55,7 +74,7 @@ CASES = [
 def main():
     if Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) != ROOT:
         raise RuntimeError('wrong checkout')
-    output = ROOT / 'runs/ocr-round2-controls'
+    output = ROOT / 'runs/ocr-round3-controls'
     output.mkdir(parents=True, exist_ok=True)
     results = []
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
@@ -66,7 +85,7 @@ def main():
             raise RuntimeError(f'missing mutation anchor: {name}')
         for pyc in path.parent.glob('__pycache__/*.pyc'):
             pyc.unlink()
-        command = [sys.executable, '-m', 'pytest', '-q', f'tests/runtime/test_ocr.py::{test}']
+        command = [sys.executable, '-m', 'pytest', '-q', test if '::' in test else f'tests/runtime/test_ocr.py::{test}']
         try:
             path.write_text(original.replace(old, new))
             red = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)

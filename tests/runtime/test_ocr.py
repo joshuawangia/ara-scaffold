@@ -27,7 +27,7 @@ class FakeOCR:
     identity = dict(engine=ENGINE, version=VERSION, weights_sha256='a' * 64)
 
     def __init__(self, result=None):
-        self.result = result or OCRResult(('P Q R F(x)',), (0.99,))
+        self.result = result or OCRResult(('P Q ∀ R F(x)',), (0.99,))
         self.seen = []
 
     def recognize(self, raw, page):
@@ -35,7 +35,7 @@ class FakeOCR:
         return self.result
 
 
-def flagged(rig, reason='private_use_glyphs', text='P Q R F(x)\ue001'):
+def flagged(rig, reason='private_use_glyphs', text='P Q \ue001 R F(x)'):
     calls, provider, papers, manifest, fulltext, _ = rig
     paper = replace(papers[0], pages=(papers[0].pages[0], PageText(2, text)),
                     diagnostics=(PageDiagnostic(2, reason, len(text)),))
@@ -48,7 +48,7 @@ def test_recovery_preserves_healthy_page_and_physical_citations(rig):
     recovered = recover_papers((paper,), fulltext, calls.log, Path('unused'), engine=engine)[0]
     assert engine.seen == [2]
     assert recovered.pages[0] is paper.pages[0]
-    assert recovered.pages[1] == PageText(2, 'P Q R F(x)')
+    assert recovered.pages[1] == PageText(2, 'P Q ∀ R F(x)')
     assert recovered.affected_pages == ()
     register(calls, provider, recovered, {**VALUE, 'items': [{**ITEM, 'page_start': 2, 'page_end': 2}]})
     path = extract(calls, (recovered,), missing='refuse')
@@ -56,7 +56,7 @@ def test_recovery_preserves_healthy_page_and_physical_citations(rig):
     outcome = json.loads(next(e['payload_json'] for e in calls.log.read() if e['stage'] == 'extraction_outcome'))
     assert outcome['status'] == 'extracted'
     provenance = literature_entry(outcome)['ocr_provenance'][0]
-    assert provenance['selected'] == 'ocr' and provenance['engine'] == ENGINE
+    assert provenance['selected'] == 'ocr_spans' and provenance['engine'] == ENGINE
     assert provenance['version'] == VERSION and provenance['weights_sha256'] == 'a' * 64
     assert provenance['original_diagnostics'][0]['reason'] == 'private_use_glyphs'
     assert 'seconds' not in recovered.inputs()['ocr_provenance'][0]
@@ -242,7 +242,7 @@ def test_second_tier_recovers_only_rejected_physical_page(rig):
     updated = recover_papers((paper,), fulltext, calls.log, Path('unused'), engine=tiny, vl_engine=vl)[0]
     assert tiny.seen == vl.seen == [2]
     assert updated.pages[0] is paper.pages[0]
-    assert updated.pages[1] == PageText(2, 'P Q R F(x)')
+    assert updated.pages[1] == PageText(2, 'P Q ∀ R F(x)')
     assert not updated.affected_pages
     register(calls, provider, updated, {**VALUE, 'items': [{**ITEM, 'page_start': 2, 'page_end': 2}]})
     path = extract(calls, (updated,), missing='refuse')
@@ -264,7 +264,7 @@ def test_second_tier_is_skipped_after_tier1_acceptance(rig):
 
 def test_second_tier_uses_same_gate_and_keeps_rejected_text(rig):
     calls, provider, paper, fulltext = flagged(rig)
-    low = OCRResult(('P Q R F(x)',), (0.94,))
+    low = OCRResult(('P Q ∀ R F(x)',), (0.94,))
     updated = recover_papers((paper,), fulltext, calls.log, Path('unused'), engine=FakeOCR(low), vl_engine=FakeVL(low))[0]
     assert updated.affected_pages == (2,) and updated.pages == paper.pages
     assert not any(r['recovered'] for r in json.loads(updated.ocr_provenance_json))

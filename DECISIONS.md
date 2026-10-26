@@ -2655,3 +2655,50 @@ High confidence, complete generation, and structural retention still cannot
 prove semantics, reading order, or meaning of unencoded symbols.
 
 Official source: https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6/tree/c5630abae1d940eafe0697512a0325494b02ab42
+
+
+## Rho2 Round 3: preserve the text layer and repair spans
+
+OCR10. Policy `local-ocr-v3-spans` replaces only tainted whitespace runs, retaining
+all surrounding text and whitespace exactly. Align one to three adjacent clean
+alphanumeric tokens on both sides, longest first, using NFKC/casefold token
+comparison and requiring a unique occurrence of each anchor in both sequences.
+Never anchor to fragments inside a tainted run. Adjacent damaged runs share outer
+anchors; accept an interior positional alignment only with equal run counts.
+Otherwise keep each unresolved span flagged. Tier 2 uses original coordinates
+and cannot overwrite a tier-1 accepted span. Nonempty clean text with visual-only
+warnings remains unchanged; only textless pages retain whole-page OCR admission.
+
+OCR11. Inserted-character confidence must be >=0.95 with <=5% below 0.8. Use
+covering tier-1 line scores or actual VL token-to-character ranges, not a page
+mean. Tokenizer byte fragments can rewrite prior characters; use prefix decoding
+and the minimum contributing score then. Missing confidence coverage, truncated
+generation, empty/bad-glyph output and lost originally encoded math symbols
+refuse. Log each attempted span's engine, confidence, unique-anchor evidence,
+source/OCR character ranges and before/after Unicode categories. Keep diagnostics
+until every damaged span is repaired and no other page diagnostic remains.
+Partial repairs remain available with their provenance and original physical page.
+
+OCR12. Keep the pinned model/dependency set and 4096-token cap, but retry capped
+VL pages in three nonoverlapping horizontal regions, selecting nearest low-ink
+rows around thirds. Record the capped attempt and all region outputs, scores,
+geometry and durations; require EOS for every tile. On the two prior capped
+physical pages, tiled generation completed in 84.60s and 105.65s. This establishes
+completion, not layout or formula correctness. All inference remains local.
+
+OCR13. Round-2 excluded-span arithmetic subtracted a normalized clean-token count
+from an unnormalized whitespace count. U+00B4 expands to a leading space under
+NFKC, undercounting one affected page. Count literal tainted runs directly: the
+82-page cohort has 678 damaged runs, not the prior reported 677. The external
+Round 3 report preserves this correction and distinguishes the brief's historical
+reference denominator from measured counts. No paper content is tracked.
+
+
+OCR14. Terminal visual inspection found a confident candidate changing a clean
+uppercase character attached to a damaged delimiter. Require each candidate to
+match the exact literal clean fragments inside its tainted run, with nonempty
+replacement text only where damaged glyph runs occurred. This preserves case
+and punctuation inside spans as well as all surrounding clean intervals. Three
+regressions failed before this fix. Reuse inference, replay the final policy,
+and rerun the full suite and controls; the interrupted pre-fix suite/audit are
+not final evidence. Confidence and EOS alone cannot certify exact transcription.

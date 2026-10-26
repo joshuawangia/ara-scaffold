@@ -18,7 +18,7 @@ import unicodedata
 
 from ara.runtime.cache import canonical, digest
 
-POLICY = 'local-ocr-v2'
+POLICY = 'local-ocr-v3-spans'
 ENGINE = 'PaddleOCR/PP-OCRv6_tiny'
 VERSION = '3.7.0'
 LOCK = Path(__file__).with_name('ocr_models.json')
@@ -32,15 +32,32 @@ class OCRResult:
     complete: bool = True
     confidence_basis: str = 'recognition_lines'
     generation_json: str = '{}'
+    confidence_ranges: tuple[tuple[int, int, float], ...] = ()
 
     def __post_init__(self):
         if len(self.lines) != len(self.scores) or any(not isinstance(s, str) for s in self.lines):
             raise ValueError('invalid OCR line/score shape')
         if any(not math.isfinite(s) or not 0 <= s <= 1 for s in self.scores):
             raise ValueError('invalid OCR confidence')
+        text_length = len(self.text)
+        if any(type(a) is not int or type(b) is not int or not 0 <= a < b <= text_length
+               or not math.isfinite(p) or not 0 <= p <= 1 for a, b, p in self.confidence_ranges):
+            raise ValueError('invalid OCR confidence ranges')
         if any(type(n) is not int or n < 0 or not math.isfinite(p) or not 0 <= p <= 1
                for n, p in self.confidence_units):
             raise ValueError('invalid OCR confidence units')
+
+    @property
+    def character_confidences(self):
+        if self.confidence_ranges:
+            return self.confidence_ranges
+        if self.confidence_basis != 'recognition_lines':
+            return ()
+        ranges, offset = [], 0
+        for line, score in zip(self.lines, self.scores):
+            ranges.append((offset, offset + len(line), score))
+            offset += len(line) + 1
+        return tuple(ranges)
 
     @property
     def text(self):
@@ -70,6 +87,13 @@ class OCREngine(Protocol):
 def bad_character(c: str) -> bool:
     return unicodedata.category(c) == 'Co' or c == '\ufffd' or (
         unicodedata.category(c) == 'Cc' and c not in '\n\r\t')
+
+
+def tainted_spans(text: str) -> list[tuple[int, int]]:
+    # Control characters can be Unicode whitespace; only PDF layout whitespace
+    # separates runs, so an encoding-warning control cannot disappear here.
+    return [(m.start(), m.end()) for m in re.finditer(r'[^ \t\r\n]+', text)
+            if any(bad_character(c) for c in m[0])]
 
 
 def clean_spans(text: str) -> tuple[str, ...]:
@@ -121,7 +145,6 @@ def math_symbols(text: str) -> Counter:
 def decision(original: str, result: OCRResult) -> dict:
     """Conservative page-level admission, not a semantic completeness verdict."""
     text = result.text
-    spans = clean_spans(original)
     old = ''.join(c for c in original if not c.isspace() and not bad_character(c))
     new = ''.join(c for c in text if not c.isspace())
     before, after = clean_tokens(original), clean_tokens(text)
@@ -137,7 +160,7 @@ def decision(original: str, result: OCRResult) -> dict:
                 complete=result.complete, confidence_basis=result.confidence_basis,
                 retained_token_share=recall, character_ratio=length_ratio,
                 missing_math_symbols=missing_symbols, clean_original_tokens=sum(before.values()),
-                excluded_original_spans=len(original.split()) - len(spans),
+                excluded_original_spans=len(tainted_spans(original)),
                 original_text_sha256=digest(original), ocr_text_sha256=digest(text))
 
 
@@ -218,6 +241,7 @@ def recover_papers(papers, fulltext_dir: Path, log, cache: Path, *, engine: OCRE
                    vl_engine: OCREngine | None = None, use_vl: bool = True):
     """Recover diagnosed pages before strict policy, grounding and reuse validation."""
     from ara.runtime.extraction import PageText
+    from ara.runtime.ocr_spans import repair_spans
     recovered_papers = []
     for paper in papers:
         if paper.unavailable not in (None, 'no_readable_text'):
@@ -239,6 +263,11 @@ def recover_papers(papers, fulltext_dir: Path, log, cache: Path, *, engine: OCRE
                 if page.page not in candidates:
                     pages.append(page)
                     continue
+                damaged = tainted_spans(page.text)
+                accepted = {}
+                selected_text = page.text
+                page_diagnostics = [d for d in paper.diagnostics if d.page == page.page]
+                span_mode = bool(page.text.strip()) or bool(damaged)
                 for tier in (1, 2):
                     if tier == 2:
                         if record['recovered'] or not use_vl or page.page not in paper.affected_pages:
@@ -249,19 +278,30 @@ def recover_papers(papers, fulltext_dir: Path, log, cache: Path, *, engine: OCRE
                     active = engine if tier == 1 else vl_engine
                     start = time.perf_counter()
                     result = active.recognize(raw, page.page)
-                    record = dict(page=page.page, tier=tier, **active.identity, **decision(page.text, result),
+                    metrics = decision(page.text, result)
+                    if span_mode:
+                        selected_text, spans = repair_spans(page.text, result, accepted=accepted)
+                        fully_clean = bool(damaged) and len(accepted) == len(damaged) and all(
+                            d.reason in ('private_use_glyphs', 'encoding_warning') for d in page_diagnostics)
+                        metrics.update(recovered=fully_clean, selected='ocr_spans' if accepted else 'text_layer',
+                                       spans_total=len(damaged), spans_repaired=len(accepted),
+                                       spans_remaining=len(damaged) - len(accepted),
+                                       span_decisions=[dict(**active.identity, **span) for span in spans],
+                                       selected_text_sha256=digest(selected_text))
+                    elif metrics['recovered']:
+                        selected_text = result.text
+                    record = dict(page=page.page, tier=tier, **active.identity, **metrics,
                                   original_diagnostics=[asdict(d) for d in paper.diagnostics if d.page == page.page])
                     log.record('extraction_ocr_page', source_id=paper.source_id, **record,
                                seconds=time.perf_counter() - start, text=result.text,
                                line_confidences=list(result.scores),
                                confidence_units=list(result.confidence_units),
+                               confidence_ranges=list(result.confidence_ranges),
                                generation=json.loads(result.generation_json))
                     records.append(record)
+                pages.append(PageText(page.page, selected_text))
                 if record['recovered']:
-                    pages.append(PageText(page.page, result.text))
                     diagnostics = [d for d in diagnostics if d.page != page.page]
-                else:
-                    pages.append(page)
             updated = replace(paper, pages=tuple(pages), diagnostics=tuple(diagnostics),
                               ocr_provenance_json=canonical(records), unavailable=None)
             if not updated.readable_pages and not updated.affected_pages:

@@ -4,20 +4,12 @@ from dataclasses import asdict
 import json
 from pathlib import Path
 import time
-import unicodedata
 
 from ara.runtime.cache import canonical
 from ara.runtime.extraction import load_papers
 from ara.runtime.logging import EventLog
 from ara.runtime.ocr import LocalOCR, recover_papers
-
-
-def character_classes(text):
-    result = {}
-    for char in text:
-        category = unicodedata.category(char)
-        result[category] = result.get(category, 0) + 1
-    return result
+from ara.runtime.ocr_spans import character_classes
 
 
 def main():
@@ -65,6 +57,9 @@ def main():
                        recovered_tier1=sum(row['recovered'] and row['tier'] == 1 for row in targeted),
                        recovered_vl=sum(row['recovered'] and row['tier'] == 2 for row in targeted),
                        still_flagged=len(set(recovered.affected_pages)),
+                       spans_total=sum(row.get('spans_total', 0) for row in targeted),
+                       spans_repaired=sum(row.get('spans_repaired', 0) for row in targeted),
+                       spans_remaining=sum(row.get('spans_remaining', 0) for row in targeted),
                        confidence=sum(row['confidence'] for row in targeted)/len(targeted) if targeted else None,
                        seconds=sum(row['seconds'] for row in records if row['page'] in affected),
                        blank_controls=len(final)-len(targeted),

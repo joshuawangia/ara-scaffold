@@ -824,31 +824,46 @@ selects the previous text-only behavior, useful when reusing historical artifact
 OCR changes the hashed input identity, so old extraction outcomes cannot be
 silently reused as OCR-derived evidence.
 
-Tier 1 uses PaddleOCR 3.7.0 with Baidu PP-OCRv6 tiny models on CPU. Rejected
-nonblank pages then use official PaddleOCR-VL-1.6 (0.9B), pinned to revision
+Tier 1 uses PaddleOCR 3.7.0 with Baidu PP-OCRv6 tiny models on CPU. Remaining
+flagged spans then use official PaddleOCR-VL-1.6 (0.9B), pinned to revision
 `c5630abae1d940eafe0697512a0325494b02ab42`, with Transformers and CPU-only PyTorch.
-VL loads lazily and uses the same gate. `--ocr-tiers 1` explicitly disables the
-second tier (only the `ocr` extra and tier-1 weights are then required).
-Every
-attempt logs the physical page, engine/version, weights hash, original diagnostic,
-confidence and structural checks, chosen source, output, and timing. Accepted
-pages carry `selected: ocr` provenance through published literature and retain
-physical page citations. Remaining warnings still make the paper partial;
-`--missing refuse` rejects them. Blank pages remain separately disclosed.
+VL loads lazily. `--ocr-tiers 1` explicitly disables it (only the `ocr` extra and
+tier-1 weights are then required).
 
-Policy `local-ocr-v2` requires weighted confidence >= 0.95, at most 5% characters
-in confidence units below 0.8, no bad glyphs, at least 98% character preservation,
-98% multiset recall of whole clean Unicode alphanumeric tokens, and no loss of
-mathematical symbols actually encoded by the text layer. Entire whitespace spans
-containing private-use, replacement, or invalid control glyphs are excluded from
-the token reference; their remaining characters still count toward the character
-floor. Standard LaTeX symbol commands, including Greek letters, count as their Unicode equivalents, and
-command names cannot replace missing prose tokens. Tier 1 scores recognition
-lines; VL scores generated tokens, weighted by decoded character length, and
-must finish with EOS. Truncation and empty generation are rejected. These
-confidence sources are not calibrated against each other. The checks do **not** prove all
-content, formula fidelity, or reading order. Inspect remaining diagnostics and
-OCR evidence before treating a source as complete.
+Policy `local-ocr-v3-spans` preserves the text layer and replaces only damaged
+whitespace runs containing private-use, replacement, or invalid control glyphs.
+Deterministic sequence alignment requires unique clean alphanumeric anchors on
+both sides in both texts, searching adjacent anchor lengths from three tokens
+down to one. Adjacent damaged runs share outer anchors and require a one-to-one
+run alignment; differing run counts refuse. Original clean text, punctuation and
+whitespace remain byte-for-byte unchanged. Literal clean fragments inside a
+damaged run must also survive exactly and in order, with nonempty replacement
+text at each damaged glyph run; otherwise the proposed repair refuses. Accepted tier-1 repairs are retained
+while tier 2 attempts the remaining spans using the original coordinates.
+
+Each inserted span needs confidence >= 0.95, at most 5% of its non-whitespace
+characters in confidence units below 0.8, complete generation, no bad glyphs,
+and no loss of mathematical symbols encoded inside the original damaged span.
+Tier 1 uses the covering recognition-line scores. VL maps actual generated-token
+probabilities to decoded character ranges, conservatively combining byte-token
+scores where decoding rewrites a character. Neither confidence source is a
+calibrated correctness probability. Ambiguous/missing anchors, unmapped scores,
+empty insertions and incomplete generation remain flagged. Clean nonempty text
+with only a visual/sparse diagnostic is retained for inspection; textless pages
+still use the conservative whole-page OCR gate.
+
+Per-span logs include engine, confidence, anchor matches, character offsets and
+before/after character classes. Page provenance uses `selected: ocr_spans` for
+mixed text, or `ocr` for textless-page recovery. Only fully repaired pages lose
+their glyph diagnostics; partial repairs retain warnings and strict refusal.
+Citations retain physical page numbers. The audit reports repaired/remaining
+spans and clean/flagged pages. These checks do not establish exact typography,
+formula fidelity, reading order or semantic completeness.
+
+VL generation capped without EOS retries three horizontal tiles, choosing nearby
+low-ink row boundaries. All tiles must finish with EOS. The full capped attempt,
+each tile's geometry, output, scores and duration remain logged. Tiling can cut
+layout elements; completion alone never certifies recovery.
 
 Offline default tests use fakes. To exercise installed weights on a generated
 placeholder raster PDF without networking:

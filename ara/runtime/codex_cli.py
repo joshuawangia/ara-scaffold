@@ -113,10 +113,24 @@ class CodexCLIProvider(ClaudeCodeProvider):
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             raise CodexCLIError('subscription_login_required') from None
 
+    def estimate(self, kind, prompt, schema, maximum):
+        from ara.runtime.codex_schema import strict_schema
+        return super().estimate(kind, prompt, strict_schema(schema) if schema else schema, maximum)
+
+    def observe(self, kind, prompt, schema, estimate, raw):
+        from ara.runtime.codex_schema import strict_schema
+        return super().observe(kind, prompt, strict_schema(schema) if schema else schema, estimate, raw)
+
+    def normalize_output(self, schema, value):
+        from ara.runtime.codex_schema import normalize_output
+        return normalize_output(schema, value)
+
     def metadata(self, kind):
+        from ara.runtime.codex_schema import VERSION
         metadata = super().metadata(kind)
         metadata.update(isolation_flags=ISOLATION_FLAGS, max_cli_turns=1,
-            schema_transport='Stage schema passed to --output-schema; local Draft202012Validator authoritative.',
+            schema_transform=VERSION,
+            schema_transport='Versioned OpenAI-strict projection passed to --output-schema; optional nulls normalized before authoritative local Draft202012Validator.',
             effective_prompt_note='Minimal task-only model instructions replace coding-agent defaults; stage developer instructions and native stage prompt retained; not API byte-identical.',
             auth_transport='Per-call read-only bind of current host auth file, linked from temporary in-memory CODEX_HOME; no credential copy.',
             auth_threat_model='Linux mount/PID namespace hides operator homes; auth writes denied; refresh endpoint disabled; no credential rotation.',
@@ -236,7 +250,9 @@ class CodexCLIProvider(ClaudeCodeProvider):
             instructions_path = base/'instructions.txt'
             instructions_path.write_text(MODEL_INSTRUCTIONS)
             schema_path = base/'schema.json'
-            schema_path.write_text(canonical({k:v for k,v in schema.items() if k!='$schema'}))
+            from ara.runtime.codex_schema import strict_schema, VERSION
+            wire = strict_schema(schema)
+            schema_path.write_text(canonical(wire))
             _, secrets = self._authentication(credential)  # Scan exactly the inode mounted for this call.
             env = {'PATH':'/usr/local/bin:/usr/bin:/bin', 'LANG':'C.UTF-8', 'HOME':str(home),
                    'CODEX_HOME':str(config), 'CODEX_REFRESH_TOKEN_URL_OVERRIDE':'disabled://refresh',
@@ -260,7 +276,8 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 '--output-schema',str(schema_path),'-c','model_instructions_file='+canonical(str(instructions_path)),
                 '-c','developer_instructions='+canonical(self.system_for(kind)),
                 '-c','model_reasoning_effort='+canonical(stage_settings(self.config,kind)['effort']),'-']
-            receipt = {'version':self.version, 'exit_status':None, 'requested_model':model, 'served_model':None}
+            receipt = {'schema_transform':VERSION, 'native_schema_hash':digest(canonical(schema)),
+                       'wire_schema_hash':digest(canonical(wire)), 'version':self.version, 'exit_status':None, 'requested_model':model, 'served_model':None}
             started=time.monotonic()
             try:
                 result=subprocess.run(command,input=prompt,text=True,capture_output=True,env=env,cwd=cwd,timeout=self.timeout,pass_fds=(credential.fileno(),))

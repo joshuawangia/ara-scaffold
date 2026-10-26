@@ -897,3 +897,22 @@ uv run --locked --extra ocr --extra ocr-vl pytest -q
 uv run --locked --extra ocr --extra ocr-vl python tools/ocr_negative_controls.py
 uv run --locked --extra ocr --extra ocr-vl python tools/negative_controls.py
 ```
+
+Codex pilots require a live schema preflight with the same resolved profile and
+stage settings as the pilot:
+
+```sh
+uv run ara codex-schema-preflight --config /path/to/codex.yaml --profile pilot --run-dir runs/codex-schemas
+```
+
+Set `codex_cli.schema_preflight_log` in that config to the absolute path of
+`runs/codex-schemas/events.jsonl`, then use that config/profile for the pilot.
+Run, construction resume and writing selection refuse absent or stale proof.
+Rerun preflight after changing a schema, model, effort, system prompt, projection
+version or pinned CLI version. It tests construction, corrections, targets,
+search and writing with placeholders, keeping local constraints authoritative;
+it does not prove pilot success. API-only extraction and web retrieval are not
+Codex schema cases. Use the separate ChatGPT auth file; never the worker login.
+
+For an existing run, pass `--codex-schema-preflight-log PATH` to
+`resume-construction` or `select` to supply new proof without editing its history.

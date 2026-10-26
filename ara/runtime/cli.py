@@ -43,6 +43,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--route')
     resume = sub.add_parser('resume-construction', help='continue a verified stopped construction in its existing directory')
     resume.add_argument('--run-dir', type=Path, required=True)
+    resume.add_argument('--codex-schema-preflight-log', type=Path)
     resume.add_argument('--unknown-usage-policy', choices=('count-at-reservation',), required=True)
     resume.add_argument('--plan-only', action='store_true', help='free counts and verified restoration only; no generation')
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
@@ -70,6 +71,10 @@ def parser() -> argparse.ArgumentParser:
     gate.add_argument('--cost-cap-usd', type=float, default=1.0)
     gate.add_argument('--resume-from', type=Path, action='append', default=[])
     gate.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'), default='refuse')
+    codex_gate = sub.add_parser('codex-schema-preflight')
+    codex_gate.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
+    codex_gate.add_argument('--run-dir', type=Path, required=True)
+    codex_gate.add_argument('--profile', choices=('pilot', 'extraction-full'))
     plan = sub.add_parser('plan-extraction')
     plan.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     plan.add_argument('--ocr', choices=('local', 'off'), default='local')
@@ -97,6 +102,7 @@ def parser() -> argparse.ArgumentParser:
         cmd.add_argument('--run-dir', type=Path, required=True)
         if command == 'select':
             cmd.add_argument('--route')
+            cmd.add_argument('--codex-schema-preflight-log', type=Path)
             cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
         if command == 'feedback':
             cmd.add_argument('--text')
@@ -185,6 +191,9 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 if bank.bank_version != run['bank_version']:
                     raise ValueError('construction resume bank version mismatch')
                 config = {**run['config'], 'unknown_usage_policy': args.unknown_usage_policy}
+                if args.codex_schema_preflight_log is not None:
+                    config['codex_cli'] = {**config.get('codex_cli', {}),
+                        'schema_preflight_log': str(args.codex_schema_preflight_log)}
                 if args.plan_only:
                     from ara.runtime.planning import plan_construction_resume
                     log = EventLog(args.output_dir / 'events.jsonl')
@@ -192,6 +201,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                     result = plan_construction_resume(config, log, source_log, ROOT, run)
                     print(json.dumps(result))
                     return 0
+                from ara.runtime.codex_preflight import require_codex_preflight
+                require_codex_preflight(config, ROOT)
                 log = source_log
                 calls = calls_factory(config, log, run['topic'])
                 calls.construction_resume = True
@@ -207,6 +218,19 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             from ara.runtime.report import generate_report
             print(str(generate_report(args.run_dir, args.out)))
             return 0
+        if args.command == 'codex-schema-preflight':
+            from ara.runtime.codex_preflight import codex_schema_preflight
+            config = yaml.safe_load(args.config.read_text())
+            if args.profile:
+                apply_profile(config, args.profile)
+            if args.run_dir.exists() and any(args.run_dir.iterdir()):
+                raise ValueError('Codex schema preflight destination must be empty')
+            log = EventLog(args.run_dir / 'events.jsonl')
+            log.human('codex-schema-preflight', json.dumps(raw_args), reported_minutes=args.human_minutes)
+            log.record('codex_schema_preflight_config', config=config)
+            result = codex_schema_preflight(calls_factory(config, log, 'P'))
+            print(json.dumps(result))
+            return 0 if result['passed'] else 2
         if args.command == 'schema-preflight':
             from ara.runtime.preflight import schema_preflight
             from ara.runtime.provenance import checkpoint, read_checkpoint, import_receipts
@@ -316,6 +340,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 topic, literature = args.topic, args.literature.read_text()
             if args.provider is not None:
                 config['provider'] = args.provider
+            from ara.runtime.codex_preflight import require_codex_preflight
+            require_codex_preflight(config, ROOT)
             directory = args.run_dir or Path(config['runs_dir']) / uuid.uuid4().hex
             if directory.exists() and any(directory.iterdir()):
                 raise ValueError('new run directory must be empty; use select/feedback/export to resume')
@@ -393,8 +419,13 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             raise ValueError('unknown route id')
         run = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started')
         selection_config = dict(run['config'])
+        if args.codex_schema_preflight_log is not None:
+            selection_config['codex_cli'] = {**selection_config.get('codex_cli', {}),
+                'schema_preflight_log': str(args.codex_schema_preflight_log)}
         if args.unknown_usage_policy is not None:
             selection_config['unknown_usage_policy'] = args.unknown_usage_policy
+        from ara.runtime.codex_preflight import require_codex_preflight
+        require_codex_preflight(selection_config, ROOT)
         calls = calls_factory(selection_config, log, run['topic'])
         compose(calls, chosen)
         return 0

@@ -151,6 +151,8 @@ claude_code:
 # Extraction remains Opus 5 via API. Per-stage construction/search settings may
 # select codex_cli. The isolation canary runs automatically before stage calls.
 codex_cli:
+  # Required for pilots after a successful codex-schema-preflight (same profile).
+  schema_preflight_log: null
   concurrency: 4
   timeout_seconds: 300
   retries: 2

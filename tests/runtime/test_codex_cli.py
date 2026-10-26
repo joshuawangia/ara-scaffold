@@ -90,7 +90,14 @@ if mode=='diagnostic':
  print('"api_key":"offline-access" P',file=sys.stderr); sys.exit(7)
 if mode=='identity': value={'formula':{'op':'atom','name':'sentinel@example.invalid'}}
 if mode=='secret': value={'formula':{'op':'atom','name':'offline-access'}}
+if mode=='wire_optional': value={'formula':{'op':'atom','name':'P','args':None,'terms':None,'variable':None}}
 if mode=='bad_schema': value={'bad':'P'}
+if mode in ('preflight','local_invalid'):
+ value=json.loads(prompt.split('placeholder JSON, without using tools:'+chr(10),1)[1])
+ assert set(schema['required'])==set(schema['properties'])
+ assert schema['additionalProperties'] is False
+ assert 'uniqueItems' not in json.dumps(schema)
+ if mode=='local_invalid': value['roots']=['P','P']
 if mode=='mismatch': emit({'type':'model.changed','model':'gpt-5.3-codex'})
 if mode=='canary_leak': value['other_context']='PRIVATE_CONTEXT_SENTINEL'
 emit({'type':'item.completed','item':{'id':'item_0','type':'agent_message','text':json.dumps(value)}})
@@ -372,3 +379,115 @@ def test_visible_tools_never_waive_operator_scans(codex, monkeypatch, field, tex
     monkeypatch.setattr(module.subprocess, 'run', contaminated)
     with pytest.raises(Rejected, match=code):
         make_calls(config, EventLog(tmp/'events.jsonl'), 'P')
+
+
+def test_strict_wire_preflight_and_local_authority(codex):
+    from ara.runtime.calls import InvalidOutput
+    from ara.runtime.codex_schema import VERSION
+    config, auth, write, tmp = codex
+    write('preflight');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
+    value=calls._call_once('select_t_roots',{},schema_smoke=True)
+    assert value['roots']==[]
+    wire=calls._call_once('formalise',{},schema_smoke=True)
+    assert wire['formula']['name']=='P' and 'args' not in wire['formula']
+    # The raw wire retains added nulls while the returned native value omits them.
+    raw=json.loads([e for e in log.read() if e['label']=='MODEL'][-1]['response'])
+    assert json.loads(raw['content'][0]['text'])['formula']['args'] is None
+    rows=[json.loads(e['payload_json']) for e in log.read() if e['label']=='MODEL']
+    assert all(r['cli']['schema_transform']==VERSION for r in rows)
+    assert rows[-1]['cli']['wire_schema_hash']!=rows[-1]['cli']['native_schema_hash']
+    before=calls.budget.used_tokens
+    write('local_invalid')
+    with pytest.raises(InvalidOutput):calls._call_once('select_t_roots',{},schema_smoke=True)
+    assert calls.budget.used_tokens>before
+    assert not list((tmp/'cache').rglob('*.json'))
+
+
+def test_codex_preflight_gate_complete_and_stale(codex):
+    from ara.runtime.codex_preflight import codex_schema_preflight, require_codex_preflight
+    config, auth, write, tmp = codex
+    write('preflight');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
+    with pytest.raises(ValueError,match='requires a successful'):require_codex_preflight(config,ROOT)
+    result=codex_schema_preflight(calls)
+    assert result['passed'] and result['accepted']==result['total']==14
+    config['codex_cli']['schema_preflight_log']=str(log.path)
+    require_codex_preflight(config,ROOT)
+    config['stages']={'construction_correction':{'effort':'low'}}
+    # Correction settings must be independently pinned.
+    assert config['effort']!='low'
+    with pytest.raises(ValueError,match='stale'):require_codex_preflight(config,ROOT)
+    config['stages']={};config['model']='gpt-6-luna'
+    with pytest.raises(ValueError,match='stale'):require_codex_preflight(config,ROOT)
+
+
+@pytest.mark.parametrize('damage',['missing_receipt','cached','wrong_wire','missing_case','chain'])
+def test_codex_preflight_gate_rejects_incomplete_receipts(codex,damage):
+    from ara.runtime.codex_preflight import codex_schema_preflight, require_codex_preflight
+    from ara.types import RunEvent
+    config, auth, write, tmp = codex
+    write('preflight');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
+    assert codex_schema_preflight(calls)['passed']
+    damaged=EventLog(tmp/'damaged/events.jsonl')
+    for event in log.read():
+        payload=json.loads(event['payload_json'])
+        if event['stage']=='select_t_roots' and event['label']=='MODEL':
+            if damage=='missing_receipt':continue
+            if damage=='cached':payload['cache_hit']=True
+            if damage=='wrong_wire':payload['cli']['wire_schema_hash']='P'
+        if damage=='missing_case' and event['stage']=='codex_schema_preflight_accepted' and payload['case']=='select_t_roots':continue
+        damaged.emit(RunEvent.from_dict({**event,'payload_json':json.dumps(payload)}))
+    if damage=='chain':damaged.path.write_text(damaged.path.read_text().replace('gpt-5.4','gpt-6-luna'))
+    config['codex_cli']['schema_preflight_log']=str(damaged.path)
+    with pytest.raises(ValueError):require_codex_preflight(config,ROOT)
+
+
+def test_codex_preflight_failure_tests_every_case(codex):
+    from ara.runtime.codex_preflight import codex_schema_preflight, require_codex_preflight
+    config, auth, write, tmp = codex
+    write('bad_schema');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
+    result=codex_schema_preflight(calls)
+    assert not result['passed'] and result['accepted']==0 and result['total']==14
+    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==14
+    config['codex_cli']['schema_preflight_log']=str(log.path)
+    with pytest.raises(ValueError):require_codex_preflight(config,ROOT)
+
+
+def test_codex_pilot_requires_preflight_before_provider(codex):
+    from ara.runtime.cli import main
+    config, auth, write, tmp=codex
+    path=tmp/'config.yaml';path.write_text(yaml.safe_dump(config))
+    def forbidden(*args):pytest.fail('provider constructed before schema gate')
+    assert main(['run','--config',str(path),'--topic','P','--literature',str(ROOT/'tests/fixtures/runtime/smoke-literature.txt'),
+                 '--run-dir',str(tmp/'pilot')],calls_factory=forbidden)==2
+
+
+def test_codex_cache_replays_normalized_wire(codex):
+    config, auth, write, tmp=codex
+    write('wire_optional');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
+    first=calls.formalise(Proposition('p','P'))
+    tokens=calls.budget.used_tokens
+    assert calls.formalise(Proposition('p','P'))==first
+    assert calls.budget.used_tokens==tokens
+    rows=[json.loads(e['payload_json']) for e in log.read() if e['label']=='MODEL']
+    assert rows[-1]['cache_hit'] is True and rows[-1]['status']=='accepted'
+
+
+def test_codex_resume_can_supply_new_proof_without_editing_history(codex):
+    from ara.runtime.cli import main
+    from ara.runtime.codex_preflight import codex_schema_preflight
+    from ara.bank import load_bank
+    config, auth, write, tmp=codex
+    write('preflight');proof=EventLog(tmp/'proof/events.jsonl')
+    assert codex_schema_preflight(make_calls(config,proof,'P'))['passed']
+    history=EventLog(tmp/'pilot/events.jsonl')
+    history.record('run_started',config=config,topic='P',bank_version=load_bank(ROOT/'bank').bank_version)
+    reached=[]
+    def factory(resolved,*args):
+        reached.append(resolved['codex_cli']['schema_preflight_log'])
+        raise ValueError('P')  # Stop after observing admission, before pilot calls.
+    args=['resume-construction','--run-dir',str(history.path.parent),'--unknown-usage-policy','count-at-reservation']
+    assert main(args,calls_factory=factory)==2 and reached==[]
+    assert main([*args,'--codex-schema-preflight-log',str(proof.path)],calls_factory=factory)==2
+    assert reached==[str(proof.path)]
+    stored=json.loads(history.read()[0]['payload_json'])['config']
+    assert stored['codex_cli'].get('schema_preflight_log') is None

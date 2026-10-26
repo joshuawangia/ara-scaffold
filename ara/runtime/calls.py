@@ -397,6 +397,10 @@ class ModelCalls:
         if schema_smoke:
             prompt = 'P. Return a JSON object matching the response schema.'
             maximum = 1
+            if self.config.get('provider') == 'codex_cli':
+                from ara.runtime.codex_schema import placeholder, wire_value
+                prompt = 'Return exactly this placeholder JSON, without using tools:\n' + canonical(wire_value(schema, placeholder(schema)))
+                maximum = 4096
         key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
         saved = None
         if not schema_smoke and kind != 'isolation_canary':
@@ -446,14 +450,14 @@ class ModelCalls:
                     self.log.record('provider_estimate_observation', kind=kind, call_id=self._reservations.call_id,
                                     **self.provider.observe(kind, prompt, schema, estimate, raw))
             # Stop reason is checked BEFORE interpreting any content blocks.
-            if schema_smoke:
+            if schema_smoke and self.config.get('provider') != 'codex_cli':
                 require(raw['stop_reason'] in ('end_turn', 'max_tokens'), f'provider stop: {raw["stop_reason"]}')
             else:
                 require(raw['stop_reason'] == 'end_turn', f'provider stop: {raw["stop_reason"]}')
             require(not any(isinstance(v, dict) and (v.get('is_error') or
                         str(v.get('type', '')).endswith('_error') or v.get('error_code'))
                         for v in walk(raw['content'])), 'server tool error')
-            if schema_smoke:
+            if schema_smoke and self.config.get('provider') != 'codex_cli':
                 data = {'grammar_accepted': True}
             elif schema is None:
                 urls = sorted({v['url'] for v in walk(Response(raw).served_content) if isinstance(v, dict)
@@ -463,6 +467,8 @@ class ModelCalls:
             else:
                 validating = True
                 data = json.loads(Response(raw).text())
+                if hasattr(self.provider, 'normalize_output'):
+                    data = self.provider.normalize_output(schema, data)
                 if kind == 'build_t_batch' and isinstance(data, dict) and isinstance(data.get('commitments'), list):
                     for item in data['commitments']:
                         if isinstance(item, dict) and isinstance(item.get('formula'), str):

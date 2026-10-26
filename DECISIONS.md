@@ -2729,3 +2729,41 @@ replacement regressions (0.10 and 0.94), high-score acceptance with unscored cle
 text, ambiguous internal alignment and two separated glyph groups failed before
 the fix. Dedicated confidence-dilution and ambiguity mutation controls protect
 this admission boundary. See the external Round 4 report for final evidence.
+
+## Omega round 13 — Strict Codex schemas and pilot gate
+
+O13.1. `ara-openai-strict-v1` projects the native stage schema to a conservative
+OpenAI strict vocabulary. Every object is closed, every property required,
+and optional fields permit a null sentinel. Local references and recursive
+unions remain; const becomes a singleton enum, oneOf becomes anyOf. Constraints
+outside the wire vocabulary (including uniqueness, bounds and conditionals)
+remain in the original schema shown in the native prompt and enforced locally.
+Only optional nulls disallowed by the native child schema are removed before
+local validation. Required nulls, native nullable values and unknown fields
+are preserved for that validation. Raw receipts/cache retain the wire response;
+normalization happens after accounting, including on cache replay. Projection
+version is in cache identity and methodology; native/wire hashes are in receipts.
+Admission and calibration use the projected schema size.
+
+O13.2. `ara codex-schema-preflight --config PATH --run-dir DIR` invokes every
+Codex-routed stage schema with a locally checked placeholder witness, including
+both construction correction routes. All 12 stage schemas / 14 routing cases
+must return complete JSON that passes original-schema validation. The preflight
+has no cache hits and retains native accounting and isolation checks. Extraction
+is API-only; web retrieval has no JSON schema and remains refused by Codex.
+No grammar preflight proves a complete pilot, semantic quality or web retrieval.
+
+O13.3. Before run, construction resume or writing selection, the CLI requires
+`codex_cli.schema_preflight_log` to name a successful native preflight event log.
+The gate verifies the hash chain and tail checkpoint, exact current manifest
+(schema hashes, projection/CLI versions, model, effort and system-prompt hash),
+and one accepted, measured, uncached Codex receipt for every case. Missing,
+partial or stale evidence refuses before provider creation. Regenerate proof
+after changing those settings. The preflight itself is exempt from this gate;
+it still runs the mandatory isolation canary before stage calls. Served model
+identity remains unverified when the CLI does not report it.
+
+O13.4. Existing runs may supply fresh proof using
+`--codex-schema-preflight-log` on resume-construction or select. This overrides
+only the proof location, is logged in the human command, and leaves historical
+configuration intact. The same manifest and receipt checks still apply.

@@ -114,7 +114,7 @@ def methodology(log_path: Path) -> str:
                          'token_estimate_method', 'calibration', 'usd_cap_policy', 'token_cap_policy', 'effective_prompt_note',
                          'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport',
                          'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan', 'served_model_policy',
-                         'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note', 'visible_tool_policy')}
+                         'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note', 'visible_tool_policy', 'schema_transform')}
                        for _,p in cli_calls if p.get('provider') == 'codex_cli'][:1],
         'token_cap_policies': sorted({p.get('token_cap_policy', 'legacy_history_inclusive') for _, p in cli_calls}),
         'estimate_observations': [json.loads(e['payload_json']) for e in events if e['stage']=='provider_estimate_observation'],

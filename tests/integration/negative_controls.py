@@ -80,7 +80,7 @@ CASES = [
     ('extraction_cache_lineage_accounting', 'ara/runtime/export.py', "'accounting_complete': not unknown and not pending and not lineage_incomplete and not unpublished,", "'accounting_complete': not unknown and not pending,", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_local_inherited_totals', 'ara/runtime/export.py', "'local_totals': totals([e for i, e in enumerate(events) if i not in inherited_indices]),", "'local_totals': totals(events),", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_enclosing_cap_warning', 'ara/runtime/extraction.py', "print('planned batch exceeds enclosing caps', flush=True)", 'pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
-    ('extraction_batch_profile', 'ara/runtime/cli.py', 'if args.profile:\n                apply_profile(config, args.profile)', 'if args.profile:\n                pass', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
+    ('extraction_batch_profile', 'ara/runtime/cli.py', 'if args.profile:\n                apply_profile(config, args.profile)\n            validate_profile_caps(config, args.profile)', 'if args.profile:\n                pass\n            validate_profile_caps(config, args.profile)', 'tests/runtime/test_extraction_fix1.py::test_preflight_flags_caps_and_profile_is_explicit'),
     ('extracted_t_output_capacity', 'ara/runtime/calls.py', "maximum = self.config['extracted_build_t_max_output_tokens']\n        if kind == 'isolation_canary':\n            maximum = 4096\n        identity", "maximum = self.config['max_output_tokens']\n        if kind == 'isolation_canary':\n            maximum = 4096\n        identity", 'tests/runtime/test_extraction_fix1.py::test_capacity53_maximum_through_cli'),
     ('build_t_retry_context', 'ara/runtime/calls.py', 'estimate = self.count_request(kind, inputs, maximum=maximum, admission=True)', "estimate = self.count_request(kind, inputs, maximum=maximum, admission='validation_feedback' not in inputs)", 'tests/runtime/test_extraction_fix1.py::test_build_t_retry_recounts_feedback'),
     ('extraction_import_idempotence', 'ara/runtime/provenance.py', "if any(e['stage'] == IMPORT_STAGE and", "if False and any(e['stage'] == IMPORT_STAGE and", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
@@ -1124,6 +1124,37 @@ CASES += [
      'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),
 ]
 
+
+
+CASES += [
+    ('codex_strict_projection', 'ara/runtime/codex_cli.py',
+     'wire = strict_schema(schema)', 'wire = schema',
+     'tests/runtime/test_codex_cli.py::test_strict_wire_preflight_and_local_authority'),
+    ('codex_required_optional', 'ara/runtime/codex_schema.py',
+     "result['required'] = list(properties)", "result['required'] = list(required)",
+     'tests/runtime/test_codex_schema.py::test_optional_null_roundtrip_and_local_constraints'),
+    ('codex_closed_objects', 'ara/runtime/codex_schema.py',
+     "result['additionalProperties'] = False", "result['additionalProperties'] = True",
+     'tests/runtime/test_codex_schema.py::test_all_native_schemas_recursive_and_closed'),
+    ('codex_normalize_before_validation', 'ara/runtime/calls.py',
+     "data = self.provider.normalize_output(schema, data)", 'data = data',
+     'tests/runtime/test_codex_cli.py::test_strict_wire_preflight_and_local_authority'),
+    ('codex_local_authority', 'ara/runtime/calls.py',
+     'Draft202012Validator(schema).validate(data)', 'pass # bypass native validation',
+     'tests/runtime/test_codex_cli.py::test_strict_wire_preflight_and_local_authority'),
+    ('codex_preflight_live_receipt', 'ara/runtime/codex_preflight.py',
+     "or cli.get('wire_schema_hash')!=case['wire_schema_hash']", 'or False',
+     'tests/runtime/test_codex_cli.py::test_codex_preflight_gate_rejects_incomplete_receipts[wrong_wire]'),
+    ('codex_preflight_coverage', 'ara/runtime/codex_preflight.py',
+     'if sorted(accepted) != sorted(cases):', 'if False:',
+     'tests/runtime/test_codex_cli.py::test_codex_preflight_gate_rejects_incomplete_receipts[missing_case]'),
+    ('codex_preflight_no_cache', 'ara/runtime/codex_preflight.py',
+     "or receipt.get('cache_hit') is not False", 'or False',
+     'tests/runtime/test_codex_cli.py::test_codex_preflight_gate_rejects_incomplete_receipts[cached]'),
+    ('codex_pilot_schema_gate', 'ara/runtime/cli.py',
+     'require_codex_preflight(config, ROOT)\n            directory =', 'pass\n            directory =',
+     'tests/runtime/test_codex_cli.py::test_codex_pilot_requires_preflight_before_provider'),
+]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

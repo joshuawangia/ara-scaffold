@@ -7,8 +7,8 @@ import yaml
 from ara.bank import load_bank
 from ara.engine import Engine
 from ara.runtime.cache import Cache, canonical
-from ara.runtime.calls import ModelCalls
-from ara.runtime.cli import ROOT, main
+from ara.runtime.calls import ModelCalls, Rejected
+from ara.runtime.cli import ROOT, disclose_search, main
 from ara.runtime.logging import EventLog
 from ara.runtime.orchestration import NativeEngine, search_all
 from ara.runtime.providers import MockProvider, Response
@@ -17,7 +17,7 @@ from ara.types import Commitment, CommitmentSet, Formula, Proposition, TokenUsag
 from test_calls import response
 
 
-def stopped(tmp_path, monkeypatch, *, licensed=False):
+def stopped(tmp_path, monkeypatch, *, licensed=False, partial=False):
     config = yaml.safe_load((ROOT / 'config.yaml').read_text())
     config.update(provider='mock', search_concurrency=1, cache_dir=str(tmp_path/'cache'))
     if licensed:
@@ -51,6 +51,8 @@ def stopped(tmp_path, monkeypatch, *, licensed=False):
     search = Engine.search
     def interrupted(engine, goal):
         if goal.formula.op == 'not':
+            if partial:
+                raise Rejected('P')
             engine.sink.record('call_start', call_id='pending', kind='formalise', cache_key='P',
                                model=config['model'], prompt='P', reserved_usage=TokenUsage(9, 3).to_dict())
             engine.sink.record('response_received', call_id='pending', kind='formalise', cache_key='P',
@@ -61,9 +63,14 @@ def stopped(tmp_path, monkeypatch, *, licensed=False):
         return search(engine, goal)
     with monkeypatch.context() as patch:
         patch.setattr(Engine, 'search', interrupted)
-        patch.setattr(SearchPublication, 'publish', lambda self: None)
-        with pytest.raises(KeyboardInterrupt):
-            search_all(calls, NativeEngine(bank, calls), t, targets)
+        if partial:
+            routes = search_all(calls, NativeEngine(bank, calls), t, targets)
+            log.record('awaiting_selection', route_ids=[r.id for r in routes], search=disclose_search(log))
+            log.record('run_finished', state='awaiting_selection')
+        else:
+            patch.setattr(SearchPublication, 'publish', lambda self: None)
+            with pytest.raises(KeyboardInterrupt):
+                search_all(calls, NativeEngine(bank, calls), t, targets)
     return log, provider
 
 
@@ -211,3 +218,53 @@ def test_resume_restores_licenses_even_when_node_cap_discards_the_proposal(tmp_p
     assert licenses[0][0].bank_id == 'modus_ponens'
     assert licenses[0][1].conclusion.formula == Formula('atom', name='P')
     assert [p.id for p in licenses[0][1].premises] == ['conditional', 'antecedent']
+
+
+def test_resume_after_partial_recovery_halt_publishes_current_results(tmp_path, monkeypatch):
+    from ara.runtime import orchestration
+    log, provider = stopped(tmp_path, monkeypatch, partial=True)
+    def records(stage):
+        return [json.loads(e['payload_json']) for e in log.read() if e['stage'] == stage]
+    assert len(records('route')) == 1
+    assert records('conflicts_and_robustness')[-1]['findings']['analyses'] == []
+    assert [j['status'] for j in records('search_phase_finished')[-1]['jobs']] == ['completed', 'failed']
+
+    searched = []
+    search = Engine.search
+    def track(engine, goal):
+        searched.append(goal.formula.op)
+        return search(engine, goal)
+    monkeypatch.setattr(Engine, 'search', track)
+    def factory(config, log, topic):
+        return ModelCalls(config, provider, log, Cache(tmp_path/'cache'), ROOT, topic)
+    args = ['resume-search', '--run-dir', str(tmp_path)]
+    with monkeypatch.context() as patch:
+        def halt_before_saving(calls, targets, results):
+            list(results)  # Drain and publish jobs, then halt before saving refreshed analysis/routes.
+            raise RuntimeError('P')
+        patch.setattr(orchestration, '_save_analyses', halt_before_saving)
+        assert main(args, calls_factory=factory) == 2
+    assert searched == ['not']
+    assert records('search_phase_finished')[-1]['status'] == 'complete'
+    assert len(records('awaiting_selection')) == 1  # The original partial generation only.
+    assert len(records('route')) == 1
+    before = log.read()
+    models = [e for e in before if e['label'] == 'MODEL']
+    def no_generation(*args):
+        pytest.fail('completed recovery generated another response')
+    monkeypatch.setattr(provider, 'complete', no_generation)
+
+    assert main(args, calls_factory=factory) == 0
+    added = log.read()[len(before):]
+    assert searched == ['not']  # Neither completed search was dispatched again.
+    assert [e for e in log.read() if e['label'] == 'MODEL'] == models
+    assert len([e for e in added if e['stage'] == 'route']) == 2
+    assert len(records('conflicts_and_robustness')[-1]['findings']['analyses']) == 1
+    assert len(records('awaiting_selection')[-1]['route_ids']) == 2
+
+    def no_provider(*args):
+        pytest.fail('current completed generation created a provider')
+    generations = records('search_publication_started')
+    assert main(args, calls_factory=no_provider) == 0
+    assert records('search_publication_started') == generations
+    assert [e for e in log.read() if e['label'] == 'MODEL'] == models

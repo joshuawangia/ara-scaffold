@@ -2871,3 +2871,49 @@ same union verdict, and the unchanged full native constraints still apply.
 The guarantee concerns local schema/normalization work; model calls, domain
 callbacks, and solver work retain their separate existing budgets. No live pilot
 completion is implied by the offline equivalence and deadline tests.
+
+## Round 10 — Xi: bind resume completion to its results generation
+
+R10.1. Tau2 F2 is fixed. A historical partial `awaiting_selection` marker no
+longer establishes completion after a later recovery has finished its missing
+jobs but halted before saving refreshed analyses and routes. The next resume
+uses those sealed results to finish native publication without dispatching a
+completed search again. A genuinely completed current generation still returns
+before provider construction.
+
+R10.2. Completion evidence is scoped to the latest search-publication batch in
+the verified main chain. Its publication-finished receipt, complete job phase,
+saved paired analyses and selection marker must occur in that order. The job
+inventory must match the restored goals; the saved positive/negative results
+must equal the restored SearchResults; the selection's route inventory must
+match those results. Old markers, partial analyses and earlier result inventories
+cannot authorize the shortcut. Existing logs need no new event format: their
+verified ordering and result contents provide the binding.
+
+R10.3. The native placeholder regression first reproduces the reported failure:
+a bounded failed job leaves a partial selection, recovery finishes that job,
+and an injected halt prevents refreshed analysis/route persistence. Before the
+fix, the next resume returns success but adds zero route events instead of two.
+After the fix it publishes two route events and one paired analysis, with zero
+search redispatches and no new MODEL receipts. Re-entry after that creates no
+provider and no new publication generation. The production-wire control restores
+the former any-historical-selection predicate: the regression fails under that
+mutation and passes after restoration. All 18 owning recovery tests pass.
+
+R10.4. The separate integration checkpoint is `c8194b5`, merging `c32d429` into
+`1971c74`. Both documentation appendices are preserved. Before F2 implementation,
+full pytest passed 1,032 tests with 4 opt-in skips (1,036 collected), followed by
+433/433 mutation failures and restored passes. All 187 tracked-file hashes were
+restored exactly. Evidence for that checkpoint is under `runs/xi-integrate2/`;
+Round 10 evidence is under `runs/xi-round10/`. No push or paid call is authorized
+or performed by this work.
+
+Finding disposition: tau2 F2 is fixed and its executed regression/control proof
+is placed in R10.1–R10.3. 1 finding, 1 placed.
+
+R10.5. Final checkpoint: full `uv run --locked pytest -q` passed 1,033 tests,
+with 4 existing opt-in skips (1,037 collected), in 800.36 seconds. After it
+finished, the full integration control runner produced 434/434 expected
+mutation failures and restored passes, including the new F2 control. All 187
+tracked-file hashes matched the pre-gate manifest after both gates. The diff
+check is clean. The fix remains a local commit; no push or paid call occurred.

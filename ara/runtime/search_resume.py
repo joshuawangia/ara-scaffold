@@ -211,6 +211,37 @@ def publication_progress(main, batch_id, index, receipt, journal):
     return offset, published, seen
 
 
+def current_search_finished(events, batch_id, restored):
+    """Completion belongs to the latest publication and the results it saved."""
+    start = max(i for i, event in enumerate(events)
+                if event['stage'] == 'search_publication_started' and payload(event)['batch_id'] == batch_id)
+    current = events[start + 1:]
+    stages = ('search_publication_finished', 'search_phase_finished',
+              'conflicts_and_robustness', 'awaiting_selection')
+    positions = {event['stage']: i for i, event in enumerate(current) if event['stage'] in stages}
+    if any(stage not in positions for stage in stages):
+        return False
+    order = [positions[stage] for stage in stages]
+    if order != sorted(order):
+        return False
+    publication, phase, findings, selection = [payload(current[i]) for i in order]
+    jobs = phase.get('jobs', [])
+    if (publication.get('batch_id') != batch_id or phase.get('status') != 'complete' or
+            [job.get('job_index') for job in jobs] != list(range(len(restored))) or
+            any(job.get('status') != 'completed' or job.get('goal') != restored[i][0].target.to_dict()
+                for i, job in enumerate(jobs))):
+        return False
+    analyses = findings.get('findings', {}).get('analyses', [])
+    if len(analyses) != len(restored) // 2:
+        return False
+    for i, analysis in enumerate(analyses):
+        if (analysis.get('target') != restored[2 * i][0].to_dict() or
+                analysis.get('negated') != restored[2 * i + 1][0].to_dict()):
+            return False
+    route_ids = {route.id for result, _ in restored.values() for route in result.routes}
+    return set(selection.get('route_ids', [])) == route_ids
+
+
 def load_search_resume(log, bank, root):
     main = log.read()  # Includes the append-only tail anchor.
     def single(stage):
@@ -264,7 +295,7 @@ def load_search_resume(log, bank, root):
             publications.append((receipt, journal, progress))
     # Main settlement receipts live outside the immutable source journals.
     settlements = unsettled_receipts(all_journal_events + [e for e in main if payload(e).get('recovery') == 'resume-search'])
-    finished = len(restored) == len(goals) and any(e['stage'] == 'awaiting_selection' for e in main)
+    finished = len(restored) == len(goals) and current_search_finished(main, batches[-1]['batch_id'], restored)
     return SearchResume(run, commitments, targets, restored, publications, settlements, finished)
 
 

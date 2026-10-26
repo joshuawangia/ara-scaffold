@@ -24,7 +24,7 @@ from ara.runtime.providers import Response, stage_settings
 
 # These controls are verified for this CLI version. Fail closed after upgrades.
 CLI_VERSION = 'codex-cli 0.163.0'
-MODEL_INSTRUCTIONS = 'Process the supplied request and return only JSON matching the response schema. Use only context actually supplied in this session.'
+MODEL_INSTRUCTIONS = 'Process the supplied request and return only JSON matching the response schema. Use only context actually supplied in this session. Do not use tools for any purpose, including commands, file reads, web access or delegation.'
 DISABLED_FEATURES = ('shell_tool', 'unified_exec', 'shell_snapshot', 'apps', 'plugins',
     'hooks', 'memories', 'goals', 'multi_agent', 'multi_agent_v2', 'browser_use', 'computer_use',
     'image_generation', 'view_image', 'skill_search', 'sleep_tool', 'workspace_dependencies')
@@ -50,7 +50,7 @@ class CodexCLIError(ClaudeCodeError):
 class CodexCLIProvider(ClaudeCodeProvider):
     """Reuse admission/calibration/scanning, with a distinct wire and isolation."""
     provider_kind = 'codex_cli'
-    canary_prompt = CANARY_PROMPT + ' Use an empty string for absent tools too. Report actual callable tools only; do not infer tools from general descriptions.'
+    canary_prompt = CANARY_PROMPT + ' In tools, list visible tool definition names only, comma-separated, preserving namespace prefixes; use an empty string if none are visible. Do not invoke any tool. Generic built-in tool definitions may be visible; do not infer operator customizations from them.'
     estimate_method = 'API-receipt UTF-8 calibration seed; different Codex tokenizer; upward-only like-for-like correction; no free counter'
 
     def __init__(self, config):
@@ -120,6 +120,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
             effective_prompt_note='Minimal task-only model instructions replace coding-agent defaults; stage developer instructions and native stage prompt retained; not API byte-identical.',
             auth_transport='Per-call read-only bind of current host auth file, linked from temporary in-memory CODEX_HOME; no credential copy.',
             auth_threat_model='Linux mount/PID namespace hides operator homes; auth writes denied; refresh endpoint disabled; no credential rotation.',
+            visible_tool_policy='Generic built-in definitions may be visible; visible definitions do not authorize use; any tool event rejects the response.',
             served_model_policy='CLI model event when reported; otherwise explicitly unverified, never inferred from -m.',
             tokenizer_note='Seed table measured Anthropic API tokens, not the Codex tokenizer. Codex usage corrects estimates upward only.',
             subscription_cost_note='Codex JSON reports tokens, not list-price USD; cost equivalent unavailable, never treated as measured zero.',
@@ -131,12 +132,16 @@ class CodexCLIProvider(ClaudeCodeProvider):
         from jsonschema import Draft202012Validator
         if not Draft202012Validator(CANARY_SCHEMA).is_valid(value):
             raise CodexCLIError('isolation_canary_invalid', receipt=receipt)
-        if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md', 'tools')):
+        if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md')):
             raise CodexCLIError('isolation_context_present', receipt=receipt)
         visible = canonical(value)
         if any(term.casefold() in visible.casefold() for term in self.forbidden):
             raise CodexCLIError('isolation_forbidden_content', receipt=receipt)
+        tool_names = sorted({name.strip().strip('`') for name in re.split(r'[,\n]', value['tools']) if name.strip()})
+        receipt['visible_tool_names'] = tool_names
         return {'status':'proven', 'forbidden_terms_checked':len(self.forbidden),
+                'visible_tool_names':tool_names, 'tool_event_rejection':'active',
+                'visible_tool_policy':'visible definitions do not authorize use; any tool event rejects the response',
                 'visible_context_sha256':digest(visible), 'tool_events':0,
                 'global_agents_and_memories':'host home hidden by mount namespace',
                 'evidence':'visible context scan plus enforced filesystem/CLI isolation'}

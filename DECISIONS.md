@@ -2488,3 +2488,23 @@ tools, as it already does for absent operator context. No nonempty canary field
 or tool event is waived: the original context and event rejection checks remain.
 Live acceptance, account-specific model availability and any remaining blocker
 are recorded in the external Round 11 report, not inferred from offline tests.
+
+## Omega round 12 — Visible generic definitions are not tool use
+
+O12.1. The operator clarified the Codex preflight rule: generic built-in tool
+names may be visible, as Claude's StructuredOutput is. The canary still requires
+empty skills, memory, AGENTS.md and CLAUDE.md fields, no forbidden-term matches,
+no operator identity/credentials, and the unchanged fail-closed event parser.
+Any tool event or unknown event rejects the response. The canary reports visible
+tool names in its CLI receipt and isolation evidence, exported in methodology;
+visibility never authorizes invocation. Task-only model instructions explicitly
+forbid all tool use, including file reads, commands, web and delegation.
+
+O12.2. Round 12 live checks pin gpt-6-luna. The CLI reports no trustworthy served
+model, so receipts retain unverified rather than inferring it from the pin.
+The live canary and two native placeholder stages (formalise and map_leaf)
+passed with no tool events. Generic definitions were disclosed, all operator
+context checks passed, and the separate 0600 ChatGPT credential file was
+unchanged. This supersedes the prior nonempty-tools preflight blocker under
+the operator's revised rule; it does not waive any operator-context check.
+Full verification and precise live measurements are in the external report.

@@ -1091,7 +1091,7 @@ CASES += [
      "'-m',model", "'-m','gpt-5.4'",
      'tests/runtime/test_codex_cli.py::test_stage_model_pin'),
     ('codex_context_gate', 'ara/runtime/codex_cli.py',
-     "if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md', 'tools')):",
+     "if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md')):",
      'if False:', 'tests/runtime/test_codex_cli.py::test_isolation_canary_rejects_context'),
     ('codex_diagnostics_suppressed', 'ara/runtime/codex_cli.py',
      'events = []', "receipt['stderr'] = stderr; events = []",
@@ -1112,6 +1112,16 @@ CASES += [
      "auth_file = options.get('auth_file')",
      "auth_file = options.get('auth_file', str(Path(os.environ['CODEX_HOME'])/'auth.json'))",
      'tests/runtime/test_codex_cli.py::test_auth_source_required_without_worker_home_fallback'),
+]
+
+
+CASES += [
+    ('codex_visible_tool_receipt', 'ara/runtime/codex_cli.py',
+     "receipt['visible_tool_names'] = tool_names", "receipt['visible_tool_names'] = []",
+     'tests/runtime/test_codex_cli.py::test_generic_visible_tools_disclosed_but_events_rejected'),
+    ('codex_task_only_no_tools', 'ara/runtime/codex_cli.py',
+     'Do not use tools for any purpose', 'Tools may be used',
+     'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),
 ]
 
 

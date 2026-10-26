@@ -45,7 +45,8 @@ assert args[0]=='exec'
 assert all(k in args for k in ['--ephemeral','--ignore-user-config','--skip-git-repo-check','--json','--ignore-rules'])
 assert arg('-s')=='read-only'
 assert 'approval_policy="never"' in args and 'features.shell_tool=false' in args
-assert any(a.startswith('model_instructions_file=') for a in args)
+instruction_arg=next(a for a in args if a.startswith('model_instructions_file='))
+assert 'Do not use tools' in Path(json.loads(instruction_arg.split('=',1)[1])).read_text()
 assert 'features.goals=false' in args
 assert 'skills.bundled.enabled=false' in args and 'skills.include_instructions=false' in args
 assert not list(Path.cwd().iterdir())
@@ -320,3 +321,54 @@ def test_configured_auth_does_not_open_worker_login(codex, monkeypatch):
     from ara.runtime.codex_cli import CodexCLIError
     with pytest.raises(CodexCLIError, match='subscription_login_required'):
         provider._authentication()
+
+
+def test_generic_visible_tools_disclosed_but_events_rejected(codex, monkeypatch):
+    import ara.runtime.codex_cli as module
+    from ara.runtime.calls import Rejected
+    from ara.runtime.export import methodology
+    config, auth, write, tmp = codex
+    config['model'] = 'gpt-6-luna'
+    original = module.subprocess.run
+    def visible_tools(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result.stdout = result.stdout.replace('\\"tools\\": \\"\\"',
+            '\\"tools\\": \\"functions.apply_patch, functions.spawn_agent, functions.read_mcp_resource\\"')
+        return result
+    monkeypatch.setattr(module.subprocess, 'run', visible_tools)
+    log = EventLog(tmp/'events.jsonl')
+    calls = make_calls(config, log, 'P')
+    canary = next(json.loads(e['payload_json']) for e in log.read() if e['label']=='MODEL')
+    expected = ['functions.apply_patch', 'functions.read_mcp_resource', 'functions.spawn_agent']
+    assert canary['cli']['visible_tool_names'] == expected
+    assert canary['isolation']['visible_tool_names'] == expected
+    assert canary['isolation']['tool_event_rejection'] == 'active'
+    exported = methodology(log.path)
+    assert all(name in exported for name in expected)
+    assert 'visible definitions do not authorize use' in exported
+    assert calls.formalise(Proposition('p', 'P')).name == 'P'
+    write('tool:command_execution')
+    with pytest.raises(Rejected, match='cli_tool_event'):
+        calls.formalise(Proposition('q', 'Q'))
+
+
+@pytest.mark.parametrize('field,text,code', [
+    ('skills','P','isolation_context_present'), ('memory','P','isolation_context_present'),
+    ('agents_md','P','isolation_context_present'), ('claude_md','P','isolation_context_present'),
+    ('tools','private-project','isolation_forbidden_content'),
+    ('tools','sentinel@example.invalid','operator_identity_in_output'),
+])
+def test_visible_tools_never_waive_operator_scans(codex, monkeypatch, field, text, code):
+    import ara.runtime.codex_cli as module
+    from ara.runtime.calls import Rejected
+    config, auth, write, tmp = codex
+    config['codex_cli']['forbidden_terms'] = ['private-project']
+    original = module.subprocess.run
+    def contaminated(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result.stdout = result.stdout.replace('\\"'+field+'\\": \\"\\"',
+                                             '\\"'+field+'\\": \\"'+text+'\\"')
+        return result
+    monkeypatch.setattr(module.subprocess, 'run', contaminated)
+    with pytest.raises(Rejected, match=code):
+        make_calls(config, EventLog(tmp/'events.jsonl'), 'P')

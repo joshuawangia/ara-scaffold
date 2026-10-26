@@ -132,7 +132,10 @@ def methodology(log_path: Path) -> str:
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
         'search': search_status(events),
-        'construction': {'support_omitted': [dict(index=p['index'], evidence_id=id, omitted_support_ids=ids)
+        'construction': {'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],
+                         'structure_outcomes': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_outcome'],
+                         'frozen_catalogues': [json.loads(e['payload_json']) for e in events if e['stage'] == 'symbol_catalogue_frozen'],
+                         'support_omitted': [dict(index=p['index'], evidence_id=id, omitted_support_ids=ids)
                          for e in events if e['stage'] == 'build_t_closure'
                          for p in [json.loads(e['payload_json'])] for id, ids in p.get('support_omitted', {}).items()],
                          'support_policy': 'Budget-cut frontier items are attributed assumed premises (support_omitted); routes using them are conditional on those premises. Immutable full sources retain omitted support.',

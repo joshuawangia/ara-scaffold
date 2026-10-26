@@ -17,7 +17,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v9'
+PLAN_VERSION = 'rich-working-t-v10'
 CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
@@ -548,7 +548,35 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
                     'bindings': bindings, 'omitted': omitted, 'closure': closure, 'borrowing': borrowing}))
             result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
-            data = json.loads(result.receipt_json)
+            from ara.runtime.construction_structure import structure_gate
+            prior_set = CommitmentSet.from_dict({'commitments': prior})
+            metrics = structure_gate(result.commitments, prior_set, items)
+            calls.log.record('build_t_structure_gate', plan_id=plan_id, index=batch.index,
+                             phase='initial', **metrics)
+            if not metrics['passed']:
+                # One structure-specific correction per batch, independent of the
+                # validation-repair allowance. Full replacement permits removing
+                # the unused atom symbols of a flattened candidate.
+                candidate = json.loads(result.receipt_json)
+                candidate = {key: candidate[key] for key in ('commitments', 'new_symbols', 'alignments')}
+                candidate['commitments'] = [dict(id=c['id'], formula=c['formula']) for c in candidate['commitments']]
+                feedback = dict(issues=metrics['issues'],
+                    instruction='Encode each selected inference as premises -> conclusion, reusing selected endpoint formulas. '
+                                'Use shared predicates/constants where source-supported. Keep unsupported qualifications separate. '
+                                'Do not invent structure: if source-faithful structure cannot be supplied, retain flat formulas for disclosure.')
+                calls.log.record('construction_structure_correction', plan_id=plan_id, index=batch.index,
+                                 candidate_hash=digest(canonical(candidate)), feedback=feedback)
+                result = calls._transport_call('build_t_batch', {**inputs, 'mode': 'structure_correction',
+                    'candidate': candidate, 'structure_feedback': feedback}, check, attempt=2)
+                metrics = structure_gate(result.commitments, prior_set, items)
+                calls.log.record('build_t_structure_gate', plan_id=plan_id, index=batch.index,
+                                 phase='corrected', **metrics)
+                require(metrics['passed'] or metrics['flat'], 'non-flat inference structure contract failed after correction')
+            disclosure = 'flat_after_one_correction' if metrics['flat'] else None
+            calls.log.record('build_t_structure_outcome', plan_id=plan_id, index=batch.index,
+                             disclosure=disclosure, **metrics)
+            data = {**json.loads(result.receipt_json), 'structure': metrics, 'structure_disclosure': disclosure}
+            result = BatchResult(result.index, result.commitments, canonical(data))
             if any(data['borrowing'].values()):
                 calls.log.record('build_t_share_borrowed', plan_id=plan_id, index=batch.index, **data['borrowing'])
             window_omissions.extend(o for o in omitted if o['evidence_id'] in window_items)

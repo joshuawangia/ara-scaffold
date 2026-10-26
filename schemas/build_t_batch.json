@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "build_t_batch_v3",
+  "title": "build_t_batch_v4",
+  "description": "Fixed source inventory. Inference formulas reuse premise and conclusion formulas as a conditional; source-supported relations reuse declared predicates/constants. Runtime reports syntactic structure and allows disclosed flatness only after one correction.",
   "type": "object",
   "properties": {
     "commitments": {

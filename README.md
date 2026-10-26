@@ -964,3 +964,25 @@ rejection. It never becomes an accepted response. The time limit runs in a
 killable child interpreter and works inside parallel search jobs. Larger valid
 objects may need explicitly larger limits; the limits do not change native schema
 meaning. Existing catalogue-reference checks and solver budgets still apply.
+
+### Construction structure and frozen vocabulary
+
+Rich construction preserves selected inference nodes as attributed conditionals
+using shared endpoint formulas. Predicates/constants are required where the
+source supports relational structure. The model decides meaning, symbol reuse,
+and whether qualifications belong in conditions; code never invents equivalence.
+Each batch logs non-atomic fraction, symbol reuse rate and exact conjunct endpoint
+connections. These syntactic measurements are not a translation-fidelity score.
+A deficient batch receives one structure correction. If it remains atomic despite
+inference evidence, construction accepts it with `flat_after_one_correction` in
+the batch receipt and methodology. Other schema, provenance, signature and budget
+checks still apply. Such flatness can prevent useful entailments and is not a
+successful structure-gate verdict.
+
+`commitments.json` keeps the legacy CommitmentSet format. Rich freezes also write
+`frozen-t.json`, an immutable envelope containing the commitments and a hash-bound
+`symbol_catalogue`. Its entries preserve model-authored definitions and evidence
+IDs. The exact canonical SHA256 contract is documented in DECISIONS S8 and checked
+by `ara.runtime.frozen_catalogue.validate_frozen_artifact`. Missing metadata means
+a legacy catalogue is unavailable; corrupt metadata must refuse. Search-side
+consumption is integrated separately from construction persistence.

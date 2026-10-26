@@ -1219,6 +1219,18 @@ CASES += [
     ('search_t_reference_text', 'ara/runtime/search_alignment.py', "require(fill.text == commitment.text, 'proposal T reference text mismatch: ' + fill.t_id)", "require(True, 'proposal T reference text mismatch: ' + fill.t_id)", 'tests/runtime/test_search_alignment.py::test_proposal_reference_correction[text]'),
     ('search_frozen_slot_identity', 'ara/runtime/search_alignment.py', 'require(bound is None or formula.canonical() == Formula.from_dict(bound).canonical(),', 'require(True,', 'tests/runtime/test_search_alignment.py::test_joint_slots_cannot_change_frozen_binding'),
     ('search_reference_trace', 'ara/engine/tracing.py', '        if proposal.conclusion_ref is not None:', '        if False:', 'tests/runtime/test_search_alignment.py::test_native_lifecycle_closure_and_offline_joint_replay'),
+    ('construction_structure_correction', 'ara/runtime/construction.py',
+     "            if not metrics['passed']:", "            if False:",
+     'tests/runtime/test_construction_structure.py::test_flat_batch_fails_gate_and_gets_exactly_one_correction[flat]'),
+    ('construction_endpoint_reuse', 'ara/runtime/construction_structure.py',
+     "if id in formulas and not conjuncts(formulas[id]) <= side:", "if False:",
+     'tests/runtime/test_construction_structure.py::test_nonflat_disconnected_inference_not_silently_accepted'),
+    ('frozen_catalogue_hash', 'ara/runtime/frozen_catalogue.py',
+     '    if catalogue != expected:', '    if False:',
+     'tests/runtime/test_frozen_catalogue.py::test_catalogue_refuses_tampering[definition]'),
+    ('frozen_catalogue_binding', 'ara/runtime/frozen_catalogue.py',
+     "or value['commitments'] != commitments.to_dict()", 'or False',
+     'tests/runtime/test_frozen_catalogue.py::test_catalogue_refuses_tampering[commitment]'),
 ]
 
 

@@ -2841,3 +2841,33 @@ mutations sequentially: 426 expected failures, 426 restored passes. This
 includes all six new search-resume controls. `git diff --check` is clean.
 The final handoff is a local commit on `feat/run-report`; no push or paid
 provider call was performed.
+
+
+## S6 — Native schema authority with bounded local validation
+
+Recursive formula alternatives have unique required `op` tags. Local validation
+selects that single native branch and delegates every constraint in it to Draft
+2020-12; overlapping or optional tags retain ordinary union semantics. Schemas,
+provider projections and formula operators are unchanged. An iterative precheck
+reads the native branch constraints for node kinds, required fields, arity and
+symbol/term reference shape. It rejects malformed formulas before recursive
+jsonschema evaluation. Names remain subject to the existing catalogue checks;
+this does not introduce a new closed vocabulary or prohibit free variables.
+
+All runtime jsonschema entrypoints, including Codex normalization, correction
+merges, recorded extraction, migration and isolation canaries, use bounded local
+validation. JSON values are limited by `local_validation_max_depth` (64, root at
+0) and `local_validation_max_nodes` (100000). Each schema validation or Codex
+normalization operation has `local_validation_timeout_seconds` (2 seconds), using
+a killable child interpreter, including when called from parallel search threads.
+Timeout children are killed and reaped. Native response refusals remain charged,
+logged and eligible for the existing correction path, never accepted or cached.
+Offline replay and canary refusals retain their existing caller failure policies.
+
+These limits are operational admission bounds, not a relaxed schema or a proof
+that all schema-valid trees are feasible. A valid oversized tree can be refused
+with its specific bound named. Within those bounds, tag exclusivity proves the
+same union verdict, and the unchanged full native constraints still apply.
+The guarantee concerns local schema/normalization work; model calls, domain
+callbacks, and solver work retain their separate existing budgets. No live pilot
+completion is implied by the offline equivalence and deadline tests.

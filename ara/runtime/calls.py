@@ -11,7 +11,8 @@ from pathlib import Path
 from dataclasses import dataclass, replace
 from typing import Callable, Any
 
-from jsonschema import Draft202012Validator, ValidationError
+from jsonschema import ValidationError
+from ara.runtime.validation import decode_response, guard_complexity, validate_local
 
 from ara.bank import load_bank
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
@@ -466,14 +467,15 @@ class ModelCalls:
                 require(bool(data['text']), 'empty evidence response')
             else:
                 validating = True
-                data = json.loads(Response(raw).text())
+                data = decode_response(Response(raw).text())
+                guard_complexity(data, self.config)
                 if hasattr(self.provider, 'normalize_output'):
                     data = self.provider.normalize_output(schema, data)
                 if kind == 'build_t_batch' and isinstance(data, dict) and isinstance(data.get('commitments'), list):
                     for item in data['commitments']:
                         if isinstance(item, dict) and isinstance(item.get('formula'), str):
                             try:
-                                item['formula'] = json.loads(item['formula'])
+                                item['formula'] = decode_response(item['formula'])
                             except json.JSONDecodeError as exc:
                                 raise Rejected('invalid encoded formula JSON') from exc
                 if kind == 'extract_paper' and isinstance(data, dict):
@@ -484,7 +486,7 @@ class ModelCalls:
                         self.log.record('extraction_normalized', cache_key=key, changes=changes,
                                         source_id=inputs.get('source_id'), attempt=attempt)
                     extraction_defaults(data)
-                Draft202012Validator(schema).validate(data)
+                validate_local(schema, data, self.config)
             result = check(data) if check else data
         except Exception as exc:
             if isinstance(exc, CountRequestRefused) and not dispatched:
@@ -507,8 +509,9 @@ class ModelCalls:
             # Provider exception messages can embed HTTP credentials. Store only
             # their class; model responses and local validation remain in full.
             reason = str(exc) if isinstance(exc, (Rejected, UnpricedModel)) else type(exc).__name__
-            if kind == 'extract_paper' and isinstance(exc, ValidationError):
-                reason = f'ValidationError at /{"/".join(map(str, exc.absolute_path))}: {exc.validator} constraint failed'
+            if isinstance(exc, ValidationError):
+                reason = (f'ValidationError at /{"/".join(map(str, exc.absolute_path))}: {exc.validator} constraint failed'
+                          if isinstance(exc.validator, str) else exc.message)
                 if exc.context:
                     reason += '; ' + '; '.join(
                         f'/{"/".join(map(str, error.absolute_path))}: {error.validator}'
@@ -537,7 +540,7 @@ class ModelCalls:
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
             if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
-                raise InvalidOutput(reason, {'error': reason if kind == 'extract_paper' else str(exc),
+                raise InvalidOutput(reason, {'error': reason if isinstance(exc, ValidationError) or kind == 'extract_paper' else str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             if not isinstance(exc, Rejected):
@@ -734,7 +737,7 @@ class ModelCalls:
             return PaperExtraction(paper.source_id, converted, resolutions_json=canonical(ledger),
                                    dispositions_json=canonical(dispositions)), data['new_gaps'], request
         if recorded_data is not None:
-            Draft202012Validator(self.response_schema('extract_paper', inputs)).validate(recorded_data)
+            validate_local(self.response_schema('extract_paper', inputs), recorded_data, self.config)
             return check(recorded_data)
         if single_pass:
             return self._call_once('extract_paper', inputs, check)
@@ -747,7 +750,7 @@ class ModelCalls:
                 merged = merge_extraction_patch(candidate, patch)
                 extraction_defaults(merged)
                 schema = self.response_schema('extract_paper', inputs)
-                Draft202012Validator(schema).validate(merged)
+                validate_local(schema, merged, self.config)
                 result = check(merged)
                 for discarded in patch.get('discard_items', []):
                     self.log.record('extraction_candidate_discarded', source_id=paper.source_id,

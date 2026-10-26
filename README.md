@@ -947,3 +947,20 @@ Live resume retains the recorded configuration and provider gates. Use
 `--unknown-usage-policy count-at-reservation` only for previously finalized
 unknown-usage receipts. Neither option overrides missing measured evidence for
 an interrupted search dispatch.
+
+
+### Bounded local schema validation
+
+Local validation retains the full native schemas. Formula alternatives use their
+existing `op` discriminator, so each formula node is validated once. A structural
+precheck rejects invalid arity, node kinds and symbol/term fields immediately.
+Corrections use the same validation path as first responses and cache replays.
+
+Configure `local_validation_max_depth` (default 64, JSON root depth 0),
+`local_validation_max_nodes` (100000 JSON values), and
+`local_validation_timeout_seconds` (2 seconds per schema/normalization operation).
+A bound exceeded by a model response produces a logged, correction-eligible
+rejection. It never becomes an accepted response. The time limit runs in a
+killable child interpreter and works inside parallel search jobs. Larger valid
+objects may need explicitly larger limits; the limits do not change native schema
+meaning. Existing catalogue-reference checks and solver budgets still apply.

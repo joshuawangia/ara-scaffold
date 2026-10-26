@@ -531,10 +531,10 @@ def validate_reused_paper(paper, outcome, acceptance):
 
 def revalidate_v4_graph(paper, outcome, acceptance):
     """Offline migration checks the actual graph, never relabels an old receipt."""
-    from jsonschema import Draft202012Validator
+    from ara.runtime.validation import validate_local
     schema = json.loads((Path(__file__).resolve().parents[2] / 'schemas/extract_paper.json').read_text())
     items = [{k: v for k, v in item.items() if k != 'citation'} for item in outcome['items']]
-    Draft202012Validator(schema).validate(dict(schema_version=2, source_id=paper.source_id,
+    validate_local(schema, dict(schema_version=2, source_id=paper.source_id,
         coverage_complete=True, new_gaps=[], items=items))
     by_id = {i['id']: i for i in items}
     if len(by_id) != len(items):

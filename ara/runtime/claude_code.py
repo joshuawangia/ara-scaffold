@@ -317,8 +317,11 @@ class ClaudeCodeProvider:
                                        'basis': 'CLI reported list-price equivalent; not measured API USD'}}
 
     def _check_canary(self, value, debug, receipt):
-        from jsonschema import Draft202012Validator
-        if not Draft202012Validator(CANARY_SCHEMA).is_valid(value):
+        from ara.runtime.validation import validate_local
+        from jsonschema import ValidationError
+        try:
+            validate_local(CANARY_SCHEMA, value, self.config)
+        except ValidationError:
             raise ClaudeCodeError('isolation_canary_invalid', receipt=receipt)
         visible = canonical(value)
         if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md')):

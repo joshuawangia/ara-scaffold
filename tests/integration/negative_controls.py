@@ -1154,6 +1154,25 @@ CASES += [
     ('codex_pilot_schema_gate', 'ara/runtime/cli.py',
      'require_codex_preflight(config, ROOT)\n            directory =', 'pass\n            directory =',
      'tests/runtime/test_codex_cli.py::test_codex_pilot_requires_preflight_before_provider'),
+    ('search_resume_frozen_hash', 'ara/runtime/search_resume.py',
+     "require(digest(artifact.to_json()) == digest(commitments.to_json()),", 'require(True,',
+     'tests/runtime/test_search_resume.py::test_resume_refuses_mismatch_before_publication[t]'),
+    ('search_resume_targets', 'ara/runtime/search_resume.py',
+     "[j['goal'] for j in batch['jobs']] == [g.to_dict() for g in goals]", 'True',
+     'tests/runtime/test_search_resume.py::test_resume_refuses_mismatch_before_publication[job_target]'),
+    ('search_resume_seal', 'ara/runtime/search_resume.py',
+     "rows[0].get('search_id') == seal['search_id']", 'True',
+     'tests/runtime/test_search_resume.py::test_resume_refuses_mismatch_before_publication[seal]'),
+    ('search_resume_measured_settlement', 'ara/runtime/search_resume.py',
+     'pending.extend(state.settlements)', 'pass',
+     'tests/runtime/test_search_resume.py::test_resume_offline_publishes_once_and_settles_measured_receipt'),
+    ('search_resume_completed_dispatch', 'ara/runtime/search_jobs.py',
+     'pending = [i for i in range(len(jobs)) if i not in restored]', 'pending = list(range(len(jobs)))',
+     'tests/runtime/test_search_resume.py::test_resume_dispatches_only_missing_job_and_finishes_native_lifecycle'),
+    ('search_resume_license_inventory', 'ara/runtime/search_resume.py',
+     'return result, licenses', 'return result, []',
+     'tests/runtime/test_search_resume.py::test_resume_restores_licenses_even_when_node_cap_discards_the_proposal'),
+
 ]
 
 def main():

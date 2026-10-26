@@ -916,3 +916,34 @@ Codex schema cases. Use the separate ChatGPT auth file; never the worker login.
 
 For an existing run, pass `--codex-schema-preflight-log PATH` to
 `resume-construction` or `select` to supply new proof without editing its history.
+
+### Resume a stopped search
+
+`uv run ara resume-search --run-dir runs/previous` verifies the stored run,
+frozen commitments, targets, job journals and sealed search traces before
+creating a provider. It publishes journal events in target/polarity order,
+restores completed results and licenses, dispatches only unfinished jobs, and
+continues paired analysis and route persistence to `awaiting_selection`.
+Completed searches are never dispatched again. A repeated command on a fully
+completed search reports its state without generation.
+
+To recover publication and accounting while stopping before dispatch:
+
+```sh
+uv run ara resume-search --run-dir runs/previous --stop-before-dispatch
+```
+
+This command **appends recovery receipts to the supplied run**. Use a copy when
+preserving a stopped run for an offline audit. The JSON result lists
+`completed_jobs` and `jobs_to_rerun` using zero-based job indices. No provider is
+created in this mode. A measured response interrupted during validation is
+accounted once as incomplete; recovery does not mark its output accepted.
+Missing evidence, changed hashes, incompatible targets, or an interrupted
+request without a measured response refuse explicitly. Unsealed partial traces
+remain retained but cannot establish a completed search.
+
+Live resume retains the recorded configuration and provider gates. Use
+`--codex-schema-preflight-log PATH` to supply current Codex proof and
+`--unknown-usage-policy count-at-reservation` only for previously finalized
+unknown-usage receipts. Neither option overrides missing measured evidence for
+an interrupted search dispatch.

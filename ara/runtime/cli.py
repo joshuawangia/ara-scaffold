@@ -47,6 +47,12 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument('--unknown-usage-policy', choices=('count-at-reservation',), required=True)
     resume.add_argument('--plan-only', action='store_true', help='free counts and verified restoration only; no generation')
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
+    search_resume = sub.add_parser('resume-search', help='publish verified search journals and continue unfinished jobs')
+    search_resume.add_argument('--run-dir', type=Path, required=True)
+    search_resume.add_argument('--stop-before-dispatch', action='store_true',
+                               help='recover publication/accounting and print the remaining jobs; no provider creation')
+    search_resume.add_argument('--codex-schema-preflight-log', type=Path)
+    search_resume.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
     extraction = sub.add_parser('extract')
     extraction.add_argument('--config', type=Path, default=ROOT / 'config.yaml')
     extraction.add_argument('--manifest', type=Path, required=True)
@@ -169,6 +175,40 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'resume-search':
+            from ara.runtime.search_resume import load_search_resume, publish_search_resume, search_resume_lock
+            if not (args.run_dir / 'events.jsonl').is_file():
+                raise ValueError('search run log does not exist')
+            with search_resume_lock(args.run_dir):
+                source_log = EventLog(args.run_dir / 'events.jsonl')
+                bank = load_bank(ROOT / 'bank')
+                state = load_search_resume(source_log, bank, ROOT)
+                # Verify every input before any canonical append or provider creation.
+                log = source_log
+                publish_search_resume(log, state)
+                log.human('resume-search', json.dumps(raw_args), reported_minutes=args.human_minutes)
+                log.record('search_resume_plan', **state.summary())
+                if args.stop_before_dispatch or state.already_finished:
+                    print(json.dumps(state.summary()))
+                    return 0
+                config = dict(state.run['config'])
+                if args.unknown_usage_policy is not None:
+                    config['unknown_usage_policy'] = args.unknown_usage_policy
+                if args.codex_schema_preflight_log is not None:
+                    config['codex_cli'] = {**config.get('codex_cli', {}),
+                        'schema_preflight_log': str(args.codex_schema_preflight_log)}
+                from ara.runtime.codex_preflight import require_codex_preflight
+                require_codex_preflight(config, ROOT)
+                calls = calls_factory(config, log, state.run['topic'])
+                engine = engine_factory(bank, calls)
+                from ara.runtime.orchestration import NativeEngine
+                if not isinstance(engine, NativeEngine):
+                    raise ValueError('search resume requires the native engine')
+                routes = search_all(calls, engine, state.commitments, state.targets, restored=state.restored)
+                log.record('awaiting_selection', route_ids=[r.id for r in routes], search=disclose_search(log))
+                log.record('run_finished', state='awaiting_selection')
+                print(str(args.run_dir))
+                return 0
         if args.command == 'resume-construction':
             if not (args.run_dir / 'events.jsonl').is_file():
                 raise ValueError('construction run log does not exist')

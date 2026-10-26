@@ -2767,3 +2767,77 @@ O13.4. Existing runs may supply fresh proof using
 `--codex-schema-preflight-log` on resume-construction or select. This overrides
 only the proof location, is logged in the human command, and leaves historical
 configuration intact. The same manifest and receipt checks still apply.
+
+## Round 9 — Xi: stopped search recovery
+
+R9.1. `ara resume-search --run-dir DIR` recovers the existing native lifecycle.
+Before canonical publication or provider construction it verifies the main
+chain/tail anchor, exactly one run configuration/freeze/candidate inventory,
+the immutable T artifact hash, bank/config identity, ordered job goals, journal
+chains/anchors, and the hashes, identities and structural integrity of sealed
+trace sidecars. Recovery uses local artifacts; it does not borrow a missing
+trace from the original directory when operating on a copy. A nonblocking
+per-run lock excludes concurrent recovery commands. Missing or conflicting
+evidence refuses explicitly.
+
+R9.2. Publication retains original event bodies in input/polarity order using
+the existing publication markers. Verified copied prefixes and completed
+publication markers are deduplicated. A continuation receipt identifies the
+remaining offset after an interrupted publication. Failed jobs' historical
+usage is published too. A measured response without a final MODEL event gets
+one incomplete MODEL settlement, linked by call ID and receipt hash. Its
+usage must match the raw provider receipt. Repeating recovery neither imports
+the same events twice nor settles a call twice. A dispatch without a measured
+receipt is refused; no spend estimate is silently presented as actual usage.
+
+R9.3. Completed SearchResults come from sealed terminal graphs. Accepted
+formula receipts recheck the recorded proposal licenses locally, including
+licensed proposals pruned by node caps; recovery does not rerun a completed
+search or call a provider to restore licenses. Restored jobs enter the native
+scheduler as completed, while unfinished/failed jobs retain the normal bounded
+retry and stop behavior. The ordinary paired-analysis, route persistence and
+`awaiting_selection` paths remain the delivery mechanism. A sealed search is
+also reusable if a halt interrupted its final job-finished marker.
+
+R9.4. `--stop-before-dispatch` performs real publication and accounting recovery
+and prints the remaining job indices, then exits before provider creation.
+The offline proof uses a byte-preserving copy of the stopped pilot and a
+provider factory that fails if invoked. The original run remains unchanged.
+The copied run restores 19 completed jobs, schedules only index 7, and imports
+20 journals including that unfinished job's historical usage. A repeated
+recovery reports the same plan. Evidence is retained under ignored
+`runs/xi-round9/`; no source material or run artifacts enter the commit.
+
+R9.5. Remaining limits: the real-run proof stops before dispatch, so live
+completion and the separately owned validation repair are not claimed. A
+missing journal without a recorded empty publication cannot establish whether
+paid work completed; recovery refuses rather than repaying it. These two
+findings are placed here: 2 findings, 2 placed.
+
+R9.6. Verification: placeholder tests cover publication/accounting idempotence,
+partial publication, frozen-T/target/journal/trace mismatches, missing measured
+receipts, license preservation, recovery locking, and native completion with
+only the unfinished job dispatched. Six production-wire mutations exercise
+frozen T verification, target identity, seal identity, measured settlement,
+completed-job dispatch exclusion and restored license inventory. Final suite
+and control counts are recorded below after the sequential checkpoint.
+
+R9.7. Executed offline accounting audit: the copied pilot has 166 commitments
+and 10 targets. Nineteen completed jobs are restored and only job 7 remains.
+The imported search usage totals 2,452,008 tokens. One measured settlement adds
+8,373 input and 828 output tokens, with recorded subscription cost USD 0;
+this is measured usage, not a claim that subscription capacity is free. Exact
+MODEL-event multiplicities match the original main log plus all journal receipts
+and this one settlement. Two recoveries produce identical plans, with zero new
+dispatches. The original artifact inventory remains byte-for-byte unchanged.
+
+R9.8. Full `uv run pytest -q`: 1,018 passed, 4 skipped (1,022 collected), in
+537.26 seconds. The skips are the two opt-in paid-provider checks and the two
+opt-in local OCR/VL model checks. No paid calls were made.
+
+R9.9. After the full suite completed, `uv run python
+tests/integration/negative_controls.py` exercised all 426 production-wire
+mutations sequentially: 426 expected failures, 426 restored passes. This
+includes all six new search-resume controls. `git diff --check` is clean.
+The final handoff is a local commit on `feat/run-report`; no push or paid
+provider call was performed.

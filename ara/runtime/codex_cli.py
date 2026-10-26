@@ -123,7 +123,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
 
     def normalize_output(self, schema, value):
         from ara.runtime.codex_schema import normalize_output
-        return normalize_output(schema, value)
+        return normalize_output(schema, value, self.config)
 
     def metadata(self, kind):
         from ara.runtime.codex_schema import VERSION
@@ -143,8 +143,11 @@ class CodexCLIProvider(ClaudeCodeProvider):
         return metadata
 
     def _check_canary(self, value, debug, receipt):
-        from jsonschema import Draft202012Validator
-        if not Draft202012Validator(CANARY_SCHEMA).is_valid(value):
+        from ara.runtime.validation import validate_local
+        from jsonschema import ValidationError
+        try:
+            validate_local(CANARY_SCHEMA, value, self.config)
+        except ValidationError:
             raise CodexCLIError('isolation_canary_invalid', receipt=receipt)
         if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md')):
             raise CodexCLIError('isolation_context_present', receipt=receipt)

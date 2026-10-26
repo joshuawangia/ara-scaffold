@@ -160,3 +160,8 @@ codex_cli:
   # Required separate ChatGPT login; never inherit the worker CODEX_HOME.
   auth_file: /home/dev/.config/ara/codex-home/auth.json
   forbidden_terms: []
+
+# Operational admission bounds; exceeding one is a correction-eligible rejection.
+local_validation_max_depth: 64
+local_validation_max_nodes: 100000
+local_validation_timeout_seconds: 2.0

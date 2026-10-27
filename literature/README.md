@@ -1,21 +1,23 @@
-# Literature: epistemic modals
+# Literature inputs
 
-53 works. Groups: foundations 8, survey 3, contextualism 9, relativism 6, expressivism 8, dynamic 6, recent 6, logic 3, data 4.
+The manifest contains 53 bibliographic records dated 1967–2024. Its nine filing
+groups contain 8, 3, 9, 6, 8, 6, 6, 3 and 4 records. Group labels organize files;
+they do not establish source quality or evidential support. The collection was
+selected to cover primary positions, surveys and data papers without selecting
+for or against a position. Bibliographic details were entered from recall and
+have not been checked against publishers; `pages` is null when unconfirmed.
 
-- `manifest.yaml`: one record per work (id, authors, year, title, venue, pages, group, link, expected full-text path).
-- `references.bib`: the same records as BibTeX.
-- `fulltext/`: empty. Each PDF goes here named `<id>.pdf`.
+- `manifest.yaml` records IDs, authors, year, title, venue, pages, group, link and
+  expected PDF path.
+- `references.bib` contains the same records as BibTeX.
+- `fulltext/` holds local, ignored PDFs named `<id>.pdf`. Its contents depend on
+  the checkout; Git does not supply the PDFs.
 
-Selection rule: the core statements of every position in the debate, the standard surveys, and the main data papers, 1967-2024. No work was chosen for or against any position.
+Bibliographic records are not extracted source evidence. Put the listed PDFs in
+`fulltext/`, follow [extraction](../docs/extraction.md), then pass the resulting
+`literature.extracted.txt` and its preserved provenance to `ara run`. The generic
+`--literature` option also reads ordinary text, but passing a manifest alone does
+not read its PDFs or establish page-linked support.
 
-`group` is a filing label only. `pages` is null where the range was not confirmed. Bibliographic details were entered from recall and have not been checked against publishers.
-
-## Use with ara
-
-Pass one of these files as the run-time literature, e.g.
-
-```
-uv run ara run --profile pilot --topic "<topic>" --literature literature/manifest.yaml --run-dir runs/epistemic-modals
-```
-
-`manifest.yaml` carries ids that `build_t` copies verbatim into citations; `references.bib` is the same set as BibTeX.
+Keep substantive source text and generated outputs out of tracked files. Use
+placeholder topics in committed examples, as required by [CLAUDE.md](../CLAUDE.md).

@@ -1,0 +1,35 @@
+# Documentation index
+
+Start with the [project README](../README.md) for setup and command examples. Each
+guide owns one concern; link to it instead of copying its procedure.
+
+| Guide | Owns |
+| --- | --- |
+| [Extraction](extraction.md) | PDF intake, range evidence, corrections, grounding, provenance, reuse and schema preflight |
+| [Construction](construction.md) | Working T, capacity planning, window allocation, resume and frozen vocabulary |
+| [Search](search.md) | Pilot search, concurrency, selection, writing, feedback and search resume |
+| [Providers and isolation](providers.md) | API/CLI setup, stage dispatch, isolation, retry policies and Codex schema gate |
+| [Accounting](accounting.md) | Logs, budgets, measured/reserved/inherited usage, calibration and export |
+| [OCR](ocr.md) | Optional local models, installation, span repair, audit and limits |
+| [Reporting](reporting.md) | Offline reader, linked evidence, trace verification and report limits |
+| [Verification](verification.md) | Check commands, evidence standards and historical live receipts |
+
+## Agent context layers
+
+[CLAUDE.md](../CLAUDE.md) owns repository rules; `AGENTS.md` is its symlink.
+[SOURCE_MAP.md](../SOURCE_MAP.md) owns navigation. This directory owns operating
+guides. [PLAN.md](../PLAN.md) owns current work status and gaps.
+[DECISIONS.md](../DECISIONS.md) is append-only historical reasoning, with
+supersession links. None is a substitute for reading the relevant source and
+tests.
+
+For claims about current behavior, check CLI registration and runtime bodies, then
+owning tests, then these guides. Requirements and operator decisions still define
+intended behavior; code absence does not cancel them. Historical test counts and
+live receipts apply to their recorded revision, not automatically to the current
+tree. New observations belong in a dated handoff or decision entry.
+
+Load local context only when entering a scope. Missing child context inherits the
+root; do not create duplicate instruction files for every module. New scoped
+instructions need a distinct responsibility. Keep generated run evidence in
+ignored directories and report its location without copying source content here.

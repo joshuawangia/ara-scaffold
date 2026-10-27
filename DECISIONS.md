@@ -1,5 +1,116 @@
 # Brain decisions for the ara program (2026-10-08)
 
+This is an append-only decision history. Entries describe the revision and task
+in which they were written, including failed trials and superseded policies.
+Annotations link replacements without deleting the original text. For current
+operation use [README](README.md), [guides](docs/README.md) and [PLAN](PLAN.md).
+Source citations in the documentation correction entry refer to base `6511ff6`.
+
+## Index by area
+
+### Foundations and engine
+
+- [Alpha decisions](#alpha-decisions)
+- [Beta engine decisions](#beta-engine-decisions)
+
+### Runtime and integration
+
+- [Gamma runtime decisions](#gamma-runtime-decisions)
+- [Runtime integration gap (no seam changes)](#runtime-integration-gap-no-seam-changes)
+- [Gamma verification handoff](#gamma-verification-handoff)
+- [Delta integration decisions](#delta-integration-decisions)
+
+### Writing and verification
+
+- [Round 2 eta: writer retries, pilot, Python (R1–R3, R5–R6)](#round-2-eta-writer-retries-pilot-python-r1r3-r5r6)
+- [Round 2 theta — verification known cases](#round-2-theta-verification-known-cases)
+- [Round 2 iota: prevent writer extrapolation beyond supplied links](#round-2-iota-prevent-writer-extrapolation-beyond-supplied-links)
+- [Round 2 iota: distinguish malformed audit inventory from an adverse verdict](#round-2-iota-distinguish-malformed-audit-inventory-from-an-adverse-verdict)
+- [Round 2 iota continuation: pilot output allowances](#round-2-iota-continuation-pilot-output-allowances)
+- [Round 2 iota: leave counting margin below the writer ceiling](#round-2-iota-leave-counting-margin-below-the-writer-ceiling)
+
+### Extraction and provenance
+
+- [Round 3 gamma: logged per-paper extraction](#round-3-gamma-logged-per-paper-extraction)
+- [Round 3 gamma fix 1: corpus capacity, lineage and PDF coverage](#round-3-gamma-fix-1-corpus-capacity-lineage-and-pdf-coverage)
+- [Gamma round 2: rich evidence and working T](#gamma-round-2-rich-evidence-and-working-t)
+- [GX25 — Kind-specific extraction and bounded targeted correction](#gx25-kind-specific-extraction-and-bounded-targeted-correction)
+- [GX26 — Counted root-selection allowance and compact inventory decisions](#gx26-counted-root-selection-allowance-and-compact-inventory-decisions)
+- [GX25 — Full extraction preflight and global construction capacity](#gx25-full-extraction-preflight-and-global-construction-capacity)
+- [GX26 — Bounded windows over immutable global evidence](#gx26-bounded-windows-over-immutable-global-evidence)
+- [GX27 — Unpaid planning shares execution's range admission](#gx27-unpaid-planning-shares-executions-range-admission)
+- [GX28 — New gaps remain obligations throughout reconciliation](#gx28-new-gaps-remain-obligations-throughout-reconciliation)
+- [GX29 — Finite paper allowances cover every extraction continuation](#gx29-finite-paper-allowances-cover-every-extraction-continuation)
+- [GX30 — Mode-specific context requests and correction per response](#gx30-mode-specific-context-requests-and-correction-per-response)
+- [GX31 — Disclosed paper failures and completed-paper reuse](#gx31-disclosed-paper-failures-and-completed-paper-reuse)
+- [GX32 — Acceptance-bound reuse and a separate ancestry inventory](#gx32-acceptance-bound-reuse-and-a-separate-ancestry-inventory)
+- [Kappa: extraction response acceptance and bounded correction](#kappa-extraction-response-acceptance-and-bounded-correction)
+- [Kappa round 2: explicit conservative imports and grammar preflight](#kappa-round-2-explicit-conservative-imports-and-grammar-preflight)
+- [Kappa round 2 live grammar rejection and correction](#kappa-round-2-live-grammar-rejection-and-correction)
+- [Kappa round 3: conservative diagnostics and normalized recovery](#kappa-round-3-conservative-diagnostics-and-normalized-recovery)
+- [M1 — Relaxed paper acceptance with preserved evidence](#m1-relaxed-paper-acceptance-with-preserved-evidence)
+- [Mu addendum — accepted range union and bounded review](#mu-addendum-accepted-range-union-and-bounded-review)
+- [Mu round 2: grounded evidence and retained quarantine](#mu-round-2-grounded-evidence-and-retained-quarantine)
+- [M4 — Monotonic snapshot reuse and versioned gap publication](#m4-monotonic-snapshot-reuse-and-versioned-gap-publication)
+- [M5 — Completed snapshot unions and stable ordinary reuse](#m5-completed-snapshot-unions-and-stable-ordinary-reuse)
+- [M6 — Snapshot context follows native prerequisites](#m6-snapshot-context-follows-native-prerequisites)
+- [M7 — Construction windows project metadata and imports append in batches](#m7-construction-windows-project-metadata-and-imports-append-in-batches)
+- [Persistent extraction-lineage verification receipts](#persistent-extraction-lineage-verification-receipts)
+
+### Construction
+
+- [S1 — Budgeted prerequisite depth before the single freeze](#s1-budgeted-prerequisite-depth-before-the-single-freeze)
+- [S2 — Soft construction shares and accounted window refusal](#s2-soft-construction-shares-and-accounted-window-refusal)
+- [S3 — Terminal construction refusals and verified continuation](#s3-terminal-construction-refusals-and-verified-continuation)
+- [S4 — Free counter refusals and non-mutating resume previews](#s4-free-counter-refusals-and-non-mutating-resume-previews)
+- [S5 — Initial-share caps and construction dispatch configuration](#s5-initial-share-caps-and-construction-dispatch-configuration)
+- [S6 — Native schema authority with bounded local validation](#s6-native-schema-authority-with-bounded-local-validation)
+- [S8: Frozen construction catalogue interface](#s8-frozen-construction-catalogue-interface)
+- [S8 structure gate and bounded correction](#s8-structure-gate-and-bounded-correction)
+
+### Search and reports
+
+- [Search trace receipts (version 1, superseded below)](#search-trace-receipts-version-1-superseded-below)
+- [Offline full-run report projection](#offline-full-run-report-projection)
+- [Search trace version 2 and report validation](#search-trace-version-2-and-report-validation)
+- [Report overview and linked evidence (round 4)](#report-overview-and-linked-evidence-round-4)
+- [Xi round 6 — Concurrent search with isolated accounting](#xi-round-6-concurrent-search-with-isolated-accounting)
+- [Xi round 7 — Stable publication with durable worker journals](#xi-round-7-stable-publication-with-durable-worker-journals)
+- [Xi round 8 — Job-local failure, one final retry and partial selection](#xi-round-8-job-local-failure-one-final-retry-and-partial-selection)
+- [Round 9 — Xi: stopped search recovery](#round-9-xi-stopped-search-recovery)
+- [Round 10 — Xi: bind resume completion to its results generation](#round-10-xi-bind-resume-completion-to-its-results-generation)
+- [Round 12 — shared search vocabulary and explicit formula bindings](#round-12-shared-search-vocabulary-and-explicit-formula-bindings)
+
+### Providers
+
+- [Omega — Isolated subscription CLI provider](#omega-isolated-subscription-cli-provider)
+- [Round 7 integration — Stage providers share admission, not billing policy](#round-7-integration-stage-providers-share-admission-not-billing-policy)
+- [Omega round 3 — Decoded output, construction retries and config authentication](#omega-round-3-decoded-output-construction-retries-and-config-authentication)
+- [Omega round 4 — Context sizing and resolved construction dispatch](#omega-round-4-context-sizing-and-resolved-construction-dispatch)
+- [Omega round 5 — Measured calibration and scarce-window allocation](#omega-round-5-measured-calibration-and-scarce-window-allocation)
+- [Omega round 6 — Comparable usage and local subscription admission](#omega-round-6-comparable-usage-and-local-subscription-admission)
+- [Omega round 7 — One unclassified retry and scrubbed exit diagnostics](#omega-round-7-one-unclassified-retry-and-scrubbed-exit-diagnostics)
+- [Omega round 8 — Suppress free-text CLI diagnostics (kappa2 F1)](#omega-round-8-suppress-free-text-cli-diagnostics-kappa2-f1)
+- [Omega round 9 — Read current host credentials and retry auth once](#omega-round-9-read-current-host-credentials-and-retry-auth-once)
+- [Omega round 10 — Codex subscription transport](#omega-round-10-codex-subscription-transport)
+- [Omega round 11 — Separate ChatGPT credential source](#omega-round-11-separate-chatgpt-credential-source)
+- [Omega round 12 — Visible generic definitions are not tool use](#omega-round-12-visible-generic-definitions-are-not-tool-use)
+- [Omega round 13 — Strict Codex schemas and pilot gate](#omega-round-13-strict-codex-schemas-and-pilot-gate)
+
+### OCR
+
+- [Rho2: local OCR fallback at PDF intake](#rho2-local-ocr-fallback-at-pdf-intake)
+- [Rho2 Round 2: clean-token retention and local VL second tier](#rho2-round-2-clean-token-retention-and-local-vl-second-tier)
+- [Rho2 Round 3: preserve the text layer and repair spans](#rho2-round-3-preserve-the-text-layer-and-repair-spans)
+- [Rho2 Round 4: synthesized-character confidence (tau2-F1)](#rho2-round-4-synthesized-character-confidence-tau2-f1)
+
+Early brain decisions B1–B8 follow this index. Provider policy evolves through
+[B9](#decision-b9), [B11](#decision-b11) and the Omega entries; audit/writer
+policy through [B10](#decision-b10), [B12](#decision-b12), [B13](#decision-b13)
+and Round 2. [Documentation corrections](#documentation-corrections-2026-10-27)
+list source-backed differences from the old operating guides.
+
+
 Copy the relevant ones into the repo's DECISIONS.md with their reasons.
 
 B1. Repo: `ara-scaffold`, built at `/home/dev/wt/ara/ara-scaffold`, default branch
@@ -64,6 +175,7 @@ B8. Human input (select/feedback) is logged verbatim with label HUMAN and a
     and the input being accepted, plus any explicit `--human-minutes` the operator
     supplies, labelled as which.
 
+<a id="alpha-decisions"></a>
 ## Alpha decisions
 
 A1. Use jsonschema (Draft 2020-12) and stdlib frozen dataclasses. This separates
@@ -118,9 +230,15 @@ contract. Evidence references, verified state, quotation text and remove/retain
 are explicit; runtime must reject unsupported verification and remove unverified
 items. A schema is shape validation, not evidence of truth.
 
+<a id="decision-a9"></a>
+> Status: CLI placeholder status superseded by [D1](#decision-d1).
+
 A9. CLI console registration targets ara.runtime.cli:main, but that module remains
 a docstring-only placeholder as required by this phase. CLI commands, real smoke,
 private remote and fresh-clone end-to-end proof belong to later integration.
+
+<a id="decision-a10"></a>
+> Status: Smoke bounds superseded by [D4](#decision-d4), [D9](#decision-d9) and [D13](#decision-d13).
 
 A10. Budget defaults: 200000 tokens, USD 10, output maximum 8192 tokens per call;
 smoke uses 2 targets, depth 2, node cap 24 and 300-word draft. Pricing is explicit
@@ -145,6 +263,7 @@ verification. Runtime owns any provider-compatible structured-output projection
 and must always revalidate the original schema locally. Provider acceptance of
 these exact schema features is unexecuted, not assumed.
 
+<a id="beta-engine-decisions"></a>
 ## Beta engine decisions
 
 E1. Execute natively in the assigned lane, without delegation or publishing. The
@@ -218,6 +337,7 @@ and best-first priority. `git diff --check`, byte compilation and an AST import
 audit passed. The external beta-report.md contains the test-by-test controls and
 five placed integration findings. No provider smoke, publishing or fresh-clone
 proof was performed in this engine lane; those remain integration obligations.
+<a id="gamma-runtime-decisions"></a>
 ## Gamma runtime decisions
 
 G1. Native execution in the assigned worker/worktree. No delegation or push.
@@ -231,6 +351,9 @@ identity includes the specified five B4 components plus provider, effort, output
 bound, web-use bound and formula projection depth. Cache hits are revalidated and
 logged with original response but zero incremental usage/cost. Engine licensing
 remains authoritative; cached proposals do not constitute licenses.
+
+<a id="decision-g3"></a>
+> Status: Generation depth/projection superseded by [D3](#decision-d3); validation retries by [D8](#decision-d8); fallback policy by [B11](#decision-b11).
 
 G3. Provider structured output projection removes unsupported validation keywords
 and replaces recursive formula references with an acyclic depth-bounded family
@@ -274,6 +397,9 @@ Methodology intentionally preserves the complete human/model record and is not
 represented as anonymised. It is reproducible solely from JSONL, without cache,
 config, bank, graph or draft files. Report timestamps come only from logged events.
 
+<a id="decision-g8"></a>
+> Status: Smoke USD10 cap superseded by [D4](#decision-d4). Current subscription admission is scoped separately in [Omega round 6](#omega-round-6-comparable-usage-and-local-subscription-admission).
+
 G8. Pricing uses explicit config data, Decimal arithmetic, separate cache TTLs and
 server-tool counts; unknown rates never default to zero. Caps are checked before
 and after every paid call; actual usage is logged before a post-call STOP. Search
@@ -295,7 +421,10 @@ fixed and independently audited. Human CLI argv and supplied literature are
 logged; interactive input measures prompt-to-accept elapsed time; explicit minutes
 are labelled separately. Machine timing for model calls is observed wall time.
 
+<a id="runtime-integration-gap-no-seam-changes"></a>
 ### Runtime integration gap (no seam changes)
+
+> Status: Temporary adapter gap superseded by [D1](#decision-d1).
 
 At base b8dd2d7 the engine exports no search API. Runtime currently imports
 `ara.engine.create_engine(bank=..., proposer=..., formaliser=..., mapper=...,
@@ -316,7 +445,10 @@ excluding measured interactive input is recorded separately from model-call time
 Smoke topic/literature supplied by software are SYSTEM fixture data, not HUMAN
 content; only argv and actually supplied content are attributed to the human.
 
+<a id="gamma-verification-handoff"></a>
 ### Gamma verification handoff
+
+> Status: Integration blocker superseded by [D1](#decision-d1) and [D14](#decision-d14); test counts remain historical.
 
 Base: b8dd2d7c7d0b60a014ba9d9e3c43f1c21008105b. First runtime checkpoint:
 9e05c74 (final revision recorded in the external gamma report). Executed local
@@ -333,8 +465,10 @@ native_engine adapter to the engine lane's actual public API, then execute the
 credentialed smoke and fresh-clone instructions. Full evidence and six actionable
 findings are placed in /home/dev/wt/shared/ara/gamma-report.md.
 
+<a id="delta-integration-decisions"></a>
 ## Delta integration decisions
 
+<a id="decision-d1"></a>
 D1. Both requested lane tips are merged into main with merge commits. The only
 merge conflict was appended DECISIONS sections; both are retained as historical
 lane receipts. D1 onward supersede the historical integration gaps in A9, E11,
@@ -352,6 +486,7 @@ CLI, engine, forward licensing, route persistence, audits and exports, with
 byte-identical cached graph replay. They are finite placeholder fixtures, not a
 fallback for arbitrary inputs. Every missing response remains an explicit error.
 
+<a id="decision-d3"></a>
 D3. Live API execution found two SDK request failures hidden by fake-transport
 proof: unsupported JSON Schema `not`, then an oversized compiled formula grammar.
 The provider projection now strips unsupported `not`, uses two AST families
@@ -366,6 +501,7 @@ service compiler's bounds. This is a generation bound, not a restriction added t
 local solver/AST semantics. The original depth-six grammar was rejected live even
 after branch compaction. No blind provider retry or fallback model was added.
 
+<a id="decision-d4"></a>
 D4. Smoke cost cap is USD 5, token cap 1,000,000, one possible web search; other
 smoke bounds are unchanged. Failed HTTP calls retain separate logs, STOP and
 conservative reservations labelled unknown actual spend. Those reservations are
@@ -379,12 +515,18 @@ The runtime negation control follows the new AnalysisResult persistence seam.
 Integration controls disable graph writes and provider projections and require
 assertion failures plus restored passes. No lane test was deleted or weakened.
 
+<a id="decision-d6"></a>
+> Status: Output allowance superseded by [D13](#decision-d13); local-validation retries by [D8](#decision-d8).
+
 D6. The first accepted live search later rejected a max_tokens cut response at the
 2048 output allowance. Smoke now reserves 4096 output tokens, preserving the
 USD 5 cap. A low-effort trial returned an empty citation, correctly rejected by
 the untouched local build_t schema. Final smoke retains the base high effort;
 invalid output is never repaired by software or silently retried. Failed attempts
 and their measured/unknown-spend ledgers are retained in ignored run directories.
+
+<a id="decision-d7"></a>
+> Status: No-local-retry policy superseded by [D8](#decision-d8).
 
 D7. Repeated live empty-citation and empty-compound responses showed that schema
 projection must communicate and preserve constraints, not just compile. Structured
@@ -399,6 +541,7 @@ and nonempty-compound regressions each have a production-wire negative control.
 All rejected outputs remain logged and uncached; no retry or repair fallback was
 introduced. The external delta report retains every live attempt's ledger.
 
+<a id="decision-d8"></a>
 D8. A second clean-clone trial returned duplicate commitment ids and stopped,
 correctly. Smoke now allows at most three explicitly logged stateless validation
 attempts, each with the original inputs plus the rejected output and validation
@@ -409,6 +552,7 @@ retried by this mechanism. This supersedes G3/D6/D7's no-retry statement only fo
 accounted local-validation failures; there is still no hidden SDK retry or license
 fallback. Non-smoke defaults to one attempt unless explicitly configured (1–3).
 
+<a id="decision-d9"></a>
 D9. Live depth-two search incurred over 60 model records before finishing its
 first target. Smoke now uses depth one and eight nodes per polarity to keep the
 end-to-end proof small; two targets, the real engine, both polarities, conflict/
@@ -416,6 +560,9 @@ forward analysis, draft/audits/web/export and the USD 5 cap remain. Truncation a
 OPEN frontiers are logged, never presented as completeness. Normal search bounds
 remain depth six / 500 nodes. Integration tests do not weaken their artifact or
 analysis assertions; the bounded search policy is explicit in README/config.
+
+<a id="decision-d10"></a>
+> Status: Blocked smoke status superseded by [D14](#decision-d14); current fallback configuration is [B11](#decision-b11). This failed receipt remains historical.
 
 D10. Real-provider integration remains blocked at the required essay audit.
 Opus 5 returned stop_reason=refusal, category=reasoning_extraction, on both the
@@ -440,6 +587,9 @@ not a successful smoke. Its actual paid usage is retained in its methodology.
 Use one paid writer per cache. Final offline lifecycle proof includes the shipped
 placeholder feedback input and subsequent selection/draft/export.
 
+
+<a id="decision-b9"></a>
+> Status: Scalar default routing superseded by [B11](#decision-b11). Retained accounting requirements still apply.
 
 B9 (brain decision, brief 2b). Continue requesting claude-opus-5; enable the
 server-side default chain with beta.messages.create, the July 2026 header and
@@ -466,6 +616,7 @@ Admission retains the configured primary-model reservation; the server's default
 chain can consume additional billable partial output. Actual whole-chain usage is
 checked after each call; a post-call STOP cannot undo an oversized charge.
 
+<a id="decision-d13"></a>
 D13. The first clean B9 trial at 191d366 stopped before the audit when a cut
 proposal exhausted 4096 output tokens. The partial output was rejected without
 retry and its USD 0.835520 measured spend is retained. Smoke now uses the normal
@@ -474,6 +625,7 @@ fallbacks, audit prompt and all acceptance guards are unchanged. A new clean-clo
 trial is required; this configuration change does not turn the failed trial into
 a success or enable retries of output-limit stops.
 
+<a id="decision-d14"></a>
 D14. A fresh clone at a20e03c completed the real smoke with the unchanged B9
 audit prompt, both audits and full export. Its log reports 155636 input tokens,
 11211 output tokens and USD 1.058455, with no unknown-spend reservation. All
@@ -498,6 +650,9 @@ Methodology marks unknown reservations and outstanding dispatches INCOMPLETE.
 A persistent storage outage cannot guarantee a new append: the durable call_start
 and checkpoint still force refusal; restoring storage/reconciling is required.
 
+<a id="decision-b10"></a>
+> Status: Default routing superseded by [B11](#decision-b11); node-only audit input superseded by [B12](#decision-b12).
+
 B10 (brain decision, brief 4). Audit by sentence labelling against outline entries.
 The model receives numbered body sentences and node id/text pairs, without graph
 internals or bibliography. Remove node markers, split on newline or whitespace
@@ -519,6 +674,7 @@ natural-language equivalence. No semantic guarantee or zero-refusal promise is
 made; fresh-clone live outcomes are observed evidence only.
 
 
+<a id="decision-b11"></a>
 B11 (operator decision, brief 4b, 2026-10-10). Keep claude-opus-5 primary and
 explicitly request claude-opus-4-8 on refusal. Observed B9 default-mode evidence
 across the program: at least four refusals and zero fallback hops; this motivates
@@ -538,6 +694,7 @@ no retry. This supersedes B9 default mode and B10's default-routing statement;
 it does not change bank-only licensing or computed sentence audit semantics.
 
 
+<a id="decision-b12"></a>
 B12 (brain decision, brief 4c). Writer and auditor receive the same deterministic
 essay outline: node propositions (ids only for machine markers/references),
 inference links with bank entry names, and answered critical questions with their
@@ -561,6 +718,9 @@ invalidate previous writer/audit cache entries. Canned responses are regenerated
 for this contract, without relaxing acceptance or altering the deterministic engine.
 
 
+<a id="decision-b13"></a>
+> Status: Writer correction attempts/feedback superseded by [R1–R3](#round-2-eta-writer-retries-pilot-python-r1r3-r5r6). Marker/content checks remain.
+
 B13 (brain decision, brief 4d). Writer output is validated before caching or
 composition proceeds to the audit. Its body must contain exactly the route's node
 marker set (missing or unknown IDs reject); markers in the title or bibliography
@@ -583,6 +743,7 @@ updated to meet it. B13 proof is offline only; no paid calls are authorized and 
 new live success is claimed. The historical B12 F9 failure remains in the report.
 
 
+<a id="round-2-eta-writer-retries-pilot-python-r1r3-r5r6"></a>
 ## Round 2 eta: writer retries, pilot, Python (R1–R3, R5–R6)
 
 R1. Superseding B13's writer correction policy: write_essay has one initial
@@ -643,6 +804,7 @@ and dispatch. Other calls retain max_output_tokens 8192. Writer allowances above
 preserving fallback parameters and whole-message usage accounting. A stream
 failure takes the existing incomplete-accounting STOP path. No live calls were
 made for this brief; integrated live smoke receipts belong to the caller.
+<a id="round-2-theta-verification-known-cases"></a>
 ## Round 2 theta — verification known cases
 
 R4. Known-case verification uses recorded real Anthropic responses with requested
@@ -686,6 +848,7 @@ attempt remains in the ledger and report. This estimate still shares the existin
 assumptions about context bounds and server iterations; actual usage is recorded.
 
 
+<a id="round-2-iota-prevent-writer-extrapolation-beyond-supplied-links"></a>
 ## Round 2 iota: prevent writer extrapolation beyond supplied links
 
 The first integrated five-run series at 07c859a2d428 stopped on run 5: the
@@ -702,6 +865,7 @@ is required on the repaired commit. Historical failure and all spend remain
 in the external iota report.
 
 
+<a id="round-2-iota-distinguish-malformed-audit-inventory-from-an-adverse-verdict"></a>
 ## Round 2 iota: distinguish malformed audit inventory from an adverse verdict
 
 Series 2 at bad5af510d56 stopped on its third smoke after the auditor returned
@@ -719,6 +883,7 @@ case preserves finality even when an incomplete inventory flags an extra
 inference: such a response stops immediately rather than entering correction.
 
 
+<a id="round-2-iota-continuation-pilot-output-allowances"></a>
 ## Round 2 iota continuation: pilot output allowances
 
 The per-kind `<kind>_max_output_tokens` setting generalizes the existing writer
@@ -764,6 +929,7 @@ content. More output headroom increases conservative admission; it is not a
 promise that the token/cost caps permit full search-cap exhaustion.
 
 
+<a id="round-2-iota-leave-counting-margin-below-the-writer-ceiling"></a>
 ## Round 2 iota: leave counting margin below the writer ceiling
 
 Series 4 at 2e5704f02b84 failed on run 2 after all four identical-input writer
@@ -780,6 +946,7 @@ Fixture request hashes change, response bodies do not. Offline tests cannot
 establish instruction compliance; the failed series and its cost remain recorded,
 and a new five-run live series on this commit supplies the required evidence.
 
+<a id="round-3-gamma-logged-per-paper-extraction"></a>
 ## Round 3 gamma: logged per-paper extraction
 
 GX1. Add a native `ara extract` stage and `ModelCalls.extract_paper`, using the
@@ -789,6 +956,9 @@ configured validation attempts (extract defaults to three). Refusal, output stop
 transport failure and budget STOP retain existing finality. No extraction failure
 is converted into successful model output. Frozen Paper/PageText and
 PaperExtraction/ExtractedItem contracts separate intake and accepted output.
+
+<a id="decision-gx2"></a>
+> Status: Blank-page/byte refusal policy superseded by [GX9](#decision-gx9); no-OCR intake superseded by [OCR1](#rho2-local-ocr-fallback-at-pdf-intake).
 
 GX2. Choose local pypdf (locked dependency) instead of PDF document upload. This
 keeps the existing text-only provider protocol and exact prompt/cache logging,
@@ -838,7 +1008,11 @@ Generated PDFs, extraction JSON, assembled text, provenance, logs and cache are
 ignored. Tests generate placeholder PDFs at runtime; no real source output enters
 tracked content. Work is isolated from other live runs in its own checkout/cache.
 
+<a id="round-3-gamma-fix-1-corpus-capacity-lineage-and-pdf-coverage"></a>
 ## Round 3 gamma fix 1: corpus capacity, lineage and PDF coverage
+
+<a id="decision-gx6"></a>
+> Status: Compact item/text limits superseded by [GX12](#decision-gx12). Historical sizing below is not the current contract.
 
 GX6 (B1). A generated build-T literature entry now has at most four extracted
 items, each at most 400 characters, enforced by the closed response schema and
@@ -861,6 +1035,9 @@ exceed this fixture's overhead; the actual full provider count is authoritative 
 every dispatch. Different encodings are bounded at acceptance, not assumed to use
 four bytes per token. This byte contract bounds produced artifact size; it is not
 the rejected byte heuristic for deciding whether an input PDF fits (GX9).
+
+<a id="decision-gx7"></a>
+> Status: The compact 212-item sizing scenario is historical; [GX12](#decision-gx12) and [bounded windows](#gx26-bounded-windows-over-immutable-global-evidence) replace its single-batch assumptions.
 
 GX7 (B1). Up to 53 * 4 = 212 source items can each yield a commitment. Allocate
 approximately 100 tokens for a 400-character statement, 100 for its bounded-depth
@@ -886,6 +1063,7 @@ log. Methodology separates local and inherited tokens, cost, model calls and hum
 reported time; aggregate consumers can deduplicate by receipt id. Sum local costs
 for new spend; do not sum inherited totals across downstream exports.
 
+<a id="decision-gx9"></a>
 GX9 (S1/S2/S3). PDF preflight retains physical numbering and records blank_page
 with its page number. A blank page has no text and no image/form/drawing paint
 operators. Sparse image or form pages (fewer than 200 non-whitespace text characters)
@@ -920,8 +1098,10 @@ Downstream pilot retains its existing larger caps and counts inherited extractio
 charges; extraction-profile caps are not an authorization to run the batch.
 
 
+<a id="gamma-round-2-rich-evidence-and-working-t"></a>
 ## Gamma round 2: rich evidence and working T
 
+<a id="decision-gx12"></a>
 GX12 supersedes GX6's compact summary. Rich v2 records preserve individually cited
 premises, intermediate/final conclusions, stated inference links, qualifications,
 distinctions and attributed reported/attacked views. Inference origin is always
@@ -931,12 +1111,18 @@ item-count ceiling is imposed. 32000 output tokens per extraction call replaces
 100 entries plus 7000 tokens for thinking/variance. This is an allowance, not a
 completeness proof. Actual live usage belongs in the external round-2 report.
 
+<a id="decision-gx13"></a>
+> Status: Complete-review refusal policy superseded by [accepted range union](#mu-addendum-accepted-range-union-and-bounded-review). Open obligations and review failures remain disclosed.
+
 GX13. Count full page requests. Oversize context or exhausted output splits the
 physical readable-page range; save each accepted graph unchanged. A counted,
 logged reconciliation can add cross-range links referencing immutable ids. It
 cannot rewrite/delete range evidence. Refuse a single-page overflow, incomplete
 coverage or unresolvable/oversized reconciliation; preserve attempted receipts.
 No silent truncation. Source fidelity is still model-assessed, not proved by JSON.
+
+<a id="decision-gx14"></a>
+> Status: Single-source refusal/packing assumptions superseded by [bounded windows](#gx26-bounded-windows-over-immutable-global-evidence) and [budgeted closure](#s1-budgeted-prerequisite-depth-before-the-single-freeze).
 
 GX14. Counted deterministic packing uses sorted source IDs/content hashes, plan
 version, topic, audience and all capacity inputs in cache identity. Default input
@@ -948,6 +1134,9 @@ catalogue grows; final merge order is independent of completion order. Repeated
 formulas and contradictions retain separate evidence ids/citations. No formula
 union or implicit aliasing. A single source exceeding the construction allowance
 fails explicitly; increase its counted allowance rather than squeeze its evidence.
+
+<a id="decision-gx15"></a>
+> Status: Whole-component selection superseded by [GX22](#decision-gx22); hard whole-closure allocation by [S1](#s1-budgeted-prerequisite-depth-before-the-single-freeze), [S2](#s2-soft-construction-shares-and-accounted-window-refusal) and [S5](#s5-initial-share-caps-and-construction-dispatch-configuration).
 
 GX15. The model selects a topic/audience-relevant working T. Every source item is
 selected or explicitly omitted with a reason. Bidirectional graph closure prevents
@@ -961,6 +1150,9 @@ Every model request, cache replay and retry is counted; source context is never
 implicitly fetched. Search uses only working T, with full graphs inspectable.
 One construction lifecycle, one freeze replaces the one-provider-call reading of
 built-once. prepare_commitments owns that freeze and rejects a second freeze.
+
+<a id="decision-gx16"></a>
+> Status: No-OCR policy superseded by [OCR1](#rho2-local-ocr-fallback-at-pdf-intake) and [span-confidence policy](#rho2-round-4-synthesized-character-confidence-tau2-f1).
 
 GX16 (R1). Strict missing policy refuses every partial paper, including no-readable
 and mixed-readable/visual cases. Default mode keeps explicit partial records.
@@ -1010,6 +1202,9 @@ lower effort speculatively. The two-paper live gate measures acceptance/structur
 before any decision to process the corpus. A stage override must not mutate the
 primary model or inherit a more expensive fallback silently.
 
+<a id="decision-gx21"></a>
+> Status: Mandatory complete reconciliation superseded by [accepted range union](#mu-addendum-accepted-range-union-and-bounded-review).
+
 GX21 (D2-B1). Pending extraction references become stable IDs with originating
 range and pages. Reconciliation receives counted original readable pages when
 obligations exist, adds only immutable evidence, and returns an exact resolution
@@ -1020,6 +1215,7 @@ semantic adequacy of a model's evidence mapping still requires source inspection
 Full-source reconciliation may exceed context and explicitly refuse; no hidden
 retrieval, clipping or inferred resolution is introduced.
 
+<a id="decision-gx22"></a>
 GX22 (D2-B2/D2-S1, supersedes GX15 whole-component selection). Use the operator's
 ALT protocol: model roots/relevance and grouped omission decisions; deterministic
 versioned prerequisite closure; then model formalization of exactly that inventory.
@@ -1044,6 +1240,9 @@ local, inherited and extraction scopes; existing numeric totals remain explicitl
 budget-accounted for compatibility. Campaign accounting still retains unknown
 reservations from earlier sibling runs; a new successful log cannot reconcile them.
 
+<a id="decision-gx24"></a>
+> Status: Deferred construction patches were introduced in [GX26](#gx26-counted-root-selection-allowance-and-compact-inventory-decisions); whole-source packing changed in [bounded windows](#gx26-bounded-windows-over-immutable-global-evidence).
+
 GX24 (round-3 cost scope). Extraction wire grammar separates inference from node
 fields; code supplies only empty structural defaults on non-inference nodes.
 The local rich schema remains authoritative. Fixed-inventory formalization removes
@@ -1057,7 +1256,10 @@ working allowances still refuse oversized/skewed inputs explicitly. Full extract
 is deferred to Delta's next review per the brain addendum, even if projections fit.
 
 
+<a id="gx25-kind-specific-extraction-and-bounded-targeted-correction"></a>
 ## GX25 — Kind-specific extraction and bounded targeted correction
+
+> Status: Per-paper correction policy superseded by [GX30](#gx30-mode-specific-context-requests-and-correction-per-response) and [Kappa acceptance](#kappa-extraction-response-acceptance-and-bounded-correction); paper-stated-only links by [M1](#m1-relaxed-paper-acceptance-with-preserved-evidence).
 
 The extraction provider wire has three disjoint kind families: proposition nodes,
 qualification/distinction nodes with applies_to, and inference links with explicit
@@ -1085,6 +1287,7 @@ The full-corpus phase remains deferred for independent review. Live receipts and
 source-model attribution are in the external report, never tracked fixtures.
 
 
+<a id="gx26-counted-root-selection-allowance-and-compact-inventory-decisions"></a>
 ## GX26 — Counted root-selection allowance and compact inventory decisions
 
 select_t_roots_max_output_tokens is 16384, independently of the general 8192
@@ -1126,7 +1329,10 @@ when the counted reservation cannot fit. The sole freeze still follows accepted
 roots, exact-inventory formalization and merge. Full extraction and pilot execution
 remain outside this round; live receipts stay in the external report.
 
+<a id="gx25-full-extraction-preflight-and-global-construction-capacity"></a>
 ### GX25 — Full extraction preflight and global construction capacity
+
+> Status: Correction and inference requirements superseded by [M1](#m1-relaxed-paper-acceptance-with-preserved-evidence) and [range union](#mu-addendum-accepted-range-union-and-bounded-review). Operator-set full-profile caps remain required.
 
 `extraction-full` selects its extraction model in one stage line, disables fallback,
 requires stated inference at aggregate acceptance and permits one targeted correction
@@ -1145,7 +1351,10 @@ measured again. Full profile catalogue capacity is 32k, informed by the prior li
 10,471-token catalogue; no semantic deduplication is performed to fit it. A preflight
 refusal retains root/closure receipts for an explicit subsequent selection decision.
 
+<a id="gx26-bounded-windows-over-immutable-global-evidence"></a>
 ### GX26 — Bounded windows over immutable global evidence
+
+> Status: Construction windows remain; reconciliation traversal is superseded by [single-pass range union](#mu-addendum-accepted-range-union-and-bounded-review).
 
 Construction plans lossless counted windows within sources. Root inventories cover
 only their window, but prerequisite closure uses the complete immutable graph.
@@ -1167,6 +1376,7 @@ oversized required set refuse without silently dropping context or obligations.
 Accepted range/window artifacts and the obligation ledger survive refusal. Model
 resolution remains a semantic judgment, not a deterministic coverage certificate.
 
+<a id="gx27-unpaid-planning-shares-executions-range-admission"></a>
 ### GX27 — Unpaid planning shares execution's range admission
 
 `plan-extraction` reads selected PDFs and emits numeric per-paper ranges, input
@@ -1190,6 +1400,7 @@ The full profile is available to both `extract` and native `run`; both preflight
 the same unset caps before provider creation. Construction therefore receives its
 32k catalogue and targeted policy through the native entrypoint.
 
+<a id="gx28-new-gaps-remain-obligations-throughout-reconciliation"></a>
 ### GX28 — New gaps remain obligations throughout reconciliation
 
 The model protocol separates `pending_obligation_ids` from structured `new_gaps`.
@@ -1212,6 +1423,7 @@ translated. The changed prompt/schema invalidates old response cache keys; saved
 v2 literature artifacts keep their existing format and provenance. No prior
 artifacts are rewritten, and no paid completion or automatic resume is implied.
 
+<a id="gx29-finite-paper-allowances-cover-every-extraction-continuation"></a>
 ### GX29 — Finite paper allowances cover every extraction continuation
 
 A paper has one count allowance and one USD allowance at the shared model-call
@@ -1253,6 +1465,7 @@ and all raw responses remain available; an unaccepted response is retained as a
 receipt rather than retroactively incorporated into the accepted ledger. This
 provides bounded refusal, not automatic collection resume or source fidelity.
 
+<a id="gx30-mode-specific-context-requests-and-correction-per-response"></a>
 ### GX30 — Mode-specific context requests and correction per response
 
 The extraction response schema is now specialized from request inputs at the
@@ -1301,7 +1514,10 @@ resume limitation. Paid accepted evidence is preserved but not automatically reu
 a fresh run can repay that work. No live extraction completion is claimed.
 
 
+<a id="gx31-disclosed-paper-failures-and-completed-paper-reuse"></a>
 ### GX31 — Disclosed paper failures and completed-paper reuse
+
+> Status: Three-failure default and stopped-publication policy superseded by [Mu addendum](#mu-addendum-accepted-range-union-and-bounded-review).
 
 Supersedes GX30's stop-on-first-paper-failure policy and its blanket resume
 deferral. Range restoration and completed-paper reuse are different scopes.
@@ -1344,6 +1560,7 @@ Offline tests and production-wire mutation controls cover native extraction/pilo
 threshold boundaries, evidence exclusion, receipt identity, changed inputs,
 transitive tamper detection, allowance reset and inherited aggregate caps.
 
+<a id="gx32-acceptance-bound-reuse-and-a-separate-ancestry-inventory"></a>
 ### GX32 — Acceptance-bound reuse and a separate ancestry inventory
 
 Iota T-B1 demonstrated that identical source inputs could bypass a newly required
@@ -1379,7 +1596,10 @@ limits remain: whole-paper reuse only, retain original logs, no semantic quality
 or full-corpus budget guarantee. No prompt/schema or live provider change is made.
 
 
+<a id="kappa-extraction-response-acceptance-and-bounded-correction"></a>
 ## Kappa: extraction response acceptance and bounded correction
+
+> Status: No-discard candidate policy superseded by [v6 quarantine/discard rules](#mu-round-2-grounded-evidence-and-retained-quarantine); correction count by [M1](#m1-relaxed-paper-acceptance-with-preserved-evidence).
 
 - **Native replay boundary.** Extract the existing per-response closure into
   `ModelCalls._extraction_response`, called by both range extraction and
@@ -1436,7 +1656,10 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   establishes offline schema compatibility, not live service acceptance; the
   provider's detailed error was not retained, and no second paid run is claimed.
 
+<a id="kappa-round-2-explicit-conservative-imports-and-grammar-preflight"></a>
 ## Kappa round 2: explicit conservative imports and grammar preflight
+
+> Status: Diagnostic text retention superseded by [Kappa round 3](#kappa-round-3-conservative-diagnostics-and-normalized-recovery).
 
 - `extract --unknown-usage-policy count-at-reservation` permits importing
   incomplete receipts only with their full existing reservation counted. It
@@ -1463,6 +1686,7 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   the same explicit reconciliation policy. Probe campaign caps are inherited
   accounted charges plus the separately authorized new-spend allowance.
 
+<a id="kappa-round-2-live-grammar-rejection-and-correction"></a>
 ### Kappa round 2 live grammar rejection and correction
 
 - The first gate's HTTP 400 identified a service constraint absent from the
@@ -1479,7 +1703,10 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   values, and logged null normalization with immutable originals. Two additional
   production-wire controls break the new projection and normalization seams.
 
+<a id="kappa-round-3-conservative-diagnostics-and-normalized-recovery"></a>
 ## Kappa round 3: conservative diagnostics and normalized recovery
+
+> Status: Two-correction ceiling superseded by [M1](#m1-relaxed-paper-acceptance-with-preserved-evidence). The rejected-gap fidelity limitation remains a historical unresolved claim, not a quality guarantee.
 
 - **F1 diagnostic boundary.** Supersede the round-two substring-scrubbing claim.
   Arbitrary provider prose can contain partial or escaped request echoes and is
@@ -1518,7 +1745,10 @@ or full-corpus budget guarantee. No prompt/schema or live provider change is mad
   Production-wire controls exercise these boundaries. Wire schemas are unchanged,
   so this round requires offline comparison, not another paid schema gate.
 
+<a id="m1-relaxed-paper-acceptance-with-preserved-evidence"></a>
 ## M1 — Relaxed paper acceptance with preserved evidence
+
+> Status: Mandatory whole-paper inference review superseded by [accepted range union](#mu-addendum-accepted-range-union-and-bounded-review); evidence eligibility further restricted by [v6 grounding](#mu-round-2-grounded-evidence-and-retained-quarantine).
 
 Acceptance v5 admits disclosed reconstructed inference links. Inference coverage
 is a paper-level requirement: zero-link papers require an explicit source-based
@@ -1545,6 +1775,7 @@ and missing provider bodies instead of crashing or treating them as paper graphs
 Production PDF extraction stays unchanged: the separately pinned comparison did
 not demonstrate that a replacement improves the affected source passages.
 
+<a id="mu-addendum-accepted-range-union-and-bounded-review"></a>
 ## Mu addendum — accepted range union and bounded review
 
 Paper acceptance retains the union of validated accepted range graphs. One complete
@@ -1576,6 +1807,7 @@ no-explicit-structure dispositions and overlapping paper-stated inference nodes
 are both preserved and explicitly flagged; union acceptance does not adjudicate
 the disagreement. Offline salvage never constructs a generation-capable provider.
 
+<a id="mu-round-2-grounded-evidence-and-retained-quarantine"></a>
 ## Mu round 2: grounded evidence and retained quarantine
 
 Rich-paper acceptance v6 separates the retained range inventory from evidence
@@ -1621,7 +1853,10 @@ field is added: historical items have no verbatim anchors, and adding one would
 not improve their offline check. The changed correction grammar requires the
 bounded live schema preflight; it does not authorize new extraction.
 
+<a id="m4-monotonic-snapshot-reuse-and-versioned-gap-publication"></a>
 ## M4 — Monotonic snapshot reuse and versioned gap publication
+
+> Status: Differing-snapshot refusal superseded by [M5](#m5-completed-snapshot-unions-and-stable-ordinary-reuse). Original identity/receipt preservation remains.
 
 The current acceptance identity remains v6: v5 relaxed structural admission;
 v6 additionally restricts evidence eligibility through deterministic quarantine.
@@ -1644,7 +1879,10 @@ second resume preserve original identities, item bodies and receipts. Current
 usage text permits paper-stated or reconstructed links; neither licenses an
 engine step. No prompt/schema or grounding-threshold change is made this round.
 
+<a id="search-trace-receipts-version-1-superseded-below"></a>
 ## Search trace receipts (version 1, superseded below)
+
+> Status: Version-1 production format superseded by [version 2](#search-trace-version-2-and-report-validation). Old logs remain readable.
 
 The engine now emits versioned `search_trace` SYSTEM events through its existing
 EventSink: begin, queued state with parent and graph/depth snapshot, visit,
@@ -1657,6 +1895,7 @@ recover state ancestry or unambiguously attach prunes to both polarities.
 The extra snapshot receipts increase log size; this is an additive logging patch
 that can be cherry-picked independently of the offline report command.
 
+<a id="offline-full-run-report-projection"></a>
 ## Offline full-run report projection
 
 `ara report` extends the native CLI beside export and reads verified snapshots
@@ -1675,6 +1914,7 @@ are checked read-only; missing anchors/origins are visible limits, not silent
 verification passes. A mismatched available receipt refuses report generation.
 
 
+<a id="search-trace-version-2-and-report-validation"></a>
 ## Search trace version 2 and report validation
 
 Round-two review found full graph snapshots amplified the native event writer's
@@ -1714,6 +1954,7 @@ must have exactly one matching admission or explicit prune. A sealed but contrad
 or unresolved trace remains partial, with named gaps and all original receipts.
 These checks compare recorded evidence without rerunning search or licensing.
 
+<a id="m5-completed-snapshot-unions-and-stable-ordinary-reuse"></a>
 ## M5 — Completed snapshot unions and stable ordinary reuse
 
 This supersedes M4's differing-snapshot refusal. Acceptance remains v6; the new
@@ -1753,6 +1994,7 @@ bounded pass. Splitting would require a new cross-window obligation and evidence
 contract and extra calls; it is not a cheap substitute for the complete review.
 A native two-paper regression and production-wire control verify continuation.
 
+<a id="m6-snapshot-context-follows-native-prerequisites"></a>
 ## M6 — Snapshot context follows native prerequisites
 
 M5's inference-only incoming context was incomplete. Union identity now uses the
@@ -1773,6 +2015,7 @@ closure after mapping, for four qualifier target kinds and an added inference,
 in both source orders and after a second resume. The production-wire control
 replaces native prerequisites with outgoing references and must fail.
 
+<a id="m7-construction-windows-project-metadata-and-imports-append-in-batches"></a>
 ## M7 — Construction windows project metadata and imports append in batches
 
 Construction plan v6 uses one model-facing projection for counting, selection
@@ -1796,7 +2039,10 @@ silently repaired or discarded. Single-event writes use the same append path.
 Transitive verification shares a checkpoint memo only within one operation;
 there is no persistent cache that could hide later ancestor tampering.
 
+<a id="s1-budgeted-prerequisite-depth-before-the-single-freeze"></a>
 ## S1 — Budgeted prerequisite depth before the single freeze
+
+> Status: Hard per-window actual-output shares superseded by [S2](#s2-soft-construction-shares-and-accounted-window-refusal) and [S5](#s5-initial-share-caps-and-construction-dispatch-configuration). Depth-cut disclosure remains.
 
 Construction v7 allocates a global selected T before root selection. Its per-window
 commitment cap is the minimum of working copy plus formula-growth capacity,
@@ -1835,7 +2081,10 @@ Formalization chunking is deferred: bounded inventories retain exact request gua
 and splitting would need dependency-cycle and correction/symbol receipt semantics.
 
 
+<a id="s2-soft-construction-shares-and-accounted-window-refusal"></a>
 ## S2 — Soft construction shares and accounted window refusal
+
+> Status: Initial-share growth is now capped by [S5](#s5-initial-share-caps-and-construction-dispatch-configuration).
 
 Construction v8 supersedes S1's hard actual-output window shares. The initial
 count-only allocation retains its arithmetic and headroom. Before each window,
@@ -1875,6 +2124,7 @@ that every future candidate would exceed the remaining global capacity. Partial
 construction completion does not guarantee downstream search capacity or success.
 
 
+<a id="s3-terminal-construction-refusals-and-verified-continuation"></a>
 ## S3 — Terminal construction refusals and verified continuation
 
 A structured SDK invalid_request_error or request_too_large on construction
@@ -1903,6 +2153,7 @@ Already-frozen runs, artifact corruption and incompatible plans refuse. This is
 bounded recovery from a terminal request rejection, not general crash recovery.
 
 
+<a id="report-overview-and-linked-evidence-round-4"></a>
 ## Report overview and linked evidence (round 4)
 
 A real multi-run lineage made the original monolithic HTML unusable. Reporting now
@@ -1921,6 +2172,7 @@ existing trust labels. HTML/Markdown are bounded navigation views, not raw appen
 Verification precedes publication and the reporter still makes no provider calls.
 
 
+<a id="s4-free-counter-refusals-and-non-mutating-resume-previews"></a>
 ## S4 — Free counter refusals and non-mutating resume previews
 
 A terminal request-specific SDK rejection from the free count endpoint is logged
@@ -1946,6 +2198,7 @@ a refusal that would change the recorded partition or plan cannot authorize an
 incompatible resume. The preview is not live construction or downstream success.
 
 
+<a id="s5-initial-share-caps-and-construction-dispatch-configuration"></a>
 ## S5 — Initial-share caps and construction dispatch configuration
 
 The first pass caps new commitments from each window at
@@ -1980,7 +2233,10 @@ stage; provider changes invalidate cached responses even at the same model name.
 The CLI make_provider factory is the registration seam for provider implementations.
 The claude_code implementation and live provider proof remain owned by its provider
 lane; this change does not implement or execute that backend or edit providers.py.
+<a id="xi-round-6-concurrent-search-with-isolated-accounting"></a>
 ## Xi round 6 — Concurrent search with isolated accounting
+
+> Status: Scheduler-order publication acceptance superseded by [durable ordered journals](#xi-round-7-stable-publication-with-durable-worker-journals).
 
 Runtime schedules each target and its negation as separate native engine jobs,
 bounded by positive-integer `search_concurrency` (default 4). Prepared formulas,
@@ -2015,6 +2271,7 @@ for the complete run because proposal, forward analysis, solver checks, event
 verification and provider throttling remain limiting factors. No paid benchmark
 is implied by the placeholder equivalence and concurrency controls.
 
+<a id="xi-round-7-stable-publication-with-durable-worker-journals"></a>
 ## Xi round 7 — Stable publication with durable worker journals
 
 Psi F1 correctly distinguished serialized appends from deterministic publication.
@@ -2034,6 +2291,7 @@ totals incomplete, directing inspection to the durable journals. This is a
 fail-closed boundary, not automatic interrupted-search replay. The round-six
 acceptance of scheduler-ordered worker events is superseded by this decision.
 
+<a id="persistent-extraction-lineage-verification-receipts"></a>
 ## Persistent extraction-lineage verification receipts
 
 Native run startup writes an immutable verification receipt under
@@ -2061,7 +2319,10 @@ hash rechecks detect observed changes, not an adversarial change-and-restore
 between reads. This cache covers lineage verification and import only, not
 construction restoration, planning, generation or search.
 
+<a id="omega-isolated-subscription-cli-provider"></a>
 ## Omega — Isolated subscription CLI provider
+
+> Status: Temporary credential-copy policy superseded by [fresh host credential reads](#omega-round-9-read-current-host-credentials-and-retry-auth-once); calibration by [round 5](#omega-round-5-measured-calibration-and-scarce-window-allocation) and [round 6](#omega-round-6-comparable-usage-and-local-subscription-admission).
 
 The opt-in `claude_code` provider extends the native ModelCalls seam, with one
 fresh process/session and empty cwd/config per request. Native startup preflight
@@ -2104,6 +2365,7 @@ live in the existing sequential integration control runner. Placeholder live
 construction, target proposal and formalization passed the local schemas and
 native acceptance path; the external omega report records receipts and limits.
 
+<a id="round-7-integration-stage-providers-share-admission-not-billing-policy"></a>
 ## Round 7 integration — Stage providers share admission, not billing policy
 
 Sigma's construction-stage routing and Omega's subscription backend share Xi's
@@ -2123,6 +2385,7 @@ schema validation/isolation gates are preserved. Offline mixed-provider tests
 exercise both routing directions and the scoped retry/canary boundaries; they
 are not a live-provider or full-pilot completion claim.
 
+<a id="omega-round-3-decoded-output-construction-retries-and-config-authentication"></a>
 ## Omega round 3 — Decoded output, construction retries and config authentication
 
 F6: scan raw CLI stdout/stderr/debug for credentials, then recursively scan every
@@ -2163,6 +2426,7 @@ This suppresses profile discovery; it does not narrow the bearer token's actual
 server-side permissions. The original credential bytes and scopes are unchanged.
 
 
+<a id="omega-round-4-context-sizing-and-resolved-construction-dispatch"></a>
 ## Omega round 4 — Context sizing and resolved construction dispatch
 
 RequestCount separates initial_input_tokens and context_output_tokens from the
@@ -2197,6 +2461,7 @@ unit contract does not establish pilot readiness. No bound, cap or estimator was
 relaxed to claim contribution; a separate capacity-policy decision is required.
 
 
+<a id="omega-round-5-measured-calibration-and-scarce-window-allocation"></a>
 ## Omega round 5 — Measured calibration and scarce-window allocation
 
 The calibration artifact claude-code-input-v1 contains 928 deduplicated API
@@ -2235,6 +2500,7 @@ recounts and closure/mandatory-bundle checks remain authoritative. Allocation
 and the multiplier cap permit existing soft borrowing; they do not guarantee
 all funded windows contribute.
 
+<a id="xi-round-8-job-local-failure-one-final-retry-and-partial-selection"></a>
 ## Xi round 8 — Job-local failure, one final retry and partial selection
 
 Native target/polarity jobs no longer cancel the entire queue on a ModelCalls
@@ -2276,7 +2542,10 @@ native CLI run-to-select-to-compose path. The twenty-search equivalence and
 forced-publication-schedule proofs remain required. No live speedup or completed
 pilot claim follows from this offline change.
 
+<a id="omega-round-6-comparable-usage-and-local-subscription-admission"></a>
 ## Omega round 6 — Comparable usage and local subscription admission
+
+> Status: Unknown-exit retry/diagnostic policy superseded by [round 7](#omega-round-7-one-unclassified-retry-and-scrubbed-exit-diagnostics) and [round 8](#omega-round-8-suppress-free-text-cli-diagnostics-kappa2-f1).
 
 Round 5 incorrectly compared aggregate CLI input against initial context. The
 pilot's first build_t_batch receipt had 30,294 aggregate input, an initial
@@ -2323,7 +2592,10 @@ local and imported tokens. No log is rewritten, historical receipt discarded,
 or API dollar cap changed.
 
 
+<a id="omega-round-7-one-unclassified-retry-and-scrubbed-exit-diagnostics"></a>
 ## Omega round 7 — One unclassified retry and scrubbed exit diagnostics
+
+> Status: Free-text diagnostic retention superseded by [round 8](#omega-round-8-suppress-free-text-cli-diagnostics-kappa2-f1).
 
 The operator explicitly permits one retry of an unclassified CLI exit 1. This
 supersedes round 6's blanket non-retryable classification for unknown exits.
@@ -2355,6 +2627,7 @@ across the truncation boundary. No live or paid calls are part of round 7. Exist
 historical exit-1 causes remain unrecoverable; new metadata helps future diagnosis.
 
 
+<a id="omega-round-8-suppress-free-text-cli-diagnostics-kappa2-f1"></a>
 ## Omega round 8 — Suppress free-text CLI diagnostics (kappa2 F1)
 
 Kappa2 reproduced three leaks in the round-7 first-line sanitizer: quoted JSON
@@ -2380,6 +2653,7 @@ for wholesale text suppression, subtype allowlisting and category enumeration.
 No historical log rewriting or live/paid calls are part of round 8.
 
 
+<a id="omega-round-9-read-current-host-credentials-and-retry-auth-once"></a>
 ## Omega round 9 — Read current host credentials and retry auth once
 
 Pilot 3 recorded three 401/cli_auth_error receipts after a host credential-file
@@ -2419,7 +2693,10 @@ call. Controls protect fresh reads, access-token-only handoff and retry bounds.
 The authorized live proof is a canary and one placeholder stage call; no API
 spending, full pilot restart or credential rotation is authorized.
 
+<a id="omega-round-10-codex-subscription-transport"></a>
 ## Omega round 10 — Codex subscription transport
+
+> Status: Credential-source and visible-tool policy are specialized by [round 11](#omega-round-11-separate-chatgpt-credential-source) and [round 12](#omega-round-12-visible-generic-definitions-are-not-tool-use); schemas by [round 13](#omega-round-13-strict-codex-schemas-and-pilot-gate).
 
 O10.1. `codex_cli` extends the native ModelCalls/provider seam alongside
 `claude_code`. Extraction remains Opus 5 API work; construction/search may pin
@@ -2469,7 +2746,10 @@ subscription isolation, the tool-invitation canary, stage acceptance and any
 account-specific model availability require the external Round 10 report's
 executed evidence; fake-binary tests alone do not establish them.
 
+<a id="omega-round-11-separate-chatgpt-credential-source"></a>
 ## Omega round 11 — Separate ChatGPT credential source
+
+> Status: Nonempty generic-tool-name blocker superseded by [round 12](#omega-round-12-visible-generic-definitions-are-not-tool-use). Operator-context and tool-event rejection remain.
 
 O11.1. `codex_cli.auth_file` is mandatory and is configured to the operator's
 separate ChatGPT login at `/home/dev/.config/ara/codex-home/auth.json`. A missing
@@ -2489,6 +2769,7 @@ or tool event is waived: the original context and event rejection checks remain.
 Live acceptance, account-specific model availability and any remaining blocker
 are recorded in the external Round 11 report, not inferred from offline tests.
 
+<a id="omega-round-12-visible-generic-definitions-are-not-tool-use"></a>
 ## Omega round 12 — Visible generic definitions are not tool use
 
 O12.1. The operator clarified the Codex preflight rule: generic built-in tool
@@ -2509,7 +2790,10 @@ unchanged. This supersedes the prior nonempty-tools preflight blocker under
 the operator's revised rule; it does not waive any operator-context check.
 Full verification and precise live measurements are in the external report.
 
+<a id="rho2-local-ocr-fallback-at-pdf-intake"></a>
 ## Rho2: local OCR fallback at PDF intake
+
+> Status: Whole-page repair policy superseded by [round 2](#rho2-round-2-clean-token-retention-and-local-vl-second-tier), [span repair](#rho2-round-3-preserve-the-text-layer-and-repair-spans) and [synthesized-character confidence](#rho2-round-4-synthesized-character-confidence-tau2-f1).
 
 OCR1. The normal `extract` and `plan-extraction` CLI paths now default to local
 OCR for pages with native glyph, encoding, sparse-image, visual-only or empty
@@ -2593,7 +2877,10 @@ usable characters. Choose the tiny CPU variant and require 98% token/character
 preservation. This is one-page configuration evidence, not a comparative
 accuracy benchmark. The final corpus audit uses only that selected configuration.
 
+<a id="rho2-round-2-clean-token-retention-and-local-vl-second-tier"></a>
 ## Rho2 Round 2: clean-token retention and local VL second tier
+
+> Status: Whole-page clean-token gate superseded by [span repair](#rho2-round-3-preserve-the-text-layer-and-repair-spans).
 
 OCR6. Policy `local-ocr-v2` compares whole Unicode alphanumeric tokens, including
 single-letter tokens and digits, after NFKC normalization and case folding.
@@ -2657,7 +2944,10 @@ prove semantics, reading order, or meaning of unencoded symbols.
 Official source: https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6/tree/c5630abae1d940eafe0697512a0325494b02ab42
 
 
+<a id="rho2-round-3-preserve-the-text-layer-and-repair-spans"></a>
 ## Rho2 Round 3: preserve the text layer and repair spans
+
+> Status: Span-confidence denominator superseded by [round 4](#rho2-round-4-synthesized-character-confidence-tau2-f1).
 
 OCR10. Policy `local-ocr-v3-spans` replaces only tainted whitespace runs, retaining
 all surrounding text and whitespace exactly. Align one to three adjacent clean
@@ -2704,6 +2994,7 @@ and rerun the full suite and controls; the interrupted pre-fix suite/audit are
 not final evidence. Confidence and EOS alone cannot certify exact transcription.
 
 
+<a id="rho2-round-4-synthesized-character-confidence-tau2-f1"></a>
 ## Rho2 Round 4: synthesized-character confidence (tau2-F1)
 
 OCR15. Policy `local-ocr-v4-spans` computes admission confidence and the share
@@ -2730,6 +3021,7 @@ text, ambiguous internal alignment and two separated glyph groups failed before
 the fix. Dedicated confidence-dilution and ambiguity mutation controls protect
 this admission boundary. See the external Round 4 report for final evidence.
 
+<a id="omega-round-13-strict-codex-schemas-and-pilot-gate"></a>
 ## Omega round 13 — Strict Codex schemas and pilot gate
 
 O13.1. `ara-openai-strict-v1` projects the native stage schema to a conservative
@@ -2768,6 +3060,7 @@ O13.4. Existing runs may supply fresh proof using
 only the proof location, is logged in the human command, and leaves historical
 configuration intact. The same manifest and receipt checks still apply.
 
+<a id="round-9-xi-stopped-search-recovery"></a>
 ## Round 9 — Xi: stopped search recovery
 
 R9.1. `ara resume-search --run-dir DIR` recovers the existing native lifecycle.
@@ -2843,6 +3136,7 @@ The final handoff is a local commit on `feat/run-report`; no push or paid
 provider call was performed.
 
 
+<a id="s6-native-schema-authority-with-bounded-local-validation"></a>
 ## S6 — Native schema authority with bounded local validation
 
 Recursive formula alternatives have unique required `op` tags. Local validation
@@ -2872,6 +3166,7 @@ The guarantee concerns local schema/normalization work; model calls, domain
 callbacks, and solver work retain their separate existing budgets. No live pilot
 completion is implied by the offline equivalence and deadline tests.
 
+<a id="round-10-xi-bind-resume-completion-to-its-results-generation"></a>
 ## Round 10 — Xi: bind resume completion to its results generation
 
 R10.1. Tau2 F2 is fixed. A historical partial `awaiting_selection` marker no
@@ -2917,7 +3212,10 @@ finished, the full integration control runner produced 434/434 expected
 mutation failures and restored passes, including the new F2 control. All 187
 tracked-file hashes matched the pre-gate manifest after both gates. The diff
 check is clean. The fix remains a local commit; no push or paid call occurred.
+<a id="s8-frozen-construction-catalogue-interface"></a>
 ## S8: Frozen construction catalogue interface
+
+> Status: Search consumption is implemented by [Round 12](#round-12-shared-search-vocabulary-and-explicit-formula-bindings); persistence contract remains current.
 
 `CommitmentSet` and `commitments.json` retain their strict legacy format. Rich
 construction also writes immutable `frozen-t.json` with `schema_version` equal to
@@ -2938,6 +3236,7 @@ must verify identity, binding and signatures when metadata exists. Absence of
 inventing definitions or ignoring corrupt metadata. Construction owns persistence;
 search owns loading metadata and incorporating identity in model/cache inputs.
 
+<a id="round-12-shared-search-vocabulary-and-explicit-formula-bindings"></a>
 ### Round 12 — shared search vocabulary and explicit formula bindings
 
 - Integrate Sigma's catalogue interface from `597b666`. `commitments.json` and
@@ -2995,6 +3294,7 @@ real-corpus closure is claimed. This work is committed locally without a push.
 Finding disposition: all five diagnosed causes are addressed above: current-goal
 identity, frozen vocabulary/preflight, bounded proposal breadth, shared slot
 formalization, and validated T references. 5 findings, 5 placed.
+<a id="s8-structure-gate-and-bounded-correction"></a>
 ## S8 structure gate and bounded correction
 
 Rich construction plan v10 requires selected inferences to be conditionals using
@@ -3021,6 +3321,36 @@ to R(a), and the conditional from R(a) to F(a), without including R(a) or F(a) a
 premises. This establishes the executable seam, not faithful real-source encoding.
 Plan v10 intentionally prevents replaying old counted plans as this new policy;
 old frozen artifacts remain readable under the legacy/search compatibility path.
+
+<a id="documentation-corrections-2026-10-27"></a>
+## Documentation corrections (2026-10-27)
+
+The documentation review used base `6511ff6`. The old README combined several
+superseded policies with current guidance. The guides now reflect the following
+source-backed behavior; original decision paragraphs above remain unchanged.
+
+| ID | Corrected claim | Current evidence at this base |
+| --- | --- | --- |
+| DOC1 | PLAN's engine/runtime placeholders are implemented. | `ara/runtime/cli.py:28`, `ara/runtime/orchestration.py:113`, `ara/engine/search.py:59`; D1 superseded the original integration gap. |
+| DOC2 | The failed-paper allowance is eight, not three. A threshold-stopped batch publishes retained evidence and failed/not-attempted rosters before raising. | `config.yaml:88`, `ara/runtime/extraction.py:419`, `ara/runtime/extraction.py:447`, `ara/runtime/extraction.py:495`; Mu addendum supersedes GX31. |
+| DOC3 | Reconciliation is one best-effort pass, not an obligation traversal that must resolve every gap. | `ara/runtime/reconciliation.py:8`; Mu addendum supersedes GX13/GX21 and the reconciliation portion of GX26. |
+| DOC4 | Range/review failures can retain accepted evidence; not every extraction validation/context failure aborts the whole batch. Strict intake checks still refuse diagnosed unreadable/partial PDFs. | `ara/runtime/calls.py:867`, `ara/runtime/extraction.py:372`, `ara/runtime/extraction.py:419`. |
+| DOC5 | pypdf itself has no OCR; native intake now defaults to optional local OCR. Text-only behavior requires `--ocr off`. | `ara/runtime/cli.py:61`, `ara/runtime/cli.py:350`; OCR1 and later span decisions supersede no-OCR guidance. |
+| DOC6 | Corrections can explicitly discard rejected candidate items with reasons. Normalization also handles null inventories and structural/page/ID forms; accepted history stays immutable. | `ara/runtime/calls.py:152`, `ara/runtime/calls.py:70`; M1 and Mu round 2 replace the narrower Kappa correction description. |
+| DOC7 | Construction may depth-cut a closure and disclose omitted support instead of always refusing the whole argument. | `ara/runtime/closure_budget.py:70`, `ara/runtime/construction.py:172`; S1/S2/S5 supersede the earlier full-closure capacity claim. |
+| DOC8 | Both subscription providers are registered. Independent provider dispatch is limited to rich construction stages; model-only search/writing overrides do not create an API adapter. | `ara/runtime/cli.py:123`, `ara/runtime/construction_stages.py:5`; Omega supersedes the pre-registration README note. |
+| DOC9 | Claude Code rereads credentials and passes the access token through the call environment; it no longer writes a temporary OAuth copy. Codex uses a read-only bind. | `ara/runtime/claude_code.py:246`, `ara/runtime/codex_cli.py:96`; Omega round 9 and O10/O11 replace the old copy policy. |
+| DOC10 | Search consumes the frozen catalogue, uses joint slot formalization and permits one target-vocabulary correction; those are no longer future work or an unconditional single target call. | `ara/runtime/search_alignment.py:20`, `ara/runtime/calls.py:913`, `ara/runtime/calls.py:970`; Round 12 extends S8 persistence. |
+| DOC11 | Inherited API charges remain visible and count for API admission; subscription token admission uses local usage. | `ara/runtime/budget.py:148`; Omega round 6 supersedes the blanket inherited-budget description. |
+| DOC12 | A bibliography passed as ordinary text does not extract its PDFs or establish source evidence. Historical extracted inventories also need current grounding before entering T. | `ara/runtime/cli.py:374`, `ara/runtime/grounding.py:95`; Mu round 2 adds grounding eligibility. |
+
+`fork-from-freeze` and `run --from-frozen` are absent from this base's parser.
+They remain a deferred shared-frozen integration concern in PLAN, not runnable
+examples. A requested Codex pin remains distinct from verified serving identity
+(`ara/runtime/codex_cli.py:230`). No code, test, prompt or schema changes accompany
+this documentation work. Current offline results and remaining review findings
+belong in the external documentation handoff; historical receipts above retain
+their original proof scope.
 
 ### Round 13 — contribution targets, route selection, and frozen forks
 

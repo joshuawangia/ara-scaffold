@@ -96,4 +96,3 @@ uv run --locked --extra ocr --extra ocr-vl pytest -q
 uv run --locked --extra ocr --extra ocr-vl python tools/ocr_negative_controls.py
 uv run --locked --extra ocr --extra ocr-vl python tools/negative_controls.py
 ```
-

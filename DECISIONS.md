@@ -115,7 +115,7 @@ Copy the relevant ones into the repo's DECISIONS.md with their reasons.
 
 B1. Repo: `ara-scaffold`, built at `/home/dev/wt/ara/ara-scaffold`, default branch
     `main`. Target remote: private repo on the operator's personal github.com account
-    (`joshuawangia/ara-scaffold`). This box is not yet authenticated to github.com;
+    (`<operator repo>`). This box is not yet authenticated to github.com;
     the brain handles remote creation and push. Workers never push.
 
 B2. Real provider: Anthropic. Default model `claude-opus-5` (current Opus; exact

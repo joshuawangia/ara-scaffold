@@ -137,7 +137,10 @@ at most `2 * (1 + len(T))` checks are needed per candidate. Unknowns and timeout
 cannot authorize a target.
 
 Each candidate also receives an isolated `classify_target` request on the same
-provider. It sees the target and vocabulary, without proposal history or rationale.
+provider. It sees the target text and a structural formula rendering through verified
+content definitions, without source attribution, proposal history or rationale.
+Own-voice synthesis may draw on source claims; reporting what someone holds
+remains an attributed report. Legacy content definitions stay unavailable.
 Only `own_thesis` passes; `attributed_report` and `unclear` are disclosed and
 excluded. Deterministic attitude/report phrases and top-level attribution
 predicates identified by catalogue definitions also reject candidates. Missing
@@ -175,6 +178,7 @@ papers or semantic novelty.
 | `CLOSED-derived` | Passes the contribution policy; offered by default |
 | `CLOSED-single-support` | Lacks the required inference/distinct supports, is valid without support, or follows from one support; explicit `--route` required |
 | `CLOSED-contribution-unresolved` | Required support or a solver verdict is unavailable; explicit `--route` required |
+| `CLOSED-stance-crossing` | A recorded reported/attacked support is used as a global premise or CQ evidence; explicit `--route` required |
 | `CLOSED-attributed-report` | Reporting language is detected during the closed-route contribution check; explicit `--route` required |
 | `OPEN` or another non-closed status | Retains its engine status and disclosed frontier; explicit `--route` required |
 
@@ -256,3 +260,30 @@ matching job/trace receipts (`ara/runtime/search_resume.py:265`). Use
 `--unknown-usage-policy count-at-reservation` only for previously finalized
 unknown-usage receipts. Neither option overrides missing measured evidence for an
 interrupted search dispatch.
+
+## Source stance and content definitions
+
+New rich freezes bind `commitment-provenance.json` to exact T and catalogue hashes.
+Its verified `definition_semantics=content` marker distinguishes content definitions
+from source attribution. The source text and author/page/evidence linkage remain
+in provenance. Search cache identities include the provenance hash.
+
+With verified metadata, only `endorsed` source content can serve as a global
+premise or CQ evidence. This means the source author's assertion, not independent
+verification of its truth. `reported` and `attacked` content remains available
+for bank-licensed scoped hypotheses. It cannot silently terminate an ordinary
+premise, seed a closed-route forward pass, or become an asserted negation.
+Rejected uses emit `STANCE_CROSSING`; route receipts disclose crossings and scoped
+source roles. Historical crossing routes are excluded from default selection.
+
+Missing legacy metadata means unavailable stance, and retains legacy behavior.
+A present corrupt sidecar or a missing/mismatched recorded sidecar refuses search.
+Forks preserve its exact bytes and prefix receipt; resume validates both before
+provider creation and refuses closed results that cross a known stance.
+
+The shared writer/auditor outline carries source stance, attribution and scope
+role for referenced commitments when provenance is verified. Explicit selection
+does not erase these roles. The prompts require reported/attacked material to
+remain reporting or conditional hypotheses, including in dependent conclusions;
+the model audit treats endorsement promotion as an added inference. This is a
+model-audited writing obligation, not a deterministic semantic guarantee.

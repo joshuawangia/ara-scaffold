@@ -105,3 +105,18 @@ See `ara/runtime/report.py:286` and `ara/runtime/report_render.py:301`.
 Legacy records keep their original engine status and evidence. Missing support
 or unresolved contribution checks remain disclosed; a contribution label does
 not establish novelty, minimal support sets or independent source papers.
+
+
+Round 16 route contribution receipts also include provenance availability, hash,
+stance crossings and scoped source roles. `CLOSED-stance-crossing` identifies a
+historical closed route using reported/attacked content as a global premise or CQ
+evidence. Source stance is loaded from the validated frozen receipt; missing
+legacy metadata remains unavailable. The construction detail retains the full
+provenance receipt, including exact source text. See [source stance](search.md#source-stance-and-content-definitions).
+
+The shared writer/auditor outline carries source stance, attribution and scope
+role for referenced commitments when provenance is verified. Explicit selection
+does not erase these roles. The prompts require reported/attacked material to
+remain reporting or conditional hypotheses, including in dependent conclusions;
+the model audit treats endorsement promotion as an added inference. This is a
+model-audited writing obligation, not a deterministic semantic guarantee.

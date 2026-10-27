@@ -8,7 +8,7 @@ from pathlib import Path
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log, pending_search_publications
 from ara.runtime.search_publication import search_status
-from ara.runtime.route_policy import route_contribution, frozen_from_events
+from ara.runtime.route_policy import route_contribution, frozen_from_events, provenance_from_events
 from ara.types import RouteGraph
 from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry, PUBLICATION_POLICY
 from ara.runtime.provenance import extraction_outcomes
@@ -137,7 +137,7 @@ def methodology(log_path: Path) -> str:
         'extraction': extraction_summary,
         'search': {**search_status(events),
                    'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],
-                   'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments))
+                   'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments, provenance_from_events(events, commitments)))
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
         'construction': {'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],

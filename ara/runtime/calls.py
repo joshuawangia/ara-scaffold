@@ -911,13 +911,19 @@ class ModelCalls:
 
     def search_vocabulary(self, commitments):
         from ara.runtime.search_alignment import catalogue_inputs
-        return catalogue_inputs(self.log.path.parent, commitments)
+        vocabulary = catalogue_inputs(self.log.path.parent, commitments)
+        events = self.log.read()
+        if any(e['stage'] == 'commitments_frozen' for e in events):
+            from ara.runtime.route_policy import provenance_from_events
+            require(vocabulary['commitment_provenance'] == provenance_from_events(events, commitments),
+                    'search commitment provenance receipt mismatch')
+        return vocabulary
 
     def propose_targets(self, commitments: CommitmentSet, count: int = 10,
                         named_position: str | None = None) -> tuple[Proposition, ...]:
         from ara.runtime.search_alignment import symbols
         vocabulary = self.search_vocabulary(commitments)
-        from ara.runtime.target_policy import target_context, trivial_targets
+        from ara.runtime.target_policy import target_context, trivial_targets, classifier_inputs
         def check(data):
             targets = tuple(Proposition.from_dict(p) for p in data['targets'])
             require(len(targets) == (1 if named_position is not None else count), 'wrong target count')
@@ -942,7 +948,7 @@ class ModelCalls:
             for receipt in receipts:
                 self.log.record('target_contribution_preflight', attempt=attempt + 1, **receipt)
             for target in targets:
-                classification = self.call('classify_target', dict(target=target.to_dict(), **vocabulary), lambda d: d)
+                classification = self.call('classify_target', classifier_inputs(target, vocabulary), lambda d: d)
                 self.log.record('target_own_thesis_classification', target_id=target.id,
                                 attempt=attempt + 1, **classification)
                 if classification['classification'] != 'own_thesis':
@@ -1002,7 +1008,8 @@ class ModelCalls:
         def check(data):
             require(data['t_id'] == 'open' or commitments.get(data['t_id']) is not None, 'unknown T id')
             return data['t_id']
-        return self.call('map_leaf', {'leaf': leaf.to_dict(), 'commitments': commitments.to_dict()}, check)
+        return self.call('map_leaf', dict(leaf=leaf.to_dict(), commitments=commitments.to_dict(),
+                                               **self.search_vocabulary(commitments)), check)
 
     def answer_cq(self, question: CriticalQuestion, proposal: Proposal,
                   commitments: CommitmentSet) -> CQAnswer:
@@ -1011,8 +1018,8 @@ class ModelCalls:
             require(answer.cq_id == question.id, 'wrong CQ id')
             require(all(commitments.get(t) is not None for t in answer.supporting_t_ids), 'unknown CQ T id')
             return answer
-        return self.call('answer_cq', {'question': question.to_dict(), 'proposal': proposal.to_dict(),
-                                      'commitments': commitments.to_dict()}, check)
+        return self.call('answer_cq', dict(question=question.to_dict(), proposal=proposal.to_dict(),
+                                      commitments=commitments.to_dict(), **self.search_vocabulary(commitments)), check)
 
     def repair_tier1(self, premises: tuple[PremiseFill, ...], conclusions: tuple[Proposition, ...],
                      commitments: CommitmentSet) -> Tier1Repair:
@@ -1047,8 +1054,27 @@ class ModelCalls:
                 link['assumptions'] = [scope.assumption_node_id for scope in scopes]
                 link['scoped_results'] = [n for scope in scopes for n in scope.result_node_ids]
             links.append(link)
-        return {'nodes': [{'id': n.id, 'text': n.proposition.text} for n in route.nodes],
-                'links': links}
+        outline = {'nodes': [{'id': n.id, 'text': n.proposition.text} for n in route.nodes],
+                   'links': links}
+        from ara.runtime.route_policy import frozen_from_events
+        frozen = frozen_from_events(self.log.read())
+        provenance = self.search_vocabulary(frozen)['commitment_provenance'] if frozen is not None else None
+        if provenance is not None:
+            roles = []
+            for node in route.nodes:
+                uses = [(node.t_id, 'global_premise')] if node.kind == 'leaf' and node.t_id != 'open' else []
+                uses += [(tid, 'cq_evidence') for a in node.cq_answers for tid in a.supporting_t_ids]
+                if node.kind == 'assumption' and node.proposition.formula is not None:
+                    uses += [(c.id, 'scoped_hypothesis') for c in frozen.commitments
+                             if c.formula.canonical() == node.proposition.formula.canonical()]
+                for tid, role in sorted(set(uses)):
+                    source = provenance['commitments'].get(tid)
+                    require(source is not None, 'outline source role missing frozen commitment')
+                    roles.append(dict(node_id=node.id, evidence_id=tid, role=role,
+                                      stance=source['stance'], attributed_to=source['attributed_to'],
+                                      source_id=source['source_id']))
+            outline['source_roles'] = roles
+        return outline
 
     def essay_inputs(self, route: RouteGraph) -> dict:
         return {'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),

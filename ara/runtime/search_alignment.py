@@ -18,14 +18,18 @@ def symbols(formula):
 
 
 def catalogue_inputs(directory, commitments):
+    from ara.runtime.commitment_provenance import load_commitment_provenance
     path = directory / 'frozen-t.json'
-    if not path.exists():
-        return dict(symbol_catalogue=None, catalogue_sha256=None,
-                    catalogue_status='unavailable_legacy',
-                    commitments_sha256=digest(canonical(commitments.to_dict())))
-    catalogue = validate_frozen_artifact(json.loads(path.read_text()), commitments)
-    return dict(symbol_catalogue=catalogue['symbols'], catalogue_sha256=catalogue['sha256'],
-                catalogue_status='verified', commitments_sha256=catalogue['commitments_sha256'])
+    catalogue = validate_frozen_artifact(json.loads(path.read_text()), commitments) if path.exists() else None
+    provenance = load_commitment_provenance(directory, commitments, catalogue)
+    return dict(symbol_catalogue=catalogue['symbols'] if catalogue else None,
+                catalogue_sha256=catalogue['sha256'] if catalogue else None,
+                catalogue_status='verified' if catalogue else 'unavailable_legacy',
+                commitments_sha256=digest(canonical(commitments.to_dict())),
+                commitment_provenance=provenance,
+                provenance_sha256=provenance['sha256'] if provenance else None,
+                provenance_status='verified' if provenance else 'unavailable_legacy',
+                definition_semantics='content' if provenance else 'unavailable_legacy')
 
 
 def slot_bindings(proposal, commitments):

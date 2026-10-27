@@ -276,7 +276,10 @@ def load_search_resume(log, bank, root):
     require(digest(artifact.to_json()) == digest(commitments.to_json()), 'search resume frozen T hash mismatch')
     # A corrupt optional catalogue must fail before resume can create a provider.
     from ara.runtime.search_alignment import catalogue_inputs
-    catalogue_inputs(log.path.parent, commitments)
+    vocabulary = catalogue_inputs(log.path.parent, commitments)
+    from ara.runtime.route_policy import provenance_from_events
+    require(vocabulary['commitment_provenance'] == provenance_from_events(main, commitments),
+            'search resume commitment provenance receipt mismatch')
     targets = tuple(Proposition.from_dict(p) for p in candidates['candidates'])
     require(bool(targets) and len({p.id for p in targets}) == len(targets) and all(p.formula for p in targets),
             'search resume invalid targets')
@@ -314,6 +317,10 @@ def load_search_resume(log, bank, root):
             recovered = restore_result(directory, journal, goals[index], commitments, bank, run['config'], root)
             if recovered is not None:
                 require(index not in restored, 'search resume completed job was dispatched twice')
+                from ara.runtime.route_policy import stance_crossings
+                require(not any(route.status == 'CLOSED' and stance_crossings(route, vocabulary['commitment_provenance'])
+                                for route in recovered[0].routes),
+                        'restored search crosses frozen source stance')
                 restored[index] = recovered
             all_journal_events.extend(journal)
             publications.append((receipt, journal, progress))

@@ -29,7 +29,7 @@ CASES = [
     ('validation_retry', 'ara/runtime/calls.py', "attempts = self.config.get('validation_attempts', 1)", 'attempts = 1', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[False]'),
     ('retry_admission', 'ara/runtime/budget.py', "if self.cap_tokens(subscription) + sum(tokens(r.usage) for r in self._reservations) + tokens(usage) > self.config['token_cap']:", 'if False:', 'tests/runtime/test_calls.py::test_validation_retry_is_accounted_and_admitted[True]'),
     ('negative_audit_is_final', 'ara/runtime/calls.py', "if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):", 'if validating:', 'tests/runtime/test_calls.py::test_audit_rejects_extra_step'),
-    ('route_artifacts', 'ara/runtime/orchestration.py', "save_route(calls.log.path.parent / 'routes', route, commitments)", 'pass', 'tests/integration/test_cli_e2e.py'),
+    ('route_artifacts', 'ara/runtime/orchestration.py', "save_route(calls.log.path.parent / 'routes', route, commitments, provenance)", 'pass', 'tests/integration/test_cli_e2e.py'),
     ('provider_not_projection', 'ara/runtime/providers.py', "'allOf', 'not'", "'allOf'", 'tests/runtime/test_provider.py::test_live_observed_not_constraint_projected_but_locally_enforced'),
     ('fallback_header', 'ara/runtime/providers.py', "betas=['server-side-fallback-2026-06-01']", "betas=['server-side-fallback-2026-07-01']", 'tests/runtime/test_fallbacks.py::test_fallback_request_shape'),
     ('fallback_config_validation', 'ara/runtime/providers.py', "if fallbacks != 'off' and not (", 'if False and not (', 'tests/runtime/test_fallbacks.py::test_invalid_fallback_config_is_rejected'),
@@ -1209,7 +1209,7 @@ CASES += [
 CASES += [
     ('search_goal_reference', 'ara/engine/licensing.py', '            conclusion = goal', "            conclusion = self.formalise(Proposition('conclusion', proposal.conclusion_text))", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
     ('search_goal_reference_text', 'ara/engine/licensing.py', '            if proposal.conclusion_text != goal.text:', '            if False:', 'tests/runtime/test_search_alignment.py::test_explicit_goal_reference_does_not_override_changed_text'),
-    ('search_catalogue_inputs', 'ara/runtime/calls.py', 'return catalogue_inputs(self.log.path.parent, commitments)', "return dict(symbol_catalogue=None, catalogue_sha256=None, catalogue_status='unavailable_legacy', commitments_sha256=digest(canonical(commitments.to_dict())))", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
+    ('search_catalogue_inputs', 'ara/runtime/calls.py', 'vocabulary = catalogue_inputs(self.log.path.parent, commitments)', "vocabulary = dict(symbol_catalogue=None, catalogue_sha256=None, catalogue_status='unavailable_legacy', commitments_sha256=digest(canonical(commitments.to_dict())), commitment_provenance=None, provenance_status='unavailable_legacy', provenance_sha256=None, definition_semantics='unavailable_legacy')", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
     ('search_target_preflight', 'ara/runtime/calls.py', '            if not disconnected and not rejected:', '            if True:', 'tests/runtime/test_search_alignment.py::test_target_preflight_retries_once_with_catalogue'),
     ('search_proposal_batch', 'ara/runtime/calls.py', 'proposal_limit=3, attempt_budget=1,', 'proposal_limit=1, attempt_budget=1,', 'tests/runtime/test_search_alignment.py::test_three_proposal_batch_keeps_valid_alternative'),
     ('search_proposal_batch_bound', 'ara/runtime/calls.py', "require(len(proposals) <= 3, 'proposal batch exceeds three candidates')", "require(True, 'proposal batch exceeds three candidates')", 'tests/runtime/test_search_alignment.py::test_proposal_batch_bound_is_enforced'),
@@ -1245,7 +1245,7 @@ CASES += [
      'return tuple(t for t in targets if t.id not in rejected_ids)', 'return targets',
      'tests/runtime/test_target_triviality.py::test_trivial_target_correction_and_exhaustion'),
     ('derived_selection_default', 'ara/runtime/route_policy.py',
-     "return tuple(r for r in routes if route_classification(r, commitments) == 'CLOSED-derived')", 'return tuple(routes)',
+     "return tuple(r for r in routes if route_classification(r, commitments, provenance) == 'CLOSED-derived')", 'return tuple(routes)',
      'tests/runtime/test_target_triviality.py::test_default_cli_lists_but_does_not_offer_trivial'),
     ('route_derivation_classification', 'ara/runtime/route_policy.py',
      "if len(supports) < 2 or not inferred:", "if True:",
@@ -1358,6 +1358,48 @@ CASES += [
     ('content_provenance_hash', 'ara/runtime/commitment_provenance.py',
      "if value['sha256'] != digest(canonical(payload)):", 'if False:',
      'tests/runtime/test_commitment_provenance.py::test_sidecar_refuses_tampering_even_with_recomputed_hash[hash]'),
+    ('classifier_content_rendering', 'ara/runtime/target_policy.py',
+     "rendered_content=render(target.formula)", "rendered_content=None",
+     'tests/runtime/test_stance_search.py::test_classifier_assertion_uses_content_not_source_voice'),
+    ('stance_native_admission', 'ara/runtime/orchestration.py',
+     "provenance is None or provenance['commitments'][c.id]['stance'] == 'endorsed'", 'True',
+     'tests/runtime/test_stance_search.py::test_restricted_support_cannot_close_native_route'),
+    ('stance_cq_admission', 'ara/engine/search.py',
+     'supported = cq_supported(answer, q.id, self.commitments)',
+     'supported = cq_supported(answer, q.id, self.frozen_commitments)',
+     'tests/runtime/test_stance_search.py::test_restricted_cq_evidence_keeps_native_route_open'),
+    ('stance_route_disclosure', 'ara/runtime/route_policy.py',
+     "if stance != 'endorsed':", 'if False:',
+     'tests/runtime/test_stance_search.py::test_report_and_selection_disclose_historical_crossing'),
+    ('stance_fork_receipt', 'ara/runtime/freeze_fork.py',
+     "if receipts != ([provenance] if provenance is not None else []):", 'if False:',
+     'tests/runtime/test_stance_search.py::test_fork_preserves_provenance_or_refuses'),
+    ('stance_restore_admission', 'ara/runtime/orchestration.py',
+     "if any(route.status == 'CLOSED' and stance_crossings(route, provenance) for result, _ in restored.values() for route in result.routes):",
+     'if False:',
+     'tests/runtime/test_stance_search.py::test_restored_crossing_refused_before_analysis'),
+    ('stance_cache_context', 'ara/runtime/search_alignment.py',
+     "provenance_sha256=provenance['sha256'] if provenance else None", 'provenance_sha256=None',
+     'tests/runtime/test_stance_search.py::test_provenance_tamper_refuses_and_changes_cache_context'),
+]
+
+
+CASES += [
+    ('stance_resume_receipt', 'ara/runtime/search_resume.py',
+     "require(vocabulary['commitment_provenance'] == provenance_from_events(main, commitments),",
+     'require(True,',
+     'tests/runtime/test_stance_search.py::test_native_resume_preserves_stance_and_refuses_lost_metadata'),
+    ('stance_live_receipt', 'ara/runtime/calls.py',
+     "require(vocabulary['commitment_provenance'] == provenance_from_events(events, commitments),",
+     'require(True,',
+     'tests/runtime/test_stance_search.py::test_native_engine_refuses_deleted_stance_receipt'),
+]
+
+
+CASES += [
+    ('stance_writer_outline', 'ara/runtime/calls.py',
+     "outline['source_roles'] = roles", 'pass',
+     'tests/runtime/test_stance_search.py::test_writer_and_auditor_preserve_source_roles'),
 ]
 
 

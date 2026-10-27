@@ -76,3 +76,10 @@ conflict grouping. Repair proposals are returned for review; they do not mutate
 frozen T or become licensed automatically. Tier 2 pairs CLOSED target/negation
 routes and records the first flag in positive-forward then negative-forward
 order. No flagged consequence is represented explicitly by null.
+
+
+Runtime may supply `premise_commitments`, an exact subset of frozen commitments,
+to restrict global premise/CQ eligibility. The full frozen set remains proposal
+and formalization context; termination, closure, opposition and forward analysis
+use the subset. Scoped assumptions retain their existing bank licensing. The
+engine imports no runtime metadata validator; runtime owns source-stance mapping.

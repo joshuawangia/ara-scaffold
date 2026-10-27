@@ -3550,3 +3550,45 @@ Plan v11 prevents silently resuming old plans under these semantics. Source
 citations and immutable evidence stay unchanged. Search-side stance admission,
 fork/resume copying and route/report policy are owned by Xi; solver licensing
 is not changed by this construction patch.
+## Round 16 — asserted content and source stance in search
+
+The own-thesis classifier now receives the target text and a structural rendering
+of its formula through verified content definitions. Source text, attribution and
+stance are provenance, not assertion operators; they are excluded from the
+classifier payload. Exact T, catalogue and provenance hashes bind its cache
+identity. Definitions without the verified content marker remain unavailable,
+not mechanically rewritten. The deterministic target-text attribution lexicon
+and bounded solver contribution gates remain unchanged.
+
+Search shares sigma's hash-bound commitment-provenance-v1 sidecar and full
+commitment_provenance_frozen receipt. CommitmentSet and frozen-t-v1 codecs stay
+unchanged. The engine retains full frozen context for proposal/formalization,
+but only source-endorsed commitments can terminate global premises or satisfy CQ
+evidence when provenance is verified. Reported/attacked content can be used under
+existing bank-licensed assumption scopes, with its source role disclosed; attacked
+content is never converted into an asserted negation. Rejected global use emits
+STANCE_CROSSING. Forward/conflict analysis receives the same eligible premises.
+Legacy runs retain their behavior with stance explicitly unavailable, not endorsed.
+
+Native publication, reports, export and selection retain stance receipts.
+Historical closed routes crossing a known stance are labelled
+CLOSED-stance-crossing and excluded from default selection. Explicit selection
+retains the existing disclosed-route policy. Freeze forks copy and verify the
+sidecar against its prefix receipt; native search and resume refuse deleted,
+corrupt or mismatched recorded provenance. Recovery refuses closed routes that
+cross a verified stance before reusing their analyses.
+
+Placeholder regressions exercise own-voice synthesis, the existing attribution
+probes, reported/attacked premise rejection, CQ rejection, scoped hypotheses,
+cache identity, native resume and frozen forks. The full offline pytest and
+mutation gates run sequentially; exact receipts belong to the Round 16 task
+report. No paid calls or push are part of this change. Model content fidelity,
+source stance tagging and originality remain semantic limitations, not solver
+claims.
+
+The shared writer/auditor outline carries source stance, attribution and scope
+role for referenced commitments when provenance is verified. Explicit selection
+does not erase these roles. The prompts require reported/attacked material to
+remain reporting or conditional hypotheses, including in dependent conclusions;
+the model audit treats endorsement promotion as an added inference. This is a
+model-audited writing obligation, not a deterministic semantic guarantee.

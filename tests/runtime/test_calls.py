@@ -132,7 +132,7 @@ def test_ports_return_typed_values_and_enforce_references(rig):
     commitments = CommitmentSet((Commitment('t1', 'P', 'placeholder:1', Formula('atom', name='P')),))
     question = CriticalQuestion('cq1', '{P}')
     proposal = Proposal('scheme', (), 'Q')
-    inputs = {'question': question.to_dict(), 'proposal': proposal.to_dict(), 'commitments': commitments.to_dict()}
+    inputs = {'question': question.to_dict(), 'proposal': proposal.to_dict(), 'commitments': commitments.to_dict(), **calls.search_vocabulary(commitments)}
     register(calls, provider, 'answer_cq', inputs,
              {'cq_id': 'cq1', 'answer': 'P', 'answered': True, 'supporting_t_ids': ['t1']})
     assert calls.answer_cq(question, proposal, commitments) == CQAnswer('cq1', 'P', True, ('t1',))
@@ -140,7 +140,7 @@ def test_ports_return_typed_values_and_enforce_references(rig):
     register(calls, provider, 'tier1_repair', repair_input, {'action': 'unresolved', 'detail': 'P', 'proposals': []})
     assert calls.repair_tier1((), (), commitments) == Tier1Repair('unresolved', 'P', ())
     leaf = Proposition('q', 'Q')
-    register(calls, provider, 'map_leaf', {'leaf': leaf.to_dict(), 'commitments': commitments.to_dict()}, {'t_id': 'missing'})
+    register(calls, provider, 'map_leaf', {'leaf': leaf.to_dict(), 'commitments': commitments.to_dict(), **calls.search_vocabulary(commitments)}, {'t_id': 'missing'})
     with pytest.raises(Rejected, match='unknown T id'):
         calls.map_leaf(leaf, commitments)
 
@@ -151,7 +151,7 @@ def test_named_position_preserved(rig):
     formula = Formula('atom', name='P')
     from test_search_alignment import T as commitments
     formula = Formula('atom', name='Q')
-    from ara.runtime.target_policy import target_context
+    from ara.runtime.target_policy import target_context, classifier_inputs
     inputs = {'commitments': commitments.to_dict(), 'count': 10, 'named_position': 'Q',
               **calls.search_vocabulary(commitments), **target_context(commitments)}
     register(calls, provider, 'propose_targets', inputs, {'targets': [{'id': 'p', 'text': 'Q', 'formula': None}]})
@@ -159,8 +159,7 @@ def test_named_position_preserved(rig):
              **calls.search_vocabulary(commitments),
              'vocabulary_instruction': 'Reuse catalogue definitions and signatures; preserve the proposition meaning.'},
              {'formula': formula.to_dict()})
-    register(calls, provider, 'classify_target', dict(target=Proposition('p', 'Q', formula).to_dict(),
-             **calls.search_vocabulary(commitments)), dict(classification='own_thesis', reason='P'))
+    register(calls, provider, 'classify_target', classifier_inputs(Proposition('p', 'Q', formula), calls.search_vocabulary(commitments)), dict(classification='own_thesis', reason='P'))
     assert calls.propose_targets(commitments, named_position='Q') == (Proposition('p', 'Q', formula),)
 
 

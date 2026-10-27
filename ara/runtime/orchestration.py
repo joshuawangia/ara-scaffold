@@ -37,10 +37,19 @@ class NativeEngine:
 
     def _engine(self, commitments: CommitmentSet) -> Engine:
         calls = self.calls
+        vocabulary = calls.search_vocabulary(commitments)
+        provenance = vocabulary['commitment_provenance']
+        premises = CommitmentSet(tuple(c for c in commitments.commitments
+            if provenance is None or provenance['commitments'][c.id]['stance'] == 'endorsed'))
+        calls.log.record('search_stance_policy', provenance_status=vocabulary['provenance_status'],
+                         provenance_sha256=vocabulary['provenance_sha256'],
+                         eligible_commitment_ids=[c.id for c in premises.commitments],
+                         note='Legacy stance is unavailable. Verified reported/attacked content is usable only as a scoped hypothesis, never a global premise.')
         return Engine(bank=self.bank, commitments=commitments, proposer=calls,
                         formaliser=calls, leaf_mapper=calls, cq_answerer=calls,
                         repairer=calls, sink=calls.log,
-                        config=EngineConfig.from_mapping(calls.config), traces=SearchTraceFiles(calls.log))
+                        config=EngineConfig.from_mapping(calls.config), traces=SearchTraceFiles(calls.log),
+                        premise_commitments=premises)
 
     def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
         if target.formula is None:
@@ -49,6 +58,10 @@ class NativeEngine:
 
     def analyse_all(self, targets, commitments, concurrency, *, restored=None):
         restored = restored or {}
+        from ara.runtime.route_policy import stance_crossings
+        provenance = self.calls.search_vocabulary(commitments)['commitment_provenance']
+        if any(route.status == 'CLOSED' and stance_crossings(route, provenance) for result, _ in restored.values() for route in result.routes):
+            raise ValueError('restored search crosses frozen source stance')
         # A missing formula must be resolved once before constructing its negation.
         targets = tuple(t if t.formula else replace(t, formula=self.calls.formalise(t, commitments=commitments)) for t in targets)
         jobs = []
@@ -147,6 +160,7 @@ def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
 
 
 def _save_analyses(calls, targets, results, commitments=None):
+    provenance = calls.search_vocabulary(commitments)['commitment_provenance'] if commitments is not None else None
     routes = []
     graphs_by_id = {}
     analyses = []
@@ -163,7 +177,7 @@ def _save_analyses(calls, targets, results, commitments=None):
                 # Formula-identical targets can share deterministic graph ids.
                 # Retain each search in the log, but persist/select a graph once.
                 from ara.runtime.route_policy import route_contribution
-                contribution = route_contribution(route, commitments)
+                contribution = route_contribution(route, commitments, provenance)
                 calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict(),
                                  contribution=contribution,
                                  classification=contribution['classification'])
@@ -172,7 +186,7 @@ def _save_analyses(calls, targets, results, commitments=None):
                     raise ValueError('engine returned conflicting graphs for one route id')
                 if previous is None:
                     graphs_by_id[route.id] = route
-                    save_route(calls.log.path.parent / 'routes', route, commitments)
+                    save_route(calls.log.path.parent / 'routes', route, commitments, provenance)
                     routes.append(route)
             calls.log.record('search_finished', target=target.id, polarity=polarity,
                              routes=[r.id for r in result.routes],

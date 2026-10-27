@@ -125,8 +125,10 @@ def test_catalogue_identity_changes_cache_and_legacy_is_explicit(tmp_path):
     assert requests[0][1]['catalogue_sha256'] != requests[2][1]['catalogue_sha256']
     (tmp_path/'frozen-t.json').unlink()
     calls.propose_targets(T, 1)
-    assert requests[-1][1]['symbol_catalogue'] is None
-    assert requests[-1][1]['catalogue_status'] == 'unavailable_legacy'
+    assert requests[-2][1]['symbol_catalogue'] is None
+    assert requests[-2][1]['catalogue_status'] == 'unavailable_legacy'
+    assert requests[-1][1]['definition_semantics'] == 'unavailable_legacy'
+    assert requests[-1][1]['rendered_content']['definition'] is None
 
 
 def test_corrupt_catalogue_refused_without_dispatch(tmp_path):

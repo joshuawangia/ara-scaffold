@@ -61,6 +61,8 @@ def fixture_route(target):
 def canned(config):
     """Produce exact hash keys from an explicit finite request inventory."""
     calls = object.__new__(ModelCalls)
+    from types import SimpleNamespace
+    calls.log = SimpleNamespace(read=lambda: [])
     calls.root, calls.topic, calls.config = ROOT, 'P Q', config
     result = {}
     def add(kind, inputs, output, content=None):
@@ -72,16 +74,16 @@ def canned(config):
     add('build_t', {'literature': (ROOT / 'tests/fixtures/runtime/smoke-literature.txt').read_text(),
                     'audience': 'runtime audience'}, T.to_dict())
     from ara.runtime.search_alignment import catalogue_inputs
-    from ara.runtime.target_policy import target_context
+    from ara.runtime.target_policy import target_context, classifier_inputs
     vocabulary = catalogue_inputs(ROOT / 'tests/fixtures/runtime', T)
     add('propose_targets', {'commitments': T.to_dict(), 'count': 2, 'named_position': None, **vocabulary, **target_context(T)},
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:
-        add('classify_target', dict(target=target.to_dict(), **vocabulary),
+        add('classify_target', classifier_inputs(target, vocabulary),
             dict(classification='own_thesis', reason='P'))
         for goal in (target, negate_proposition(target)):
-            add('map_leaf', {'leaf': goal.to_dict(), 'commitments': T.to_dict()},
+            add('map_leaf', dict(leaf=goal.to_dict(), commitments=T.to_dict(), **vocabulary),
                 {'t_id': 'open'})
             add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': [],
                 'proposal_limit': 3, 'attempt_budget': 1, **vocabulary}, {'proposals': []})

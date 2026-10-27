@@ -151,9 +151,10 @@ def test_named_position_preserved(rig):
     formula = Formula('atom', name='P')
     from test_search_alignment import T as commitments
     formula = Formula('atom', name='Q')
+    from ara.bank import load_bank
     from ara.runtime.target_policy import target_context, classifier_inputs
-    inputs = {'commitments': commitments.to_dict(), 'count': 10, 'named_position': 'Q',
-              **calls.search_vocabulary(commitments), **target_context(commitments)}
+    inputs = {'commitments': commitments.to_dict(), 'count': 1, 'keep_count': 1, 'attempt': 1, 'attempt_budget': 3, 'named_position': 'Q',
+              **calls.search_vocabulary(commitments), **target_context(commitments, load_bank(calls.root / 'bank'))}
     register(calls, provider, 'propose_targets', inputs, {'targets': [{'id': 'p', 'text': 'Q', 'formula': None}]})
     register(calls, provider, 'formalise', {'proposition': Proposition('p', 'Q').to_dict(),
              **calls.search_vocabulary(commitments),

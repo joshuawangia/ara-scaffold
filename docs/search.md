@@ -11,8 +11,9 @@ uv run ara run --profile pilot --topic 'P Q' --literature /path/to/literature.tx
 uv run ara select --run-dir runs/pilot
 ```
 
-The pilot requests 10 target candidates and searches those that pass preflight
-at depth 6 and node cap 500, then waits for human route selection. Excluded
+The pilot requests a pool of 20 target candidates per attempt, retains up to 10
+that pass preflight, and searches them at depth 6 and node cap 500 before human
+route selection. Excluded
 candidates remain disclosed; the accepted set can contain fewer than ten or none.
 
 `search_concurrency` (top-level configuration, default 4)
@@ -23,9 +24,9 @@ positive then negative. Interrupted publication leaves accounting explicitly
 incomplete and refuses paid resume until reconciled. In-flight model reservations
 count against the run caps.
 
-Target proposal requests candidates in a batch. Vocabulary and contribution
-checks share one correction request; each candidate also receives the own-thesis
-classification described below. If all ten candidates pass, there are 20 polarity
+Target proposal permits an initial batch and at most two corrections. Passing
+candidates remain retained in stable attempt/response order; later batches fill
+remaining places. Each candidate receives the own-thesis classification below. If all ten candidates pass, there are 20 polarity
 searches. For 20 similarly sized searches, four workers can reduce that portion
 from 20 waves to about five; proposal, forward/conflict analysis, solver checks,
 logging and provider limits reduce the total speedup. This is an expected effect, not a
@@ -147,13 +148,32 @@ predicates identified by catalogue definitions also reject candidates. Missing
 legacy catalogues remain unavailable; code does not invent their definitions.
 All classification dispositions, cache replays and solver receipts are logged.
 
-Vocabulary and triviality share one proposal correction. Remaining exclusions
-and reasons are retained; a second disconnected-vocabulary result is disclosed
-without automatically excluding an otherwise accepted target. `--named-position`
-preserves the requested text and still undergoes these checks. Neither the model
-classification nor the solver checks prove originality, source support or faithful
-text/formula translation. See `ara/runtime/calls.py:916`,
-`ara/runtime/target_policy.py:42` and `ara/runtime/contribution.py:45`.
+Proposal asks for 20 candidates per attempt and retains at most
+`min(target_candidates, 10)`. An explicit named position uses a one-item pool and
+preserves its exact text. A response may supply fewer candidates when it cannot
+fill the pool; received/requested counts and `underfilled` are logged. At most
+three proposal attempts run, with passing candidates retained across corrections
+in first-seen order. Retained IDs and alpha-equivalent structural formulas are
+not counted twice. Every candidate, including surplus passing candidates, gets a
+`target_pool_candidate` disposition; `target_pool_finished` records the retained
+set. Processing stops once the requested retained count is reached.
+
+The proposer receives the actual versioned bank, premise slots, CQs and
+placeholder support examples. A new main proposition must not be in T or follow
+from a single commitment. In particular, if R is in T, `(P and Q) -> R` is already
+entailed by R alone. Correction feedback includes each rejected target, reason,
+checked polarity, the full entailing commitment when present, and an explanation
+of this conditional trap. Existing solver gates remain unchanged.
+
+A new thesis may introduce new vocabulary; disconnection is disclosed as an
+advisory, not a gate or a reason to replace an otherwise passing candidate.
+Native search still needs a bank-licensed route. Defeasible schemes can license a
+new-atom thesis without classical entailment of that thesis: the placeholder
+regression closes R from P and Q through `sign`, with every CQ answered using
+frozen evidence IDs. Leaving CQs unanswered keeps the route open. This establishes
+native mechanical reachability, not the truth of CQ answers or semantic fitness
+of arbitrary material to a scheme. Neither model classification nor solver
+checks prove originality or faithful text/formula translation.
 
 The classifier schema is part of Codex preflight. Historical 15-case receipts
 must be refreshed for the current 16-case contract before live use; a changed

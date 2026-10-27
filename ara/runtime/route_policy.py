@@ -4,7 +4,7 @@ from ara.runtime.target_policy import attributed_report
 from ara.types import Commitment, CommitmentSet
 
 
-def route_contribution(route, commitments=None):
+def _logical_contribution(route, commitments=None):
     if route.status != 'CLOSED':
         return dict(classification=route.status, reason='not_closed')
     nodes = {n.id:n for n in route.nodes}
@@ -40,12 +40,49 @@ def route_contribution(route, commitments=None):
     return dict(classification=classification, support_ids=support_ids, **receipt)
 
 
-def route_classification(route, commitments=None):
-    return route_contribution(route, commitments)['classification']
+def stance_crossings(route, provenance):
+    if provenance is None:
+        return []
+    nodes = {n.id:n for n in route.nodes}
+    pending, seen, crossings = [route.root_id], set(), set()
+    while pending:
+        id = pending.pop()
+        if id in seen:
+            continue
+        seen.add(id)
+        node = nodes[id]
+        roles = [(node.t_id, 'global_premise')] if node.kind == 'leaf' and node.t_id != 'open' else []
+        roles += [(tid, 'cq_evidence') for a in node.cq_answers for tid in a.supporting_t_ids]
+        for tid,role in roles:
+            stance = provenance['commitments'].get(tid, {}).get('stance', 'unavailable')
+            if stance != 'endorsed':
+                crossings.add((tid,stance,role))
+        pending.extend(node.children)
+    return [dict(commitment_id=tid,stance=stance,role=role) for tid,stance,role in sorted(crossings)]
 
 
-def selectable_routes(routes, commitments=None):
-    return tuple(r for r in routes if route_classification(r, commitments) == 'CLOSED-derived')
+def route_contribution(route, commitments=None, provenance=None):
+    receipt = _logical_contribution(route, commitments)
+    crossings = stance_crossings(route, provenance)
+    if crossings:
+        receipt.update(classification='CLOSED-stance-crossing' if route.status == 'CLOSED' else route.status,
+                       reason='restricted_source_used_as_global_support')
+    scoped = [dict(node_id=n.id, commitment_id=c.id, stance=provenance['commitments'][c.id]['stance'],
+                   role='scoped_hypothesis')
+              for n in route.nodes if n.kind == 'assumption'
+              for c in (commitments.commitments if commitments is not None and provenance else ())
+              if formula_hash(n.proposition.formula) == formula_hash(c.formula)]
+    return dict(**receipt, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
+                provenance_sha256=provenance['sha256'] if provenance else None,
+                stance_crossings=crossings)
+
+
+def route_classification(route, commitments=None, provenance=None):
+    return route_contribution(route, commitments, provenance)['classification']
+
+
+def selectable_routes(routes, commitments=None, provenance=None):
+    return tuple(r for r in routes if route_classification(r, commitments, provenance) == 'CLOSED-derived')
 
 
 def frozen_from_events(events):
@@ -54,3 +91,16 @@ def frozen_from_events(events):
     freezes = [json.loads(e['payload_json'])['commitments'] for e in events
                if e['stage'] == 'commitments_frozen']
     return CommitmentSet.from_dict(freezes[-1]) if freezes else None
+
+
+def provenance_from_events(events, commitments):
+    """Validate provenance receipts against the logged freeze, without inventing legacy roles."""
+    import json
+    from ara.runtime.commitment_provenance import validate_commitment_provenance
+    receipts = [json.loads(e['payload_json']) for e in events if e['stage'] == 'commitment_provenance_frozen']
+    if not receipts:
+        return None
+    catalogues = [json.loads(e['payload_json']) for e in events if e['stage'] == 'symbol_catalogue_frozen']
+    if len(receipts) != 1 or len(catalogues) != 1 or commitments is None:
+        raise ValueError('invalid commitment provenance freeze receipts')
+    return validate_commitment_provenance(receipts[0], commitments, catalogues[0])

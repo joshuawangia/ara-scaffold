@@ -54,3 +54,24 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None):
             rejected.append(dict(target_id=target.id, reason=reason,
                                  commitment_id=receipt.get('commitment_id')))
     return rejected
+
+
+def classifier_inputs(target, vocabulary):
+    """Render asserted logical structure; source attribution is not assertion content."""
+    catalogue = vocabulary['symbol_catalogue'] if vocabulary['definition_semantics'] == 'content' else None
+    definitions = {(s['name'],s['kind'],s['arity']):s['definition'] for s in catalogue or []}
+    def render(formula):
+        if formula.op in ('atom','predicate'):
+            return dict(op=formula.op, name=formula.name,
+                        definition=definitions.get((formula.name,formula.op,len(formula.terms))),
+                        terms=[dict(**t.to_dict(), definition=definitions.get((t.name,'constant',0)))
+                               if t.kind == 'constant' else t.to_dict() for t in formula.terms])
+        result = dict(op=formula.op, args=[render(a) for a in formula.args])
+        if formula.variable is not None:
+            result['variable'] = formula.variable
+        return result
+    return dict(target=target.to_dict(), rendered_content=render(target.formula),
+                definition_semantics=vocabulary['definition_semantics'],
+                commitments_sha256=vocabulary['commitments_sha256'],
+                catalogue_sha256=vocabulary['catalogue_sha256'],
+                provenance_sha256=vocabulary['provenance_sha256'])

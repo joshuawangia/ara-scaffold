@@ -273,7 +273,7 @@ def construction(records, evidence):
                 receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_'))])
 
 
-def route_details(row, commitments):
+def route_details(row, commitments, provenance=None):
     data = payload(row['event'])
     graph = data['graph']
     support = []
@@ -287,7 +287,7 @@ def route_details(row, commitments):
     from ara.types import RouteGraph, CommitmentSet, Commitment
     frozen = CommitmentSet(tuple(Commitment.from_dict({k:v for k,v in c.items()
         if k in ('id','text','citation','formula')}) for c in commitments.values()))
-    contribution = route_contribution(RouteGraph.from_dict(graph), frozen)
+    contribution = route_contribution(RouteGraph.from_dict(graph), frozen, provenance)
     return dict(seq=row['seq'], target=data.get('target'), polarity=data.get('polarity'), graph=graph,
                 classification=contribution['classification'], contribution=contribution,
                 support_chain=support, model_summary=None, audit_results=[])
@@ -305,7 +305,10 @@ def build_run(directory):
     evidence = evidence_index(events)
     built = construction(records, evidence)
     frozen = {c['id']: c for c in built['commitments']}
-    routes = [route_details(r, frozen) for r in records if r['event']['stage'] == 'route']
+    from ara.runtime.route_policy import provenance_from_events, frozen_from_events
+    provenance = provenance_from_events(events, frozen_from_events(events))
+    built['commitment_provenance'] = provenance
+    routes = [route_details(r, frozen, provenance) for r in records if r['event']['stage'] == 'route']
     search = searches(records, directory)
     for trace in search['traces']:
         gaps.extend("PARTIAL SEARCH TRACE: " + text for text in trace['issues'])

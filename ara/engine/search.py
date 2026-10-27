@@ -60,8 +60,12 @@ class Engine:
     def __init__(self, bank: Bank, commitments: CommitmentSet, proposer: CutProposer,
                  formaliser: Formaliser, leaf_mapper: LeafMapper, cq_answerer: CQAnswerer,
                  repairer: Tier1Repairer, sink: EventSink, config: EngineConfig | None = None,
-                 traces: SearchTraceFactory | None = None):
-        self.bank, self.commitments, self.proposer = bank, commitments, proposer
+                 traces: SearchTraceFactory | None = None,
+                 premise_commitments: CommitmentSet | None = None):
+        self.bank, self.frozen_commitments, self.proposer = bank, commitments, proposer
+        self.commitments = commitments if premise_commitments is None else premise_commitments
+        if any(commitments.get(c.id) != c for c in self.commitments.commitments):
+            raise ValueError('premise commitments must be a subset of frozen T')
         self.formaliser, self.leaf_mapper, self.cq_answerer = formaliser, leaf_mapper, cq_answerer
         self.repairer, self.sink, self.config = repairer, sink, config or EngineConfig()
         self.licenser = Licenser(bank, formaliser, sink, self.config.solver_timeout_ms, commitments)
@@ -76,7 +80,9 @@ class Engine:
                 emit(self.sink, 'licensed', 'SCOPED_ASSUMPTION', node_id=node_id)
                 return RouteNode(node_id, p, 'assumption', scope_id=scope_id)
         if t_id == 'open':
-            t_id = self.leaf_mapper.map_leaf(p, self.commitments)
+            t_id = self.leaf_mapper.map_leaf(p, self.frozen_commitments)
+        if self.frozen_commitments.get(t_id) is not None and self.commitments.get(t_id) is None:
+            emit(self.sink, 'discarded', 'STANCE_CROSSING', detail=t_id, node_id=node_id)
         closed = check_terminus(p, t_id, self.commitments, self.sink, node_id)
         return RouteNode(node_id, p, 'leaf', t_id=t_id if closed else 'open',
                          scope_id=context[-1][0] if context else None)
@@ -134,7 +140,7 @@ class Engine:
                      node_id=node.id, reason='CYCLE')
                 continue
             trace('expand', state_id=state_id, node_id=node.id, depth=state.depths[node.id])
-            proposals = self.proposer.propose_cuts(node.proposition, self.commitments, self.bank.entries)
+            proposals = self.proposer.propose_cuts(node.proposition, self.frozen_commitments, self.bank.entries)
             produced, seen = False, set()
             for proposal_index, proposal in enumerate(proposals):
                 trace('proposal', state_id=state_id, node_id=node.id,
@@ -182,10 +188,13 @@ class Engine:
                     depths[nid] = state.depths[node.id] + 1
                     trace('node', node=children[-1], parent_node_id=node.id, depth=depths[nid])
                     ancestors[nid] = state.ancestors[node.id] + (node.proposition.formula.canonical(),)
-                answers = tuple(self.cq_answerer.answer_cq(q, proposal, self.commitments)
+                answers = tuple(self.cq_answerer.answer_cq(q, proposal, self.frozen_commitments)
                                 for q in entry.critical_questions)
                 for q, answer in zip(entry.critical_questions, answers):
                     supported = cq_supported(answer, q.id, self.commitments)
+                    for tid in answer.supporting_t_ids:
+                        if self.frozen_commitments.get(tid) is not None and self.commitments.get(tid) is None:
+                            emit(self.sink, 'discarded', 'STANCE_CROSSING', detail=tid, node_id=node.id)
                     emit(self.sink, 'licensed' if supported else 'discarded',
                          'CQ_SUPPORTED' if supported else 'CQ_UNSUPPORTED', bank_id=entry.id, node_id=node.id)
                 inference = replace(node, kind='inference', t_id='open', proposal=proposal,

@@ -50,6 +50,7 @@ def fork_from_freeze(source, destination, bank):
         artifacts = {'commitments.json':(source/'commitments.json').read_bytes()}
         if CommitmentSet.from_json(artifacts['commitments.json'].decode()).to_dict()!=commitments.to_dict():
             raise ValueError('fork frozen commitments mismatch')
+        catalogue = None
         if (source/'frozen-t.json').exists():
             artifacts['frozen-t.json']=(source/'frozen-t.json').read_bytes()
             catalogue = validate_frozen_artifact(json.loads(artifacts['frozen-t.json']),commitments)
@@ -58,6 +59,13 @@ def fork_from_freeze(source, destination, bank):
                 raise ValueError('fork frozen catalogue receipt mismatch')
         elif any(e['stage']=='symbol_catalogue_frozen' for e in events):
             raise ValueError('fork frozen catalogue artifact missing')
+        from ara.runtime.commitment_provenance import load_commitment_provenance
+        provenance = load_commitment_provenance(source, commitments, catalogue)
+        receipts = [json.loads(e['payload_json']) for e in events if e['stage']=='commitment_provenance_frozen']
+        if receipts != ([provenance] if provenance is not None else []):
+            raise ValueError('fork commitment provenance receipt mismatch')
+        if provenance is not None:
+            artifacts['commitment-provenance.json'] = (source/'commitment-provenance.json').read_bytes()
         lines = path.read_bytes().splitlines(keepends=True)
         prefix = b''.join(lines[:count])
         # Detect a source rewrite even if it did not cooperate with the lock.

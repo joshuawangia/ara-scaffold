@@ -37,7 +37,7 @@ def relational(inputs, flat=False):
         for name, kind, arity in set(formula_symbols(Formula.from_dict(f))):
             symbol = symbols.setdefault(name, dict(name=name, kind=kind, arity=arity, definition=name, evidence_ids=[]))
             symbol['evidence_ids'].append(id)
-    return dict(commitments=[dict(id=id, formula=f) for id, f in formulas.items()],
+    return dict(commitments=[dict(id=id, definition=items[id]['text'], formula=f) for id, f in formulas.items()],
                 new_symbols=list(symbols.values()), alignments=[])
 
 
@@ -67,7 +67,8 @@ def test_relational_inferences_derive_target_without_assuming_conclusion(rig, mo
     premises = tuple(by_id[id].formula for id in ('p', 'q', 'i', 'j'))
     assert entails(premises, by_id['f'].formula, 2000) == 'SOLVER_UNSAT'
     assert entails(premises[:2], by_id['f'].formula, 2000) == 'SOLVER_COUNTEREXAMPLE'
-    assert all('inference' in by_id[id].text and by_id[id].citation for id in ('i', 'j'))
+    provenance = json.loads((calls.log.path.parent / 'commitment-provenance.json').read_text())['commitments']
+    assert all(provenance[by_id[id].id]['source_kind'] == 'inference' and by_id[id].citation for id in ('i', 'j'))
     outcome = payloads(calls, 'build_t_structure_outcome')[0]
     assert outcome['passed'] and outcome['non_atomic_fraction'] == 2 / 8
     assert outcome['inference_fraction'] == 2 / 8

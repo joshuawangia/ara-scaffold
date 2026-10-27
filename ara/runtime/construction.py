@@ -17,7 +17,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v10'
+PLAN_VERSION = 'rich-working-t-v11'
 CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
@@ -210,6 +210,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     require(input_bound > 0, 'no build-T batch input allowance')
     base_inputs = {'publication_roster': json.loads(literature[len(HEADER):]).get('publication_roster', []), 'plan': metadata, 'audience': audience, 'shared_symbols': []}
     items = {item['id']: item for item in all_items}
+    authors = {}
+    for paper in usable:
+        supplied = paper.get('authors', paper.get('record', {}).get('authors', []))
+        supplied = [] if supplied is None else supplied
+        require(isinstance(supplied, (str, list)), 'invalid source authors metadata')
+        authors[paper['source_id']] = [supplied] if isinstance(supplied, str) else supplied
+
     dependencies = evidence_dependencies(items)
     from ara.runtime.closure_budget import budget_plan, depth_cut, payload_token_bound
     # Compute each distinct closure once. Payload bounds are local, deterministic
@@ -505,14 +512,26 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 ids = [c['id'] for c in data['commitments']]
                 require(len(ids) <= window_cap, 'construction window commitment cap exceeded')
                 require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
+                from ara.runtime.commitment_provenance import content_definition, source_provenance, _validate_source
+                definitions = {c['id']: c['definition'] for c in data['commitments']}
+                for id, definition in definitions.items():
+                    require(content_definition(definition), 'content definition must not contain attribution: commitment ' + id)
+                for symbol in data['new_symbols']:
+                    require(content_definition(symbol['definition']), 'content definition must not contain attribution: symbol ' + symbol['name'])
+                provenance = {id: source_provenance(items[id], authors[items[id]['source_id']], support_omitted.get(id, []))
+                              for id in definitions}
+                for id, row in provenance.items():
+                    try:
+                        _validate_source(id, row)
+                    except ValueError as exc:
+                        raise Rejected(str(exc)) from exc
                 commitments = CommitmentSet.from_dict({'commitments': [
-                    {**c, 'text': evidence_text(items[c['id']], support_omitted.get(c['id'])), 'citation': items[c['id']]['citation']}
+                    dict(id=c['id'], text=c['definition'], formula=c['formula'], citation=items[c['id']]['citation'])
                     for c in data['commitments']]})
                 selected = {c.id for c in commitments.commitments}
                 for c in commitments.commitments:
                     require(c.citation == items[c.id]['citation'], 'T citation not in extracted literature')
-                    # Text carries attribution and provenance from immutable evidence, not a lossy rewrite.
-                    require(c.text == evidence_text(items[c.id], support_omitted.get(c.id)), 'working T changed evidence or attribution')
+                    require(c.text == definitions[c.id], 'working T changed content definition')
                 require(len({c.citation for c in commitments.commitments}) == len(commitments.commitments), 'duplicate batch citation')
                 names = [s['name'] for s in symbols + data['new_symbols']]
                 require(len(set(names)) == len(names), 'duplicate symbol definition')
@@ -546,7 +565,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                     working_borrowed_tokens=max(0, cumulative.initial_input_tokens - current.initial_input_tokens - working_share),
                     symbols_borrowed_tokens=max(0, with_catalog.initial_input_tokens - without.initial_input_tokens - catalog_tokens - symbol_share))
                 return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
-                    'bindings': bindings, 'omitted': omitted, 'closure': closure, 'borrowing': borrowing}))
+                    'bindings': bindings, 'provenance': provenance, 'omitted': omitted, 'closure': closure, 'borrowing': borrowing}))
             result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
             from ara.runtime.construction_structure import structure_gate
             prior_set = CommitmentSet.from_dict({'commitments': prior})
@@ -559,7 +578,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 # the unused atom symbols of a flattened candidate.
                 candidate = json.loads(result.receipt_json)
                 candidate = {key: candidate[key] for key in ('commitments', 'new_symbols', 'alignments')}
-                candidate['commitments'] = [dict(id=c['id'], formula=c['formula']) for c in candidate['commitments']]
+                candidate['commitments'] = [dict(id=c['id'], definition=c['text'], formula=c['formula']) for c in candidate['commitments']]
                 feedback = dict(issues=metrics['issues'],
                     instruction='Encode each selected inference as premises -> conclusion, reusing selected endpoint formulas. '
                                 'Use shared predicates/constants where source-supported. Keep unsupported qualifications separate. '
@@ -611,11 +630,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                      calls.count_request('build_t_batch', {**catalog_probe, 'shared_symbols': []}).initial_input_tokens)
     if final_catalog > symbol_budget:
         calls.budget.stop('accepted catalogue exceeds global budget before freeze', 'build_t_batch')
-    calls.log.record('build_t_merged', plan_id=plan_id, commitments=merged.to_dict(), symbols=symbols,
+    provenance = {id: row for result in results for id, row in json.loads(result.receipt_json).get('provenance', {}).items()}
+    require(set(provenance) == materialized, 'merged commitment provenance inventory mismatch')
+    calls.log.record('build_t_merged', plan_id=plan_id, commitments=merged.to_dict(), symbols=symbols, provenance=provenance,
                      input_tokens=measured.initial_input_tokens, source_ids=[p['source_id'] for p in papers],
                      note='One construction lifecycle, one freeze; explicit model omissions retained in batch receipts.')
     save_immutable(calls.log.path.parent / f'working-t-{plan_id}.json', canonical({
-        'plan_id': plan_id, 'symbols': symbols, 'commitments': merged.to_dict()}))
+        'plan_id': plan_id, 'symbols': symbols, 'commitments': merged.to_dict(), 'provenance': provenance}))
     return merged
 
 

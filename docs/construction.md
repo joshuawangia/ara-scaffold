@@ -15,11 +15,11 @@ links and premises recursively, plus applicable qualifications and distinctions.
 Shared premises or qualifiers do not select other consequences. Roots, added IDs,
 graph hash and rule version are logged. A second model call formalizes exactly
 that fixed inventory. Every omitted item has a model-authored reason; code removes
-required prerequisites from preliminary omission groups. Exact attributed evidence
-text and citations survive into T; identical or contradictory formulas are not
+required prerequisites from preliminary omission groups. Exact source text survives in immutable evidence and commitment provenance,
+while citations remain unchanged in T; identical or contradictory formulas are not
 deduplicated. Shared symbol definitions and model-produced semantic reuse
 decisions are logged and validated; code derives syntactic occurrence bindings and
-copies source text/citations. Code never invents equivalences. Faithful
+copies provenance and citations. Code never invents equivalences. Faithful
 formalisation and semantic alignment remain model judgments requiring source
 inspection.
 
@@ -47,8 +47,7 @@ forecast.
 Construction uses a global working/copy/catalogue allocation and 20% headroom.
 Selection sees each root's full closure size and a conservative UTF-8 payload
 token bound. If necessary, code cuts at a complete prerequisite depth while
-retaining qualifiers and inference endpoints. Frontier commitments are explicitly
-marked `assumed_premise; support_omitted` with omitted support IDs; methodology
+retaining qualifiers and inference endpoints. Frontier commitments carry explicit `omitted_support_ids` in provenance; methodology
 discloses that routes using these premises are conditional. An oversized mandatory
 bundle or an irrelevant window may contribute nothing. Actual output and complete
 requests are still counted and may refuse; no model quality guarantee is implied.
@@ -143,7 +142,7 @@ a guarantee that a window contributes.
 
 ## Structure and frozen vocabulary
 
-Rich construction preserves selected inference nodes as attributed conditionals
+Rich construction preserves selected inference nodes as content conditionals with source stance in provenance
 using shared endpoint formulas. Predicates/constants are required where the source
 supports relational structure. The model decides meaning, symbol reuse, and
 whether qualifications belong in conditions; code never invents equivalence. Each
@@ -173,3 +172,41 @@ T. Follow [frozen-fork operation](search.md#reuse-a-verified-freeze) for source,
 destination, accounting and provider requirements. A fresh `ara run` still
 constructs and freezes its own T. `run --from-frozen` is not a supported alias.
 Manual artifact copying does not replace the native verification path.
+
+
+## Content definitions and source stance
+
+Fresh rich construction asks for a content `definition` alongside each formula.
+It stores that definition as `Commitment.text`; catalogue definitions also denote
+content. Attribution is not mechanically stripped or translated by code. Both
+kinds of definition are screened using the same attribution lexicon as target
+policy. Invalid definitions enter the logged, bounded construction correction
+path; they cannot bypass validation by remaining flat. Lexical screening can
+reject legitimate uses of attribution vocabulary and cannot establish semantic
+fidelity. The existing correction allowance and admission budgets still apply.
+
+`commitment-provenance.json` preserves a commitment-id mapping to source ID,
+source authors, attributed speaker, physical page range, evidence ID, exact source
+text, source kind, attribution, stance and omitted support IDs. Bibliographic
+authors are preserved when supplied in the literature input; current published
+extraction entries omit those records, so source_authors is empty for them. The
+attributed speaker remains available independently. Missing authors are not inferred. `author_claim`
+maps to `endorsed`, `reported_view` to `reported`, and `attacked_view` to `attacked`.
+Reported/attacked source-kind tags must agree with attribution. Endorsed describes
+the source's stance; it is not a truth judgment by ARA. Omitted support is a
+separate condition and remains disclosed even for endorsed source claims.
+
+The sidecar uses `commitment-provenance-v1` and `definition_semantics: content`.
+Its SHA256 covers all fields except `sha256`, using the same canonical UTF-8 JSON
+as the frozen catalogue. It binds both `CommitmentSet.to_dict()` and the catalogue
+SHA256. `validate_commitment_provenance` and `load_commitment_provenance` in
+`ara.runtime.commitment_provenance` return the verified full sidecar. Absence
+returns `None`: legacy stance/content semantics are unavailable, never implicitly
+endorsed. A present invalid sidecar refuses. The full sidecar is logged as
+`commitment_provenance_frozen` before the single `commitments_frozen` event.
+The CommitmentSet codec and existing frozen catalogue formats stay unchanged.
+
+Plan v11 changes model inputs, schema and definition semantics. Rebuild for this
+policy; do not reinterpret an old frozen catalogue or resume an old counted plan
+as content-level construction. Search, fork/resume preservation and stance-aware
+route admission consume this interface in their owning integration lane.

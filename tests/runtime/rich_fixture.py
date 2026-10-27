@@ -37,7 +37,7 @@ def batch_response(inputs):
                 if f['op'] == 'atom': yield f['name']
                 for arg in f.get('args', []): yield from names(arg)
             for n in set(names(formula)): uses.setdefault(n, []).append(item['id'])
-            commitments.append(dict(id=item['id'], formula=formula))
+            commitments.append(dict(id=item['id'], definition=item['text'], formula=formula))
     return dict(commitments=commitments,
         new_symbols=[dict(name=n, kind='atom', arity=0, definition=n, evidence_ids=ids) for n,ids in sorted(uses.items()) if n not in symbols],
         alignments=[dict(name=n, reason='P') for n in sorted(uses) if n in symbols])

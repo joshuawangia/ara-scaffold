@@ -94,7 +94,7 @@ CASES = [
     ('strict_partial', 'ara/runtime/extraction.py', "if paper.affected_pages and missing == 'refuse':", 'if False:', 'tests/runtime/test_extraction_rich.py::test_strict_partial_cli'),
     ('rich_inventory', 'ara/runtime/construction.py', 'require(not set(roots) & excluded and set(roots) | excluded == set(window_items),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[inventory]'),
     ('rich_dependency_closure', 'ara/runtime/construction.py', 'require(all(dependencies[id] <= selected_ids for id in selected_ids),', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[closure]'),
-    ('rich_attribution', 'ara/runtime/construction.py', 'require(c.text == evidence_text(items[c.id], support_omitted.get(c.id)),', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[attribution]'),
+    ('rich_attribution', 'ara/runtime/construction.py', 'require(c.text == definitions[c.id],', 'require(True,', 'tests/runtime/test_extraction_round3.py::test_fixed_inventory_boundary_has_no_freeze[attribution]'),
     ('rich_symbol_unique', 'ara/runtime/construction.py', 'require(len(set(names)) == len(names),', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[duplicate_symbol]'),
     ('rich_symbol_signature', 'ara/runtime/construction.py', "require(catalog[name]['kind'] == kind and catalog[name]['arity'] == arity,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[symbol_arity]'),
     ('rich_symbol_alignment', 'ara/runtime/construction.py', 'require(valid_alignments,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[binding]'),
@@ -608,8 +608,8 @@ CASES += [
     ('bounded_cut_omission_ids', 'ara/runtime/closure_budget.py',
      'return selected, omitted, depth', 'return selected, {}, depth',
      'tests/runtime/test_bounded_closure.py::test_depth_cut_retains_qualifiers_endpoints_and_omitted_support'),
-    ('bounded_assumption_mark', 'ara/runtime/construction.py',
-     'return prefix + f', 'return f',
+    ('bounded_assumption_mark', 'ara/runtime/commitment_provenance.py',
+     'omitted_support_ids=sorted(set(omitted_support_ids))', 'omitted_support_ids=[]',
      'tests/runtime/test_bounded_closure.py::test_native_cut_disclosed_in_frozen_text_receipt_and_methodology'),
     ('bounded_methodology', 'ara/runtime/export.py',
      "p.get('support_omitted', {}).items()", '{}.items()',
@@ -1339,6 +1339,25 @@ CASES += [
      "polarity=data.get('polarity'), graph=graph,",
      "polarity=contribution.get('polarity', data.get('polarity')), graph=graph,",
      'tests/runtime/test_report_contribution.py'),
+]
+
+
+CASES += [
+    ('content_commitment_correction', 'ara/runtime/construction.py',
+     'require(content_definition(definition),', 'require(True,',
+     'tests/runtime/test_content_provenance.py::test_attributed_definition_gets_logged_targeted_correction[commitment]'),
+    ('content_symbol_correction', 'ara/runtime/construction.py',
+     "require(content_definition(symbol['definition']),", 'require(True,',
+     'tests/runtime/test_content_provenance.py::test_attributed_definition_gets_logged_targeted_correction[symbol]'),
+    ('content_source_stance', 'ara/runtime/commitment_provenance.py',
+     "'reported_view': 'reported'", "'reported_view': 'endorsed'",
+     'tests/runtime/test_content_provenance.py::test_content_stance_and_exact_evidence_survive_freeze'),
+    ('content_source_text', 'ara/runtime/commitment_provenance.py',
+     "source_text=item['text']", "source_text='P'",
+     'tests/runtime/test_content_provenance.py::test_content_stance_and_exact_evidence_survive_freeze'),
+    ('content_provenance_hash', 'ara/runtime/commitment_provenance.py',
+     "if value['sha256'] != digest(canonical(payload)):", 'if False:',
+     'tests/runtime/test_commitment_provenance.py::test_sidecar_refuses_tampering_even_with_recomputed_hash[hash]'),
 ]
 
 

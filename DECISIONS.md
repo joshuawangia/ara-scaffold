@@ -66,6 +66,7 @@ Source citations in the documentation correction entry refer to base `6511ff6`.
 - [S5 — Initial-share caps and construction dispatch configuration](#s5-initial-share-caps-and-construction-dispatch-configuration)
 - [S6 — Native schema authority with bounded local validation](#s6-native-schema-authority-with-bounded-local-validation)
 - [S8: Frozen construction catalogue interface](#s8-frozen-construction-catalogue-interface)
+- [S9: Content definitions with hash-bound source stance](#s9-content-definitions-with-hash-bound-source-stance)
 - [S8 structure gate and bounded correction](#s8-structure-gate-and-bounded-correction)
 
 ### Search and reports
@@ -3517,3 +3518,35 @@ faithful formalization, useful new synthesis, independent source papers or live
 Codex serving identity. The external rebase handoff records the current CLI-help,
 link, leak and full pytest results separately from xi's historical proof receipts.
 No executable, prompt, schema, test or configuration change is made by this rebase.
+
+
+## S9: Content definitions with hash-bound source stance
+
+This supersedes S8's attributed commitment text for newly constructed T. Rich
+build_t_batch v5 returns id, content definition and formula. New Commitment.text
+and symbol definitions denote the proposition itself; runtime copies exact source
+text and attribution into provenance, without mechanical semantic rewriting.
+The shared target_policy.attributed_report lexicon screens both definition kinds;
+failures use logged construction correction and remain refusals when uncorrected.
+This heuristic is not a proof of translation fidelity and can conservatively
+reject content that uses its lexicon literally.
+
+Keep the four-field CommitmentSet codec, commitments.json, frozen-t.json and
+symbol-catalogue-v1 unchanged. Add commitment-provenance.json with schema_version
+commitment-provenance-v1, definition_semantics content, commitments_sha256,
+catalogue_sha256, commitments mapping and sha256. The mapping retains source_id,
+source_authors, attributed_to, page_start/end, evidence_id, attribution, stance,
+source_kind, exact source_text and sorted omitted_support_ids. Hash the entire
+sidecar except sha256 with runtime.cache.canonical/digest. Bind exact T and the
+verified catalogue. Full metadata is logged before freeze. The construction guide
+owns the operating contract; the external Sigma/Xi contract records the seam.
+
+Map author_claim to endorsed, reported_view to reported and attacked_view to
+attacked; contradictory reported/attacked source-kind tags refuse. No endorsement
+is inferred when legacy metadata is absent. Hashes detect changes relative to the
+retained records, not an adversary rewriting an entire history. Source provenance
+is validated/copied by code, while content and equivalence remain model judgments.
+Plan v11 prevents silently resuming old plans under these semantics. Source
+citations and immutable evidence stay unchanged. Search-side stance admission,
+fork/resume copying and route/report policy are owned by Xi; solver licensing
+is not changed by this construction patch.

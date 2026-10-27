@@ -143,6 +143,7 @@ def methodology(log_path: Path) -> str:
         'construction': {'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],
                          'structure_outcomes': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_outcome'],
                          'frozen_catalogues': [json.loads(e['payload_json']) for e in events if e['stage'] == 'symbol_catalogue_frozen'],
+                         'commitment_provenance': [json.loads(e['payload_json']) for e in events if e['stage'] == 'commitment_provenance_frozen'],
                          'support_omitted': [dict(index=p['index'], evidence_id=id, omitted_support_ids=ids)
                          for e in events if e['stage'] == 'build_t_closure'
                          for p in [json.loads(e['payload_json'])] for id, ids in p.get('support_omitted', {}).items()],

@@ -1,6 +1,7 @@
 """Placeholder-only fixtures for runtime orchestration, never a production engine."""
 import json
 from pathlib import Path
+from ara.bank import load_bank
 
 from ara.runtime.cache import canonical
 from ara.runtime.calls import ModelCalls
@@ -76,7 +77,7 @@ def canned(config):
     from ara.runtime.search_alignment import catalogue_inputs
     from ara.runtime.target_policy import target_context, classifier_inputs
     vocabulary = catalogue_inputs(ROOT / 'tests/fixtures/runtime', T)
-    add('propose_targets', {'commitments': T.to_dict(), 'count': 2, 'named_position': None, **vocabulary, **target_context(T)},
+    add('propose_targets', {'commitments': T.to_dict(), 'count': 20, 'keep_count': 2, 'attempt': 1, 'attempt_budget': 3, 'named_position': None, **vocabulary, **target_context(T, load_bank(ROOT / 'bank'))},
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:

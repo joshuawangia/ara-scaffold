@@ -924,25 +924,32 @@ class ModelCalls:
         from ara.runtime.search_alignment import symbols
         vocabulary = self.search_vocabulary(commitments)
         from ara.runtime.target_policy import target_context, trivial_targets, classifier_inputs
+        from ara.runtime.contribution import formula_hash
+        require(type(count) is int and count > 0, 'target count must be positive')
+        keep_count = 1 if named_position is not None else min(count, 10)
+        pool_count = 1 if named_position is not None else 20
         def check(data):
             targets = tuple(Proposition.from_dict(p) for p in data['targets'])
-            require(len(targets) == (1 if named_position is not None else count), 'wrong target count')
+            require(1 <= len(targets) <= pool_count, 'target pool outside requested bounds')
             require(len({p.id for p in targets}) == len(targets), 'duplicate target id')
             if named_position is not None:
                 require(targets[0].text == named_position, 'named position was changed')
             return targets
-        inputs = dict(commitments=commitments.to_dict(), count=count,
-                      named_position=named_position, **vocabulary, **target_context(commitments))
+        inputs = dict(commitments=commitments.to_dict(), count=pool_count, keep_count=keep_count,
+                      attempt=1, attempt_budget=3, named_position=named_position,
+                      **vocabulary, **target_context(commitments, load_bank(self.root / 'bank')))
         frozen = set().union(*(set(symbols(c.formula)) for c in commitments.commitments))
-        for attempt in range(2):
+        kept, kept_ids, kept_formulas = [], set(), set()
+        for attempt in range(3):
             targets = self.call('propose_targets', inputs, check)
             targets = tuple(p if p.formula else replace(p, formula=self.formalise(p, commitments=commitments))
                             for p in targets)
             disconnected = [p.id for p in targets if not set(symbols(p.formula)) & frozen]
-            self.log.record('target_vocabulary_preflight', attempt=attempt + 1, attempt_budget=2,
+            self.log.record('target_vocabulary_preflight', attempt=attempt + 1, attempt_budget=3,
                             disconnected=disconnected, catalogue_sha256=vocabulary['catalogue_sha256'],
                             catalogue_status=vocabulary['catalogue_status'],
-                            status='disconnected' if disconnected else 'aligned')
+                            status='disconnected' if disconnected else 'aligned',
+                            note='New thesis vocabulary is advisory, not a rejection; native bank licensing and CQ support decide reachability.')
             receipts = []
             rejected = trivial_targets(targets, commitments, vocabulary['symbol_catalogue'], receipts)
             for receipt in receipts:
@@ -952,22 +959,40 @@ class ModelCalls:
                 self.log.record('target_own_thesis_classification', target_id=target.id,
                                 attempt=attempt + 1, **classification)
                 if classification['classification'] != 'own_thesis':
-                    rejected.append(dict(target_id=target.id, reason='own_thesis_not_established',
-                                         classification=classification['classification']))
-            self.log.record('target_triviality_preflight', attempt=attempt + 1, attempt_budget=2,
-                            rejected=rejected, status=('rejected_after_one_correction' if attempt else 'correction_required')
+                    rejected.append(dict(target_id=target.id, target=target.to_dict(), reason='own_thesis_not_established',
+                                         classification=classification['classification'], explanation=classification['reason']))
+            for index, target in enumerate(targets):
+                reasons = [r for r in rejected if r['target_id'] == target.id]
+                key = formula_hash(target.formula)
+                if reasons:
+                    disposition = 'rejected'
+                elif target.id in kept_ids or key in kept_formulas:
+                    disposition = 'duplicate'
+                    rejected.append(dict(target_id=target.id, target=target.to_dict(), reason='duplicate_retained_target',
+                                         explanation='Use a distinct ID and formula; this target was already retained.'))
+                elif len(kept) >= keep_count:
+                    disposition = 'over_limit'
+                else:
+                    disposition = 'kept'
+                    kept.append(target)
+                    kept_ids.add(target.id)
+                    kept_formulas.add(key)
+                self.log.record('target_pool_candidate', attempt=attempt + 1, index=index,
+                                target=target.to_dict(), disposition=disposition,
+                                reasons=[r for r in rejected if r['target_id'] == target.id])
+            self.log.record('target_triviality_preflight', attempt=attempt + 1, attempt_budget=3,
+                            rejected=rejected, status=('rejected_after_two_corrections' if attempt == 2 else 'correction_required')
                             if rejected else 'passed',
+                            requested_pool=pool_count, received_pool=len(targets), underfilled=len(targets) < pool_count,
                             note='Bounded solver contribution and isolated own-thesis classification; semantic originality and text/formula fidelity remain unproved.')
-            if not disconnected and not rejected:
+            if len(kept) >= keep_count:
                 break
-            inputs = {**inputs, 'vocabulary_feedback': dict(disconnected=disconnected,
-                previous_targets=[p.to_dict() for p in targets],
-                instruction='Reuse the frozen vocabulary with its definitions; preserve the target meaning.')}
-            if rejected:
-                inputs['triviality_feedback'] = dict(rejected=rejected,
-                    instruction='Replace rejected candidates with own theses needing at least two distinct commitments, preferably from two papers; do not rephrase an attributed claim.')
-        rejected_ids = {r['target_id'] for r in rejected}
-        return tuple(t for t in targets if t.id not in rejected_ids)
+            inputs = {**inputs, 'attempt': attempt + 2, 'retained_targets': [p.to_dict() for p in kept],
+                'triviality_feedback': dict(rejected=rejected, previous_targets=[p.to_dict() for p in targets],
+                    instruction='Propose new main claims needing at least two frozen supports through supplied bank schemes. Repair the concrete witness, not just the wording; do not repeat retained targets.')}
+        self.log.record('target_pool_finished', attempts=attempt + 1, attempt_budget=3,
+                        requested_pool=pool_count, keep_limit=keep_count, kept=[p.to_dict() for p in kept])
+        return tuple(kept)
 
     def propose_cuts(self, goal: Proposition, commitments: CommitmentSet,
                      bank: tuple[BankEntry, ...]) -> tuple[Proposal, ...]:

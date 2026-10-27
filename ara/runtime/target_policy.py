@@ -27,14 +27,23 @@ def top_level_attribution(formula, catalogue):
                for s in catalogue or [])
 
 
-def target_context(commitments):
+def target_context(commitments, bank):
     signatures = Counter(s for c in commitments.commitments for s in set(symbols(c.formula)))
     def conditional(formula):
         while formula.op in ('forall','exists'):
             formula = formula.args[0]
         return formula.op == 'implies'
-    return dict(target_policy=dict(stance='own_thesis', minimum_support_commitments=2,
-                    preferred_support_papers=2, exclude_single_commitment_instances=True),
+    return dict(bank_version=bank.bank_version, bank=[b.to_dict() for b in bank.entries],
+                support_examples=[dict(bank_id='modus_ponens', commitments=['P', 'P -> Q'],
+                    target='Q', condition='Q is not in T or entailed by one commitment.'),
+                    dict(bank_id='sign', commitments=['P', 'Q'], target='R',
+                    slots=dict(sign_relation='P', observed_sign='Q'),
+                    condition='The source content must fit the sign scheme. Answer every supplied CQ with frozen evidence; P and Q need not classically entail R.'),
+                    dict(rejected_target='(P and Q) -> R', commitment='R',
+                    reason='R alone entails this conditional. State a new main proposition instead of adding antecedents.')],
+                target_policy=dict(stance='own_thesis', minimum_support_commitments=2,
+                    preferred_support_papers=2, exclude_single_commitment_instances=True,
+                    exclude_conditional_with_frozen_consequent=True, allow_defeasible_support=True),
                 conditionals=[c.to_dict() for c in commitments.commitments if conditional(c.formula)],
                 shared_symbols=[dict(name=n,kind=k,arity=a,commitments=count)
                                 for (n,k,a),count in sorted(signatures.items()) if count>=2])
@@ -51,8 +60,17 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None):
         if attributed_report(target.text) or top_level_attribution(target.formula, catalogue):
             reason = 'attributed_report'
         if reason:
-            rejected.append(dict(target_id=target.id, reason=reason,
-                                 commitment_id=receipt.get('commitment_id')))
+            witness = commitments.get(receipt.get('commitment_id'))
+            consequent_in_t = (target.formula.op == 'implies' and
+                commitments.contains_formula(target.formula.args[1]))
+            explanation = (f"Commitment {witness.id} alone entails the {receipt['polarity']}: {witness.text}."
+                           if witness is not None else reason)
+            if consequent_in_t:
+                explanation += ' The conditional consequent is already in T; adding antecedents does not create a new claim.'
+            rejected.append(dict(target_id=target.id, target=target.to_dict(), reason=reason,
+                                 commitment_id=receipt.get('commitment_id'), polarity=receipt.get('polarity'),
+                                 entailing_commitment=witness.to_dict() if witness else None,
+                                 conditional_consequent_in_t=consequent_in_t, explanation=explanation))
     return rejected
 
 

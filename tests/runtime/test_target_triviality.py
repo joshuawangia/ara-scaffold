@@ -18,10 +18,10 @@ def test_trivial_target_correction_and_exhaustion(tmp_path):
     assert requests[-2][1]['triviality_feedback']['rejected'][0]['reason'] == 'single_commitment_entailment'
     calls, requests = rig(tmp_path/'bad', own_thesis(lambda *_: {'targets': [Proposition('p', 'P', P).to_dict()]}))
     assert calls.propose_targets(T, 1) == ()
-    assert len(requests) == 3
+    assert len(requests) == 4
     receipts = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage']=='target_triviality_preflight']
-    assert len(receipts) == 2
-    assert receipts[-1]['status'] == 'rejected_after_one_correction'
+    assert len(receipts) == 3
+    assert receipts[-1]['status'] == 'rejected_after_two_corrections'
 
 
 def test_single_commitment_instance_and_attribution():

@@ -32,7 +32,7 @@ def provider_for(goal,classification='own_thesis'):
 def test_solver_preflight_rejects_single_support_and_both_polarities(tmp_path,formula):
     calls,requests=rig(tmp_path,provider_for(Proposition('p','P',formula)))
     assert calls.propose_targets(T,1)==()
-    assert len(payloads(calls,'target_triviality_preflight'))==2
+    assert len(payloads(calls,'target_triviality_preflight'))==3
     checks=payloads(calls,'target_contribution_preflight')
     assert checks and all(row['status']=='trivial' for row in checks)
     assert any(row['reason'] in ('single_commitment_entailment','valid_without_support') for row in checks)
@@ -54,9 +54,9 @@ def test_classifier_is_required_and_logged_on_same_provider(tmp_path,classificat
     calls,requests=rig(tmp_path,provider_for(GOAL,classification))
     assert calls.propose_targets(T,1)==()
     classified=payloads(calls,'target_own_thesis_classification')
-    assert len(classified)==2 and all(e['classification']==classification for e in classified)
+    assert len(classified)==3 and all(e['classification']==classification for e in classified)
     models=[e for e in calls.log.read() if e['label']=='MODEL' and e['stage']=='classify_target']
-    assert len(models)==2 and json.loads(models[-1]['payload_json'])['cache_hit']
+    assert len(models)==3 and json.loads(models[-1]['payload_json'])['cache_hit']
     assert any(k=='classify_target' for k,_ in requests)
 
 

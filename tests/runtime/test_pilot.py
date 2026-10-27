@@ -26,7 +26,8 @@ def test_pilot_config_and_caps(tmp_path, cap, expected):
     config['pilot']['token_cap'] = 100_000_000
     path = tmp_path / 'config.yaml'
     path.write_text(yaml.safe_dump(config))
-    targets = [Proposition(f'p{i}', 'P', Formula('atom', name='P')) for i in range(10)]
+    from test_target_pool import candidate
+    targets = [candidate(i) for i in range(10)]
     captured, engines, dispatched = [], [], []
     def factory(config, log, topic):
         captured.append(config)

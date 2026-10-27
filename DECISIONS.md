@@ -3592,3 +3592,38 @@ does not erase these roles. The prompts require reported/attacked material to
 remain reporting or conditional hypotheses, including in dependent conclusions;
 the model audit treats endorsement promotion as an added inference. This is a
 model-audited writing obligation, not a deterministic semantic guarantee.
+
+
+## Round 17 — larger target pools and defeasible reachability
+
+The proposer now sees the actual versioned bank, its slots and critical questions,
+plus placeholder examples of deduction, defeasible support and the conditional
+consequent trap. A new main proposition must not already be in T or follow from
+one commitment. Existing solver validity/singleton gates, attribution checks,
+stance restrictions and two-distinct-support contribution criteria are unchanged.
+Corrections identify the candidate, checked polarity and full entailing commitment;
+a conditional with a consequent in T gets an explicit explanation. A wording
+change cannot fix a formula-level entailment witness.
+
+Each ordinary attempt requests 20 candidates, keeping at most ten (or the smaller
+configured target count) in stable attempt/response order. There are at most two
+corrections, with accepted candidates retained rather than discarded. A named
+position remains one exact-text candidate. Short pools are accepted but explicitly
+logged as underfilled; empty or oversized responses are invalid. Every candidate,
+including duplicates and surplus passing targets, receives a logged disposition.
+Retained IDs and alpha-equivalent structural formulas do not fill two places.
+New vocabulary is advisory rather than an exclusion: it can be necessary for a
+nontrivial thesis supported by a defeasible scheme.
+
+The native placeholder proof proposes a fresh R, passes contribution and
+own-thesis preflight, and closes it via the sign scheme from distinct frozen P
+and Q supports. All of that scheme's CQs have explicit answers supported by both
+frozen IDs. Classical entailment of R from even the full pair returns a
+counterexample, yet native publication classifies the route CLOSED-derived.
+The same route with unanswered CQs is OPEN. No engine licensing rule was changed
+for this result. It proves mechanical reachability through the existing bank,
+not source truth, semantic scheme fit, originality or usefulness of live targets.
+
+Round 17 regression and production-wire mutation receipts are retained in its
+external task report. Full offline pytest and controls run sequentially. No paid
+calls or push are authorized or claimed.

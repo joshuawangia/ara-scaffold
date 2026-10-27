@@ -85,29 +85,28 @@ def test_current_goal_reference_prevents_reformalization(tmp_path):
     assert joint[0]['catalogue_sha256']
 
 
-def test_target_preflight_retries_once_with_catalogue(tmp_path):
+def test_target_preflight_retains_new_vocabulary_with_catalogue(tmp_path):
     targets = []
     def reply(kind, inputs):
         assert kind == 'propose_targets'
         targets.append(inputs)
         return {'targets': [Proposition('q', 'Q', R if len(targets) == 1 else Q).to_dict()]}
     calls, requests = rig(tmp_path, own_thesis(reply))
-    assert calls.propose_targets(T, 1)[0].formula == Q
-    assert len(targets) == 2
-    assert targets[1]['vocabulary_feedback']['disconnected'] == ['q']
-    assert targets[0]['catalogue_sha256'] == targets[1]['catalogue_sha256']
-    assert {s['name'] for s in targets[1]['symbol_catalogue']} == {'P', 'Q'}
+    assert calls.propose_targets(T, 1)[0].formula == R
+    assert len(targets) == 1
+    assert targets[0]['catalogue_sha256']
+    assert {s['name'] for s in targets[0]['symbol_catalogue']} == {'P', 'Q'}
     events = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'target_vocabulary_preflight']
-    assert [e['status'] for e in events] == ['disconnected', 'aligned']
-    assert all(e['attempt_budget'] == 2 for e in events)
+    assert [e['status'] for e in events] == ['disconnected']
+    assert all(e['attempt_budget'] == 3 for e in events)
 
 
-def test_disconnected_retry_exhaustion_is_explicit(tmp_path):
+def test_disconnected_vocabulary_is_explicit(tmp_path):
     calls, requests = rig(tmp_path, own_thesis(lambda *_: {'targets': [Proposition('r', 'R', R).to_dict()]}))
     assert calls.propose_targets(T, 1)[0].formula == R
-    assert len(requests) == 3
+    assert len(requests) == 2
     events = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'target_vocabulary_preflight']
-    assert len(events) == 2 and events[-1]['status'] == 'disconnected'
+    assert len(events) == 1 and events[-1]['status'] == 'disconnected'
 
 
 def test_catalogue_identity_changes_cache_and_legacy_is_explicit(tmp_path):

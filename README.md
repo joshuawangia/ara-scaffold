@@ -7,6 +7,9 @@ table (T); a verified fork reuses an existing freeze. Both paths propose targets
 search both polarities, and write from a selected route. Extraction,
 model calls, decisions and accounting retain inspectable receipts.
 
+The [operator-approved success criteria](docs/success-criteria.md) define an
+acceptable pilot, a successful entry and the go/no-go dates.
+
 ## Install and try it offline
 
 Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/). Obtain the repository

@@ -5,6 +5,7 @@ guide owns one concern; link to it instead of copying its procedure.
 
 | Guide | Owns |
 | --- | --- |
+| [Success criteria](success-criteria.md) | Operator-approved acceptable-pilot requirements, entry requirements and go/no-go dates |
 | [Extraction](extraction.md) | PDF intake, range evidence, corrections, grounding, provenance, reuse and schema preflight |
 | [Construction](construction.md) | Working T, capacity planning, window allocation, resume and frozen vocabulary |
 | [Search](search.md) | Target gates, route classification, frozen forks, pilot search, selection, writing and resume |

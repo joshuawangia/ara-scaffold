@@ -57,7 +57,7 @@ def test_resume_restores_verified_batches_skips_terminal_window_and_freezes_once
     assert payloads(calls, 'construction_resumed')[0]['next_window'] == 2
 
 
-@pytest.mark.parametrize('damage', ['artifact', 'plan', 'interrupted'])
+@pytest.mark.parametrize('damage', ['artifact', 'plan', 'correction_policy', 'interrupted'])
 def test_resume_refuses_unverified_state_before_dispatch(rig, monkeypatch, tmp_path, damage):
     calls, provider, literature, sent = stopped(rig, monkeypatch)
     config = {**calls.config, 'unknown_usage_policy': 'count-at-reservation'}
@@ -65,6 +65,8 @@ def test_resume_refuses_unverified_state_before_dispatch(rig, monkeypatch, tmp_p
         artifact = next(calls.log.path.parent.glob('build-t-*-0.json'))
         data = json.loads(artifact.read_text()); data['commitments'][0]['text'] = 'Q'
         artifact.write_text(json.dumps(data))
+    elif damage == 'correction_policy':
+        config['construction_targeted_corrections'] += 1
     elif damage == 'plan':
         config['working_t_token_budget'] += 1
     else:

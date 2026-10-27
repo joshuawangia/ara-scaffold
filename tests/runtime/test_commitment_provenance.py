@@ -52,3 +52,24 @@ def test_sidecar_refuses_tampering_even_with_recomputed_hash(change):
 def test_shared_lexicon_rejects_attribution(text):
     assert not content_definition(text)
     assert content_definition('P')
+
+
+@pytest.mark.parametrize('verb', ['argues', 'holds', 'claims'])
+def test_exact_unframing_preserves_author_and_original(verb):
+    from ara.runtime.commitment_provenance import exact_unframe
+    original = f'a b {verb} that P'
+    assert exact_unframe(original, ['a', 'a b']) == dict(author='a b', original_definition=original, definition='P')
+    assert exact_unframe('Not ' + original, ['a b']) is None
+
+
+@pytest.mark.parametrize('field', ['author', 'original_definition', 'definition', 'name'])
+def test_unframing_provenance_rejects_tampered_history(field):
+    t, cat, value = fixture()
+    row = value['commitments']['p']
+    row['definition_unframes'] = [dict(kind='commitment', name='p', author='b',
+                                       original_definition='b claims that P', definition='P')]
+    valid = make_commitment_provenance(t, cat, value['commitments'])
+    assert valid['commitments']['p']['source_text'] == 'b argues P'
+    valid['commitments']['p']['definition_unframes'][0][field] = 'Q'
+    valid['sha256'] = digest(canonical({k:v for k,v in valid.items() if k != 'sha256'}))
+    with pytest.raises(ValueError): validate_commitment_provenance(valid, t, cat)

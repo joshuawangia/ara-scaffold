@@ -123,3 +123,144 @@ def test_legacy_metadata_is_unknown_without_codec_changes(tmp_path):
     encoded=t.to_dict()
     assert set(encoded['commitments'][0])=={'id','text','citation','formula'}
     assert load_commitment_provenance(tmp_path,t,None) is None
+
+
+def test_exact_frames_unframed_without_model_correction(rig, monkeypatch):
+    calls, path, sent = setup(rig, monkeypatch)
+    calls.config['construction_targeted_corrections'] = 0
+    complete = calls.provider.complete
+    def framed(kind, prompt, schema, maximum):
+        raw = complete(kind, prompt, schema, maximum)
+        if kind != 'build_t_batch':
+            return raw
+        data = json.loads(raw.text())
+        for field in ('commitments', 'new_symbols'):
+            for entry, author, name in zip(data[field], ('a', 'b', 'b'), ('P', 'Q', 'R')):
+                entry['definition'] = f'{author} argues that {name}'
+        return Response(response(data))
+    monkeypatch.setattr(calls.provider, 'complete', framed)
+    result = freeze(calls, path)
+    assert {c.text for c in result.commitments} == {'P', 'Q', 'R'}
+    metadata = json.loads((calls.log.path.parent/'commitment-provenance.json').read_text())
+    for c in result.commitments:
+        row = metadata['commitments'][c.id]
+        assert len(row['definition_unframes']) == 2
+        assert {r['kind'] for r in row['definition_unframes']} == {'commitment', 'symbol'}
+        assert all(r['original_definition'] == f"{row['attributed_to']} argues that {c.text}" for r in row['definition_unframes'])
+        assert row['source_text'] != c.text
+    assert {r['stance'] for r in metadata['commitments'].values()} == {'endorsed', 'reported', 'attacked'}
+    events = calls.log.read()
+    assert sum(e['stage'] == 'definition_unframed' for e in events) == 6
+    assert not any(e['stage'] == 'construction_targeted_correction' for e in events)
+
+
+@pytest.mark.parametrize('definition', ['Not a argues that P', 'If a argues that P, Q',
+    'According to a, P', 'z argues that P', 'a argues P', '"a argues that P"'])
+def test_nonexact_frames_require_model_correction(rig, monkeypatch, definition):
+    calls, path, sent = setup(rig, monkeypatch)
+    calls.config['construction_targeted_corrections'] = 0
+    complete = calls.provider.complete
+    def framed(kind, prompt, schema, maximum):
+        raw = complete(kind, prompt, schema, maximum)
+        if kind == 'build_t_batch':
+            data = json.loads(raw.text()); data['commitments'][0]['definition'] = definition
+            return Response(response(data))
+        return raw
+    monkeypatch.setattr(calls.provider, 'complete', framed)
+    with pytest.raises(Rejected): freeze(calls, path)
+    assert not any(e['stage'] == 'definition_unframed' for e in calls.log.read())
+
+
+def test_feedback_names_all_offenders_and_unframed_remainder_is_rechecked(rig, monkeypatch):
+    calls, path, sent = setup(rig, monkeypatch)
+    calls.config['construction_targeted_corrections'] = 0
+    complete = calls.provider.complete
+    def framed(kind, prompt, schema, maximum):
+        raw = complete(kind, prompt, schema, maximum)
+        if kind == 'build_t_batch':
+            data = json.loads(raw.text())
+            data['commitments'][0]['definition'] = 'a argues that b holds that P'
+            data['commitments'][1]['definition'] = 'According to b, Q'
+            data['new_symbols'][0]['definition'] = 'a claims P'
+            return Response(response(data))
+        return raw
+    monkeypatch.setattr(calls.provider, 'complete', framed)
+    with pytest.raises(Rejected) as error: freeze(calls, path)
+    for text in ('p:r1-1:p', 'p:r1-1:q', 'holds', 'According to', 'claims', 'symbol', 'content-only'):
+        assert text in str(error.value)
+    assert any(e['stage'] == 'definition_unframed' for e in calls.log.read())
+
+
+def test_second_correction_keeps_first_patch_and_supplies_specific_feedback(rig, monkeypatch):
+    calls, path, sent = setup(rig, monkeypatch)
+    calls.config['construction_targeted_corrections'] = 2
+    complete = calls.provider.complete
+    requests = []
+    def respond(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind != 'build_t_batch': return complete(kind, prompt, schema, maximum)
+        requests.append(inputs)
+        if len(requests) == 1:
+            data = json.loads(complete(kind, prompt, schema, maximum).text())
+            data['commitments'][0]['definition'] = 'a argues P'
+            data['commitments'][1]['definition'] = 'b holds Q'
+        else:
+            index = len(requests) - 2
+            assert 'content-only' in inputs['validation_error']
+            assert ('argues' if index == 0 else 'holds') in inputs['validation_error']
+            entry = {**inputs['candidate']['commitments'][index], 'definition': ('P', 'Q')[index]}
+            data = dict(commitments=[entry], new_symbols=[], alignments=[])
+        return Response(response(data))
+    monkeypatch.setattr(calls.provider, 'complete', respond)
+    result = freeze(calls, path)
+    assert len(requests) == 3 and {c.text for c in result.commitments} == {'P', 'Q', 'R'}
+    assert requests[2]['candidate']['commitments'][0]['definition'] == 'P'
+    assert len(requests[2]['candidate']['new_symbols']) == 3
+
+
+def test_unframing_does_not_peel_nested_frames_across_corrections(rig, monkeypatch):
+    calls, path, sent = setup(rig, monkeypatch)
+    calls.config['construction_targeted_corrections'] = 2
+    complete = calls.provider.complete
+    count = 0
+    def respond(kind, prompt, schema, maximum):
+        nonlocal count
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind != 'build_t_batch': return complete(kind, prompt, schema, maximum)
+        count += 1
+        if count == 1:
+            data = json.loads(complete(kind, prompt, schema, maximum).text())
+            for entry, definition in zip(data['commitments'],
+                    ('a argues that a holds that P', 'b holds Q', 'b holds R')):
+                entry['definition'] = definition
+        else:
+            index = count - 1
+            entry = {**inputs['candidate']['commitments'][index], 'definition': ('P', 'Q', 'R')[index]}
+            data = dict(commitments=[entry], new_symbols=[], alignments=[])
+        return Response(response(data))
+    monkeypatch.setattr(calls.provider, 'complete', respond)
+    with pytest.raises(Rejected): freeze(calls, path)
+    assert count == 3
+    assert not (calls.log.path.parent/'commitments.json').exists()
+
+
+def test_invalid_patch_keeps_active_definition_feedback(rig, monkeypatch):
+    calls, path, sent = setup(rig, monkeypatch, bad='commitment')
+    calls.config['construction_targeted_corrections'] = 2
+    complete = calls.provider.complete
+    count = 0
+    def respond(kind, prompt, schema, maximum):
+        nonlocal count
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind != 'build_t_batch': return complete(kind, prompt, schema, maximum)
+        count += 1
+        if count == 1: return complete(kind, prompt, schema, maximum)
+        entry = dict(inputs['candidate']['commitments'][0])
+        if count == 3:
+            for text in ('According to', entry['id'], 'content-only', 'repeats unchanged'):
+                assert text in inputs['validation_error']
+            entry['definition'] = 'P'
+        return Response(response(dict(commitments=[entry], new_symbols=[], alignments=[])))
+    monkeypatch.setattr(calls.provider, 'complete', respond)
+    assert len(freeze(calls, path).commitments) == 3
+    assert count == 3

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from ara.runtime.cache import canonical, digest
@@ -23,6 +24,40 @@ def content_definition(text: str) -> bool:
     return isinstance(text, str) and bool(text.strip()) and not attributed_report(text)
 
 
+def definition_issues(data: dict) -> list[dict]:
+    from ara.runtime.target_policy import _ATTRIBUTION
+    issues = []
+    for field, kind, key in (('commitments', 'commitment', 'id'), ('new_symbols', 'symbol', 'name')):
+        for entry in data[field]:
+            text = entry['definition']
+            if not content_definition(text):
+                issues.append(dict(kind=kind, name=entry[key],
+                                   phrases=[m.group() for m in _ATTRIBUTION.finditer(text)]))
+    return issues
+
+
+def exact_unframe(text: str, authors: list[str]) -> dict | None:
+    for author in sorted(set(authors), key=lambda a: (-len(a), a)):
+        match = re.fullmatch(re.escape(author) + r'\s+(?:argues|holds|claims)\s+that\s+(\S[\s\S]*)', text)
+        if match:
+            return dict(author=author, original_definition=text, definition=match[1].strip())
+    return None
+
+
+def unframe_definitions(data: dict, items: dict, authors: dict) -> list[dict]:
+    changes = []
+    for field, kind, key in (('commitments', 'commitment', 'id'), ('new_symbols', 'symbol', 'name')):
+        for entry in data[field]:
+            ids = [entry['id']] if kind == 'commitment' else entry['evidence_ids']
+            known = [name for id in ids if id in items
+                     for name in [items[id]['attributed_to'], *authors[items[id]['source_id']]]]
+            change = exact_unframe(entry['definition'], known)
+            if change:
+                entry['definition'] = change['definition']
+                changes.append(dict(kind=kind, name=entry[key], evidence_ids=sorted(set(ids)), **change))
+    return changes
+
+
 def source_provenance(item: dict, authors: list[str], omitted_support_ids=()) -> dict:
     return dict(source_id=item['source_id'], source_authors=list(authors),
                 attributed_to=item['attributed_to'], page_start=item['page_start'], page_end=item['page_end'],
@@ -32,7 +67,7 @@ def source_provenance(item: dict, authors: list[str], omitted_support_ids=()) ->
 
 
 def _validate_source(id, row):
-    if not isinstance(row, dict) or set(row) != SOURCE_FIELDS:
+    if not isinstance(row, dict) or set(row) not in (SOURCE_FIELDS, SOURCE_FIELDS | {'definition_unframes'}):
         raise ValueError('invalid commitment provenance fields')
     if (any(not isinstance(row[k], str) or not row[k].strip() for k in
             ('source_id', 'attributed_to', 'evidence_id', 'attribution', 'stance', 'source_kind', 'source_text')) or
@@ -48,6 +83,19 @@ def _validate_source(id, row):
             raise ValueError('invalid commitment provenance source list')
     if row['omitted_support_ids'] != sorted(set(row['omitted_support_ids'])):
         raise ValueError('noncanonical omitted support ids')
+    if 'definition_unframes' in row:
+        history = row['definition_unframes']
+        if not isinstance(history, list) or not history:
+            raise ValueError('invalid definition unframing history')
+        for change in history:
+            if (not isinstance(change, dict) or set(change) !=
+                    {'kind', 'name', 'author', 'original_definition', 'definition'} or
+                    any(not isinstance(v, str) or not v.strip() for v in change.values()) or
+                    change['kind'] not in ('commitment', 'symbol') or
+                    (change['kind'] == 'commitment' and change['name'] != id) or
+                    exact_unframe(change['original_definition'], [change['author']]) !=
+                    {k: change[k] for k in ('author', 'original_definition', 'definition')}):
+                raise ValueError('invalid definition unframing record')
 
 
 def validate_commitment_provenance(value: dict, commitments: CommitmentSet, catalogue: dict) -> dict:
@@ -68,6 +116,10 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         raise ValueError('commitment provenance inventory mismatch')
     for id, row in value['commitments'].items():
         _validate_source(id, row)
+        for change in row.get('definition_unframes', []):
+            if change['kind'] == 'symbol' and not any(
+                    s['name'] == change['name'] and id in s['evidence_ids'] for s in catalogue['symbols']):
+                raise ValueError('unframed symbol lacks evidence binding')
     if (not all(content_definition(c.text) for c in commitments.commitments) or
             not all(content_definition(s['definition']) for s in catalogue['symbols'])):
         raise ValueError('attribution in content definition')

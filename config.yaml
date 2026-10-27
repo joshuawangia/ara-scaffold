@@ -1,3 +1,4 @@
+construction_targeted_corrections: 2
 provider: anthropic
 model: claude-opus-5
 fallbacks: [claude-opus-4-8]
@@ -118,7 +119,7 @@ extraction-full:
     min_pages: 300
     continuation_limit: 48
     cost_cap_usd: 30.0
-  construction_targeted_corrections: 1
+  construction_targeted_corrections: 2
   validation_attempts: 1
   token_cap: null
   cost_cap_usd: null

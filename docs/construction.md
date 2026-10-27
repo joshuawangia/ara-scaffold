@@ -178,7 +178,8 @@ Manual artifact copying does not replace the native verification path.
 
 Fresh rich construction asks for a content `definition` alongside each formula.
 It stores that definition as `Commitment.text`; catalogue definitions also denote
-content. Attribution is not mechanically stripped or translated by code. Both
+content. Only the exact source-known leading frame described below is mechanically
+unframed; other restatements remain model judgments. Both
 kinds of definition are screened using the same attribution lexicon as target
 policy. Invalid definitions enter the logged, bounded construction correction
 path; they cannot bypass validation by remaining flat. Lexical screening can
@@ -206,7 +207,53 @@ endorsed. A present invalid sidecar refuses. The full sidecar is logged as
 `commitment_provenance_frozen` before the single `commitments_frozen` event.
 The CommitmentSet codec and existing frozen catalogue formats stay unchanged.
 
-Plan v11 changes model inputs, schema and definition semantics. Rebuild for this
+Plan v12 binds the per-window correction policy and normalization semantics. Rebuild for this
 policy; do not reinterpret an old frozen catalogue or resume an old counted plan
 as content-level construction. Search, fork/resume preservation and stance-aware
 route admission consume this interface in their owning integration lane.
+
+
+## Window correction budgets and exact unframing
+
+`construction_targeted_corrections` defaults to 2 in the base configuration and
+full-extraction profile. It is a nonnegative integer, scoped independently to each
+window and each call type (`select_t_roots`, `build_t_batch`); 0 disables targeted
+correction. The second correction sees the accumulated full candidate, including
+changes from a failed first patch. Every correction uses the same transport,
+context admission, token/cost accounting and provider policy as other construction
+calls. Transport retries do not spend extra correction slots. There is no separate
+global correction counter: finite windows and their local limits, together with
+the existing run token/cost caps, bound execution. At 74 windows the limit permits
+up to 296 targeted correction requests across both call types, not a reservation
+or forecast that all those calls will occur. Structural correction remains its
+separate one-shot check.
+
+The counted plan binds this policy. Resume restores completed windows, skips the
+terminal refused window, and gives each later window its own allowance. Changing
+the correction limit requires a new plan. Old counted plans are not reinterpreted.
+
+Definition feedback names all offending commitment IDs and symbol names and lists
+the matched attribution phrases. The shared attribution lexicon is unchanged: it
+can reject legitimate uses of those words. More correction opportunities do not
+establish faithful translation or guarantee better source coverage.
+
+Before that check, runtime may remove exactly a leading `a argues that P`,
+`a holds that P`, or `a claims that P` frame, where `a` exactly matches a supplied
+source author or attributed speaker for that evidence. Multiword names are allowed.
+It does not remove negated, conditional, quoted, unknown-speaker or nonleading
+frames. Matching is case-sensitive and requires `that`; nested frames are not
+recursively stripped. The remainder passes through definition validation again.
+This is an explicit syntactic convention for constructing content with provenance,
+not a semantic guarantee about arbitrary prose.
+
+Each transformation logs `definition_unframed` with window/plan identity, kind,
+name, evidence IDs, author, original_definition and definition. Accepted provenance
+rows optionally carry `definition_unframes`, a nonempty list of records with
+`kind`, `name`, `author`, `original_definition`, and `definition`. Source text,
+citation, attributed speaker and stance are not overwritten. The sidecar hash
+covers this history; validators check its exact frame and symbol/evidence bindings.
+Existing v1 rows without the optional history remain valid. Reading new history
+requires this validator version; older strict readers cannot consume it. Fork,
+resume, search and reports preserve the full validated sidecar through their
+existing interface. Rejected normalization events remain in the log even when no
+commitment is eventually accepted.

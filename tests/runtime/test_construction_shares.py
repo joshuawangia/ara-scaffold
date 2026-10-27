@@ -412,3 +412,38 @@ def test_counter_account_credit_failure_stops_without_omitting_windows(rig, monk
     assert failure['kind'] == 'build_t_batch' and failure['cost_usd'] == 0
     assert failure['evidence']['message'] == 'Provider account credit is insufficient.'
     assert 'Your credit balance is too low' not in calls.log.path.read_text()
+
+
+@pytest.mark.parametrize('limit,expected', [(2, 3), (1, 0)])
+def test_corrections_are_per_window_and_per_call_type(rig, monkeypatch, limit, expected):
+    from collections import Counter
+    calls, provider, literature, _ = windows(rig, monkeypatch)
+    calls.config['construction_targeted_corrections'] = limit
+    original = provider.complete
+    attempts = Counter()
+    def complete(kind, prompt, schema, maximum):
+        inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        key = (inputs['batch_index'], kind)
+        attempts[key] += 1
+        good = json.loads(original(kind, prompt, schema, maximum).text())
+        if kind == 'select_t_roots':
+            if attempts[key] < 3: good['roots'] = ['missing' + str(attempts[key])]
+        else:
+            if attempts[key] < 3: good['commitments'][0]['definition'] = 'According to a, ' + str(attempts[key])
+            if inputs.get('mode') == 'targeted_correction':
+                good['new_symbols'] = []; good['alignments'] = []
+        return Response(response(good))
+    monkeypatch.setattr(provider, 'complete', complete)
+    if expected:
+        result = prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+        assert len(result.commitments) == expected
+        assert len(attempts) == 6 and set(attempts.values()) == {3}
+        correction_rows = payloads(calls, 'construction_targeted_correction')
+        assert len(correction_rows) == 12
+        assert {r['index'] for r in correction_rows} == {0, 1, 2}
+        assert {r['correction'] for r in correction_rows} == {1, 2}
+        model_rows = [e for e in calls.log.read() if e['label'] == 'MODEL' and e['stage'] in ('select_t_roots', 'build_t_batch')]
+        assert len(model_rows) == 18 and all(e['usage']['input_tokens'] > 0 for e in model_rows)
+    else:
+        with pytest.raises(Rejected): prepare_commitments(calls, load_bank(ROOT/'bank'), literature, '')
+        assert len(attempts) == 3 and set(attempts.values()) == {2}

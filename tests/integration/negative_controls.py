@@ -944,7 +944,7 @@ CASES += [
      'calls._transport_call(kind, inputs, check, attempt=1)', 'calls._call_once(kind, inputs, check, attempt=1)',
      'tests/runtime/test_claude_code.py::test_native_construction_transport_retries'),
     ('cli_correction_transport', 'ara/runtime/construction.py',
-     'calls._transport_call(kind, request, corrected, attempt=2)', 'calls._call_once(kind, request, corrected, attempt=2)',
+     'calls._transport_call(kind, request, corrected, attempt=correction + 2)', 'calls._call_once(kind, request, corrected, attempt=correction + 2)',
      'tests/runtime/test_claude_code.py::test_targeted_construction_retry_does_not_spend_more_corrections'),
     ('cli_access_token_only', 'ara/runtime/claude_code.py',
      "return oauth['accessToken'], frozenset(secrets)",
@@ -1344,10 +1344,10 @@ CASES += [
 
 CASES += [
     ('content_commitment_correction', 'ara/runtime/construction.py',
-     'require(content_definition(definition),', 'require(True,',
+     "require(not issues, 'content definition", "require(True, 'content definition",
      'tests/runtime/test_content_provenance.py::test_attributed_definition_gets_logged_targeted_correction[commitment]'),
     ('content_symbol_correction', 'ara/runtime/construction.py',
-     "require(content_definition(symbol['definition']),", 'require(True,',
+     "require(not issues, 'content definition", "require(True, 'content definition",
      'tests/runtime/test_content_provenance.py::test_attributed_definition_gets_logged_targeted_correction[symbol]'),
     ('content_source_stance', 'ara/runtime/commitment_provenance.py',
      "'reported_view': 'reported'", "'reported_view': 'endorsed'",
@@ -1400,6 +1400,50 @@ CASES += [
     ('stance_writer_outline', 'ara/runtime/calls.py',
      "outline['source_roles'] = roles", 'pass',
      'tests/runtime/test_stance_search.py::test_writer_and_auditor_preserve_source_roles'),
+]
+
+
+CASES += [
+    ('construction_window_corrections', 'ara/runtime/construction.py',
+     'remaining = dict(select_t_roots=corrections, build_t_batch=corrections)',
+     'remaining = dict(select_t_roots=corrections if batch.index == 0 else 0, build_t_batch=corrections if batch.index == 0 else 0)',
+     'tests/runtime/test_construction_shares.py::test_corrections_are_per_window_and_per_call_type[2-3]'),
+    ('construction_second_correction', 'ara/runtime/construction.py',
+     'for correction in range(limit):', 'for correction in range(min(limit, 1)):',
+     'tests/runtime/test_content_provenance.py::test_second_correction_keeps_first_patch_and_supplies_specific_feedback'),
+    ('construction_accumulated_patch', 'ara/runtime/construction.py',
+     'candidate = latest', 'pass',
+     'tests/runtime/test_content_provenance.py::test_second_correction_keeps_first_patch_and_supplies_specific_feedback'),
+    ('construction_all_definition_feedback', 'ara/runtime/commitment_provenance.py',
+     'return issues', 'return issues[:1]',
+     'tests/runtime/test_content_provenance.py::test_feedback_names_all_offenders_and_unframed_remainder_is_rechecked'),
+    ('construction_exact_unframe', 'ara/runtime/commitment_provenance.py',
+     'match = re.fullmatch(', 'match = re.search(',
+     'tests/runtime/test_content_provenance.py::test_nonexact_frames_require_model_correction[Not a argues that P]'),
+    ('construction_unframe_receipt', 'ara/runtime/construction.py',
+     "calls.log.record('definition_unframed',", "calls.log.record('definition_frame_removed',",
+     'tests/runtime/test_content_provenance.py::test_exact_frames_unframed_without_model_correction'),
+    ('construction_unframe_provenance', 'ara/runtime/construction.py',
+     "provenance[id]['definition_unframes'] = retained", 'pass',
+     'tests/runtime/test_content_provenance.py::test_exact_frames_unframed_without_model_correction'),
+    ('construction_correction_plan_identity', 'ara/runtime/construction.py',
+     "'correction_policy': {'scope': 'window_call_type', 'limit': corrections},",
+     "'correction_policy': {'scope': 'window_call_type', 'limit': 0},",
+     'tests/runtime/test_construction_resume.py::test_resume_refuses_unverified_state_before_dispatch[correction_policy]'),
+]
+
+
+CASES += [
+    ('construction_unframe_single_layer', 'ara/runtime/construction.py',
+     'data = deepcopy(data)', 'data = data',
+     'tests/runtime/test_content_provenance.py::test_unframing_does_not_peel_nested_frames_across_corrections'),
+]
+
+
+CASES += [
+    ('construction_active_feedback', 'ara/runtime/construction.py',
+     "candidate_error + '; correction rejected: '", "'' + '; correction rejected: '",
+     'tests/runtime/test_content_provenance.py::test_invalid_patch_keeps_active_definition_feedback'),
 ]
 
 

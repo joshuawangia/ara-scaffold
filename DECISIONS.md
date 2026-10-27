@@ -67,6 +67,7 @@ Source citations in the documentation correction entry refer to base `6511ff6`.
 - [S6 — Native schema authority with bounded local validation](#s6-native-schema-authority-with-bounded-local-validation)
 - [S8: Frozen construction catalogue interface](#s8-frozen-construction-catalogue-interface)
 - [S9: Content definitions with hash-bound source stance](#s9-content-definitions-with-hash-bound-source-stance)
+- [S10: Per-window correction and exact definition unframing](#s10-per-window-correction-and-exact-definition-unframing)
 - [S8 structure gate and bounded correction](#s8-structure-gate-and-bounded-correction)
 
 ### Search and reports
@@ -3592,3 +3593,24 @@ does not erase these roles. The prompts require reported/attacked material to
 remain reporting or conditional hypotheses, including in dependent conclusions;
 the model audit treats endorsement promotion as an added inference. This is a
 model-audited writing obligation, not a deterministic semantic guarantee.
+
+
+## S10: Per-window correction and exact definition unframing
+
+Supersede the construction-wide single-correction allowance with configurable
+nonnegative construction_targeted_corrections (default 2), separately per window
+and call type. Preserve accumulated patches, normal counted transport/admission,
+and existing run budgets. No separate global correction counter is needed; the
+finite plan bounds the number of eligible requests. Plan v12 binds this policy,
+and resume never replenishes a completed or terminal refused window.
+
+Supersede S9's blanket prohibition on mechanical rewriting only for an exact
+leading source-known author/speaker argues|holds|claims that content frame. Record
+definition_unframed, preserve original_definition and author in optional
+hash-bound definition_unframes provenance, and validate the remainder again.
+Do not alter exact source text, citations or stance. Old sidecars without history
+remain valid; new history requires the updated validator. The construction guide
+owns the full schema and limits. Keep the shared lexical screening rule unchanged,
+aggregate every offending definition/phrase into correction feedback, and treat
+successful restatement, coverage improvement and semantic fidelity as unproved
+until observed. Offline planning and recorded-response census are not a live run.

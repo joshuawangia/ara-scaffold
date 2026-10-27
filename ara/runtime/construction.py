@@ -6,6 +6,7 @@ against the shared catalogue, and every evidence decision remains inspectable.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from copy import deepcopy
 import json
 from typing import TYPE_CHECKING
 
@@ -17,7 +18,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v11'
+PLAN_VERSION = 'rich-working-t-v12'
 CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
@@ -133,25 +134,33 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
     except InvalidOutput as exc:
         if not remaining[kind]:
             raise
-        fields = {'omissions': 'group_id'} if kind == 'select_t_roots' else {
-            'commitments': 'id', 'new_symbols': 'name', 'alignments': 'name'}
-        try:
-            candidate = json.loads(exc.feedback['rejected_response'])
-            if kind == 'build_t_batch':
-                for item in candidate['commitments']:
-                    if isinstance(item['formula'], str):
-                        item['formula'] = json.loads(item['formula'])
-            baseline = {field: {item[key]: item for item in candidate[field]} for field, key in fields.items()}
-            require(all(len(baseline[field]) == len(candidate[field]) for field in fields),
-                    'ambiguous construction correction inventory')
-        except (ValueError, KeyError, TypeError) as error:
-            raise Rejected('candidate cannot support targeted construction correction') from error
+        error = exc
+    fields = {'omissions': 'group_id'} if kind == 'select_t_roots' else {
+        'commitments': 'id', 'new_symbols': 'name', 'alignments': 'name'}
+    try:
+        candidate = json.loads(error.feedback['rejected_response'])
+        if kind == 'build_t_batch':
+            for item in candidate['commitments']:
+                if isinstance(item['formula'], str):
+                    item['formula'] = json.loads(item['formula'])
+        require(all(len({item[key] for item in candidate[field]}) == len(candidate[field])
+                    for field, key in fields.items()), 'ambiguous construction correction inventory')
+    except (ValueError, KeyError, TypeError) as exc:
+        raise Rejected(str(error) + '; candidate cannot support targeted construction correction') from exc
+    limit = remaining[kind]
+    candidate_error = error.feedback['error']
+    for correction in range(limit):
         remaining[kind] -= 1
+        baseline = {field: {item[key]: item for item in candidate[field]} for field, key in fields.items()}
         request = {**inputs, 'mode': 'targeted_correction', 'candidate': candidate,
-                   'validation_error': exc.feedback['error']}
+                   'validation_error': error.feedback['error']}
         calls.log.record('construction_targeted_correction', kind=kind,
-                         candidate_hash=digest(canonical(candidate)), reason=str(exc))
+                         plan_id=inputs.get('plan_id'), index=inputs.get('batch_index'),
+                         correction=correction + 1, correction_limit=limit,
+                         candidate_hash=digest(canonical(candidate)), reason=str(error))
+        latest = candidate
         def corrected(patch):
+            nonlocal latest
             merged = {**candidate, **patch}
             changed = any(patch[k] != candidate.get(k) for k in patch if k not in fields)
             for field, key in fields.items():
@@ -162,30 +171,35 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
                 changed = changed or bool(updates)
                 merged[field] = list({**baseline[field], **updates}.values())
             require(changed, 'empty construction correction')
+            latest = merged
             from ara.runtime.validation import validate_local
             schema = json.loads((calls.root / 'schemas' / f'{kind}.json').read_text())
             validate_local(schema, merged, calls.config)
             return check(merged)
-        return calls._transport_call(kind, request, corrected, attempt=2)
+        try:
+            return calls._transport_call(kind, request, corrected, attempt=correction + 2)
+        except InvalidOutput as exc:
+            if latest is candidate:
+                reason = candidate_error + '; correction rejected: ' + exc.feedback['error']
+                error = InvalidOutput(reason, {**exc.feedback, 'error': reason})
+            else:
+                error = exc
+                candidate_error = exc.feedback['error']
+            candidate = latest
+    raise error
 
 
 def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: bool = False,
               resume_state: dict | None = None):
     from ara.runtime.calls import CountRequestRefused, Rejected, require
     from ara.runtime.budget import BudgetStop
-    corrections = calls.config.get('construction_targeted_corrections')
-    if corrections is not None and (type(corrections) is not int or corrections not in (0, 1)):
-        raise ValueError('construction_targeted_corrections must be 0 or 1')
-    remaining = dict(select_t_roots=corrections, build_t_batch=corrections)
+    corrections = calls.config.get('construction_targeted_corrections', 2)
+    if type(corrections) is not int or corrections < 0:
+        raise ValueError('construction_targeted_corrections must be a nonnegative integer')
     resumption = resume_state
     if getattr(calls, 'construction_resume', False):
         from ara.runtime.construction_resume import load_construction_resume
         resumption = load_construction_resume(calls)
-    if resumption:
-        for kind, used in resumption['corrections'].items():
-            if remaining[kind] is not None:
-                require(used <= remaining[kind], 'construction resume correction budget mismatch')
-                remaining[kind] -= used
     papers = sorted(json.loads(literature[len(HEADER):])['papers'], key=lambda p: p['source_id'])
     require(len({p['source_id'] for p in papers}) == len(papers), 'duplicate source id')
     require(all(not p['items'] for p in papers if p['status'] == 'failed'),
@@ -200,6 +214,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     metadata = {'version': PLAN_VERSION, 'closure_version': CLOSURE_VERSION, 'sources': [
         {'source_id': p['source_id'], 'content_hash': digest(canonical(p))} for p in papers],
         'topic': calls.topic, 'audience': audience,
+        'correction_policy': {'scope': 'window_call_type', 'limit': corrections},
         'construction_stages': construction_stage_manifest(calls.config),
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
         'symbol_token_budget': calls.config['working_t_symbol_token_budget'],
@@ -216,6 +231,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         supplied = [] if supplied is None else supplied
         require(isinstance(supplied, (str, list)), 'invalid source authors metadata')
         authors[paper['source_id']] = [supplied] if isinstance(supplied, str) else supplied
+        require(all(isinstance(name, str) and name.strip() for name in authors[paper['source_id']]),
+                'invalid source author name')
 
     dependencies = evidence_dependencies(items)
     from ara.runtime.closure_budget import budget_plan, depth_cut, payload_token_bound
@@ -326,6 +343,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}-skipped-{digest(result.receipt_json)}.json', result.receipt_json)
 
     for batch in batches:
+        remaining = dict(select_t_roots=corrections, build_t_batch=corrections)
+        definition_unframes = {}
         group = json.loads(batch.papers_json)
         window_items = {item['id']: item for paper in group for item in paper['items']}
         selection, closure = {}, None
@@ -509,17 +528,30 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             calls.count_request('build_t_batch', inputs, admission=True)
             # The actual growing catalogue and plan identity are counted again, including retries.
             def check(data):
+                data = deepcopy(data)
                 ids = [c['id'] for c in data['commitments']]
                 require(len(ids) <= window_cap, 'construction window commitment cap exceeded')
                 require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
-                from ara.runtime.commitment_provenance import content_definition, source_provenance, _validate_source
+                from ara.runtime.commitment_provenance import (definition_issues, unframe_definitions,
+                                                               source_provenance, _validate_source)
+                for change in unframe_definitions(data, items, authors):
+                    calls.log.record('definition_unframed', plan_id=plan_id, index=batch.index, **change)
+                    record = {k: v for k, v in change.items() if k != 'evidence_ids'}
+                    for id in change['evidence_ids']:
+                        history = definition_unframes.setdefault(id, [])
+                        if record not in history:
+                            history.append(record)
+                issues = definition_issues(data)
+                require(not issues, 'content definition must not contain attribution: ' + canonical(issues) +
+                        '; give each listed commitment and symbol a content-only restatement; preserve source text and citations')
                 definitions = {c['id']: c['definition'] for c in data['commitments']}
-                for id, definition in definitions.items():
-                    require(content_definition(definition), 'content definition must not contain attribution: commitment ' + id)
-                for symbol in data['new_symbols']:
-                    require(content_definition(symbol['definition']), 'content definition must not contain attribution: symbol ' + symbol['name'])
                 provenance = {id: source_provenance(items[id], authors[items[id]['source_id']], support_omitted.get(id, []))
                               for id in definitions}
+                for id, history in definition_unframes.items():
+                    retained = [r for r in history if (r['kind'] == 'commitment' and r['name'] in definitions) or
+                                any(s['name'] == r['name'] and id in s['evidence_ids'] for s in data['new_symbols'])]
+                    if id in provenance and retained:
+                        provenance[id]['definition_unframes'] = retained
                 for id, row in provenance.items():
                     try:
                         _validate_source(id, row)

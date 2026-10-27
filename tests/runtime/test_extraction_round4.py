@@ -172,5 +172,5 @@ def test_full_profile_reaches_native_construction(rig, tmp_path, capsys):
     assert main(arguments, calls_factory=factory) == 2
     assert len(observed) == 1
     assert observed[0]['working_t_symbol_token_budget'] == 32000
-    assert observed[0]['construction_targeted_corrections'] == 1
+    assert observed[0]['construction_targeted_corrections'] == 2
     assert observed[0]['stages']['extraction']['model'] == 'claude-opus-5'

@@ -14,6 +14,11 @@ def imported_event_indices(events):
     """Receipt ranges are history, including nested legacy imports."""
     inherited = set()
     for index, event in enumerate(events):
+        if event['stage'] == 'freeze_forked':
+            count = json.loads(event['payload_json'])['records']
+            if type(count) is not int or count != index or count <= 0 or events[count-1]['stage'] != 'commitments_frozen':
+                raise ValueError('invalid frozen prefix accounting range')
+            inherited.update(range(count))
         if event['stage'] != IMPORT_STAGE:
             continue
         count = json.loads(event['payload_json'])['records']

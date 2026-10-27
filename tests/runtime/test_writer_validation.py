@@ -75,7 +75,7 @@ def test_writer_correction_exhaustion_clean_cli_stop(cli_setup, tmp_path, monkey
     def reject_writer(kind, prompt, schema, maximum):
         if kind == 'write_essay':
             provider.calls += 1
-            return Response(response({'title': 'P', 'body': '[[node:n:p]] P Q' if underlength else 'x', 'bibliography': []}))
+            return Response(response({'title': 'P', 'body': '[[node:n:p]][[node:n:p:c]][[node:n:p:a]] P Q' if underlength else 'x', 'bibliography': []}))
         return complete(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'complete', reject_writer)
     run = tmp_path / 'exhausted'

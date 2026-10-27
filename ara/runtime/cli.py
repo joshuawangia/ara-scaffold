@@ -22,6 +22,7 @@ from ara.runtime.orchestration import compose, native_engine, prepare, search_al
 from ara.runtime.search_publication import search_status
 from ara.runtime.providers import AnthropicProvider, MockProvider
 from ara.types import RouteGraph
+from ara.runtime.route_policy import route_classification, selectable_routes
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -41,6 +42,12 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--audience', default='runtime audience')
     run.add_argument('--named-position')
     run.add_argument('--route')
+    fork = sub.add_parser('fork-from-freeze', help='verify and fork a frozen prefix; continue with current target proposal')
+    fork.add_argument('--source-run', type=Path, required=True)
+    fork.add_argument('--run-dir', type=Path, required=True)
+    fork.add_argument('--provider', choices=('anthropic','mock','claude_code','codex_cli'))
+    fork.add_argument('--codex-schema-preflight-log', type=Path)
+    fork.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
     resume = sub.add_parser('resume-construction', help='continue a verified stopped construction in its existing directory')
     resume.add_argument('--run-dir', type=Path, required=True)
     resume.add_argument('--codex-schema-preflight-log', type=Path)
@@ -175,6 +182,31 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'fork-from-freeze':
+            from ara.runtime.freeze_fork import fork_from_freeze
+            bank = load_bank(ROOT / 'bank')
+            log, run, commitments = fork_from_freeze(args.source_run, args.run_dir, bank)
+            config = {**run['config'], 'cache_dir': str(args.run_dir.resolve() / 'cache')}
+            if args.provider is not None:
+                config['provider'] = args.provider
+            if args.unknown_usage_policy is not None:
+                config['unknown_usage_policy'] = args.unknown_usage_policy
+            if args.codex_schema_preflight_log is not None:
+                config['codex_cli'] = {**config.get('codex_cli', {}), 'schema_preflight_log': str(args.codex_schema_preflight_log)}
+            log.record('freeze_fork_configuration', config=config)
+            log.human('fork-from-freeze', json.dumps(raw_args), reported_minutes=args.human_minutes)
+            from ara.runtime.codex_preflight import require_codex_preflight
+            require_codex_preflight(config, ROOT)
+            calls = calls_factory(config, log, run['topic'])
+            targets = calls.propose_targets(commitments, config['target_candidates'])
+            log.record('candidates', candidates=[t.to_dict() for t in targets])
+            routes = search_all(calls, native_engine(bank,calls), commitments, targets)
+            log.record('awaiting_selection', route_ids=[r.id for r in routes], search=disclose_search(log),
+                       selectable_route_ids=[r.id for r in selectable_routes(routes)])
+            log.record('run_finished', state='awaiting_selection')
+            export_run(log.path,args.run_dir/'export')
+            print(str(args.run_dir))
+            return 0
         if args.command == 'resume-search':
             from ara.runtime.search_resume import load_search_resume, publish_search_resume, search_resume_lock
             if not (args.run_dir / 'events.jsonl').is_file():
@@ -413,8 +445,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if route_id:
                 log.human('select', route_id, source='run --route')
             elif args.smoke:
-                route_id = next((r.id for r in routes if r.status == 'CLOSED'), routes[0].id if routes else None)
-                log.record('selection', route_id=route_id, policy='smoke: first CLOSED route, otherwise first OPEN')
+                route_id = next((r.id for r in selectable_routes(routes)), None)
+                log.record('selection', route_id=route_id, policy='smoke: first CLOSED-derived route only')
             if route_id:
                 chosen = next((r for r in routes if r.id == route_id), None)
                 if chosen is None:
@@ -448,16 +480,22 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         routes = [RouteGraph.from_dict(json.loads(e['payload_json'])['graph'])
                   for e in events if e['stage'] == 'route']
         for route in routes:
-            print(f'{route.id} [{route.status}]')
+            print(f'{route.id} [{route_classification(route)}]' +
+                  (' selectable' if route in selectable_routes(routes) else ' disclosed; explicit --route required'))
+        offered = selectable_routes(routes)
+        if args.route is None and not offered:
+            print('No CLOSED-derived routes available for selection.')
+            return 0
         start = time.monotonic()
         route_id = args.route if args.route is not None else input('Route id: ')
         elapsed = time.monotonic() - start if args.route is None else 0
         human_elapsed += elapsed
         log.human('select', route_id, elapsed_seconds=elapsed)
-        chosen = next((r for r in routes if r.id == route_id), None)
+        chosen = next((r for r in (routes if args.route is not None else offered) if r.id == route_id), None)
         if chosen is None:
             raise ValueError('unknown route id')
-        run = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started')
+        from ara.runtime.freeze_fork import effective_run
+        run = effective_run(events)
         selection_config = dict(run['config'])
         if args.codex_schema_preflight_log is not None:
             selection_config['codex_cli'] = {**selection_config.get('codex_cli', {}),

@@ -6,13 +6,15 @@ from ara.runtime.cache import canonical
 from ara.runtime.calls import ModelCalls
 from ara.runtime.providers import mock_key
 from ara.types import (Commitment, CommitmentSet, Formula, Proposition, RouteGraph,
-                       RouteNode, EngineDecision, RunEvent)
+                       RouteNode, EngineDecision, RunEvent, Proposal, PremiseFill)
 
 ROOT = Path(__file__).resolve().parents[2]
-T = CommitmentSet((Commitment('t1', 'P', 'placeholder:1', Formula('atom', name='P')),
-                   Commitment('t2', 'Q', 'placeholder:2', Formula('atom', name='Q'))))
+P, Q, R, S = (Formula('atom', name=n) for n in ('P','Q','R','S'))
+T = CommitmentSet((Commitment('t1','R','placeholder:1',R), Commitment('t2','S','placeholder:2',S),
+    Commitment('t3','R -> P','placeholder:3',Formula('implies',(R,P))),
+    Commitment('t4','S -> Q','placeholder:4',Formula('implies',(S,Q)))))
 TARGETS = (Proposition('p', 'P', Formula('atom', name='P')), Proposition('q', 'Q', Formula('atom', name='Q')))
-DRAFT = {'title': 'P', 'body': '[[node:n:p]] ' + ' '.join(['P'] * 150), 'bibliography': []}
+DRAFT = {'title': 'P', 'body': '[[node:n:p]][[node:n:p:c]][[node:n:p:a]] ' + ' '.join(['P'] * 150), 'bibliography': []}
 
 
 class FakeEngine:
@@ -36,14 +38,24 @@ class FakeEngine:
         self.calls.propose_cuts(target, commitments, ())
         self.calls.log.emit(RunEvent('2026-10-08T00:00:00+00:00', 'license', 'ENGINE',
                                     decision=EngineDecision('discarded', 'test_decision', 'P')))
-        closed = t_id != 'open'
-        return (RouteGraph('route:' + target.id, 'n:' + target.id,
-                           (RouteNode('n:' + target.id, target, 'leaf', t_id),),
-                           'CLOSED' if closed else 'OPEN', () if closed else ('n:' + target.id,)),)
+        return (fixture_route(target),)
 
     def conflicts(self, routes, commitments):
         # This is just a fixture result. Real conflict correctness belongs to engine tests.
         return {'tier1': [], 'tier2': [], 'independent_closed': 2, 'forward': []}
+
+
+def fixture_route(target):
+    root='n:'+target.id
+    if target.id not in ('p','q'):
+        return RouteGraph('route:'+target.id,root,(RouteNode(root,target,'leaf','open'),),'OPEN',(root,))
+    antecedent,conditional=(T.commitments[i] for i in ((0,2) if target.id=='p' else (1,3)))
+    proposal=Proposal('modus_ponens',(PremiseFill('conditional',conditional.text,conditional.id),
+        PremiseFill('antecedent',antecedent.text,antecedent.id)),target.text,conclusion_ref='current_goal')
+    return RouteGraph('route:'+target.id,root,(
+        RouteNode(root,target,'inference',proposal=proposal,children=(root+':c',root+':a')),
+        RouteNode(root+':c',Proposition('c',conditional.text,conditional.formula),'leaf',conditional.id),
+        RouteNode(root+':a',Proposition('a',antecedent.text,antecedent.formula),'leaf',antecedent.id)),'CLOSED')
 
 
 def canned(config):
@@ -60,20 +72,21 @@ def canned(config):
     add('build_t', {'literature': (ROOT / 'tests/fixtures/runtime/smoke-literature.txt').read_text(),
                     'audience': 'runtime audience'}, T.to_dict())
     from ara.runtime.search_alignment import catalogue_inputs
+    from ara.runtime.target_policy import target_context
     vocabulary = catalogue_inputs(ROOT / 'tests/fixtures/runtime', T)
-    add('propose_targets', {'commitments': T.to_dict(), 'count': 2, 'named_position': None, **vocabulary},
+    add('propose_targets', {'commitments': T.to_dict(), 'count': 2, 'named_position': None, **vocabulary, **target_context(T)},
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:
         for goal in (target, negate_proposition(target)):
             add('map_leaf', {'leaf': goal.to_dict(), 'commitments': T.to_dict()},
-                {'t_id': {'p': 't1', 'q': 't2'}.get(goal.id, 'open')})
+                {'t_id': 'open'})
             add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': [],
                 'proposal_limit': 3, 'attempt_budget': 1, **vocabulary}, {'proposals': []})
-    route = RouteGraph('route:p', 'n:p', (RouteNode('n:p', TARGETS[0], 'leaf', 't1'),), 'CLOSED')
+    route = fixture_route(TARGETS[0])
     add('write_essay', {'outline': calls.essay_outline(route), 'word_limit': 300, 'minimum_words': 150, 'feedback': []}, DRAFT)
     add('audit_essay', calls.audit_inputs(route, DRAFT),
-        {'labels': [{'sentence': 1, 'node_ids': ['n:p'], 'asserts_premise_or_inference_not_in_outline': False}]})
+        {'labels': [{'sentence': 1, 'node_ids': ['n:p', 'n:p:c', 'n:p:a'], 'asserts_premise_or_inference_not_in_outline': False}]})
     content = [{'type': 'text', 'text': 'P'}]
     add('search_evidence', {'draft': DRAFT, 'items': []}, {}, content)
     add('verify_originality_citations', {'draft': DRAFT, 'items': [],

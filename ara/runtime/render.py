@@ -3,11 +3,12 @@ from pathlib import Path
 
 from ara.runtime.cache import digest
 from ara.types import RouteGraph
+from ara.runtime.route_policy import route_classification
 
 
 def render_tree(graph: RouteGraph) -> str:
     nodes = {n.id: n for n in graph.nodes}
-    lines = [f'{graph.id} [{graph.status}] frontier={list(graph.frontier)}']
+    lines = [f'{graph.id} [{route_classification(graph)}] frontier={list(graph.frontier)}']
     def visit(node_id: str, indent: str, ancestors: frozenset[str]):
         if node_id in ancestors:
             lines.append(f'{indent}{node_id} [cycle]')

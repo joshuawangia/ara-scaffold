@@ -50,7 +50,8 @@ def verified_snapshot(directory: Path):
 def verify_available_imports(events, gaps, active=frozenset(), memo=None):
     """Check each available pinned prefix before inspecting its own ancestry."""
     memo = {} if memo is None else memo
-    seen, inherited = set(), set()
+    from ara.runtime.provenance import imported_event_indices
+    seen, inherited = set(), imported_event_indices(events)
     for i, event in enumerate(events):
         data = payload(event)
         if event['stage'] != 'extraction_provenance_import':
@@ -282,7 +283,10 @@ def route_details(row, commitments):
         for tid in dict.fromkeys(ids):
             support.append(dict(node_id=node['id'], commitment_id=tid, commitment=commitments.get(tid),
                                 missing=tid not in commitments))
+    from ara.runtime.route_policy import route_classification
+    from ara.types import RouteGraph
     return dict(seq=row['seq'], target=data.get('target'), polarity=data.get('polarity'), graph=graph,
+                classification=route_classification(RouteGraph.from_dict(graph)),
                 support_chain=support, model_summary=None, audit_results=[])
 
 

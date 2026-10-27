@@ -986,3 +986,30 @@ IDs. The exact canonical SHA256 contract is documented in DECISIONS S8 and check
 by `ara.runtime.frozen_catalogue.validate_frozen_artifact`. Missing metadata means
 a legacy catalogue is unavailable; corrupt metadata must refuse. Search-side
 consumption is integrated separately from construction persistence.
+
+## Reuse a verified freeze
+
+`ara fork-from-freeze --source-run runs/source --run-dir runs/fork` copies the
+verified event-chain prefix through its single freeze and the exact frozen
+artifacts. The source is read-only. The new run gets its own cache, proposes
+fresh targets with current code, performs native paired search, and waits for
+selection. It preserves historical accounting once and refuses changed chains,
+anchors, commitments, catalogues, or bank versions. The destination must be
+empty and separate from the source. `--codex-schema-preflight-log`, `--provider`,
+and `--unknown-usage-policy` are explicit overrides; a real Codex rerun still
+requires a current successful schema preflight.
+
+Target proposals request own theses supported or refuted by at least two
+commitments, preferably from different papers. Exact frozen targets, direct
+universal instances, and explicit attributed reports are rejected. One shared
+preflight correction is allowed; still-trivial targets are excluded with their
+reasons. A second disconnected-vocabulary result stays disclosed. These checks
+do not prove originality, semantic fidelity, or that two sources actually
+support a proposed thesis.
+
+Route lists and reports distinguish `CLOSED-trivial` (no licensed inference)
+from `CLOSED-derived` (at least one). Default and interactive selection offer
+only derived routes. All routes remain visible, and an explicit `--route` can
+select a disclosed alternative. Engine statuses and historical graphs retain
+their existing codec. A derived classification alone does not prove novelty or
+independent support from multiple papers.

@@ -268,7 +268,8 @@ def load_search_resume(log, bank, root):
         rows = [payload(e) for e in main if e['stage'] == stage]
         require(len(rows) == 1, 'search resume requires one ' + stage)
         return rows[0]
-    run, frozen, candidates = single('run_started'), single('commitments_frozen'), single('candidates')
+    from ara.runtime.freeze_fork import effective_run
+    run, frozen, candidates = effective_run(main), single('commitments_frozen'), single('candidates')
     require(run['bank_version'] == frozen['bank_version'] == bank.bank_version, 'search resume bank version mismatch')
     commitments = CommitmentSet.from_dict(frozen['commitments'])
     artifact = CommitmentSet.from_json((log.path.parent/'commitments.json').read_text())

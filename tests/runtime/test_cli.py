@@ -41,7 +41,7 @@ def test_smoke_cli_runs_both_polarities_and_exports(cli_setup, tmp_path):
     assert len(graphs) == 4
     parsed = [RouteGraph.from_json(p.read_text()) for p in graphs]
     assert sum(g.status == 'CLOSED' for g in parsed) == 2
-    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n:p]] ' + ' '.join(['P'] * 150)
+    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n:p]][[node:n:p:c]][[node:n:p:a]] ' + ' '.join(['P'] * 150)
     assert (run / 'export/essay.txt').read_text() == 'P\n\n' + ' '.join(['P'] * 150) + '\n'
     events = EventLog(run / 'events.jsonl').read()
     assert any(e['decision'] and e['decision']['status'] == 'discarded' for e in events)

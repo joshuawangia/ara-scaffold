@@ -158,7 +158,9 @@ def _save_analyses(calls, targets, results):
             for route in result.routes:
                 # Formula-identical targets can share deterministic graph ids.
                 # Retain each search in the log, but persist/select a graph once.
-                calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict())
+                from ara.runtime.route_policy import route_classification
+                calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict(),
+                                 classification=route_classification(route))
                 previous = graphs_by_id.get(route.id)
                 if previous is not None and previous != route:
                     raise ValueError('engine returned conflicting graphs for one route id')

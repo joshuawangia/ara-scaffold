@@ -35,9 +35,9 @@ def test_native_mock_smoke_and_replay(tmp_path):
     for path, graph in zip(files, graphs):
         assert path.with_suffix('.txt').read_text() == render_tree(graph)
         for node in graph.nodes:
-            if graph.status == 'CLOSED':
+            if graph.status == 'CLOSED' and node.kind == 'leaf':
                 assert commitments.get(node.t_id).formula.canonical() == node.proposition.formula.canonical()
-            else:
+            elif graph.status != 'CLOSED':
                 assert node.id in graph.frontier
     events = EventLog(run / 'events.jsonl').read()
     findings = json.loads(next(e['payload_json'] for e in events if e['stage'] == 'conflicts_and_robustness'))
@@ -52,7 +52,7 @@ def test_native_mock_smoke_and_replay(tmp_path):
         assert analysis['forward'] and analysis['forward'][0]['consequences']
     assert any(e['decision'] and e['decision']['reason_code'] == 'BANK_LICENSED' for e in events)
     draft = json.loads((run / 'draft.json').read_text())
-    assert draft['body'] == '[[node:n0]] ' + ' '.join(['P'] * 150)
+    assert draft['body'] == '[[node:n0]][[node:n1]][[node:n2]] ' + ' '.join(['P'] * 150)
     cli('export', '--run-dir', str(run), '--output', str(run / 'explicit-export'))
     assert (run / 'explicit-export/essay.txt').read_text() == 'P\n\n' + ' '.join(['P'] * 150) + '\n'
     assert (run / 'explicit-export/methodology.md').read_text() == methodology(run / 'events.jsonl')
@@ -61,7 +61,7 @@ def test_native_mock_smoke_and_replay(tmp_path):
     cli('select', '--run-dir', str(run), '--route', selected)
     events = EventLog(run / 'events.jsonl').read()
     assert any(e['stage'] == 'feedback' and json.loads(e['payload_json'])['text'] == 'P' for e in events)
-    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n0]] ' + ' '.join(['P'] * 150)
+    assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n0]][[node:n1]][[node:n2]] ' + ' '.join(['P'] * 150)
     replay = tmp_path / 'replay'
     cli('run', '--smoke', '--provider', 'mock', '--config', str(config_path), '--run-dir', str(replay))
     assert [p.read_bytes() for p in files] == [p.read_bytes() for p in sorted((replay / 'routes').glob('*.json'))]

@@ -917,6 +917,7 @@ class ModelCalls:
                         named_position: str | None = None) -> tuple[Proposition, ...]:
         from ara.runtime.search_alignment import symbols
         vocabulary = self.search_vocabulary(commitments)
+        from ara.runtime.target_policy import target_context, trivial_targets
         def check(data):
             targets = tuple(Proposition.from_dict(p) for p in data['targets'])
             require(len(targets) == (1 if named_position is not None else count), 'wrong target count')
@@ -925,7 +926,7 @@ class ModelCalls:
                 require(targets[0].text == named_position, 'named position was changed')
             return targets
         inputs = dict(commitments=commitments.to_dict(), count=count,
-                      named_position=named_position, **vocabulary)
+                      named_position=named_position, **vocabulary, **target_context(commitments))
         frozen = set().union(*(set(symbols(c.formula)) for c in commitments.commitments))
         for attempt in range(2):
             targets = self.call('propose_targets', inputs, check)
@@ -936,12 +937,21 @@ class ModelCalls:
                             disconnected=disconnected, catalogue_sha256=vocabulary['catalogue_sha256'],
                             catalogue_status=vocabulary['catalogue_status'],
                             status='disconnected' if disconnected else 'aligned')
-            if not disconnected:
+            rejected = trivial_targets(targets, commitments)
+            self.log.record('target_triviality_preflight', attempt=attempt + 1, attempt_budget=2,
+                            rejected=rejected, status=('rejected_after_one_correction' if attempt else 'correction_required')
+                            if rejected else 'passed',
+                            note='Structural exclusions and explicit attribution screen; semantic originality and support remain model judgments.')
+            if not disconnected and not rejected:
                 break
             inputs = {**inputs, 'vocabulary_feedback': dict(disconnected=disconnected,
                 previous_targets=[p.to_dict() for p in targets],
                 instruction='Reuse the frozen vocabulary with its definitions; preserve the target meaning.')}
-        return targets
+            if rejected:
+                inputs['triviality_feedback'] = dict(rejected=rejected,
+                    instruction='Replace rejected candidates with own theses needing at least two distinct commitments, preferably from two papers; do not rephrase an attributed claim.')
+        rejected_ids = {r['target_id'] for r in rejected}
+        return tuple(t for t in targets if t.id not in rejected_ids)
 
     def propose_cuts(self, goal: Proposition, commitments: CommitmentSet,
                      bank: tuple[BankEntry, ...]) -> tuple[Proposal, ...]:

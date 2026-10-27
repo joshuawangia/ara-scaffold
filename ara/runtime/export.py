@@ -8,6 +8,8 @@ from pathlib import Path
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log, pending_search_publications
 from ara.runtime.search_publication import search_status
+from ara.runtime.route_policy import route_classification
+from ara.types import RouteGraph
 from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry, PUBLICATION_POLICY
 from ara.runtime.provenance import extraction_outcomes
 from ara.runtime.grounding import evidence_items
@@ -39,7 +41,8 @@ def methodology(log_path: Path) -> str:
     outcomes = extraction_outcomes(events)
     lineage_missing = missing_lineage(events)
     lineage_incomplete = bool(lineage_missing) or any(e['stage'] == 'extraction_lineage_missing' for e in events)
-    inherited_indices: set[int] = set()
+    from ara.runtime.provenance import imported_event_indices
+    inherited_indices = imported_event_indices(events)
     receipt_ids = []
     for i, event in enumerate(events):
         if event['stage'] == 'extraction_provenance_import':
@@ -131,7 +134,11 @@ def methodology(log_path: Path) -> str:
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
-        'search': search_status(events),
+        'search': {**search_status(events),
+                   'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight')],
+                   'routes': [dict(id=p['graph']['id'], classification=route_classification(RouteGraph.from_dict(p['graph'])))
+                              for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
+        'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
         'construction': {'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],
                          'structure_outcomes': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_outcome'],
                          'frozen_catalogues': [json.loads(e['payload_json']) for e in events if e['stage'] == 'symbol_catalogue_frozen'],

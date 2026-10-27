@@ -1006,7 +1006,7 @@ CASES += [
     ('search_partial_routes', 'ara/runtime/orchestration.py', 'yield PartialSearch(results[i], results[i + 1])',
      'yield PartialSearch(None, None)',
      'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
-    ('search_partial_methodology', 'ara/runtime/export.py', "'search': search_status(events),", "'search': {},",
+    ('search_partial_methodology', 'ara/runtime/export.py', "'search': {**search_status(events),", "'search': {**{},",
      'tests/runtime/test_search_failures.py::test_failed_job_retries_after_initial_queue_and_preserves_sibling[1]'),
     ('search_partial_selection', 'ara/runtime/cli.py', 'search=search_info)', 'search={})',
      'tests/runtime/test_search_failures.py::test_cli_partial_search_reaches_selection_and_composes'),
@@ -1210,7 +1210,7 @@ CASES += [
     ('search_goal_reference', 'ara/engine/licensing.py', '            conclusion = goal', "            conclusion = self.formalise(Proposition('conclusion', proposal.conclusion_text))", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
     ('search_goal_reference_text', 'ara/engine/licensing.py', '            if proposal.conclusion_text != goal.text:', '            if False:', 'tests/runtime/test_search_alignment.py::test_explicit_goal_reference_does_not_override_changed_text'),
     ('search_catalogue_inputs', 'ara/runtime/calls.py', 'return catalogue_inputs(self.log.path.parent, commitments)', "return dict(symbol_catalogue=None, catalogue_sha256=None, catalogue_status='unavailable_legacy', commitments_sha256=digest(canonical(commitments.to_dict())))", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
-    ('search_target_preflight', 'ara/runtime/calls.py', '            if not disconnected:', '            if True:', 'tests/runtime/test_search_alignment.py::test_target_preflight_retries_once_with_catalogue'),
+    ('search_target_preflight', 'ara/runtime/calls.py', '            if not disconnected and not rejected:', '            if True:', 'tests/runtime/test_search_alignment.py::test_target_preflight_retries_once_with_catalogue'),
     ('search_proposal_batch', 'ara/runtime/calls.py', 'proposal_limit=3, attempt_budget=1,', 'proposal_limit=1, attempt_budget=1,', 'tests/runtime/test_search_alignment.py::test_three_proposal_batch_keeps_valid_alternative'),
     ('search_proposal_batch_bound', 'ara/runtime/calls.py', "require(len(proposals) <= 3, 'proposal batch exceeds three candidates')", "require(True, 'proposal batch exceeds three candidates')", 'tests/runtime/test_search_alignment.py::test_proposal_batch_bound_is_enforced'),
     ('search_joint_slots', 'ara/engine/licensing.py', 'premises = self.formaliser.formalise_slots(proposal, goal, entry, self.commitments)', 'premises = tuple(self.formalise(Proposition(s.id, by_slot[s.id].text)) for s in entry.premise_slots)', 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
@@ -1231,6 +1231,57 @@ CASES += [
     ('frozen_catalogue_binding', 'ara/runtime/frozen_catalogue.py',
      "or value['commitments'] != commitments.to_dict()", 'or False',
      'tests/runtime/test_frozen_catalogue.py::test_catalogue_refuses_tampering[commitment]'),
+]
+
+
+CASES += [
+    ('target_triviality_guard', 'ara/runtime/target_policy.py',
+     '            if is_terminus(target, commitment.id, commitments):', '            if False:',
+     'tests/runtime/test_target_triviality.py::test_trivial_target_correction_and_exhaustion'),
+    ('target_instance_guard', 'ara/runtime/target_policy.py',
+     '            if direct_instance(commitment.formula, target.formula):', '            if False:',
+     'tests/runtime/test_target_triviality.py::test_single_commitment_instance_and_attribution'),
+    ('target_rejection_filter', 'ara/runtime/calls.py',
+     'return tuple(t for t in targets if t.id not in rejected_ids)', 'return targets',
+     'tests/runtime/test_target_triviality.py::test_trivial_target_correction_and_exhaustion'),
+    ('derived_selection_default', 'ara/runtime/route_policy.py',
+     "return tuple(r for r in routes if route_classification(r) == 'CLOSED-derived')", 'return tuple(routes)',
+     'tests/runtime/test_target_triviality.py::test_default_cli_lists_but_does_not_offer_trivial'),
+    ('route_derivation_classification', 'ara/runtime/route_policy.py',
+     "if node.kind == 'inference' and node.proposal is not None:", 'if True:',
+     'tests/runtime/test_target_triviality.py::test_derived_classification_and_default_selection'),
+    ('freeze_fork_anchor', 'ara/runtime/freeze_fork.py',
+     "if (source/'events.anchor').read_text().splitlines() != [r['hash'] for r in rows]:", 'if False:',
+     'tests/runtime/test_freeze_fork.py::test_fork_refuses_before_destination_or_provider[anchor]'),
+    ('freeze_fork_artifact', 'ara/runtime/freeze_fork.py',
+     "if CommitmentSet.from_json(artifacts['commitments.json'].decode()).to_dict()!=commitments.to_dict():", 'if False:',
+     'tests/runtime/test_freeze_fork.py::test_fork_refuses_before_destination_or_provider[artifact]'),
+    ('freeze_fork_accounting', 'ara/runtime/provenance.py',
+     '            inherited.update(range(count))', '            pass',
+     'tests/runtime/test_freeze_fork.py::test_fork_exact_prefix_and_single_accounting'),
+]
+
+
+CASES += [
+    ('target_attribution_exclusion', 'ara/runtime/target_policy.py',
+     "            reason = 'attributed_report'", '            pass',
+     'tests/runtime/test_target_triviality.py::test_single_commitment_instance_and_attribution'),
+    ('target_one_correction', 'ara/runtime/calls.py',
+     '        for attempt in range(2):', '        for attempt in range(3):',
+     'tests/runtime/test_target_triviality.py::test_trivial_target_correction_and_exhaustion'),
+    ('freeze_fork_chain', 'ara/runtime/logging.py',
+     'digest(canonical(row)) != checksum', 'False',
+     'tests/runtime/test_freeze_fork.py::test_fork_refuses_before_destination_or_provider[chain]'),
+    ('freeze_fork_single_freeze', 'ara/runtime/freeze_fork.py',
+     '        if len(freezes)!=1:', '        if False:',
+     'tests/runtime/test_freeze_fork.py::test_fork_refuses_before_destination_or_provider[duplicate]'),
+]
+
+
+CASES += [
+    ('target_instance_canonical', 'ara/runtime/target_policy.py',
+     '    pattern, value = pattern.normalized(), value.normalized()', '    pass',
+     'tests/runtime/test_target_triviality.py::test_direct_instance_uses_canonical_normalization'),
 ]
 
 

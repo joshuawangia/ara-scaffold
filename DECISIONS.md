@@ -3021,3 +3021,53 @@ to R(a), and the conditional from R(a) to F(a), without including R(a) or F(a) a
 premises. This establishes the executable seam, not faithful real-source encoding.
 Plan v10 intentionally prevents replaying old counted plans as this new policy;
 old frozen artifacts remain readable under the legacy/search compatibility path.
+
+### Round 13 — contribution targets, route selection, and frozen forks
+
+Target proposal inputs now include an own-thesis policy, explicit conditionals,
+and shared signatures. The prompt requires support/refutation using at least two
+distinct commitments, preferably across papers. A deterministic preflight excludes
+canonical T copies, direct universal instances, and explicit reporting language.
+Vocabulary and triviality share one correction request. Still-trivial candidates
+are excluded and disclosed; still-disconnected nontrivial candidates retain the
+previous warning policy. This is not a semantic originality or support oracle.
+
+Display and default selection distinguish CLOSED-trivial from CLOSED-derived.
+The latter requires a reachable inference node with its licensed proposal in a
+closed engine graph. Historic CLOSED serialization remains intact. Trivial and
+open routes are disclosed; selecting them requires an explicit route argument.
+The native smoke fixture now derives P and Q from distinct placeholder premises
+and conditionals, instead of copying frozen targets.
+
+`fork-from-freeze` verifies the entire source chain and its required anchor,
+requires one freeze and compatible bank, verifies commitments and optional
+catalogue against the freeze receipts, then atomically installs the exact prefix
+and artifacts in a separate empty directory. It reads the source without creating
+locks or changing files. The fork appends a prefix-accounting receipt and current
+configuration overrides; its own cache avoids writes into source-run caches.
+Historical MODEL usage is retained once, classified as imported, and included in
+normal accounting. No construction or original target/search receipts after the
+freeze are copied. Current target proposal, native search, and selection follow.
+A current live Codex preflight remains required for a real rerun.
+
+Placeholder regressions and production-wire controls cover rejection/correction,
+instances and attribution, display/default selection, native fork continuation,
+source preservation, prefix accounting, and chain/anchor/artifact/bank refusals.
+Only offline/fake providers are used. Verification results are recorded below.
+
+Round 13 verification: full offline pytest passed 1,074 tests with 4 existing
+opt-in skips (1,078 collected) in 836.09 seconds. After pytest exited, all 463
+production-wire controls produced their expected mutation failures and restored
+passes, including 13 new controls. All 200 pinned files were restored exactly.
+The offline real-freeze demo copied 6,813 prefix events, rejected all ten copied
+trivial targets after one correction, and left the source log, anchor and freeze
+artifacts unchanged. No network or paid calls occurred. Evidence and the explicit
+fake profile/counter are under `runs/xi-round13/`; no real thesis generation or
+new real-corpus closure is claimed. The initial stale live preflight correctly
+refused. An earlier disk-full test run was discarded; only this task's failed
+demo copies were removed before the successful full rerun.
+
+Finding placement: target/support limitations are in the first paragraph;
+classification/novelty limits are in the second and README; fork preservation and
+accounting are in the third; the live-preflight prerequisite and offline-demo
+limits are above. 5 findings, 5 placed. No push occurred.

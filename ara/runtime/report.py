@@ -287,8 +287,9 @@ def route_details(row, commitments):
     from ara.types import RouteGraph, CommitmentSet, Commitment
     frozen = CommitmentSet(tuple(Commitment.from_dict({k:v for k,v in c.items()
         if k in ('id','text','citation','formula')}) for c in commitments.values()))
+    contribution = route_contribution(RouteGraph.from_dict(graph), frozen)
     return dict(seq=row['seq'], target=data.get('target'), polarity=data.get('polarity'), graph=graph,
-                **route_contribution(RouteGraph.from_dict(graph), frozen),
+                classification=contribution['classification'], contribution=contribution,
                 support_chain=support, model_summary=None, audit_results=[])
 
 

@@ -3116,3 +3116,22 @@ sequential pytest/control receipts are retained in the Round 14 task report.
 The real pilot source is immutable; its copied targets test rejection only.
 Neither the fake demo nor these checks prove real-corpus originality, faithful
 formalization, successful new synthesis, or general semantic attribution.
+
+## Round 15 — separate route metadata from contribution receipts
+
+Phi2 R1 exposed a report crash when a redundant two-support closure's solver
+receipt contained `polarity`, colliding with the route event's `polarity`.
+Reports now keep the event's target, polarity, and graph authoritative, retain
+`classification` for existing report consumers, and nest the full solver
+receipt under `contribution`. Thus a negation-search route can preserve its
+`negation` polarity while `contribution.polarity` records the local solver's
+`target` check. No receipt fields are silently merged into event metadata.
+
+The native CLI regression covers two redundant-support proofs and a necessary
+two-support positive control. It verifies licensed CLOSED graphs, classification
+and selection disclosure, both polarity values, complete nested receipts,
+HTML/JSON output, source-file preservation, and no report-time provider or
+engine calls. Mutation controls cover both reintroducing the flat merge and
+silently replacing the event polarity. Full offline pytest and sequential
+control receipts are retained in the Round 15 task report. No paid calls or
+push are part of this repair; contribution and licensing policy are unchanged.

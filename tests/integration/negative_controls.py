@@ -1331,6 +1331,17 @@ CASES += [
 ]
 
 
+CASES += [
+    ('report_contribution_namespace', 'ara/runtime/report.py',
+     "classification=contribution['classification'], contribution=contribution,", '**contribution,',
+     'tests/runtime/test_report_contribution.py'),
+    ('report_event_polarity_authority', 'ara/runtime/report.py',
+     "polarity=data.get('polarity'), graph=graph,",
+     "polarity=contribution.get('polarity', data.get('polarity')), graph=graph,",
+     'tests/runtime/test_report_contribution.py'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

@@ -80,6 +80,9 @@ Source citations in the documentation correction entry refer to base `6511ff6`.
 - [Round 9 — Xi: stopped search recovery](#round-9-xi-stopped-search-recovery)
 - [Round 10 — Xi: bind resume completion to its results generation](#round-10-xi-bind-resume-completion-to-its-results-generation)
 - [Round 12 — shared search vocabulary and explicit formula bindings](#round-12-shared-search-vocabulary-and-explicit-formula-bindings)
+- [Round 13 — contribution targets, route selection, and frozen forks](#round-13-contribution-targets-route-selection-and-frozen-forks)
+- [Round 14 — solver contribution and own-thesis gates](#round-14-solver-contribution-and-own-thesis-gates)
+- [Round 15 — separate route metadata from contribution receipts](#round-15-separate-route-metadata-from-contribution-receipts)
 
 ### Providers
 
@@ -411,6 +414,8 @@ are operator assumptions, not an invoice guarantee. Input/output rates come from
 B2; ancillary rates were supplied by alpha and still require current billing review.
 Provider errors with no usage cannot prove zero spend; logs must disclose unknown
 accounting rather than let a failed call become an uncounted retry.
+
+> Status: Default first-CLOSED/OPEN selection is superseded by [Round 13](#round-13-contribution-targets-route-selection-and-frozen-forks) and [Round 14](#round-14-solver-contribution-and-own-thesis-gates): only `CLOSED-derived` is offered by default.
 
 G9. Normal run builds/freezes T, generates targets, searches every target and its
 canonical negation, invokes engine conflict/robustness analysis, then pauses for
@@ -777,6 +782,8 @@ verification lifecycle. Originality/quotation validation code is unchanged.
 R5. requires-python is >=3.13; uv.lock is regenerated for that supported range,
 and installation/full-suite verification uses CPython 3.13.15. No dependency is
 added. This supersedes the original >=3.11 repository hygiene statement.
+
+> Status: The profile still requests ten candidates; [Round 13](#round-13-contribution-targets-route-selection-and-frozen-forks) and [Round 14](#round-14-solver-contribution-and-own-thesis-gates) can exclude candidates before search. Ten completed searches are no longer unconditional.
 
 R6. --profile pilot overlays the pilot mapping in config.yaml before constructing
 calls and the engine. --smoke remains available and is mutually exclusive. Pilot
@@ -3239,6 +3246,8 @@ search owns loading metadata and incorporating identity in model/cache inputs.
 <a id="round-12-shared-search-vocabulary-and-explicit-formula-bindings"></a>
 ### Round 12 — shared search vocabulary and explicit formula bindings
 
+> Status: [Rounds 13–14](#round-14-solver-contribution-and-own-thesis-gates) extend target preflight with contribution and own-thesis checks. Frozen catalogue and slot-binding contracts remain.
+
 - Integrate Sigma's catalogue interface from `597b666`. `commitments.json` and
   the strict `CommitmentSet` codec remain unchanged. Search validates the optional
   `frozen-t.json` envelope, passes its symbols and catalogue/T hashes in cache
@@ -3325,6 +3334,8 @@ old frozen artifacts remain readable under the legacy/search compatibility path.
 <a id="documentation-corrections-2026-10-27"></a>
 ## Documentation corrections (2026-10-27)
 
+> Status: This correction entry describes base `6511ff6`. Its missing-fork statement is superseded by [Round 13](#round-13-contribution-targets-route-selection-and-frozen-forks) at the rebased `f89cd37`. The [rebase entry](#documentation-rebase-f89cd37) identifies current guidance.
+
 The documentation review used base `6511ff6`. The old README combined several
 superseded policies with current guidance. The guides now reflect the following
 source-backed behavior; original decision paragraphs above remain unchanged.
@@ -3352,7 +3363,10 @@ this documentation work. Current offline results and remaining review findings
 belong in the external documentation handoff; historical receipts above retain
 their original proof scope.
 
+<a id="round-13-contribution-targets-route-selection-and-frozen-forks"></a>
 ### Round 13 — contribution targets, route selection, and frozen forks
+
+> Status: The inference-only derived criterion and `CLOSED-trivial` display are superseded by [Round 14](#round-14-solver-contribution-and-own-thesis-gates). The frozen-prefix contract remains; [Round 15](#round-15-separate-route-metadata-from-contribution-receipts) keeps contribution receipts separate from route metadata.
 
 Target proposal inputs now include an own-thesis policy, explicit conditionals,
 and shared signatures. The prompt requires support/refutation using at least two
@@ -3402,6 +3416,7 @@ classification/novelty limits are in the second and README; fork preservation an
 accounting are in the third; the live-preflight prerequisite and offline-demo
 limits are above. 5 findings, 5 placed. No push occurred.
 
+<a id="round-14-solver-contribution-and-own-thesis-gates"></a>
 ## Round 14 — solver contribution and own-thesis gates
 
 Phi2 B1 is fixed at proposal and publication/selection boundaries. Preflight
@@ -3447,6 +3462,7 @@ The real pilot source is immutable; its copied targets test rejection only.
 Neither the fake demo nor these checks prove real-corpus originality, faithful
 formalization, successful new synthesis, or general semantic attribution.
 
+<a id="round-15-separate-route-metadata-from-contribution-receipts"></a>
 ## Round 15 — separate route metadata from contribution receipts
 
 Phi2 R1 exposed a report crash when a redundant two-support closure's solver
@@ -3465,3 +3481,39 @@ engine calls. Mutation controls cover both reintroducing the flat merge and
 silently replacing the event polarity. Full offline pytest and sequential
 control receipts are retained in the Round 15 task report. No paid calls or
 push are part of this repair; contribution and licensing policy are unchanged.
+
+<a id="documentation-rebase-f89cd37"></a>
+## Documentation rebase onto f89cd37 (2026-10-27)
+
+The docs branch now includes xi rounds 13–15 from `f89cd37`. All new decision
+paragraphs remain intact and indexed; the authorized B1 identifier redaction is
+retained. Earlier documentation corrections still describe their stated base.
+Current guides route the merged behavior as follows:
+
+- `docs/search.md` owns target contribution/own-thesis preflight, derived-only
+  default selection, verified frozen-prefix forks and search resume. A request
+  for ten candidates can yield fewer accepted targets or none. Vocabulary and
+  contribution checks share one correction; explicit selection does not bypass
+  provider, budget, audit or verification requirements.
+- `docs/construction.md` links the native fork operation; it no longer describes
+  all shared-freeze reuse as absent. `fork-from-freeze` is the registered command.
+  `run --from-frozen` remains unsupported. The source needs a verified freeze,
+  not a completed essay; fork configuration overrides are limited to the flags
+  actually registered at `ara/runtime/cli.py:45`.
+- `docs/reporting.md` preserves the distinction between event `polarity` and
+  `contribution.polarity`; `classification` stays available at the report's top
+  level (`ara/runtime/report.py:286`). Reports may evaluate the bounded local
+  contribution policy but do not dispatch providers or rerun engine search.
+- `docs/accounting.md` describes the once-imported frozen prefix. Search resume
+  and later selection use the fork's effective configuration rather than the
+  original source configuration (`ara/runtime/search_resume.py:265`,
+  `ara/runtime/freeze_fork.py:16`). Resume retains the recorded target/job set;
+  it does not refresh proposals to pass a newer target policy.
+- `docs/providers.md` identifies the new `classify_target` schema. Historical
+  15-case Codex proofs must be refreshed for the 16-case contract before live use.
+
+Source checks and offline regressions do not establish semantic originality,
+faithful formalization, useful new synthesis, independent source papers or live
+Codex serving identity. The external rebase handoff records the current CLI-help,
+link, leak and full pytest results separately from xi's historical proof receipts.
+No executable, prompt, schema, test or configuration change is made by this rebase.

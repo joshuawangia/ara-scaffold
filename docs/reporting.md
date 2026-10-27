@@ -86,3 +86,22 @@ payloads referenced through the same interned definitions as state deltas. The
 report resolves those references only after authentication and preserves the raw
 receipts alongside the expanded terminal graphs. This keeps long repeated premise
 text from multiplying across alternative routes; it does not omit any route.
+
+## Route classification and contribution receipts
+
+The overview and linked route records show [contribution classifications](search.md#route-classification-and-selection).
+Only `CLOSED-derived` is `selectable_by_default`. The report computes this policy
+from the recorded graph and available frozen commitments, without a provider or
+new engine search. Bounded local solver checks can run during classification;
+this does not add new inference licenses or source-run events.
+
+Each route retains the event's `target`, `polarity` and `graph`. `classification`
+remains a top-level report field for consumers; the full solver/support receipt
+is nested under `contribution`. For a route from negation search, `polarity` can
+be `negation` while `contribution.polarity` is `target`, meaning the solver tested
+that route's root. These fields describe different scopes and are never merged.
+See `ara/runtime/report.py:286` and `ara/runtime/report_render.py:301`.
+
+Legacy records keep their original engine status and evidence. Missing support
+or unresolved contribution checks remain disclosed; a contribution label does
+not establish novelty, minimal support sets or independent source papers.

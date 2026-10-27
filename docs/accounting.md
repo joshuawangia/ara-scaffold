@@ -77,3 +77,17 @@ imported API charges remain visible in methodology, and cached subscription
 receipts do not add new usage. Each call records requested/served model, CLI
 version, tokens, wall time, exit status and session id; unsafe error text is
 suppressed.
+
+## Frozen-prefix accounting
+
+A [verified fork](search.md#reuse-a-verified-freeze) retains the exact event prefix
+through the source freeze once. `freeze_forked.records` identifies that inherited
+prefix. Its MODEL charges remain visible as imported history; they are not new
+fork calls and are not silently erased. API admission includes inherited usage
+and cost under its existing rules. Subscription token admission uses local usage,
+while imported history remains reported. A fork's cache is separate from the
+source cache. Combined reports deduplicate original receipts across supplied runs.
+
+Methodology includes fork lineage, target vocabulary/contribution/own-thesis
+preflight receipts, and route contribution dispositions. These records distinguish
+missing or excluded work from a successful search or writer result.

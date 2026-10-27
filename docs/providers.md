@@ -222,13 +222,19 @@ Set `codex_cli.schema_preflight_log` in that config to the absolute path of
 `runs/codex-schemas/events.jsonl`, then use that config/profile for the pilot.
 Run, construction resume and writing selection refuse absent or stale proof. Rerun
 preflight after changing a schema, model, effort, system prompt, projection
-version or pinned CLI version. It tests construction, corrections, targets, search
-and writing with placeholders, keeping local constraints authoritative; it does
+version or pinned CLI version. It tests construction, corrections, targets,
+own-thesis classification, search and writing with placeholders, keeping local
+constraints authoritative; it does
 not prove pilot success. API-only extraction and web retrieval are not Codex
 schema cases. Use the separate ChatGPT auth file; never the worker login.
 
+The current contract includes `classify_target`: older 15-case proofs must be
+refreshed to cover all 16 cases. This is schema-acceptance evidence, not proof of
+originality or successful new targets.
+
 For an existing run, pass `--codex-schema-preflight-log PATH` to
-`resume-construction` or `select` to supply new proof without editing its history.
+`resume-construction`, `resume-search` or `select` to supply new proof without
+editing its history. `fork-from-freeze` accepts the same override for its new run.
 
 ## Local schema validation
 

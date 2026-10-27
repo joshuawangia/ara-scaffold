@@ -7,7 +7,7 @@ guide owns one concern; link to it instead of copying its procedure.
 | --- | --- |
 | [Extraction](extraction.md) | PDF intake, range evidence, corrections, grounding, provenance, reuse and schema preflight |
 | [Construction](construction.md) | Working T, capacity planning, window allocation, resume and frozen vocabulary |
-| [Search](search.md) | Pilot search, concurrency, selection, writing, feedback and search resume |
+| [Search](search.md) | Target gates, route classification, frozen forks, pilot search, selection, writing and resume |
 | [Providers and isolation](providers.md) | API/CLI setup, stage dispatch, isolation, retry policies and Codex schema gate |
 | [Accounting](accounting.md) | Logs, budgets, measured/reserved/inherited usage, calibration and export |
 | [OCR](ocr.md) | Optional local models, installation, span repair, audit and limits |

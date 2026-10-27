@@ -11,18 +11,24 @@ uv run ara run --profile pilot --topic 'P Q' --literature /path/to/literature.tx
 uv run ara select --run-dir runs/pilot
 ```
 
-The pilot searches all 10 targets at depth 6 and node cap 500, then waits for
-human route selection. `search_concurrency` (top-level configuration, default 4)
+The pilot requests 10 target candidates and searches those that pass preflight
+at depth 6 and node cap 500, then waits for human route selection. Excluded
+candidates remain disclosed; the accepted set can contain fewer than ten or none.
+
+`search_concurrency` (top-level configuration, default 4)
 bounds independent target/polarity searches; set it to 1 for sequential searches.
 Each search retains a separate sealed trace, and one writer serializes the event
 chain. Worker events are durably journaled and published in input-target order,
 positive then negative. Interrupted publication leaves accounting explicitly
 incomplete and refuses paid resume until reconciled. In-flight model reservations
-count against the run caps. Target proposal requests all targets in a batch. Vocabulary preflight may request
-one correction if target symbols are disconnected from frozen T. For 20
-similarly sized searches, four workers can reduce the search portion from 20 waves
-to about five; proposal, forward/conflict analysis, solver checks, logging and
-provider limits reduce the total speedup. This is an expected effect, not a
+count against the run caps.
+
+Target proposal requests candidates in a batch. Vocabulary and contribution
+checks share one correction request; each candidate also receives the own-thesis
+classification described below. If all ten candidates pass, there are 20 polarity
+searches. For 20 similarly sized searches, four workers can reduce that portion
+from 20 waves to about five; proposal, forward/conflict analysis, solver checks,
+logging and provider limits reduce the total speedup. This is an expected effect, not a
 measured live-provider result.
 
 A job whose provider/validation retries are exhausted does not cancel its
@@ -102,12 +108,118 @@ selection/audit:
 uv run ara run --config runs/example-config.yaml --provider anthropic --topic 'P Q' --literature tests/fixtures/runtime/smoke-literature.txt --run-dir runs/real-inputs
 ```
 
-Selection prints the actual route ids and prompts for one. Enter an id from that
-list. Feedback is passed to the next draft request; it does not mutate frozen T or
+Selection prints every route with its classification. It prompts only when a
+`CLOSED-derived` route is available; enter an offered route ID. Other displayed
+routes require explicit `--route ID`. If no derived route is available, the
+command reports that fact without creating a writer provider.
+
+Feedback is passed to the next draft request; it does not mutate frozen T or
 alter the licensed graph. `--route` supplies a selection without prompting;
 `--named-position` on run accepts one exact position. Interactive elapsed human
-time and explicit `--human-minutes` are logged separately. Smoke selects the first
-CLOSED route (otherwise the first OPEN route) under a logged SYSTEM policy.
+time and explicit `--human-minutes` are logged separately. Smoke selects only the
+first `CLOSED-derived` route under a logged SYSTEM policy. With no eligible route,
+it waits at selection without writing an essay.
+
+## Target proposal and triviality
+
+Target proposals request own theses supported or refuted by at least two distinct
+commitments, preferably from different papers. Inputs include frozen commitments,
+explicit conditionals, shared signatures and available catalogue definitions.
+The preferred paper count is a model instruction, not a deterministic guarantee.
+
+Bounded solver checks test the target and its negation with no premises and with
+each frozen commitment separately. A valid formula or a formula entailed by one
+commitment is excluded, including direct universal instances and padded
+restatements. Each check has a 1,000 ms timeout. The 8,192-entry cache keys premise
+and conclusion hashes plus timeout; bound-variable renaming shares hashes while
+free and bound variables stay distinct. Checks stop on a decisive exclusion;
+at most `2 * (1 + len(T))` checks are needed per candidate. Unknowns and timeouts
+cannot authorize a target.
+
+Each candidate also receives an isolated `classify_target` request on the same
+provider. It sees the target and vocabulary, without proposal history or rationale.
+Only `own_thesis` passes; `attributed_report` and `unclear` are disclosed and
+excluded. Deterministic attitude/report phrases and top-level attribution
+predicates identified by catalogue definitions also reject candidates. Missing
+legacy catalogues remain unavailable; code does not invent their definitions.
+All classification dispositions, cache replays and solver receipts are logged.
+
+Vocabulary and triviality share one proposal correction. Remaining exclusions
+and reasons are retained; a second disconnected-vocabulary result is disclosed
+without automatically excluding an otherwise accepted target. `--named-position`
+preserves the requested text and still undergoes these checks. Neither the model
+classification nor the solver checks prove originality, source support or faithful
+text/formula translation. See `ara/runtime/calls.py:916`,
+`ara/runtime/target_policy.py:42` and `ara/runtime/contribution.py:45`.
+
+The classifier schema is part of Codex preflight. Historical 15-case receipts
+must be refreshed for the current 16-case contract before live use; a changed
+manifest or model/configuration can also invalidate proof. See
+[provider preflight](providers.md#codex-cli).
+
+## Route classification and selection
+
+Contribution labels supplement the engine's unchanged `CLOSED`/`OPEN` status,
+bank licenses and graph format. `CLOSED-derived` requires a reachable licensed
+inference, at least two distinct frozen supports and solver checks that rule out
+validity without support and entailment of the root by any one support. The
+route check tests the root polarity; target preflight tests both polarities.
+
+CQ evidence counts as support. Assumptions and repeated or alpha-equivalent
+support formulas do not inflate the count. The check traverses reachable nodes;
+it does not establish minimality of larger support subsets, independence across
+papers or semantic novelty.
+
+| Display label | Meaning for selection |
+| --- | --- |
+| `CLOSED-derived` | Passes the contribution policy; offered by default |
+| `CLOSED-single-support` | Lacks the required inference/distinct supports, is valid without support, or follows from one support; explicit `--route` required |
+| `CLOSED-contribution-unresolved` | Required support or a solver verdict is unavailable; explicit `--route` required |
+| `CLOSED-attributed-report` | Reporting language is detected during the closed-route contribution check; explicit `--route` required |
+| `OPEN` or another non-closed status | Retains its engine status and disclosed frontier; explicit `--route` required |
+
+An explicit route argument chooses a displayed route but does not bypass budgets,
+provider gates, audits or verification. Graph-only legacy rendering can recover
+leaf formulas; missing CQ evidence remains unresolved. Native publication,
+selection and reports use frozen T when available. Reports keep the full
+contribution receipt separate from search target/polarity metadata; see
+[reporting](reporting.md#route-classification-and-contribution-receipts).
+
+## Reuse a verified freeze
+
+```sh
+uv run ara fork-from-freeze --source-run runs/source --run-dir runs/fork
+```
+
+The command verifies the source's entire event chain and required anchor,
+requires one freeze and matching bank versions, and compares commitments plus
+any frozen catalogue with their receipts. It atomically installs the exact event
+prefix through the freeze and the frozen artifacts in an empty separate directory.
+The destination cannot be inside the source or contain it. Source files are read
+without creating locks or changing their contents.
+
+The fork retains source topic/configuration, appends its configuration and
+prefix-accounting receipts, and uses its own cache. It copies no target/search
+receipts after the freeze. Current target proposal and native paired search then
+run, ending at `awaiting_selection`; construction and a second freeze do not run.
+The source needs a verified freeze, not a completed essay.
+
+`--provider`, `--codex-schema-preflight-log` and `--unknown-usage-policy` are the
+explicit overrides; `--human-minutes` records operator-reported time. There is no
+fork `--config`, `--model`, `--profile` or cap override. A provider override does
+not automatically change stored model/stage settings. A live Codex rerun needs
+current successful schema preflight, including `classify_target`.
+
+This command can make paid calls. Historical MODEL usage is retained once as
+imported history; ordinary API/subscription accounting rules still apply. Forking
+is not a budget reset. Keep the source and inherited provenance for audit, and
+use [combined reporting](reporting.md) to deduplicate original receipts across
+runs. See `ara/runtime/freeze_fork.py:25` and `ara/runtime/cli.py:185`.
+
+Use a fork to propose new targets from a retained freeze. Use `resume-search` to
+continue the fork's already-recorded search jobs. A fork that stopped before it
+recorded a valid target/job inventory is not eligible for search resume; preserve
+its failed receipts rather than treating it as a completed rerun.
 
 ## Resume a stopped search
 
@@ -134,46 +246,13 @@ evidence, changed hashes, incompatible targets, or an interrupted request withou
 a measured response refuse explicitly. Unsealed partial traces remain retained but
 cannot establish a completed search.
 
-Live resume retains the recorded configuration and provider gates. Use
+Live resume retains recorded targets and provider gates. For a fork, it uses the
+latest `freeze_fork_configuration`, including the fork cache and recorded
+overrides; it does not fall back to the original source-run configuration. It
+does not repeat target proposal or apply current target preflight to replace the
+stored candidate set. Resume requires a nonempty valid target inventory and
+matching job/trace receipts (`ara/runtime/search_resume.py:265`). Use
 `--codex-schema-preflight-log PATH` to supply current Codex proof and
 `--unknown-usage-policy count-at-reservation` only for previously finalized
 unknown-usage receipts. Neither option overrides missing measured evidence for an
 interrupted search dispatch.
-
-## Reuse a verified freeze
-
-`ara fork-from-freeze --source-run runs/source --run-dir runs/fork` copies the
-verified event-chain prefix through its single freeze and the exact frozen
-artifacts. The source is read-only. The new run gets its own cache, proposes
-fresh targets with current code, performs native paired search, and waits for
-selection. It preserves historical accounting once and refuses changed chains,
-anchors, commitments, catalogues, or bank versions. The destination must be
-empty and separate from the source. `--codex-schema-preflight-log`, `--provider`,
-and `--unknown-usage-policy` are explicit overrides; a real Codex rerun still
-requires a current successful schema preflight.
-
-Target proposals request own theses supported or refuted by at least two
-commitments, preferably from different papers. Bounded solver checks reject
-valid targets and targets whose positive or negative form follows from any
-single frozen commitment, including padded restatements. Each check allows
-1,000 ms; alpha-equivalent formula hashes share a bounded cache. Solver unknowns
-and timeouts remain unresolved and are excluded. One shared proposal correction
-is allowed; remaining exclusions and their reasons are logged.
-
-Each target also receives an isolated own-thesis classification on the same
-provider. Only `own_thesis` passes; `attributed_report` and `unclear` are disclosed
-and excluded. Deterministic attitude/report phrases and top-level attribution
-predicates identified by frozen catalogue definitions also cause rejection.
-These checks do not prove originality or faithful text/formula translation.
-A second disconnected-vocabulary result stays disclosed.
-
-Route lists and reports offer `CLOSED-derived` by default only when a licensed
-inference has at least two distinct reachable frozen supports and no single
-support entails the root. CQ evidence counts; assumptions and duplicate or
-alpha-equivalent supports do not inflate the count. Other closed routes are
-labelled `CLOSED-single-support`, `CLOSED-contribution-unresolved`, or
-`CLOSED-attributed-report`, and require an explicit `--route`. Engine licenses,
-statuses, and graph codecs are unchanged. This contribution check does not
-prove novelty, minimality among larger support subsets, or independence across
-papers. Legacy graphs without frozen inputs can use their leaf formulas for
-display; unavailable CQ evidence remains unresolved.

@@ -123,7 +123,7 @@ stage before applying `construction_correction`; profiles preserve unrelated sta
 entries. Receipts and methodology show the actual requested/served stage models
 and providers. Model pricing and accounting must be configured for the selected
 backend. Both `claude_code` and `codex_cli` are registered in
-`ara.runtime.cli.make_provider` (`ara/runtime/cli.py:123`). Their isolation,
+`ara.runtime.cli.make_provider` (`ara/runtime/cli.py:130`). Their isolation,
 credentials and schema gates are described in [providers](providers.md). Native
 `ara run --literature ...` caches extraction-lineage verification receipts under
 `cache_dir/lineage-verification`. Cold startup fully verifies the artifact,
@@ -163,11 +163,13 @@ by `ara.runtime.frozen_catalogue.validate_frozen_artifact`. Missing metadata mea
 the legacy catalogue is `unavailable_legacy`; corrupt present metadata refuses.
 Search loads and validates the catalogue, includes its hashes in model/cache
 inputs, and jointly formalizes slots against frozen bindings. See
-`ara/runtime/search_alignment.py:20` and `ara/runtime/calls.py:970`.
+`ara/runtime/search_alignment.py:20` and `ara/runtime/calls.py:990`.
 
-## Shared-frozen candidates are deferred
+## Reuse after freeze
 
-`fork-from-freeze` is not a command at base `6511ff6`. `ara run --from-frozen` is
-also absent. The separate eta work is not integrated here; see [PLAN](../PLAN.md).
-Do not copy `commitments.json` into a new run to simulate provenance import. A
-fresh `ara run` constructs and freezes its own T.
+`fork-from-freeze` is available at base `f89cd37`. It verifies and copies the
+recorded prefix through one freeze, then proposes new targets without rebuilding
+T. Follow [frozen-fork operation](search.md#reuse-a-verified-freeze) for source,
+destination, accounting and provider requirements. A fresh `ara run` still
+constructs and freezes its own T. `run --from-frozen` is not a supported alias.
+Manual artifact copying does not replace the native verification path.

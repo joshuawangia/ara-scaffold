@@ -2,8 +2,9 @@
 
 ARA is a Python CLI for bank-constrained symbolic search. A model proposes steps;
 the deterministic engine checks versioned bank forms, Z3 entailment, frozen
-commitments and route closure. A run builds one commitment table (T), freezes it,
-searches both target polarities, and writes from a selected route. Extraction,
+commitments and route closure. A fresh run builds and freezes one commitment
+table (T); a verified fork reuses an existing freeze. Both paths propose targets,
+search both polarities, and write from a selected route. Extraction,
 model calls, decisions and accounting retain inspectable receipts.
 
 ## Install and try it offline
@@ -38,6 +39,7 @@ and `uv run ara COMMAND --help`.
 | Plan extraction ranges | `uv run ara plan-extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --ocr off --token-counter local --run-dir runs/extraction-plan` | Local estimates; generation disabled |
 | Plan construction | `uv run ara plan-construction --literature runs/extraction/literature.extracted.txt --topic 'P' --profile pilot --token-counter local --run-dir runs/construction-plan` | [Construction](docs/construction.md); preserve extraction provenance |
 | Construct and search | `uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot` | [Search](docs/search.md); pauses for route selection |
+| Reuse a verified freeze | `uv run ara fork-from-freeze --source-run runs/source --run-dir runs/fork` | [Frozen forks](docs/search.md#reuse-a-verified-freeze); proposes new targets without rebuilding T |
 | Resume stopped construction | `uv run ara resume-construction --run-dir runs/previous --unknown-usage-policy count-at-reservation` | Verified, unfrozen eligible run; may make paid calls |
 | Resume stopped search | `uv run ara resume-search --run-dir runs/previous` | [Search recovery](docs/search.md#resume-a-stopped-search); may make paid calls |
 | Select a route and write | `uv run ara select --run-dir runs/pilot` | Lists route IDs and prompts; accepts `--route ID` |
@@ -47,9 +49,14 @@ and `uv run ara COMMAND --help`.
 | Compile extraction schemas live | `uv run ara schema-preflight --profile extraction-full --config config.yaml --run-dir runs/schema-P` | Paid, USD1 history-inclusive cap; [extraction](docs/extraction.md) |
 | Validate Codex schemas live | `uv run ara codex-schema-preflight --config runs/codex.yaml --profile pilot --run-dir runs/codex-schemas` | Subscription calls; [providers](docs/providers.md#codex-cli) |
 
-`fork-from-freeze` is **not available** at base `6511ff6`. Neither is
-`run --from-frozen`. Shared-frozen candidate execution remains separate work;
-[PLAN](PLAN.md) records the gap. A fresh `run` constructs a new T.
+Target checks can exclude candidates, so a request for ten does not guarantee ten
+searches. Default selection offers only `CLOSED-derived` routes; other routes
+remain visible and require explicit `--route ID`. See [target checks and route
+classification](docs/search.md#target-proposal-and-triviality).
+
+`fork-from-freeze` is available at base `f89cd37`. It uses the source configuration
+with explicit provider/preflight/unknown-usage overrides and a separate cache.
+`run --from-frozen` is not a supported alias. Forking may make paid calls.
 
 `resume-construction --plan-only --output-dir runs/resume-plan` verifies restoration
 and counts the next request without generation or source-run writes. The provider
@@ -73,18 +80,19 @@ API keys in the environment.
 
 The API default is `claude-opus-5` with explicit `claude-opus-4-8` fallback.
 Ordinary extraction uses `claude-sonnet-5-5` without fallback; `extraction-full`
-uses Opus without fallback. Construction overrides can select providers/models; search and writing overrides
-select model settings within the run's provider. Subscription transports refuse
-PDF extraction and web-evidence retrieval. Extract separately with the API. A
+uses Opus without fallback. Construction overrides can select providers/models;
+search and writing overrides select model settings within the run's provider.
+Subscription transports refuse PDF extraction and web-evidence retrieval.
+Extract separately with the API. A
 subscription-backed run cannot complete the web-verification stage at this base;
 there is no automatic API fallback. A requested Codex model is not verified serving
 identity. Read [providers and isolation](docs/providers.md) before paid work.
 
 | Profile | Limits and use |
 | --- | --- |
-| Ordinary defaults | 200,000 tokens / USD10; ten targets, depth 6, 500 search nodes |
-| `--smoke` | 1,000,000 tokens / USD5; two targets, depth 1, eight nodes, 150–300 words; automatic route selection |
-| `--profile pilot` | 10,000,000 tokens / USD100; ten targets, depth 6, 500 nodes, 4,500–6,000 words; human selection |
+| Ordinary defaults | 200,000 tokens / USD10; ten candidates, depth 6, 500 search nodes |
+| `--smoke` | 1,000,000 tokens / USD5; two candidates, depth 1, eight nodes, 150–300 words; automatic selection of a `CLOSED-derived` route, if available |
+| `--profile pilot` | 10,000,000 tokens / USD100; ten candidates, depth 6, 500 nodes, 4,500–6,000 words; human selection |
 | `--profile extraction` | 6,000,000 tokens / USD30 enclosing and extraction caps |
 | `--profile extraction-full` | Generation disabled until token, run USD and extraction USD caps are set; also accepted by `run` for construction settings |
 

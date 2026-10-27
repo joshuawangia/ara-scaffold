@@ -120,3 +120,8 @@ does not erase these roles. The prompts require reported/attacked material to
 remain reporting or conditional hypotheses, including in dependent conclusions;
 the model audit treats endorsement promotion as an added inference. This is a
 model-audited writing obligation, not a deterministic semantic guarantee.
+
+Round 18 discloses `CLOSED-structural` for otherwise contributing closures without
+a reachable nonstructural bank inference. Contribution receipts identify the
+qualifying substantive node IDs and bank IDs; pure connective packaging is not
+selectable by default. See [search policy](search.md#route-classification-and-selection).

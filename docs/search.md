@@ -137,6 +137,18 @@ free and bound variables stay distinct. Checks stop on a decisive exclusion;
 at most `2 * (1 + len(T))` checks are needed per candidate. Unknowns and timeouts
 cannot authorize a target.
 
+A separate bounded novelty check rejects Boolean combinations of complete frozen
+commitment formulas, including equivalent disguises and vacuous fresh atoms.
+It compares two independently interpreted copies of the vocabulary: equal truth
+values for every T formula must permit different target truth values. T is not
+assumed true in this check. For implications the same check applies to the main
+consequent (retaining outer quantifiers), excluding antecedent-only novelty.
+The main claim must contain an atom/application not already asserted as a whole
+commitment. Thus Q can be new in T={P, P -> Q}; occurring inside a commitment is
+not the same as already asserting Q. Unknown/timeout refuses. Receipts and
+correction feedback disclose the basis IDs, scope and concrete reason. This is
+formal assertion novelty, not evidence of originality or faithful translation.
+
 Each candidate also receives an isolated `classify_target` request on the same
 provider. It sees the target text and a structural formula rendering through verified
 content definitions, without source attribution, proposal history or rationale.
@@ -184,9 +196,16 @@ manifest or model/configuration can also invalidate proof. See
 
 Contribution labels supplement the engine's unchanged `CLOSED`/`OPEN` status,
 bank licenses and graph format. `CLOSED-derived` requires a reachable licensed
-inference, at least two distinct frozen supports and solver checks that rule out
+nonstructural bank inference, at least two distinct frozen supports and solver checks that rule out
 validity without support and entailment of the root by any one support. The
 route check tests the root polarity; target preflight tests both polarities.
+
+Conjunction introduction/elimination, disjunction introduction and double
+negation are structural rules. A reachable known bank scheme outside that set
+is required for `CLOSED-derived`; unreachable inferences cannot qualify a route.
+The proposer receives the actual bank with these two groups identified, frozen
+catalogue definitions, and placeholder examples contrasting a bare conjunction
+with a new thesis linked by a substantive deductive or defeasible scheme.
 
 CQ evidence counts as support. Assumptions and repeated or alpha-equivalent
 support formulas do not inflate the count. The check traverses reachable nodes;
@@ -196,6 +215,7 @@ papers or semantic novelty.
 | Display label | Meaning for selection |
 | --- | --- |
 | `CLOSED-derived` | Passes the contribution policy; offered by default |
+| `CLOSED-structural` | Otherwise passes contribution checks but has only structural connective rules; explicit `--route` required |
 | `CLOSED-single-support` | Lacks the required inference/distinct supports, is valid without support, or follows from one support; explicit `--route` required |
 | `CLOSED-contribution-unresolved` | Required support or a solver verdict is unavailable; explicit `--route` required |
 | `CLOSED-stance-crossing` | A recorded reported/attacked support is used as a global premise or CQ evidence; explicit `--route` required |

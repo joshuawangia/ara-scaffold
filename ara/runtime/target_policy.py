@@ -28,13 +28,18 @@ def top_level_attribution(formula, catalogue):
 
 
 def target_context(commitments, bank):
+    from ara.runtime.route_policy import STRUCTURAL_RULES
     signatures = Counter(s for c in commitments.commitments for s in set(symbols(c.formula)))
     def conditional(formula):
         while formula.op in ('forall','exists'):
             formula = formula.args[0]
         return formula.op == 'implies'
     return dict(bank_version=bank.bank_version, bank=[b.to_dict() for b in bank.entries],
-                support_examples=[dict(bank_id='modus_ponens', commitments=['P', 'P -> Q'],
+                substantive_bank_ids=[b.id for b in bank.entries if b.id not in STRUCTURAL_RULES],
+                structural_bank_ids=sorted(STRUCTURAL_RULES),
+                support_examples=[dict(rejected_target='P and Q', commitments=['P','Q'],
+                    reason='A bare conjunction only repackages T and its conjunction-introduction route is structural.'),
+                    dict(bank_id='modus_ponens', commitments=['P', 'P -> Q'],
                     target='Q', condition='Q is not in T or entailed by one commitment.'),
                     dict(bank_id='sign', commitments=['P', 'Q'], target='R',
                     slots=dict(sign_relation='P', observed_sign='Q'),
@@ -43,7 +48,8 @@ def target_context(commitments, bank):
                     reason='R alone entails this conditional. State a new main proposition instead of adding antecedents.')],
                 target_policy=dict(stance='own_thesis', minimum_support_commitments=2,
                     preferred_support_papers=2, exclude_single_commitment_instances=True,
-                    exclude_conditional_with_frozen_consequent=True, allow_defeasible_support=True),
+                    exclude_conditional_with_frozen_consequent=True, allow_defeasible_support=True,
+                    require_new_main_proposition=True, exclude_boolean_recombination=True),
                 conditionals=[c.to_dict() for c in commitments.commitments if conditional(c.formula)],
                 shared_symbols=[dict(name=n,kind=k,arity=a,commitments=count)
                                 for (n,k,a),count in sorted(signatures.items()) if count>=2])
@@ -51,12 +57,16 @@ def target_context(commitments, bank):
 
 def trivial_targets(targets, commitments, catalogue=None, receipts=None):
     from ara.runtime.contribution import contribution_check
+    from ara.runtime.novelty import novelty_check
     rejected = []
     for target in targets:
         receipt = contribution_check(target.formula, commitments)
+        novelty = novelty_check(target.formula, commitments)
         if receipts is not None:
-            receipts.append(dict(target_id=target.id, **receipt))
+            receipts.append(dict(target_id=target.id, novelty=novelty, **receipt))
         reason = receipt['reason'] if receipt['status'] != 'candidate' else None
+        if reason is None and novelty['status'] != 'candidate':
+            reason = novelty['reason']
         if attributed_report(target.text) or top_level_attribution(target.formula, catalogue):
             reason = 'attributed_report'
         if reason:
@@ -70,7 +80,8 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None):
             rejected.append(dict(target_id=target.id, target=target.to_dict(), reason=reason,
                                  commitment_id=receipt.get('commitment_id'), polarity=receipt.get('polarity'),
                                  entailing_commitment=witness.to_dict() if witness else None,
-                                 conditional_consequent_in_t=consequent_in_t, explanation=explanation))
+                                 conditional_consequent_in_t=consequent_in_t, novelty=novelty,
+                                 explanation=novelty['explanation'] if reason in ('boolean_recombination','novelty_unresolved','no_new_main_proposition') else explanation))
     return rejected
 
 

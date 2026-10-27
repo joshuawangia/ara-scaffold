@@ -1468,6 +1468,31 @@ CASES += [
 ]
 
 
+
+CASES += [
+    ('novelty_target_wiring', 'ara/runtime/target_policy.py',
+     "if reason is None and novelty['status'] != 'candidate':", "if False:",
+     'tests/runtime/test_novelty_policy.py::test_boolean_feedback_and_bank_guidance_reach_correction'),
+    ('novelty_boolean_equivalence', 'ara/runtime/novelty.py',
+     "if result != 'SOLVER_COUNTEREXAMPLE':", "if False:",
+     'tests/runtime/test_novelty_policy.py::test_equivalent_boolean_packages_rejected'),
+    ('novelty_main_claim', 'ara/runtime/novelty.py',
+     "scopes.append(('main_claim', main))", "pass",
+     'tests/runtime/test_novelty_policy.py::test_new_main_claim_not_vacuous_or_only_antecedent'),
+    ('novelty_unknown_refusal', 'ara/runtime/novelty.py',
+     "if result != 'SOLVER_COUNTEREXAMPLE':", "if result == 'SOLVER_UNSAT':",
+     'tests/runtime/test_novelty_policy.py::test_novelty_unknown_refuses'),
+    ('novelty_structural_label', 'ara/runtime/route_policy.py',
+     "if classification == 'CLOSED-derived' and not substantive:", "if False:",
+     'tests/runtime/test_novelty_policy.py::test_only_known_nonstructural_scheme_counts'),
+    ('novelty_reachable_substantive', 'ara/runtime/route_policy.py',
+     "substantive = []", "substantive = [dict(node_id=n.id, bank_id=n.proposal.bank_id) for n in route.nodes if n.proposal and n.proposal.bank_id == 'sign']",
+     'tests/runtime/test_novelty_policy.py::test_native_two_source_thesis_and_structural_route'),
+    ('novelty_bank_guidance', 'ara/runtime/target_policy.py',
+     "substantive_bank_ids=[b.id for b in bank.entries if b.id not in STRUCTURAL_RULES]", "substantive_bank_ids=[]",
+     'tests/runtime/test_novelty_policy.py::test_boolean_feedback_and_bank_guidance_reach_correction'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

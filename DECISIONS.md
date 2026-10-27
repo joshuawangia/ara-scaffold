@@ -3647,3 +3647,35 @@ not source truth, semantic scheme fit, originality or usefulness of live targets
 Round 17 regression and production-wire mutation receipts are retained in its
 external task report. Full offline pytest and controls run sequentially. No paid
 calls or push are authorized or claimed.
+
+## Round 18 — formal novelty and substantive closure
+
+Target preflight now checks Boolean dependence on the complete formulas of frozen
+T, using two independent vocabulary interpretations with equal T truth vectors.
+An UNSAT result rejects equivalent Boolean packaging, including vacuous fresh
+atoms; unknown/timeout refuses. T is not asserted during this check, because
+that would exclude substantive deductions from T. Implications additionally check
+the main consequent, retaining quantifiers, so novelty only in antecedents cannot
+qualify. Main atomic applications must not already be whole T commitments. In
+particular Q remains a new assertion for T={P, P -> Q}; mere vocabulary occurrence
+inside a commitment does not make Q an already asserted commitment. All prior
+single-support, validity, stance and isolated own-thesis gates remain in force.
+Correction feedback includes the concrete novelty reason and frozen basis IDs.
+
+`CLOSED-derived` additionally needs a reachable inference using a known bank
+scheme other than conjunction introduction/elimination, disjunction introduction
+or double negation. An otherwise contributing route lacking such an inference
+is `CLOSED-structural`, disclosed but excluded from default selection. Unreachable
+inferences do not count. Existing single-support/stance/unresolved priorities and
+engine closure/licensing remain unchanged. Proposer inputs identify both bank
+groups alongside actual schemes, catalogue definitions and placeholder examples.
+
+The native placeholder regression rejects P and Q as a proposed new thesis,
+retains R, closes R through `sign` from two endorsed supports in two sources with
+all CQs answered, and labels a historical conjunction route structural. Mutation
+controls cover equivalence, correction wiring, main-claim checks, unknown refusal,
+structural classification, reachability and proposer guidance. Canonical policy
+and limitations are in docs/search.md; exact offline pilot-fork and full gate
+receipts are in the external Round 18 handoff. No new paid call is authorized.
+Formal assertion novelty and mechanical cross-source support do not establish
+semantic originality, source/formula fidelity or CQ truth.

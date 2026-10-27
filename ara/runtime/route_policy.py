@@ -2,6 +2,19 @@
 from ara.runtime.contribution import contribution_check, formula_hash
 from ara.runtime.target_policy import attributed_report
 from ara.types import Commitment, CommitmentSet
+from functools import lru_cache
+
+
+STRUCTURAL_RULES = frozenset({'conjunction_introduction', 'conjunction_elimination',
+                              'disjunction_introduction', 'double_negation'})
+
+
+@lru_cache(maxsize=1)
+def substantive_scheme_ids():
+    from pathlib import Path
+    from ara.bank import load_bank
+    bank = load_bank(Path(__file__).resolve().parents[2] / 'bank')
+    return frozenset(b.id for b in bank.entries if b.id not in STRUCTURAL_RULES)
 
 
 def _logical_contribution(route, commitments=None):
@@ -10,6 +23,8 @@ def _logical_contribution(route, commitments=None):
     nodes = {n.id:n for n in route.nodes}
     pending, seen, supports = [route.root_id], set(), {}
     inferred = False
+    substantive = []
+    substantive_ids = substantive_scheme_ids()
     while pending:
         id = pending.pop()
         if id in seen:
@@ -17,6 +32,8 @@ def _logical_contribution(route, commitments=None):
         seen.add(id)
         node = nodes[id]
         inferred |= node.kind == 'inference' and node.proposal is not None
+        if node.kind == 'inference' and node.proposal is not None and node.proposal.bank_id in substantive_ids:
+            substantive.append(dict(node_id=node.id, bank_id=node.proposal.bank_id))
         ids = ([node.t_id] if node.kind == 'leaf' else [])
         ids += [tid for answer in node.cq_answers for tid in answer.supporting_t_ids]
         for tid in ids:
@@ -35,9 +52,12 @@ def _logical_contribution(route, commitments=None):
     receipt = contribution_check(root.formula, CommitmentSet(tuple(supports.values())), both_polarities=False)
     classification = {'trivial':'CLOSED-single-support', 'unresolved':'CLOSED-contribution-unresolved',
                       'candidate':'CLOSED-derived'}[receipt['status']]
+    if classification == 'CLOSED-derived' and not substantive:
+        classification = 'CLOSED-structural'
     if attributed_report(root.text):
         classification = 'CLOSED-attributed-report'
-    return dict(classification=classification, support_ids=support_ids, **receipt)
+    return dict(classification=classification, support_ids=support_ids,
+                substantive_inferences=substantive, **receipt)
 
 
 def stance_crossings(route, provenance):

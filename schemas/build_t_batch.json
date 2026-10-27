@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "build_t_batch_v4",
+  "title": "build_t_batch_v5",
   "description": "Fixed source inventory. Inference formulas reuse premise and conclusion formulas as a conditional; source-supported relations reuse declared predicates/constants. Runtime reports syntactic structure and allows disclosed flatness only after one correction.",
   "type": "object",
   "properties": {
@@ -96,11 +96,17 @@
         },
         "formula": {
           "$ref": "#/$defs/formula"
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Content proposition itself, without attribution. Source text and stance are copied separately by runtime."
         }
       },
       "required": [
         "id",
-        "formula"
+        "formula",
+        "definition"
       ],
       "additionalProperties": false
     },

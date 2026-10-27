@@ -95,6 +95,8 @@ def test_invalid_working_batch_refused_before_freeze(rig, monkeypatch, case):
     monkeypatch.setattr(provider, 'complete', complete)
     with pytest.raises(Rejected):
         prepare_commitments(calls, load_bank(ROOT / 'bank'), path.read_text(), 'P')
+    if case == 'qualification':
+        assert not any(e['stage'] == 'build_t_batch_accepted' for e in calls.log.read())
     assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())
     assert not (calls.log.path.parent / 'commitments.json').exists()
 

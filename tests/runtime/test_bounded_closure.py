@@ -69,9 +69,11 @@ def test_native_cut_disclosed_in_frozen_text_receipt_and_methodology(rig, monkey
     t = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
     assert len(t.commitments) == 2
     conclusion = next(c for c in t.commitments if c.id.endswith(':f'))
-    assert '[assumed_premise; support_omitted;' in conclusion.text
-    assert 'p:r1-2:j' in conclusion.text
-    assert conclusion.text.endswith('[author_claim; a; conclusion] F(x)')
+    metadata = json.loads((calls.log.path.parent / 'commitment-provenance.json').read_text())
+    provenance = metadata['commitments'][conclusion.id]
+    assert provenance['omitted_support_ids'] == ['p:r1-2:j']
+    assert provenance['source_text'] == 'F(x)' and provenance['attribution'] == 'author_claim'
+    assert conclusion.text == 'F(x)'
     assert conclusion.citation == 'p:pdf:1#p:r1-2:f'
     events = calls.log.read()
     assert sum(e['stage'] == 'commitments_frozen' for e in events) == 1
@@ -173,7 +175,7 @@ def test_counted_formalization_bound_cuts_before_dispatch(rig, monkeypatch):
     monkeypatch.setattr(provider, 'complete', complete)
     t = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
     assert len(t.commitments) == 2
-    assert any('support_omitted' in c.text for c in t.commitments)
+    assert any(r['omitted_support_ids'] for r in json.loads((calls.log.path.parent / 'commitment-provenance.json').read_text())['commitments'].values())
 
 
 @pytest.mark.parametrize('multiplier,cap', [(1, 3), (2, 6), (1.5, 4)])
@@ -199,7 +201,7 @@ def test_native_closure_is_depth_cut_to_initial_window_cap(rig, monkeypatch):
     monkeypatch.setattr(provider, 'complete', complete)
     result = prepare_commitments(calls, load_bank(ROOT/'bank'), path.read_text(), '')
     assert len(result.commitments) == 2
-    assert any('support_omitted' in c.text for c in result.commitments)
+    assert any(r['omitted_support_ids'] for r in json.loads((calls.log.path.parent / 'commitment-provenance.json').read_text())['commitments'].values())
     selection = next(i for k, i in sent if k == 'select_t_roots')
     assert selection['window_budget']['window_commitment_cap'] == 4
     formal = next(i for k, i in sent if k == 'build_t_batch')

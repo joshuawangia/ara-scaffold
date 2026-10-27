@@ -106,6 +106,10 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         artifact = frozen_artifact(commitments, latest['symbols'])
         save_immutable(calls.log.path.parent / 'frozen-t.json', canonical(artifact))
         calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
+        from ara.runtime.commitment_provenance import make_commitment_provenance
+        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], latest['provenance'])
+        save_immutable(calls.log.path.parent / 'commitment-provenance.json', canonical(provenance))
+        calls.log.record('commitment_provenance_frozen', **provenance)
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())
     calls.log.record('commitments_frozen', commitments=commitments.to_dict(), bank_version=bank.bank_version)
     return commitments

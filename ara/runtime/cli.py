@@ -22,7 +22,7 @@ from ara.runtime.orchestration import compose, native_engine, prepare, search_al
 from ara.runtime.search_publication import search_status
 from ara.runtime.providers import AnthropicProvider, MockProvider
 from ara.types import RouteGraph
-from ara.runtime.route_policy import route_classification, selectable_routes
+from ara.runtime.route_policy import route_classification, selectable_routes, frozen_from_events
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -202,7 +202,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             log.record('candidates', candidates=[t.to_dict() for t in targets])
             routes = search_all(calls, native_engine(bank,calls), commitments, targets)
             log.record('awaiting_selection', route_ids=[r.id for r in routes], search=disclose_search(log),
-                       selectable_route_ids=[r.id for r in selectable_routes(routes)])
+                       selectable_route_ids=[r.id for r in selectable_routes(routes, commitments)])
             log.record('run_finished', state='awaiting_selection')
             export_run(log.path,args.run_dir/'export')
             print(str(args.run_dir))
@@ -445,7 +445,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if route_id:
                 log.human('select', route_id, source='run --route')
             elif args.smoke:
-                route_id = next((r.id for r in selectable_routes(routes)), None)
+                route_id = next((r.id for r in selectable_routes(routes, commitments)), None)
                 log.record('selection', route_id=route_id, policy='smoke: first CLOSED-derived route only')
             if route_id:
                 chosen = next((r for r in routes if r.id == route_id), None)
@@ -477,12 +477,13 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 print(str(essay))
             return 0
         events = log.read()
+        commitments = frozen_from_events(events)
         routes = [RouteGraph.from_dict(json.loads(e['payload_json'])['graph'])
                   for e in events if e['stage'] == 'route']
         for route in routes:
-            print(f'{route.id} [{route_classification(route)}]' +
-                  (' selectable' if route in selectable_routes(routes) else ' disclosed; explicit --route required'))
-        offered = selectable_routes(routes)
+            print(f'{route.id} [{route_classification(route, commitments)}]' +
+                  (' selectable' if route in selectable_routes(routes, commitments) else ' disclosed; explicit --route required'))
+        offered = selectable_routes(routes, commitments)
         if args.route is None and not offered:
             print('No CLOSED-derived routes available for selection.')
             return 0

@@ -6,9 +6,9 @@ from ara.types import RouteGraph
 from ara.runtime.route_policy import route_classification
 
 
-def render_tree(graph: RouteGraph) -> str:
+def render_tree(graph: RouteGraph, commitments=None) -> str:
     nodes = {n.id: n for n in graph.nodes}
-    lines = [f'{graph.id} [{route_classification(graph)}] frontier={list(graph.frontier)}']
+    lines = [f'{graph.id} [{route_classification(graph, commitments)}] frontier={list(graph.frontier)}']
     def visit(node_id: str, indent: str, ancestors: frozenset[str]):
         if node_id in ancestors:
             lines.append(f'{indent}{node_id} [cycle]')
@@ -23,9 +23,9 @@ def render_tree(graph: RouteGraph) -> str:
     return '\n'.join(lines) + '\n'
 
 
-def save_route(directory: Path, graph: RouteGraph) -> Path:
+def save_route(directory: Path, graph: RouteGraph, commitments=None) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f'{digest(graph.id)}.json'
     path.write_text(graph.to_json() + '\n')
-    path.with_suffix('.txt').write_text(render_tree(graph))
+    path.with_suffix('.txt').write_text(render_tree(graph, commitments))
     return path

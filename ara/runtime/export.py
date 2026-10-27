@@ -8,7 +8,7 @@ from pathlib import Path
 from ara.runtime.cache import canonical
 from ara.runtime.logging import read_log, pending_search_publications
 from ara.runtime.search_publication import search_status
-from ara.runtime.route_policy import route_classification
+from ara.runtime.route_policy import route_contribution, frozen_from_events
 from ara.types import RouteGraph
 from ara.runtime.extraction import missing_lineage, publication_roster, literature_entry, PUBLICATION_POLICY
 from ara.runtime.provenance import extraction_outcomes
@@ -130,13 +130,14 @@ def methodology(log_path: Path) -> str:
                                 'Construction and search stages listed as claude_code or codex_cli use fresh headless subagent sessions. '
                                 'Stages absent from the log are not claimed as executed.') if cli_calls else None,
     }
+    commitments = frozen_from_events(events)
     summary = {
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
         'search': {**search_status(events),
-                   'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight')],
-                   'routes': [dict(id=p['graph']['id'], classification=route_classification(RouteGraph.from_dict(p['graph'])))
+                   'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],
+                   'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments))
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
         'construction': {'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],

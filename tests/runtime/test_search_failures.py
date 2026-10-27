@@ -116,6 +116,8 @@ def test_cli_partial_search_reaches_selection_and_composes(tmp_path, capsys):
     def native(kind, prompt, schema, maximum):
         if kind == 'build_t':
             value = T.to_dict()
+        elif kind == 'classify_target':
+            value = dict(classification='own_thesis', reason='P')
         elif kind == 'propose_targets':
             value = {'targets': [t.to_dict() for t in TARGETS]}
         elif kind == 'write_essay':

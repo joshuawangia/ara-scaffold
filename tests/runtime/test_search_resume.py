@@ -243,7 +243,7 @@ def test_resume_after_partial_recovery_halt_publishes_current_results(tmp_path, 
         return ModelCalls(config, provider, log, Cache(tmp_path/'cache'), ROOT, topic)
     args = ['resume-search', '--run-dir', str(tmp_path)]
     with monkeypatch.context() as patch:
-        def halt_before_saving(calls, targets, results):
+        def halt_before_saving(calls, targets, results, commitments):
             list(results)  # Drain and publish jobs, then halt before saving refreshed analysis/routes.
             raise RuntimeError('P')
         patch.setattr(orchestration, '_save_analyses', halt_before_saving)

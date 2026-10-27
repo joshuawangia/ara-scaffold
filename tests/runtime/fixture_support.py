@@ -78,6 +78,8 @@ def canned(config):
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:
+        add('classify_target', dict(target=target.to_dict(), **vocabulary),
+            dict(classification='own_thesis', reason='P'))
         for goal in (target, negate_proposition(target)):
             add('map_leaf', {'leaf': goal.to_dict(), 'commitments': T.to_dict()},
                 {'t_id': 'open'})

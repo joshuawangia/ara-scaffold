@@ -254,7 +254,7 @@ def test_native_cli_resume_and_pilot_import(rig, monkeypatch, tmp_path):
     def pilot_complete(kind, prompt, schema, maximum):
         if kind in ('extract_paper', 'select_t_roots', 'build_t_batch'):
             return original(kind, prompt, schema, maximum)
-        values = {'propose_targets': {'targets': [{'id': 'p', 'text': 'P', 'formula': {'op': 'atom', 'name': 'P'}}]},
+        values = {'classify_target': dict(classification='own_thesis',reason='P'), 'propose_targets': {'targets': [{'id': 'p', 'text': 'P', 'formula': {'op': 'atom', 'name': 'P'}}]},
                   'propose_cuts': {'proposals': []}, 'map_leaf': {'t_id': 'open'}}
         return Response(response(values[kind]))
     monkeypatch.setattr(provider, 'complete', pilot_complete)

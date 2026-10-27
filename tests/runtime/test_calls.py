@@ -159,6 +159,8 @@ def test_named_position_preserved(rig):
              **calls.search_vocabulary(commitments),
              'vocabulary_instruction': 'Reuse catalogue definitions and signatures; preserve the proposition meaning.'},
              {'formula': formula.to_dict()})
+    register(calls, provider, 'classify_target', dict(target=Proposition('p', 'Q', formula).to_dict(),
+             **calls.search_vocabulary(commitments)), dict(classification='own_thesis', reason='P'))
     assert calls.propose_targets(commitments, named_position='Q') == (Proposition('p', 'Q', formula),)
 
 

@@ -35,6 +35,14 @@ def cut(**updates):
                   dict(slot='antecedent', text='P', t_id='t1', scope_id=None)]), **updates}
 
 
+def own_thesis(reply):
+    def respond(kind, inputs):
+        if kind == 'classify_target':
+            return dict(classification='own_thesis', reason='P')
+        return reply(kind, inputs)
+    return respond
+
+
 def rig(tmp_path, reply):
     config = yaml.safe_load((ROOT/'config.yaml').read_text())
     config.update(validation_attempts=2, search_concurrency=1)
@@ -83,7 +91,7 @@ def test_target_preflight_retries_once_with_catalogue(tmp_path):
         assert kind == 'propose_targets'
         targets.append(inputs)
         return {'targets': [Proposition('q', 'Q', R if len(targets) == 1 else Q).to_dict()]}
-    calls, requests = rig(tmp_path, reply)
+    calls, requests = rig(tmp_path, own_thesis(reply))
     assert calls.propose_targets(T, 1)[0].formula == Q
     assert len(targets) == 2
     assert targets[1]['vocabulary_feedback']['disconnected'] == ['q']
@@ -95,26 +103,26 @@ def test_target_preflight_retries_once_with_catalogue(tmp_path):
 
 
 def test_disconnected_retry_exhaustion_is_explicit(tmp_path):
-    calls, requests = rig(tmp_path, lambda *_: {'targets': [Proposition('r', 'R', R).to_dict()]})
+    calls, requests = rig(tmp_path, own_thesis(lambda *_: {'targets': [Proposition('r', 'R', R).to_dict()]}))
     assert calls.propose_targets(T, 1)[0].formula == R
-    assert len(requests) == 2
+    assert len(requests) == 3
     events = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage'] == 'target_vocabulary_preflight']
     assert len(events) == 2 and events[-1]['status'] == 'disconnected'
 
 
 def test_catalogue_identity_changes_cache_and_legacy_is_explicit(tmp_path):
-    calls, requests = rig(tmp_path, lambda *_: {'targets': [GOAL.to_dict()]})
+    calls, requests = rig(tmp_path, own_thesis(lambda *_: {'targets': [GOAL.to_dict()]}))
     calls.propose_targets(T, 1)
     calls.propose_targets(T, 1)
-    assert len(requests) == 1
+    assert len(requests) == 2
     artifact = json.loads((tmp_path/'frozen-t.json').read_text())
     symbols = artifact['symbol_catalogue']['symbols']
     symbols[0]['definition'] = 'P P'
     from ara.runtime.frozen_catalogue import frozen_artifact
     (tmp_path/'frozen-t.json').write_text(canonical(frozen_artifact(T, symbols)))
     calls.propose_targets(T, 1)
-    assert len(requests) == 2
-    assert requests[0][1]['catalogue_sha256'] != requests[1][1]['catalogue_sha256']
+    assert len(requests) == 4
+    assert requests[0][1]['catalogue_sha256'] != requests[2][1]['catalogue_sha256']
     (tmp_path/'frozen-t.json').unlink()
     calls.propose_targets(T, 1)
     assert requests[-1][1]['symbol_catalogue'] is None
@@ -191,6 +199,7 @@ def test_native_lifecycle_closure_and_offline_joint_replay(tmp_path):
     from ara.runtime.search_resume import load_search_resume
     from ara.runtime.report_traces import collect_traces
     def reply(kind, inputs):
+        if kind == 'classify_target': return dict(classification='own_thesis',reason='P')
         if kind == 'build_t': return T.to_dict()
         if kind == 'propose_targets': return {'targets': [GOAL.to_dict()]}
         if kind == 'map_leaf': return {'t_id': 'open'}

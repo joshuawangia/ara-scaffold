@@ -33,7 +33,7 @@ def test_pilot_config_and_caps(tmp_path, cap, expected):
         provider = MockProvider({})
         def complete(kind, prompt, schema, maximum):
             dispatched.append(kind)
-            data = {'build_t': T.to_dict(), 'propose_targets': {'targets': [p.to_dict() for p in targets]},
+            data = {'classify_target': dict(classification='own_thesis', reason='P'), 'build_t': T.to_dict(), 'propose_targets': {'targets': [p.to_dict() for p in targets]},
                     'map_leaf': {'t_id': 'open'}, 'propose_cuts': {'proposals': []}}[kind]
             return Response(response(data, usage={'input_tokens': 5,
                                     'output_tokens': 1_000_000 if kind == 'build_t' else 3}))

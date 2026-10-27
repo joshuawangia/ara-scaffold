@@ -137,12 +137,12 @@ def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
                         calls.log.record('analysis_started', target=target.to_dict())
                         yield engine.analyse(target, commitments)
                 analyses = sequential()
-            return _save_analyses(calls, targets, analyses)
+            return _save_analyses(calls, targets, analyses, commitments)
         finally:
             calls.log, calls.budget.log = original_log, budget_log
 
 
-def _save_analyses(calls, targets, results):
+def _save_analyses(calls, targets, results, commitments=None):
     routes = []
     graphs_by_id = {}
     analyses = []
@@ -158,15 +158,17 @@ def _save_analyses(calls, targets, results):
             for route in result.routes:
                 # Formula-identical targets can share deterministic graph ids.
                 # Retain each search in the log, but persist/select a graph once.
-                from ara.runtime.route_policy import route_classification
+                from ara.runtime.route_policy import route_contribution
+                contribution = route_contribution(route, commitments)
                 calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict(),
-                                 classification=route_classification(route))
+                                 contribution=contribution,
+                                 classification=contribution['classification'])
                 previous = graphs_by_id.get(route.id)
                 if previous is not None and previous != route:
                     raise ValueError('engine returned conflicting graphs for one route id')
                 if previous is None:
                     graphs_by_id[route.id] = route
-                    save_route(calls.log.path.parent / 'routes', route)
+                    save_route(calls.log.path.parent / 'routes', route, commitments)
                     routes.append(route)
             calls.log.record('search_finished', target=target.id, polarity=polarity,
                              routes=[r.id for r in result.routes],

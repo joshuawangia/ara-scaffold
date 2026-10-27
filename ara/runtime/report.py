@@ -283,10 +283,12 @@ def route_details(row, commitments):
         for tid in dict.fromkeys(ids):
             support.append(dict(node_id=node['id'], commitment_id=tid, commitment=commitments.get(tid),
                                 missing=tid not in commitments))
-    from ara.runtime.route_policy import route_classification
-    from ara.types import RouteGraph
+    from ara.runtime.route_policy import route_contribution
+    from ara.types import RouteGraph, CommitmentSet, Commitment
+    frozen = CommitmentSet(tuple(Commitment.from_dict({k:v for k,v in c.items()
+        if k in ('id','text','citation','formula')}) for c in commitments.values()))
     return dict(seq=row['seq'], target=data.get('target'), polarity=data.get('polarity'), graph=graph,
-                classification=route_classification(RouteGraph.from_dict(graph)),
+                **route_contribution(RouteGraph.from_dict(graph), frozen),
                 support_chain=support, model_summary=None, audit_results=[])
 
 

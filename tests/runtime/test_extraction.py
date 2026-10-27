@@ -257,6 +257,7 @@ def test_extract_cli_to_build_t_native_path(rig, tmp_path, monkeypatch):
             from rich_fixture import batch_response
             assert inputs['papers'][0]['source_id'] == 'p'
             value = batch_response(inputs)
+        elif kind == 'classify_target': value = dict(classification='own_thesis',reason='P')
         elif kind == 'propose_targets':
             value = {'targets': [{'id': 'p', 'text': 'P', 'formula': {'op': 'atom', 'name': 'P'}}]}
         elif kind == 'propose_cuts': value = {'proposals': []}

@@ -937,11 +937,21 @@ class ModelCalls:
                             disconnected=disconnected, catalogue_sha256=vocabulary['catalogue_sha256'],
                             catalogue_status=vocabulary['catalogue_status'],
                             status='disconnected' if disconnected else 'aligned')
-            rejected = trivial_targets(targets, commitments)
+            receipts = []
+            rejected = trivial_targets(targets, commitments, vocabulary['symbol_catalogue'], receipts)
+            for receipt in receipts:
+                self.log.record('target_contribution_preflight', attempt=attempt + 1, **receipt)
+            for target in targets:
+                classification = self.call('classify_target', dict(target=target.to_dict(), **vocabulary), lambda d: d)
+                self.log.record('target_own_thesis_classification', target_id=target.id,
+                                attempt=attempt + 1, **classification)
+                if classification['classification'] != 'own_thesis':
+                    rejected.append(dict(target_id=target.id, reason='own_thesis_not_established',
+                                         classification=classification['classification']))
             self.log.record('target_triviality_preflight', attempt=attempt + 1, attempt_budget=2,
                             rejected=rejected, status=('rejected_after_one_correction' if attempt else 'correction_required')
                             if rejected else 'passed',
-                            note='Structural exclusions and explicit attribution screen; semantic originality and support remain model judgments.')
+                            note='Bounded solver contribution and isolated own-thesis classification; semantic originality and text/formula fidelity remain unproved.')
             if not disconnected and not rejected:
                 break
             inputs = {**inputs, 'vocabulary_feedback': dict(disconnected=disconnected,

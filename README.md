@@ -1000,16 +1000,27 @@ and `--unknown-usage-policy` are explicit overrides; a real Codex rerun still
 requires a current successful schema preflight.
 
 Target proposals request own theses supported or refuted by at least two
-commitments, preferably from different papers. Exact frozen targets, direct
-universal instances, and explicit attributed reports are rejected. One shared
-preflight correction is allowed; still-trivial targets are excluded with their
-reasons. A second disconnected-vocabulary result stays disclosed. These checks
-do not prove originality, semantic fidelity, or that two sources actually
-support a proposed thesis.
+commitments, preferably from different papers. Bounded solver checks reject
+valid targets and targets whose positive or negative form follows from any
+single frozen commitment, including padded restatements. Each check allows
+1,000 ms; alpha-equivalent formula hashes share a bounded cache. Solver unknowns
+and timeouts remain unresolved and are excluded. One shared proposal correction
+is allowed; remaining exclusions and their reasons are logged.
 
-Route lists and reports distinguish `CLOSED-trivial` (no licensed inference)
-from `CLOSED-derived` (at least one). Default and interactive selection offer
-only derived routes. All routes remain visible, and an explicit `--route` can
-select a disclosed alternative. Engine statuses and historical graphs retain
-their existing codec. A derived classification alone does not prove novelty or
-independent support from multiple papers.
+Each target also receives an isolated own-thesis classification on the same
+provider. Only `own_thesis` passes; `attributed_report` and `unclear` are disclosed
+and excluded. Deterministic attitude/report phrases and top-level attribution
+predicates identified by frozen catalogue definitions also cause rejection.
+These checks do not prove originality or faithful text/formula translation.
+A second disconnected-vocabulary result stays disclosed.
+
+Route lists and reports offer `CLOSED-derived` by default only when a licensed
+inference has at least two distinct reachable frozen supports and no single
+support entails the root. CQ evidence counts; assumptions and duplicate or
+alpha-equivalent supports do not inflate the count. Other closed routes are
+labelled `CLOSED-single-support`, `CLOSED-contribution-unresolved`, or
+`CLOSED-attributed-report`, and require an explicit `--route`. Engine licenses,
+statuses, and graph codecs are unchanged. This contribution check does not
+prove novelty, minimality among larger support subsets, or independence across
+papers. Legacy graphs without frozen inputs can use their leaf formulas for
+display; unavailable CQ evidence remains unresolved.

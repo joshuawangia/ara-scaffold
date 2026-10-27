@@ -1,37 +1,30 @@
-"""Contribution preflight: structural exclusions, not a semantic originality oracle."""
+"""Solver contribution gates and conservative attribution screening."""
 import re
 from collections import Counter
 from ara.runtime.search_alignment import symbols
-from ara.engine.terminus import is_terminus
 
 
-def direct_instance(pattern, value):
-    """Match removal of leading universal quantifiers with consistent term bindings."""
-    pattern, value = pattern.normalized(), value.normalized()
-    variables = set()
-    def matches(body):
-        bindings = {}
-        def match(p, v, bound=frozenset()):
-            if (p.op, p.name, p.variable, len(p.args), len(p.terms)) != (v.op, v.name, v.variable, len(v.args), len(v.terms)):
-                return False
-            for a, b in zip(p.terms, v.terms):
-                if a.kind == 'variable' and a.name in variables and a.name not in bound:
-                    if b.kind == 'variable' and b.name in bound:
-                        return False
-                    if a.name in bindings and bindings[a.name] != b:
-                        return False
-                    bindings[a.name] = b
-                elif a != b:
-                    return False
-            nested = bound | {p.variable} if p.op in ('forall','exists') else bound
-            return all(match(a,b,nested) for a,b in zip(p.args,v.args))
-        return match(body,value)
-    while pattern.op == 'forall':
-        variables.add(pattern.variable)
-        pattern = pattern.args[0]
-        if matches(pattern):
-            return True
-    return False
+_ATTRIBUTION = re.compile(
+    r"\b(argues?|claims?|holds?|maintains?|contends?|reports?|asserts?|suggests?|proposes?|"
+    r"believes?|defends?|endorses?|says?|states?|thinks?|accounts?)\b|"
+    r"\baccording\s+to\b|\bon\s+.+?[’']s\s+account\b|"
+    r"[’']s\s+(view|position|thesis|claim|belief|account)\b", re.I)
+
+
+def attributed_report(text):
+    return bool(_ATTRIBUTION.search(text))
+
+
+def top_level_attribution(formula, catalogue):
+    while formula.op in ('forall', 'exists', 'not'):
+        formula = formula.args[0]
+    if formula.op not in ('atom', 'predicate'):
+        return False
+    return any(s['name'] == formula.name and s['kind'] == formula.op and
+               s['arity'] == len(formula.terms) and
+               (attributed_report(s['definition']) or attributed_report(s['name']) or
+                re.search(r'\b(attribution|attitude|reported|attributed)\b', s['definition'], re.I))
+               for s in catalogue or [])
 
 
 def target_context(commitments):
@@ -47,21 +40,17 @@ def target_context(commitments):
                                 for (n,k,a),count in sorted(signatures.items()) if count>=2])
 
 
-def trivial_targets(targets, commitments):
+def trivial_targets(targets, commitments, catalogue=None, receipts=None):
+    from ara.runtime.contribution import contribution_check
     rejected = []
     for target in targets:
-        reason, t_id = None, None
-        for commitment in commitments.commitments:
-            if is_terminus(target, commitment.id, commitments):
-                reason, t_id = 'depth_zero_terminus', commitment.id
-                break
-            if direct_instance(commitment.formula, target.formula):
-                reason, t_id = 'single_commitment_instance', commitment.id
-                break
-        # This catches explicit reporting language; broader semantic attribution
-        # and whether multiple sources really support a thesis remain model judgments.
-        if re.search(r'\b(argues?|claims?|holds?|maintains?|contends?|reports?|asserts?|suggests?|proposes?)\s+(that\s+)?|\baccording to\b', target.text, re.I):
+        receipt = contribution_check(target.formula, commitments)
+        if receipts is not None:
+            receipts.append(dict(target_id=target.id, **receipt))
+        reason = receipt['reason'] if receipt['status'] != 'candidate' else None
+        if attributed_report(target.text) or top_level_attribution(target.formula, catalogue):
             reason = 'attributed_report'
         if reason:
-            rejected.append(dict(target_id=target.id,reason=reason,commitment_id=t_id))
+            rejected.append(dict(target_id=target.id, reason=reason,
+                                 commitment_id=receipt.get('commitment_id')))
     return rejected

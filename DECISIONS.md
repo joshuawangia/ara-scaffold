@@ -3071,3 +3071,48 @@ Finding placement: target/support limitations are in the first paragraph;
 classification/novelty limits are in the second and README; fork preservation and
 accounting are in the third; the live-preflight prerequisite and offline-demo
 limits are above. 5 findings, 5 placed. No push occurred.
+
+## Round 14 — solver contribution and own-thesis gates
+
+Phi2 B1 is fixed at proposal and publication/selection boundaries. Preflight
+uses the existing Z3 entailment function for the target and its negation,
+against no premises and each frozen commitment separately. Each check has a
+1,000 ms timeout; a bounded 8,192-entry cache keys premise/conclusion hashes
+and timeout. Hashes distinguish free variables from bound indices and compare
+bound variables up to renaming. Checks short-circuit on a decisive exclusion;
+the maximum per candidate is twice one plus the commitment count. Unknown and
+timeout results cannot authorize a candidate. One shared proposal correction
+remains the limit. Receipts retain polarity, commitment, solver result, hash,
+and timeout, including exclusions after correction.
+
+Post-closure policy traverses reachable graph nodes, includes frozen CQ
+evidence, excludes assumptions, and deduplicates repeated/alpha-equivalent
+support formulas. `CLOSED-derived` requires a licensed inference, at least two
+distinct supports, and a negative single-support/validity entailment check.
+Other closures disclose `CLOSED-single-support` or
+`CLOSED-contribution-unresolved`; explicit attribution is separately labelled.
+Only derived routes are default-selectable. This does not change bank
+licensing, engine CLOSED, graph codecs, or explicit operator selection. It
+checks single-support sufficiency, not minimality of larger subsets or
+independence of source papers. Native publication, CLI, and log-derived reports
+use frozen T. Graph-only legacy rendering can recover leaf formulas; missing
+CQ support fails closed.
+
+Phi2 B2 is fixed with broader attitude/report phrases, a frozen-catalogue
+check for top-level attribution predicates, and an isolated `classify_target`
+request on the same provider for every candidate. The classifier sees the
+target and vocabulary, not proposal history or rationale. Its schema requires
+`own_thesis`, `attributed_report`, or `unclear` and a short reason. Only the
+first passes; all dispositions and cache replays are logged. Missing legacy
+catalogues remain unavailable. The new schema is included in Codex preflight;
+existing 15-case receipts must be refreshed to cover all 16 cases before live
+use. No live schema acceptance is claimed here.
+
+Placeholder regressions reproduce duplicate conjunctions, tautology padding,
+alpha-renamed quantifiers, attributed native closures, CQ/assumption/alias
+support handling, and fail-closed solver outcomes. The original red run had
+20 failures and three passes. Offline fake-provider fork evidence and final
+sequential pytest/control receipts are retained in the Round 14 task report.
+The real pilot source is immutable; its copied targets test rejection only.
+Neither the fake demo nor these checks prove real-corpus originality, faithful
+formalization, successful new synthesis, or general semantic attribution.

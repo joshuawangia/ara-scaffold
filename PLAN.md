@@ -1,126 +1,64 @@
-# ARA implementation plan
+# ARA status and remaining work
 
-## Intent and scope
+Reviewed against base `6511ff6` on 2026-10-27. This is a current status map;
+[DECISIONS.md](DECISIONS.md) retains the original alpha plan decisions and later
+changes. [SOURCE_MAP.md](SOURCE_MAP.md) owns the module inventory.
 
-ARA separates versioned move forms (L), a frozen commitment table (T), and
-model-proposed cuts (H). This new repository has no existing implementation.
-Alpha fixes the shared seam so deterministic engine and runtime authors can
-work independently. Only placeholder propositions (P, Q, R, S, F(x), a, b)
-may occur in committed examples or fixtures. No philosophical content is
-permitted in code, prompts, tests, documentation, or commit messages.
+## Intent and implemented path
 
-## Architecture and module map
+ARA separates versioned move forms (L), frozen commitments (T), and model-proposed
+cuts (H). Runtime owns provider calls, validation, caching, budgets and logs.
+The engine imports shared types/ports, checks bank shape and deduction entailment,
+and searches without importing provider implementations.
 
-- `bank/*.yaml`: versioned deductive schemas and defeasible slot/CQ forms.
-- `ara/bank.py`: strict loader and validator; bank entries are the only licenses.
-- `ara/types.py`: immutable formula AST, commitments, proposals, proof scopes,
-  bank entries, route graphs, decisions and events; deterministic JSON contracts.
-- `ara/ports.py`: typed protocols consumed by the engine, supplied by runtime.
-- `ara/engine/{licensing,terminus,search,routes,forward,conflicts}.py`: future
-  bank matching/Z3, closure, bounded AND/OR search, status/independence, forward
-  derivation and conflict handling. Alpha supplies docstrings only.
-- `ara/runtime/{providers,calls,cache,budget,logging,render,export,cli}.py`:
-  future SDK/mock transport, schema validation, content-addressed cache, caps,
-  append-only events, route display, log-derived export and human CLI entrypoints.
-- `schemas/*.json`: model response contracts, including recursive formula AST.
-- `prompts/`: future topic-neutral templates, with content injected at runtime.
-- `config.yaml`, `pyproject.toml`, `uv.lock`: defaults and reproducible environment.
-- `tests/`: placeholder-only boundary tests, no network.
+| Area | Present at this base | Evidence entry point |
+| --- | --- | --- |
+| Shared contracts and bank | Immutable ASTs, constants/variables, canonical structural identity, scoped proofs and versioned licenses | `ara/types.py`, `ara/ports.py`, `ara/bank.py`; root tests |
+| Engine | Both polarities, licensing/Z3, closed-route independence, bounded forward search, Tier 1 repair requests and Tier 2 conflicts | `ara/engine/search.py`; `tests/engine/` |
+| CLI lifecycle | Construction/freeze, targets, search, human selection, writing/audits, verification and export | `ara/runtime/cli.py:170`, `ara/runtime/orchestration.py:113`; integration tests |
+| Extraction | Rich v2 page-linked graphs, immutable ranges, accepted unions, disclosed failures, grounding/quarantine and verified reuse | `ara/runtime/extraction.py:317`, `ara/runtime/grounding.py:56`; extraction tests |
+| Construction | Counted windows, shared symbols, disclosed support cuts, one freeze, structure correction and frozen catalogue | `ara/runtime/construction.py`, `ara/runtime/orchestration.py:92`; construction tests |
+| Search recovery | Durable worker journals, ordered publication, partial results and verified unfinished-job resume | `ara/runtime/search_resume.py`; recovery/publication tests |
+| Frozen search vocabulary | Catalogue loading, current-goal references, joint slot formalization and bounded proposal batches | `ara/runtime/search_alignment.py:20`, `ara/runtime/calls.py:913`; alignment tests |
+| Providers | Anthropic API, mock, isolated Claude Code and Codex CLI; stage selection and preflight gates | `ara/runtime/cli.py:123`; provider/isolation tests |
+| OCR | Optional two-tier local recovery with span preservation and confidence gates | `ara/runtime/ocr.py`, `ara/runtime/ocr_spans.py`; OCR tests |
+| Accounting/reporting | Append-only receipts, measured/reserved/local/inherited totals, export and offline reports with sealed traces | `ara/runtime/logging.py`, `ara/runtime/report.py`; report/accounting tests |
 
-## Engine/runtime seam
+The CLI and engine are implemented. Earlier statements that they were docstring
+placeholders describe alpha's historical phase and no longer describe this tree.
+The native command set is defined at `ara/runtime/cli.py:28`.
 
-The engine imports only shared types and ports, never provider implementations.
-CutProposer proposes bank ids with every premise slot filled and a goal-matching
-conclusion. Formaliser returns formula ASTs. LeafMapper returns a frozen T id or
-`open`. CQAnswerer answers named CQ templates. Tier1Repairer returns a structured
-repair request/result; EventSink receives full immutable events. Engine decisions
-are explicitly licensed/discarded with reason codes. Runtime owns validation,
-caching, model calls, budget accounting and logging before values cross the seam.
+## Deferred integration and known gaps
 
-Formula AST JSON distinguishes constants and variables; canonical text is a
-structural identity, not semantic equivalence. Negation removes double negation.
-Deductive bank schemas refer to formula metavariables, with explicit substitution
-for quantifier rules and scoped assumption discharge for conditional proof and
-reductio. Assumptions are never silently converted into T leaves. Scoped proofs
-must be checked by the later engine, including external dependency closure.
-
-## Phases and commits
-
-1. Commit this plan alone before other repository content.
-2. Commit repository rules, B1–B8 plus implementation decisions, configuration,
-   packaging/lockfile, and docstring-only engine/runtime placeholders.
-3. Commit immutable types, ports and tests; settle shared serialization and scopes.
-4. Commit versioned bank forms, strict validation and tests.
-5. Commit model response schemas and schema/contract compatibility tests.
-6. Commit README skeleton and final evidence notes; report outside repository at
-   `/home/dev/wt/shared/ara/alpha-report.md` and hand off the exact revision.
-7. Later engine/runtime lanes implement against this seam; integration owns real
-   smoke, fresh-clone proof and private remote publication. Alpha never pushes.
-
-## Verification contract
-
-Alpha executes `uv run pytest`: malformed and duplicate bank entries rejected;
-missing slots and undefined CQ references rejected; formula JSON round-trip,
-canonical identity and negation checked; commitment table deeply frozen; route
-graph JSON round-trip checked; all model schemas checked against representative
-placeholder payloads and malformed variants. For every load-bearing behavior,
-mutate its production wire, observe the relevant test fail, restore, rerun green.
-Record mutation and result. Audit all tracked content using broad text search
-and direct review of bank/tests/docs; explain why grep cannot prove semantic
-absence. Installation is tested with the locked environment. CLI execution is
-explicitly deferred because its module must contain only a docstring in alpha.
-
-Full program DONE-WHEN proofs belong to integration:
-
-| Requirement | Proof and owner |
+| Gap | Required next work or limit |
 | --- | --- |
-| Reject unlicensed steps | Engine tests using unknown bank ids |
-| Reject invalid deduction | Engine Z3 counterexample tests on P/Q/R |
-| Closure requires every leaf in T | Engine route fixtures including absent ids |
-| Negation search executes | Engine original/negated target graph assertions |
-| Tier 1 and Tier 2 trigger | Engine constructed contradictory placeholder graphs |
-| Real `ara run --smoke` completes | Runtime/integration real-provider execution, 2 targets, shallow search, short draft; inspect graphs, draft, JSONL, methodology, tokens and cost |
-| Fresh clone reproduces tests and smoke | Integration follows README from isolated clone using env credentials |
+| Eta shared-frozen B3 | Shared-frozen candidate execution is absent from this base. Neither `fork-from-freeze` nor `run --from-frozen` is registered. Eta's separate `feat/shared-frozen-t` work must be reconciled with current construction, catalogue, provenance, accounting and resume contracts before integration. Choose the public command then; do not publish speculative flags. |
+| Codex serving identity | `ara/runtime/codex_cli.py:230` marks identity unverified when CLI events omit it. A request pin does not prove which model served a call. Live evidence must establish any stronger claim. |
+| Source extraction quality | Accepted ranges can remain thin, partial or have open obligations. Lexical grounding and page checks cannot establish semantic completeness, attribution truth or faithful paraphrase. Retain and inspect source-linked evidence. |
+| OCR limits | Default tests use fakes. Installed-weight checks are opt-in. Span confidence is not calibrated correctness; exact typography, formulas, reading order and semantic completeness remain unproved. Optional dependencies and weights are required on diagnosed pages. |
+| Formalization quality | Structural checks, symbol reuse and Z3 entailment do not prove faithful translation. A still-atomic batch may be accepted with `flat_after_one_correction`; inspect its receipt before interpreting failed closure. |
+| Search bounds | Discovered routes, independence and conflicts are bounded by configured search/forward limits. Partial paired analysis is not evidence of no conflicts. Candidate cache/seed separation would not establish statistical independence. |
+| Provider routing | Provider switching is implemented for rich construction stages only (`ara/runtime/construction_stages.py:5`). A subscription main provider refuses extraction/web retrieval; a `search_evidence.provider` setting does not create an API adapter. Keep the main API provider for a full verification lifecycle. |
+| Provider acceptance and budgets | Fake transports and schema preflights do not prove live pilot completion. Output allowances and reservations are assumptions, not forecasts; actual charges can exceed a reservation before STOP prevents later calls. No separate aggregate spend guard exists. |
+| Integrity and privacy limits | Hash chains require retained anchors/origins and do not authenticate a completely rewritten history. Export redaction is literal; methodology retains the full record. See [accounting](docs/accounting.md). |
+| Evidence scope | Historical smoke and known-case recordings prove only their recorded conditions. No fresh paid pilot, full-corpus quality, installed-weight OCR or live serving identity is claimed by this documentation change. |
 
-## Risks and accepted boundaries
+## Verification and next integration checkpoint
 
-- Formalisation is model-generated; schema shape plus solver entailment do not
-  prove a faithful text translation. Preserve both for inspection.
-- Solver entailment alone cannot enforce a named rule's shape; engine must check
-  schema matching, quantifier substitution and assumption scope before Z3.
-- No philosophical examples may enter the source tree; run/cache outputs ignored.
-- Scheme citations use known book attribution and explicitly unknown page/chapter
-  locators rather than invented specificity; source review remains visible.
-- Canonical structural identity is deliberately weaker than theorem equivalence;
-  runtime/engine must not substitute string similarity.
-- Caps, SDK behavior, independent routes, conflicts and essay fidelity require
-  later executable proof; passing scaffold tests is not end-to-end completion.
-- Originality/citation verification uses evidence acquisition then structured
-  classification because citations and structured output cannot share one call.
-- Console script registration precedes implementation; README must disclose this.
+Run `uv sync --locked` and `uv run pytest` from the repository root. The
+[verification guide](docs/verification.md) owns negative-control commands and the
+rules for distinguishing regression checks from product evidence. The current
+full-suite result belongs in the external handoff with its exact revision.
 
-## Delta integration checkpoint
+For shared-frozen integration, first settle the CLI contract and original-builder
+eligibility. Then test native candidate execution through later selection/export,
+source immutability, no second freeze, current and legacy provenance refusal,
+catalogue identity, local/inherited budget scopes and campaign deduplication.
+Drive each claim through the real CLI and demonstrate matching negative controls.
+These are proposed checks, not executed evidence for this base.
 
-Both lanes are merged on main. Engine/runtime integration uses the engine's
-AnalysisResult and immutable ports; mock CLI/e2e/export/cache replay is native.
-Real provider testing has exercised build_t, targets, cuts and formalisation;
-provider projection fixes and a USD 5 smoke cap are recorded in DECISIONS D1–D5.
-Final run receipts, fresh-clone verification, audit and final revision belong in
-`/home/dev/wt/shared/ara/delta-report.md`; historical lane gaps above are retained
-for provenance and superseded by those executed integration receipts.
-
-Current integration disposition: B9 default server fallbacks and the minimal
-audit-clause removal supersede the historical provider block. A clean-clone
-real smoke at a20e03c completed both audit passes and essay/methodology export
-for USD 1.058455; all calls were served by Opus 5, with no fallback hop reported.
-The placeholder evidence stage did not invoke a web search. No live fallback
-hop or external-source retrieval is claimed. See B9/D13/D14 in DECISIONS.md and
-the external delta report for final reproduction and accounting receipts.
-
-## Rich source construction
-
-Generated v2 literature preserves full page-linked argument graphs. Runtime
-performs one construction lifecycle, one freeze, using counted source batches
-and logged model symbol bindings. Search sees only the final bounded working T.
-Offline graph/capacity controls and the bounded live checks are recorded in the
-external gamma report; no full-corpus live run is implied.
+Future code organization should follow existing ownership boundaries. Keep
+`cli.py` as the public registration point; move cohesive extraction, construction,
+search and provider internals only with callers, packaging, data paths and tests
+accounted for. The documentation handoff proposes a staged layout; this change
+moves no Python, prompt, schema or test file.

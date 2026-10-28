@@ -135,6 +135,9 @@ def methodology(log_path: Path) -> str:
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
+        'publication': {stage: [json.loads(e['payload_json']) for e in events if e['stage']==stage]
+                        for stage in ('publication_completed', 'publication_figures', 'publication_pdf',
+                                      'publication_verification_blocked')},
         'search': {**search_status(events),
                    'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],
                    'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments, provenance_from_events(events, commitments)))

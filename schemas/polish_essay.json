@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "polish_essay",
+  "type": "object",
+  "properties": {
+    "markdown": {
+      "type": "string",
+      "minLength": 1
+    },
+    "figure_placements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "after_paragraph": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "after_paragraph"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "change_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "paragraph": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "improvement": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "paragraph",
+          "improvement"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "markdown",
+    "figure_placements",
+    "change_log"
+  ],
+  "additionalProperties": false
+}

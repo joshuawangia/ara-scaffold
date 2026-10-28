@@ -1697,6 +1697,46 @@ CASES += [
 ]
 
 
+
+CASES += [
+    ('publication_reference_pdf_binding', 'ara/runtime/publication_references.py',
+     "or data.get('pdf_sha256') != hashes[source]", '',
+     'tests/runtime/test_publication.py::test_references_use_logged_metadata_bound_to_source_pdf'),
+    ('publication_clean_markdown', 'ara/runtime/publication.py',
+     "'markdown': NODE.sub('', result['markdown'])", "'markdown': result['markdown']",
+     'tests/runtime/test_publication.py::test_native_polish_logs_sections_and_blocks_unavailable_verification'),
+    ('publication_required_figure', 'ara/runtime/publication.py',
+     "require(set(found) == figure_ids,", 'require(True,',
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_route_gap', 'ara/runtime/publication_figures.py',
+     '    if route.frontier:', '    if True:',
+     'tests/runtime/test_publication.py::test_figures_are_deterministic_source_linked'),
+    ('publication_stale_attempt', 'ara/runtime/publication.py',
+     "require(bool(stages) and stages[-1] == 'publication_completed',", 'require(True,',
+     'tests/runtime/test_publication.py::test_new_failed_attempt_cannot_render_previous_publication'),
+    ('publication_word_bound', 'ara/runtime/publication.py',
+     "require(4500 <= words <= 6000,", "require(True,",
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_citation_preservation', 'ara/runtime/publication.py',
+     "require(CITATION.findall(before) == CITATION.findall(after),", "require(True,",
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_paragraph_log', 'ara/runtime/publication.py',
+     "require([x['paragraph'] for x in value['change_log']] == list(range(len(body))),", "require(True,",
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_targeted_repair', 'ara/runtime/publication.py',
+     "if i not in allowed),", "if False),",
+     'tests/runtime/test_publication.py::test_repair_cannot_change_unflagged_abstract'),
+    ('publication_second_audit', 'ara/runtime/publication.py',
+     'for attempt in range(2):', 'for attempt in range(1):',
+     'tests/runtime/test_publication.py::test_one_targeted_repair_then_audit_or_exact_fallback[1-True]'),
+    ('publication_unsafe_html', 'ara/runtime/publication_pdf.py',
+     "{'html': False}", "{'html': True}",
+     'tests/runtime/test_publication.py::test_html_embeds_only_declared_figures_and_escapes'),
+    ('publication_native_entrypoint', 'ara/runtime/cli.py',
+     "return publication_command(args, log, ROOT, calls_factory)", "return 0",
+     'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

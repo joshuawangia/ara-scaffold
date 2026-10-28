@@ -3894,3 +3894,20 @@ appends deterministically while preserving the original text verbatim. Measured
 remaining section capacity bounds each addition; condensation still replaces one
 section. The revised regression fails against replacement semantics. The failed
 live attempt remains logged and is not presented as successful evidence.
+
+
+## 2026-10-28 — Publication after drafting
+
+Publication uses the native ModelCalls isolation, validation, accounting and audit
+boundaries with a pinned subscription model. Frozen citations and paragraph order
+remain invariant; the model may improve prose and choose deterministic figure
+positions. Pure-Python SVG avoids a system graph-layout dependency. PDF rendering
+is local and blocks network requests. Publication artifacts are separate from
+final_draft: a polished or rendered document does not imply successful external
+citation/originality verification. The subscription retrieval refusal is retained
+as blocked status without an API fallback. See [publication](docs/publication.md).
+
+Reference metadata is joined from logged extraction inputs through frozen T source
+IDs and matching PDF hashes. A mutable checkout bibliography is not run evidence.
+The recorded title, authors, year and venue remain independently unverified until
+the native external citation path completes; source identity does not prove them.

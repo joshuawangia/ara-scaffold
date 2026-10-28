@@ -38,7 +38,7 @@ def cut(**updates):
 def own_thesis(reply):
     def respond(kind, inputs):
         if kind == 'classify_target':
-            return dict(classification='own_thesis', reason='P')
+            return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis', reason='P')
         return reply(kind, inputs)
     return respond
 
@@ -110,7 +110,7 @@ def test_disconnected_vocabulary_is_explicit(tmp_path):
 
 
 def test_catalogue_identity_changes_cache_and_legacy_is_explicit(tmp_path):
-    calls, requests = rig(tmp_path, own_thesis(lambda *_: {'targets': [GOAL.to_dict()]}))
+    calls, requests = rig(tmp_path, own_thesis(lambda *_: {'targets': [Proposition('r','R',R).to_dict()]}))
     calls.propose_targets(T, 1)
     calls.propose_targets(T, 1)
     assert len(requests) == 2
@@ -127,7 +127,7 @@ def test_catalogue_identity_changes_cache_and_legacy_is_explicit(tmp_path):
     assert requests[-2][1]['symbol_catalogue'] is None
     assert requests[-2][1]['catalogue_status'] == 'unavailable_legacy'
     assert requests[-1][1]['definition_semantics'] == 'unavailable_legacy'
-    assert requests[-1][1]['rendered_content']['definition'] is None
+    assert requests[-1][1]['rendered_content']['definition'] == 'R'
 
 
 def test_corrupt_catalogue_refused_without_dispatch(tmp_path):
@@ -200,15 +200,16 @@ def test_native_lifecycle_closure_and_offline_joint_replay(tmp_path):
     from ara.runtime.search_resume import load_search_resume
     from ara.runtime.report_traces import collect_traces
     def reply(kind, inputs):
-        if kind == 'classify_target': return dict(classification='own_thesis',reason='P')
+        if kind == 'classify_target': return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
         if kind == 'build_t': return T.to_dict()
-        if kind == 'propose_targets': return {'targets': [GOAL.to_dict()]}
+        if kind == 'propose_targets': return {'targets': [Proposition('r','R',R).to_dict()]}
         if kind == 'map_leaf': return {'t_id': 'open'}
         if kind == 'propose_cuts':
-            return {'proposals': [] if inputs['goal']['formula']['op'] == 'not' else [cut()]}
+            return {'proposals': [] if inputs['goal']['formula']['op'] == 'not' else [cut(bank_id='sign',conclusion_text='R',premises=[dict(slot='sign_relation',text='P -> Q',t_id='t2',scope_id=None),dict(slot='observed_sign',text='P',t_id='t1',scope_id=None)])]}
         if kind == 'formalise_slots':
-            return {'slots': [{'slot': 'conditional', 'formula': PQ.to_dict()},
-                              {'slot': 'antecedent', 'formula': P.to_dict()}]}
+            return {'slots': [{'slot': 'sign_relation', 'formula': PQ.to_dict()},
+                              {'slot': 'observed_sign', 'formula': P.to_dict()}]}
+        if kind=='answer_cq': return dict(cq_id=inputs['question']['id'],answer='P',answered=True,supporting_t_ids=['t1','t2'])
         pytest.fail(kind)
     calls, requests = rig(tmp_path, reply)
     calls.config.update(target_candidates=1, forward_pass_depth=0)

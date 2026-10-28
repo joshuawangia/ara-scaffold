@@ -137,23 +137,25 @@ free and bound variables stay distinct. Checks stop on a decisive exclusion;
 at most `2 * (1 + len(T))` checks are needed per candidate. Unknowns and timeouts
 cannot authorize a target.
 
-A separate bounded novelty check rejects Boolean combinations of complete frozen
-commitment formulas, including equivalent disguises and vacuous fresh atoms.
-It compares two independently interpreted copies of the vocabulary: equal truth
-values for every T formula must permit different target truth values. T is not
-assumed true in this check. For implications the same check applies to the main
-consequent (retaining outer quantifiers), excluding antecedent-only novelty.
-The main claim must contain an atom/application not already asserted as a whole
-commitment. Thus Q can be new in T={P, P -> Q}; occurring inside a commitment is
-not the same as already asserting Q. Unknown/timeout refuses. Receipts and
-correction feedback disclose the basis IDs, scope and concrete reason. This is
-formal assertion novelty, not evidence of originality or faithful translation.
+A bounded semantic novelty check rejects any classical consequence of the whole
+frozen T, regardless of connective or quantifier wrappers. Thus Q from
+T={P, P -> Q} remains a valid modus-ponens deduction but is not a novel target.
+At least one atom/application absent from T's formulas must also be essential:
+replacing its occurrences by true or false must change target truth under T.
+Both substitutions are checked with cached Z3 queries bounded to 1,000 ms each;
+unknown/timeout refuses. Bound-variable keys preserve scope and alpha identity.
+Receipts disclose the full basis, each substitution and essential applications.
+No syntactic main-consequent shortcut grants novelty.
 
 Each candidate also receives an isolated `classify_target` request on the same
 provider. It sees the target text and a structural formula rendering through verified
 content definitions, without source attribution, proposal history or rationale.
 Own-voice synthesis may draw on source claims; reporting what someone holds
 remains an attributed report. Legacy content definitions stay unavailable.
+Acceptance additionally requires `novelty=new_assertion` and `fidelity=matches`.
+The same logged classifier sees the entire T content list and rendered target
+content. It rejects restatement, renaming, definitional packaging, text/formula
+mismatch and uncertain judgments. These model judgments are not semantic proofs.
 Only `own_thesis` passes; `attributed_report` and `unclear` are disclosed and
 excluded. Deterministic attitude/report phrases and top-level attribution
 predicates identified by catalogue definitions also reject candidates. Missing
@@ -169,6 +171,19 @@ in first-seen order. Retained IDs and alpha-equivalent structural formulas are
 not counted twice. Every candidate, including surplus passing candidates, gets a
 `target_pool_candidate` disposition; `target_pool_finished` records the retained
 set. Processing stops once the requested retained count is reached.
+
+Targets may carry `new_symbols` entries with name, kind, arity and content
+definition. They are preserved in the proposition codec and cache inputs; absent
+entries retain the historical encoding. A single atomic assertion binds its
+entire target text as its definition when no explicit definition was supplied.
+Compound targets must supply every otherwise unbound fresh symbol. Frozen-name
+overrides, duplicate or unused definitions and missing bindings refuse.
+Unicode-NFKC/casefolded word equality and a character similarity ratio of at
+least 0.90 (minimum 20 normalized characters) screen new definitions against T
+content and verified catalogue definitions. This conservative lexical screen
+can reject close wording; it is not an equivalence solver. The classifier
+separately judges whether definitions merely rename or package existing content.
+Unverified legacy catalogue definitions remain unavailable.
 
 The proposer receives the actual versioned bank, premise slots, CQs and
 placeholder support examples. A new main proposition must not be in T or follow
@@ -196,13 +211,18 @@ manifest or model/configuration can also invalidate proof. See
 
 Contribution labels supplement the engine's unchanged `CLOSED`/`OPEN` status,
 bank licenses and graph format. `CLOSED-derived` requires a reachable licensed
-nonstructural bank inference, at least two distinct frozen supports and solver checks that rule out
+nonstructural bank inference concluding an essential new proposition of the root, at least two distinct frozen supports and solver checks that rule out
 validity without support and entailment of the root by any one support. The
 route check tests the root polarity; target preflight tests both polarities.
 
 Conjunction introduction/elimination, disjunction introduction and double
 negation are structural rules. A reachable known bank scheme outside that set
 is required for `CLOSED-derived`; unreachable inferences cannot qualify a route.
+The root and qualifying step conclusion must pass semantic novelty against the
+whole freeze, including commitments not cited in that route. A conditional proof
+with an unused scoped assumption is not a qualifying step. A genuine new result
+from a reachable defeasible step can still qualify when wrapped in such a proof;
+the unused conditional-proof step itself is excluded from the receipt.
 The proposer receives the actual bank with these two groups identified, frozen
 catalogue definitions, and placeholder examples contrasting a bare conjunction
 with a new thesis linked by a substantive deductive or defeasible scheme.
@@ -215,7 +235,7 @@ papers or semantic novelty.
 | Display label | Meaning for selection |
 | --- | --- |
 | `CLOSED-derived` | Passes the contribution policy; offered by default |
-| `CLOSED-structural` | Otherwise passes contribution checks but has only structural connective rules; explicit `--route` required |
+| `CLOSED-structural` | Otherwise passes contribution checks but has no qualifying step concluding an essential new proposition; explicit `--route` required |
 | `CLOSED-single-support` | Lacks the required inference/distinct supports, is valid without support, or follows from one support; explicit `--route` required |
 | `CLOSED-contribution-unresolved` | Required support or a solver verdict is unavailable; explicit `--route` required |
 | `CLOSED-stance-crossing` | A recorded reported/attacked support is used as a global premise or CQ evidence; explicit `--route` required |

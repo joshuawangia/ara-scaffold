@@ -3,9 +3,41 @@
   "title": "classify_target",
   "type": "object",
   "properties": {
-    "classification": {"type": "string", "enum": ["own_thesis", "attributed_report", "unclear"]},
-    "reason": {"type": "string", "minLength": 1, "maxLength": 500}
+    "classification": {
+      "type": "string",
+      "enum": [
+        "own_thesis",
+        "attributed_report",
+        "unclear"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "novelty": {
+      "type": "string",
+      "enum": [
+        "new_assertion",
+        "restatement",
+        "unclear"
+      ]
+    },
+    "fidelity": {
+      "type": "string",
+      "enum": [
+        "matches",
+        "mismatch",
+        "unclear"
+      ]
+    }
   },
-  "required": ["classification", "reason"],
+  "required": [
+    "classification",
+    "reason",
+    "novelty",
+    "fidelity"
+  ],
   "additionalProperties": false
 }

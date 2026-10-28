@@ -7,7 +7,7 @@ from ara.formal import entails
 from ara.runtime.cache import canonical
 from ara.runtime.orchestration import NativeEngine, search_all
 from ara.runtime.route_policy import route_contribution
-from ara.types import Commitment, CommitmentSet, Formula, Proposition
+from ara.types import Commitment, CommitmentSet, Formula, Proposition, SymbolDefinition
 from test_search_alignment import rig, ROOT, P, Q, R, T
 from test_contribution_gate import payloads
 
@@ -16,7 +16,8 @@ def candidate(i):
     # Distinct placeholder formulas, none implied by either P or P -> Q.
     f=Formula('predicate',name='F',terms=())
     for _ in range(i): f=Formula('implies',(R,f))
-    return Proposition('p'+str(i),'F',f)
+    return Proposition('p'+str(i),'R -> '*i+'F',f,
+        (SymbolDefinition('F','predicate',0,'F'),) + ((SymbolDefinition('R','atom',0,'R'),) if i else ()))
 
 
 def test_pool_keeps_ten_in_stable_order_and_logs_surplus(tmp_path):
@@ -28,7 +29,7 @@ def test_pool_keeps_ten_in_stable_order_and_logs_surplus(tmp_path):
             assert any(b['id']=='sign' and b['critical_questions'] for b in inputs['bank'])
             assert inputs['support_examples']
             return dict(targets=[p.to_dict() for p in pool])
-        return dict(classification='own_thesis',reason='P')
+        return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
     calls,_=rig(tmp_path,reply)
     assert calls.propose_targets(T)==tuple(pool[:10])
     events=payloads(calls,'target_pool_candidate')
@@ -51,7 +52,7 @@ def test_two_corrections_preserve_survivors_and_give_witnesses(tmp_path):
                 assert witness['conditional_consequent_in_t'] is True
                 assert 'alone entails' in witness['explanation']
             return dict(targets=[p.to_dict() for p in pools[len(attempts)-1]])
-        return dict(classification='own_thesis',reason='P')
+        return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
     calls,_=rig(tmp_path,reply)
     assert calls.propose_targets(T,3)==tuple(candidate(i) for i in range(3))
     assert len(attempts)==3
@@ -62,7 +63,7 @@ def test_two_corrections_preserve_survivors_and_give_witnesses(tmp_path):
 def test_all_invalid_exhausts_three_attempts(tmp_path):
     def reply(kind,inputs):
         if kind=='propose_targets': return dict(targets=[Proposition('p','P',P).to_dict()])
-        return dict(classification='own_thesis',reason='P')
+        return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
     calls,_=rig(tmp_path,reply)
     assert calls.propose_targets(T)==()
     assert len(payloads(calls,'target_triviality_preflight'))==3
@@ -75,7 +76,7 @@ def test_native_new_atom_defeasible_closure(tmp_path,answered):
     goal=Proposition('r','R',R)
     def reply(kind,inputs):
         if kind=='propose_targets': return dict(targets=[goal.to_dict()])
-        if kind=='classify_target': return dict(classification='own_thesis',reason='R')
+        if kind=='classify_target': return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='R')
         if kind=='map_leaf': return dict(t_id='open')
         if kind=='propose_cuts':
             return dict(proposals=[dict(bank_id='sign',conclusion_text='R',conclusion_ref='current_goal',

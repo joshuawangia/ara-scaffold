@@ -136,7 +136,7 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
     events = calls.log.read()
     merged = next(json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_merged')
     assert len(merged['symbols']) == 16
-    assert merged['input_tokens'] < 10000
+    assert 0 < merged['input_tokens'] <= calls.config['working_t_token_budget']
     assert len(json.dumps(merged['symbols'])) > 17000
     assert sum(e['stage'] == 'build_t_capacity_preflight' for e in events) == 2
     assert sum(e['stage'] == 'commitments_frozen' for e in events) == 1

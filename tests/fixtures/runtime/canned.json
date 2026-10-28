@@ -5,7 +5,7 @@
     "content": [
       {
         "type": "text",
-        "text": "{\"commitments\":[{\"citation\":\"placeholder:1\",\"formula\":{\"args\":[],\"name\":\"R\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"t1\",\"text\":\"R\"},{\"citation\":\"placeholder:2\",\"formula\":{\"args\":[],\"name\":\"S\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"t2\",\"text\":\"S\"},{\"citation\":\"placeholder:3\",\"formula\":{\"args\":[{\"args\":[],\"name\":\"R\",\"op\":\"atom\",\"terms\":[],\"variable\":null},{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null}],\"name\":null,\"op\":\"implies\",\"terms\":[],\"variable\":null},\"id\":\"t3\",\"text\":\"R -> P\"},{\"citation\":\"placeholder:4\",\"formula\":{\"args\":[{\"args\":[],\"name\":\"S\",\"op\":\"atom\",\"terms\":[],\"variable\":null},{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null}],\"name\":null,\"op\":\"implies\",\"terms\":[],\"variable\":null},\"id\":\"t4\",\"text\":\"S -> Q\"}]}"
+        "text": "{\"commitments\":[{\"citation\":\"placeholder:1\",\"formula\":{\"args\":[],\"name\":\"R\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"t1\",\"text\":\"R\"},{\"citation\":\"placeholder:2\",\"formula\":{\"args\":[],\"name\":\"S\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"t2\",\"text\":\"S\"},{\"citation\":\"placeholder:3\",\"formula\":{\"args\":[],\"name\":\"F\",\"op\":\"predicate\",\"terms\":[{\"kind\":\"constant\",\"name\":\"a\"}],\"variable\":null},\"id\":\"t3\",\"text\":\"F(a)\"},{\"citation\":\"placeholder:4\",\"formula\":{\"args\":[],\"name\":\"F\",\"op\":\"predicate\",\"terms\":[{\"kind\":\"constant\",\"name\":\"b\"}],\"variable\":null},\"id\":\"t4\",\"text\":\"F(b)\"}]}"
       }
     ],
     "usage": {
@@ -13,7 +13,7 @@
       "output_tokens": 3
     }
   },
-  "propose_targets:2c87ae2decd52300854e19b34a3bc9b59f4abb2773277b2cf44cb07a8616645e": {
+  "propose_targets:f5e6e8db24f48287b186a959f1e75bfe100708d0acf6ab3dff79fe4fed2e0c06": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -27,13 +27,13 @@
       "output_tokens": 3
     }
   },
-  "classify_target:79b68f22b334f2037bc303de215f7a6423453930bf89d871fb336b146f205448": {
+  "classify_target:903f7f34dd3274a4328ce4eda849a23667a75ead94839f74f245e8470d7a508b": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
       {
         "type": "text",
-        "text": "{\"classification\":\"own_thesis\",\"reason\":\"P\"}"
+        "text": "{\"classification\":\"own_thesis\",\"fidelity\":\"matches\",\"novelty\":\"new_assertion\",\"reason\":\"P\"}"
       }
     ],
     "usage": {
@@ -41,35 +41,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:2fb7c4cdf95a4f08c7c0732c7a70346e37445fee7a86b91d9f00ed49ddd710f7": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"t_id\":\"open\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "propose_cuts:d738b757a34748bb2f88610996ad499a4e9ac750d3f724e214efb052da254c67": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"proposals\":[]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "map_leaf:e823cce46666c4bcedba835e0c15d89ba787168bc42144e99de6b1f2088d770a": {
+  "map_leaf:9823bfb0c2fb1598463eda9c052fd3dfa9bfc0418feb287aa945f7c6a2607ed4": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -83,7 +55,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:16143efd395c10aa200b643cd4e5719d38e494f9d97d7c91729aa3a5ef72a689": {
+  "propose_cuts:1af81e9350e37b4c042d57296e5b8889c6b4ad1c744f119e7147433f5cf9d3da": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -97,21 +69,7 @@
       "output_tokens": 3
     }
   },
-  "classify_target:abf8723369d5d93746f5be7435e74a9b9349d9d5bd4fda5fda8196ae6906c817": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"classification\":\"own_thesis\",\"reason\":\"P\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "map_leaf:d184ff7ade25d8e1e2098ea568fa75dc210298a9197ad02225d817bc965a2bc2": {
+  "map_leaf:dbd69648b2d37c4ced959b28c200635c016b19da1ef0b82e8054c34bcf893c17": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -125,7 +83,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:984e061a24c715008395c0adde5400644798e0379de3a75da96bd42fa43a8f5b": {
+  "propose_cuts:1b56a64206aab9063a5b1c85d106398dc41d459bd00ffed28bba8ae4aebb14b9": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -139,7 +97,21 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:ed4f50b7e0b9d04849cdeabc8c8a14e0c4535906b62c4ccc9e379557ee1067c3": {
+  "classify_target:a07d4441fad3a1ad510eff11890f6dc87cedc44d3990431e5195397cefd66870": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"classification\":\"own_thesis\",\"fidelity\":\"matches\",\"novelty\":\"new_assertion\",\"reason\":\"P\"}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "map_leaf:22288100ff116f70780c2478f7baec84d46ee0101cc3362c9ddcb5755d38f6b8": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -153,7 +125,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:8c267be35c4fa9371c4626757bf07ed97af9ce00f43add564fda7e2f016ed746": {
+  "propose_cuts:f00809aff53be41800c8f9aede51c18d35691b7f6ea527fd905819be39408fee": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -167,7 +139,35 @@
       "output_tokens": 3
     }
   },
-  "write_essay:b763dade2cbe0f9ce8d3fb5ea85caf15dd0bf32660498942353e9791c89a2e8d": {
+  "map_leaf:2d166f8039399749d52fd102a562a71ae709e52ae5efd8a366f4576801875908": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"t_id\":\"open\"}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "propose_cuts:3a38d43729d28a06b2e1d76bcbd2aa4d6a3297c0c5880766490ddfe753e4bb49": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"proposals\":[]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "write_essay:4774aa9f097eea1712e850e8eb6f15b6da04310bf3137e6d0087dea37a9d8737": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -181,7 +181,7 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:93f0ee91e8741a4db7c16c5d58107c9351bae13da2e7af7aeddb49029ea3edb6": {
+  "audit_essay:da455084d1850da090a8cc25d202dcf78cfc5eb511c9a9e0918326beaacdc5a9": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [

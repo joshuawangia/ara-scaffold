@@ -34,17 +34,19 @@ def reply(kind, inputs):
 
 
 def test_classifier_assertion_uses_content_not_source_voice(tmp_path):
+    from ara.types import Proposition, Formula
+    goal=Proposition('r','R',Formula('atom',name='R'))
     def respond(kind, inputs):
-        if kind=='propose_targets': return dict(targets=[GOAL.to_dict()])
+        if kind=='propose_targets': return dict(targets=[goal.to_dict()])
         assert kind=='classify_target'
-        assert inputs['target']==GOAL.to_dict()
-        assert inputs['rendered_content']==dict(op='atom',name='Q',definition='Q',terms=[])
+        assert inputs['target']==goal.to_dict()
+        assert inputs['rendered_content']==dict(op='atom',name='R',definition='R',terms=[])
         assert inputs['definition_semantics']=='content'
         assert 'P holds Q' not in canonical(inputs)
-        return dict(classification='own_thesis',reason='Q')
+        return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='Q')
     calls,_=rig(tmp_path,respond)
     provenance(tmp_path)
-    assert calls.propose_targets(T,1)==(GOAL,)
+    assert calls.propose_targets(T,1)==(goal,)
 
 
 @pytest.mark.parametrize('stance',['reported','attacked'])

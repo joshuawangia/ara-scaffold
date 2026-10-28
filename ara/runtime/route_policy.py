@@ -1,6 +1,7 @@
 """Contribution display/selection policy; historical CLOSED and licenses are unchanged."""
 from ara.runtime.contribution import contribution_check, formula_hash
 from ara.runtime.target_policy import attributed_report
+from ara.runtime.novelty import novelty_check
 from ara.types import Commitment, CommitmentSet
 from functools import lru_cache
 
@@ -52,12 +53,46 @@ def _logical_contribution(route, commitments=None):
     receipt = contribution_check(root.formula, CommitmentSet(tuple(supports.values())), both_polarities=False)
     classification = {'trivial':'CLOSED-single-support', 'unresolved':'CLOSED-contribution-unresolved',
                       'candidate':'CLOSED-derived'}[receipt['status']]
-    if classification == 'CLOSED-derived' and not substantive:
-        classification = 'CLOSED-structural'
+    basis = commitments or CommitmentSet(tuple(supports.values()))
+    novelty = novelty_check(root.formula, basis)
+    essential = set(novelty.get('essential_application_keys', ()))
+    qualified, step_checks = [], []
+    for inference in substantive:
+        node = nodes[inference['node_id']]
+        if node.proposal.bank_id == 'conditional_proof':
+            scopes = [s for s in route.scopes if s.discharged_by == node.id]
+            def used(scope):
+                pending, visited = list(scope.result_node_ids), set()
+                while pending:
+                    id = pending.pop()
+                    if id in visited:
+                        continue
+                    visited.add(id)
+                    descendant = nodes[id]
+                    if descendant.kind == 'assumption' and descendant.scope_id == scope.id:
+                        return True
+                    pending.extend(descendant.children)
+                return False
+            if not scopes or not all(used(s) for s in scopes):
+                step_checks.append(dict(**inference, reason='unused_scoped_assumption'))
+                continue
+        # The conclusion must establish the same essential new assertion as the root.
+        conclusion = novelty_check(node.proposition.formula, basis)
+        step_checks.append(dict(**inference, novelty=conclusion))
+        if essential.intersection(conclusion.get('essential_application_keys', ())):
+            qualified.append(inference)
+    substantive = qualified
+    if classification == 'CLOSED-derived':
+        if novelty['status'] == 'unresolved':
+            classification = 'CLOSED-contribution-unresolved'
+        elif not substantive:
+            classification = ('CLOSED-contribution-unresolved'
+                if any(s.get('novelty', {}).get('status') == 'unresolved' for s in step_checks)
+                else 'CLOSED-structural')
     if attributed_report(root.text):
         classification = 'CLOSED-attributed-report'
     return dict(classification=classification, support_ids=support_ids,
-                substantive_inferences=substantive, **receipt)
+                substantive_inferences=substantive, novelty=novelty, inference_novelty_checks=step_checks, **receipt)
 
 
 def stance_crossings(route, provenance):

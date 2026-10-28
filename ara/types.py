@@ -143,10 +143,30 @@ class Formula(Record):
 
 
 @dataclass(frozen=True)
+class SymbolDefinition(Record):
+    name: str
+    kind: Literal['atom', 'predicate']
+    arity: int
+    definition: str
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not self.name or not self.definition.strip() or self.arity < 0 or (self.kind == 'atom' and self.arity):
+            raise ValueError('invalid proposed symbol definition')
+
+
+@dataclass(frozen=True)
 class Proposition(Record):
     id: str
     text: str
     formula: Formula | None = None
+    new_symbols: tuple[SymbolDefinition, ...] = ()
+
+    def to_dict(self):
+        value = super().to_dict()
+        if not self.new_symbols:
+            del value['new_symbols']
+        return value
 
 
 def negate_proposition(proposition: Proposition) -> Proposition:
@@ -154,7 +174,7 @@ def negate_proposition(proposition: Proposition) -> Proposition:
     if proposition.formula is None:
         raise ValueError('negation requires a formula')
     formula = proposition.formula.negated()
-    return Proposition(f'not:{proposition.id}', formula.canonical(), formula)
+    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols)
 
 
 @dataclass(frozen=True)

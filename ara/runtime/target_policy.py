@@ -39,8 +39,8 @@ def target_context(commitments, bank):
                 structural_bank_ids=sorted(STRUCTURAL_RULES),
                 support_examples=[dict(rejected_target='P and Q', commitments=['P','Q'],
                     reason='A bare conjunction only repackages T and its conjunction-introduction route is structural.'),
-                    dict(bank_id='modus_ponens', commitments=['P', 'P -> Q'],
-                    target='Q', condition='Q is not in T or entailed by one commitment.'),
+                    dict(rejected_target='Q', commitments=['P', 'P -> Q'],
+                    reason='Modus ponens is licensed, but Q is already in the classical closure of T.'),
                     dict(bank_id='sign', commitments=['P', 'Q'], target='R',
                     slots=dict(sign_relation='P', observed_sign='Q'),
                     condition='The source content must fit the sign scheme. Answer every supplied CQ with frozen evidence; P and Q need not classically entail R.'),
@@ -81,14 +81,15 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None):
                                  commitment_id=receipt.get('commitment_id'), polarity=receipt.get('polarity'),
                                  entailing_commitment=witness.to_dict() if witness else None,
                                  conditional_consequent_in_t=consequent_in_t, novelty=novelty,
-                                 explanation=novelty['explanation'] if reason in ('boolean_recombination','novelty_unresolved','no_new_main_proposition') else explanation))
+                                 explanation=novelty['explanation'] if reason in ('deductive_closure','novelty_unresolved','no_essential_new_proposition') else explanation))
     return rejected
 
 
-def classifier_inputs(target, vocabulary):
+def classifier_inputs(target, vocabulary, commitments):
     """Render asserted logical structure; source attribution is not assertion content."""
-    catalogue = vocabulary['symbol_catalogue'] if vocabulary['definition_semantics'] == 'content' else None
-    definitions = {(s['name'],s['kind'],s['arity']):s['definition'] for s in catalogue or []}
+    from ara.runtime.target_content import content_bindings
+    content = content_bindings(target, vocabulary, commitments)
+    definitions = {(s['name'],s['kind'],s['arity']):s['definition'] for s in content['definitions']}
     def render(formula):
         if formula.op in ('atom','predicate'):
             return dict(op=formula.op, name=formula.name,
@@ -100,6 +101,8 @@ def classifier_inputs(target, vocabulary):
             result['variable'] = formula.variable
         return result
     return dict(target=target.to_dict(), rendered_content=render(target.formula),
+                frozen_content=content['frozen_content'], proposed_definitions=content['proposed_definitions'],
+                definition_issues=content['issues'],
                 definition_semantics=vocabulary['definition_semantics'],
                 commitments_sha256=vocabulary['commitments_sha256'],
                 catalogue_sha256=vocabulary['catalogue_sha256'],

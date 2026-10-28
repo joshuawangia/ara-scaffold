@@ -26,15 +26,20 @@ def test_pilot_config_and_caps(tmp_path, cap, expected):
     config['pilot']['token_cap'] = 100_000_000
     path = tmp_path / 'config.yaml'
     path.write_text(yaml.safe_dump(config))
-    from test_target_pool import candidate
-    targets = [candidate(i) for i in range(10)]
+    from ara.types import SymbolDefinition
+    targets=[]
+    for i in range(10):
+        formula=Formula('atom',name='P')
+        for _ in range(i): formula=Formula('implies',(Formula('atom',name='Q'),formula))
+        definitions=(SymbolDefinition('P','atom',0,'P'),) + ((SymbolDefinition('Q','atom',0,'Q'),) if i else ())
+        targets.append(Proposition('p'+str(i),'Q -> '*i+'P',formula,definitions))
     captured, engines, dispatched = [], [], []
     def factory(config, log, topic):
         captured.append(config)
         provider = MockProvider({})
         def complete(kind, prompt, schema, maximum):
             dispatched.append(kind)
-            data = {'classify_target': dict(classification='own_thesis', reason='P'), 'build_t': T.to_dict(), 'propose_targets': {'targets': [p.to_dict() for p in targets]},
+            data = {'classify_target': dict(novelty='new_assertion',fidelity='matches',classification='own_thesis', reason='P'), 'build_t': T.to_dict(), 'propose_targets': {'targets': [p.to_dict() for p in targets]},
                     'map_leaf': {'t_id': 'open'}, 'propose_cuts': {'proposals': []}}[kind]
             return Response(response(data, usage={'input_tokens': 5,
                                     'output_tokens': 1_000_000 if kind == 'build_t' else 3}))

@@ -7,13 +7,13 @@ from ara.runtime.cache import canonical
 from ara.runtime.calls import ModelCalls
 from ara.runtime.providers import mock_key
 from ara.types import (Commitment, CommitmentSet, Formula, Proposition, RouteGraph,
-                       RouteNode, EngineDecision, RunEvent, Proposal, PremiseFill)
+                       RouteNode, EngineDecision, RunEvent, Proposal, PremiseFill, CQAnswer, Term)
 
 ROOT = Path(__file__).resolve().parents[2]
 P, Q, R, S = (Formula('atom', name=n) for n in ('P','Q','R','S'))
 T = CommitmentSet((Commitment('t1','R','placeholder:1',R), Commitment('t2','S','placeholder:2',S),
-    Commitment('t3','R -> P','placeholder:3',Formula('implies',(R,P))),
-    Commitment('t4','S -> Q','placeholder:4',Formula('implies',(S,Q)))))
+    Commitment('t3','F(a)','placeholder:3',Formula('predicate',name='F',terms=(Term('constant','a'),))),
+    Commitment('t4','F(b)','placeholder:4',Formula('predicate',name='F',terms=(Term('constant','b'),)))))
 TARGETS = (Proposition('p', 'P', Formula('atom', name='P')), Proposition('q', 'Q', Formula('atom', name='Q')))
 DRAFT = {'title': 'P', 'body': '[[node:n:p]][[node:n:p:c]][[node:n:p:a]] ' + ' '.join(['P'] * 150), 'bibliography': []}
 
@@ -51,10 +51,11 @@ def fixture_route(target):
     if target.id not in ('p','q'):
         return RouteGraph('route:'+target.id,root,(RouteNode(root,target,'leaf','open'),),'OPEN',(root,))
     antecedent,conditional=(T.commitments[i] for i in ((0,2) if target.id=='p' else (1,3)))
-    proposal=Proposal('modus_ponens',(PremiseFill('conditional',conditional.text,conditional.id),
-        PremiseFill('antecedent',antecedent.text,antecedent.id)),target.text,conclusion_ref='current_goal')
+    proposal=Proposal('sign',(PremiseFill('sign_relation',conditional.text,conditional.id),
+        PremiseFill('observed_sign',antecedent.text,antecedent.id)),target.text,conclusion_ref='current_goal')
     return RouteGraph('route:'+target.id,root,(
-        RouteNode(root,target,'inference',proposal=proposal,children=(root+':c',root+':a')),
+        RouteNode(root,target,'inference',proposal=proposal,children=(root+':c',root+':a'),
+            cq_answers=tuple(CQAnswer(q.id,'P',True,(conditional.id,antecedent.id)) for q in load_bank(ROOT/'bank').get('sign').critical_questions)),
         RouteNode(root+':c',Proposition('c',conditional.text,conditional.formula),'leaf',conditional.id),
         RouteNode(root+':a',Proposition('a',antecedent.text,antecedent.formula),'leaf',antecedent.id)),'CLOSED')
 
@@ -81,8 +82,8 @@ def canned(config):
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:
-        add('classify_target', classifier_inputs(target, vocabulary),
-            dict(classification='own_thesis', reason='P'))
+        add('classify_target', classifier_inputs(target, vocabulary, T),
+            dict(novelty='new_assertion',fidelity='matches',classification='own_thesis', reason='P'))
         for goal in (target, negate_proposition(target)):
             add('map_leaf', dict(leaf=goal.to_dict(), commitments=T.to_dict(), **vocabulary),
                 {'t_id': 'open'})

@@ -11,7 +11,7 @@ from ara.runtime.frozen_catalogue import frozen_artifact
 from ara.runtime.orchestration import NativeEngine
 from ara.runtime.route_policy import route_contribution, selectable_routes
 from ara.types import Commitment, CommitmentSet, Formula, Proposition
-from test_search_alignment import P, Q, T, ROOT, rig
+from test_search_alignment import P, Q, R, T, ROOT, rig
 
 
 @pytest.mark.parametrize('case', ['antecedent_in_t', 'two_support_padding', 'positive'])
@@ -26,8 +26,8 @@ def test_native_report_preserves_route_polarity_and_nested_contribution(tmp_path
         goal = Proposition('p', 'P and (Q -> Q)', Formula('and', (P, taut)))
         bank_id, bindings = 'conjunction_introduction', [('left', 0), ('right', 1)]
     else:
-        t, goal = T, Proposition('q', 'Q', Q)
-        bank_id, bindings = 'modus_ponens', [('conditional', 1), ('antecedent', 0)]
+        t, goal = T, Proposition('r', 'R', R)
+        bank_id, bindings = 'sign', [('sign_relation', 1), ('observed_sign', 0)]
 
     def reply(kind, inputs):
         if kind == 'map_leaf':
@@ -38,6 +38,7 @@ def test_native_report_preserves_route_polarity_and_nested_contribution(tmp_path
                 t_id=t.commitments[i].id, scope_id=None) for slot, i in bindings])]}
         if kind == 'formalise_slots':
             return {'slots': [dict(slot=b['slot'], formula=b['formula']) for b in inputs['slot_bindings']]}
+        if kind=='answer_cq': return dict(cq_id=inputs['question']['id'],answer='P',answered=True,supporting_t_ids=['t1','t2'])
         raise AssertionError(kind)
 
     directory, output = tmp_path/'source', tmp_path/'report'

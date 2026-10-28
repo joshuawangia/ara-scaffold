@@ -33,7 +33,7 @@ def test_native_mock_smoke_and_replay(tmp_path):
     commitments = CommitmentSet.from_json((run / 'commitments.json').read_text())
     assert sum(g.status == 'CLOSED' for g in graphs) == 2
     for path, graph in zip(files, graphs):
-        assert path.with_suffix('.txt').read_text() == render_tree(graph)
+        assert path.with_suffix('.txt').read_text() == render_tree(graph, commitments)
         for node in graph.nodes:
             if graph.status == 'CLOSED' and node.kind == 'leaf':
                 assert commitments.get(node.t_id).formula.canonical() == node.proposition.formula.canonical()

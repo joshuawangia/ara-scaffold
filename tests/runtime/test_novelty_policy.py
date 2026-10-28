@@ -22,8 +22,8 @@ def test_equivalent_boolean_packages_rejected(formula):
     from ara.runtime.novelty import novelty_check
     receipt=novelty_check(formula,T)
     assert receipt['status']=='rejected'
-    assert receipt['reason']=='boolean_recombination'
-    assert receipt['solver_result']=='SOLVER_UNSAT'
+    assert receipt['reason'] in ('deductive_closure','no_essential_new_proposition')
+    assert any(c['solver_result']=='SOLVER_UNSAT' for c in receipt['checks'])
     assert receipt['basis_commitment_ids']==['t1','t2']
 
 
@@ -32,10 +32,10 @@ def test_new_main_claim_not_vacuous_or_only_antecedent():
     s=Formula('atom',name='S')
     for conclusion in (AND,Formula('and',(AND,Formula('or',(R,R.negated()))))):
         receipt=novelty_check(Formula('implies',(s,conclusion)),T)
-        assert receipt['status']=='rejected' and receipt['scope']=='main_claim'
+        assert receipt['status']=='rejected' and receipt['reason']=='deductive_closure'
     assert novelty_check(R,T)['status']=='candidate'
     deductive=CommitmentSet((T.commitments[0],Commitment('t2','P -> Q','placeholder:2',Formula('implies',(P,Q)))))
-    assert novelty_check(Q,deductive)['status']=='candidate'
+    assert novelty_check(Q,deductive)['reason']=='deductive_closure'
 
 
 def test_predicate_application_and_quantified_equivalence():
@@ -51,7 +51,8 @@ def test_predicate_application_and_quantified_equivalence():
 
 def test_novelty_unknown_refuses(monkeypatch):
     import ara.runtime.novelty as novelty
-    monkeypatch.setattr(novelty,'cached_entails',lambda *args,**kwargs:'SOLVER_TIMEOUT')
+    answers=iter(['SOLVER_TIMEOUT','SOLVER_COUNTEREXAMPLE','SOLVER_COUNTEREXAMPLE'])
+    monkeypatch.setattr(novelty,'cached_entails',lambda *args,**kwargs:next(answers))
     assert novelty.novelty_check(R,T)['status']=='unresolved'
 
 
@@ -59,7 +60,7 @@ def setup(tmp_path):
     goal=Proposition('r','R',R);package=Proposition('pq','P and Q',AND)
     def reply(kind,inputs):
         if kind=='propose_targets':return dict(targets=[package.to_dict(),goal.to_dict()])
-        if kind=='classify_target':return dict(classification='own_thesis',reason='R')
+        if kind=='classify_target':return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='R')
         if kind=='map_leaf':return dict(t_id='open')
         if kind=='propose_cuts':
             formula=Formula.from_dict(inputs['goal']['formula'])
@@ -127,11 +128,11 @@ def test_boolean_feedback_and_bank_guidance_reach_correction(tmp_path):
             assert inputs['target_policy']['exclude_boolean_recombination']
             if len(attempts)>1:
                 rejection=inputs['triviality_feedback']['rejected'][0]
-                assert rejection['reason']=='boolean_recombination'
-                assert 'Boolean combinations' in rejection['explanation']
+                assert rejection['reason']=='deductive_closure'
+                assert 'classically entails' in rejection['explanation']
                 assert rejection['novelty']['basis_commitment_ids']==['t1','t2']
             return dict(targets=[package.to_dict()])
-        return dict(classification='own_thesis',reason='P Q')
+        return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P Q')
     calls,_=rig(tmp_path,reply)
     from ara.runtime.frozen_catalogue import frozen_artifact
     (tmp_path/'frozen-t.json').write_text(canonical(frozen_artifact(T,

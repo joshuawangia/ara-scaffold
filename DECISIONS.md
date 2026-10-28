@@ -3679,3 +3679,42 @@ and limitations are in docs/search.md; exact offline pilot-fork and full gate
 receipts are in the external Round 18 handoff. No new paid call is authorized.
 Formal assertion novelty and mechanical cross-source support do not establish
 semantic originality, source/formula fidelity or CQ truth.
+
+## Round 19 — semantic novelty and bound content (kappa4 F1/F2)
+
+The Round 18 acceptance of Q from T={P,P -> Q} is superseded: a classical
+consequence of all frozen T is not a novel target. Modus ponens and engine closure
+remain valid, but such a route is not offered as a novel derived thesis. A cached,
+bounded entailment query checks all of T. Every fresh atomic application is then
+replaced by true and false, with equivalence under T tested for each substitution.
+At least one must change truth; unknown/timeout refuses. This replaces syntactic
+main-claim descent and catches nested implications, disjunction, double negation,
+quantifier wrappers, vacuous atoms and explicit aliases in T.
+
+A qualifying reachable nonstructural bank step must conclude an essential new
+proposition of the root. Its conclusion is checked against all frozen T too.
+Unused conditional-proof assumptions do not qualify, even when their wrapper
+mentions a new symbol. Pure deductive closure or an absent qualifying step is
+reported as CLOSED-structural; uncertain novelty is contribution-unresolved.
+Existing contribution, stance, licensing and CQ requirements remain in force.
+
+Propositions optionally carry typed new_symbols content definitions, omitted
+from serialization when absent so historical codecs remain stable. CommitmentSet,
+commitments.json and frozen-t/catalogue formats are unchanged. A single atomic
+assertion can bind its complete text; compound targets require explicit fresh
+symbol definitions. Missing, duplicate, unused and frozen-name overrides refuse.
+Normalized text equality and conservative near-duplicate matching screen frozen
+content reuse. The existing isolated classifier additionally returns required
+novelty and fidelity judgments against the T content list and rendered bindings.
+Only own_thesis/new_assertion/matches admits; restatement, mismatch or uncertainty
+refuses. Inputs, judgments, corrections and cache identities retain these fields.
+The classifier schema change invalidates old preflight proof for live use.
+
+Kappa4's wrapper and rename probes, genuine new-atom sign closure, unused scopes,
+relevant versus unrelated inference conclusions, whole-freeze checks, definition
+bindings, lexical duplication, model judgment gates and timeout refusal have
+regressions and production-wire mutation controls. Success fixtures now use new
+defeasible conclusions rather than non-novel deductive consequences. Formal
+novelty, lexical screening and fake-provider tests do not prove semantic
+originality, faithful paraphrase, scheme fit or model judgment accuracy. No paid
+calls or push. See the external Round 19 handoff for exact pinned gate receipts.

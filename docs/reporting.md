@@ -122,6 +122,16 @@ the model audit treats endorsement promotion as an added inference. This is a
 model-audited writing obligation, not a deterministic semantic guarantee.
 
 Round 18 discloses `CLOSED-structural` for otherwise contributing closures without
-a reachable nonstructural bank inference. Contribution receipts identify the
+a reachable qualifying bank inference. Contribution receipts identify the
 qualifying substantive node IDs and bank IDs; pure connective packaging is not
 selectable by default. See [search policy](search.md#route-classification-and-selection).
+
+Round 19 receipts additionally contain semantic novelty checks against the entire
+frozen T. The qualifying inference list excludes unused conditional proofs and
+steps whose conclusions do not establish an essential new proposition of the
+root. Classical consequences remain engine-closed but are not novel derived
+routes for default selection. Classifier novelty/fidelity judgments and proposed
+definitions are logged during admission, not recomputed by report rendering.
+Step receipts in `inference_novelty_checks` retain conclusion checks and unused
+scope reasons. If no step qualifies and a step's novelty is unknown, the route
+is contribution-unresolved rather than silently reported as structural.

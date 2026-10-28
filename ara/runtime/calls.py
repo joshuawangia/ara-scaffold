@@ -955,9 +955,17 @@ class ModelCalls:
             for receipt in receipts:
                 self.log.record('target_contribution_preflight', attempt=attempt + 1, **receipt)
             for target in targets:
-                classification = self.call('classify_target', classifier_inputs(target, vocabulary), lambda d: d)
+                content = classifier_inputs(target, vocabulary, commitments)
+                for issue in content['definition_issues']:
+                    rejected.append(dict(target_id=target.id, target=target.to_dict(), **issue,
+                                         explanation='Proposed content must bind a fresh assertion, not rename frozen content.'))
+                classification = self.call('classify_target', content, lambda d: d)
                 self.log.record('target_own_thesis_classification', target_id=target.id,
                                 attempt=attempt + 1, **classification)
+                if classification['novelty'] != 'new_assertion' or classification['fidelity'] != 'matches':
+                    rejected.append(dict(target_id=target.id, target=target.to_dict(), reason='target_content_not_established',
+                                         novelty=classification['novelty'], fidelity=classification['fidelity'],
+                                         explanation=classification['reason']))
                 if classification['classification'] != 'own_thesis':
                     rejected.append(dict(target_id=target.id, target=target.to_dict(), reason='own_thesis_not_established',
                                          classification=classification['classification'], explanation=classification['reason']))

@@ -12,7 +12,7 @@ PROPOSITION = {'id': 'p', 'text': 'P', 'formula': P}
 PROPOSAL = {'bank_id': 'modus_ponens', 'premises': [
     {'slot': 'antecedent', 'text': 'P', 't_id': 't1', 'scope_id': None}], 'conclusion_text': 'Q'}
 PAYLOADS = {
-    'classify_target': {'classification': 'own_thesis', 'reason': 'P'},
+    'classify_target': {'classification': 'own_thesis', 'novelty':'new_assertion', 'fidelity':'matches', 'reason': 'P'},
     'extract_paper': {'schema_version': 2, 'source_id': 'p', 'coverage_complete': True, 'new_gaps': [],
         'items': [{'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim',
         'attributed_to': 'P', 'text': 'P', 'page_start': 1, 'page_end': 1, 'premise_ids': [],

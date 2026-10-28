@@ -20,7 +20,7 @@ def provider_for(goal,classification='own_thesis'):
         if kind=='classify_target':
             assert inputs['target']==goal.to_dict()
             assert 'previous_targets' not in inputs and 'proposals' not in inputs
-            return dict(classification=classification,reason='P')
+            return dict(novelty='new_assertion',fidelity='matches',classification=classification,reason='P')
         raise AssertionError(kind)
     return reply
 
@@ -51,7 +51,7 @@ def test_attributed_reports_rejected_even_when_model_says_own(tmp_path,text):
 
 @pytest.mark.parametrize('classification',['attributed_report','unclear'])
 def test_classifier_is_required_and_logged_on_same_provider(tmp_path,classification):
-    calls,requests=rig(tmp_path,provider_for(GOAL,classification))
+    calls,requests=rig(tmp_path,provider_for(Proposition('r','R',R),classification))
     assert calls.propose_targets(T,1)==()
     classified=payloads(calls,'target_own_thesis_classification')
     assert len(classified)==3 and all(e['classification']==classification for e in classified)
@@ -61,8 +61,8 @@ def test_classifier_is_required_and_logged_on_same_provider(tmp_path,classificat
 
 
 def test_own_thesis_with_two_needed_commitments_is_accepted(tmp_path):
-    calls,requests=rig(tmp_path,provider_for(GOAL))
-    assert calls.propose_targets(T,1)==(GOAL,)
+    calls,requests=rig(tmp_path,provider_for(Proposition('r','R',R)))
+    assert calls.propose_targets(T,1)==(Proposition('r','R',R),)
     assert [k for k,_ in requests]==['propose_targets','classify_target']
     assert payloads(calls,'target_contribution_preflight')[0]['status']=='candidate'
 
@@ -175,14 +175,17 @@ def test_cq_dependencies_are_support_and_unknown_fails_closed(monkeypatch):
     from ara.types import CQAnswer
     from ara.runtime import contribution
     from ara.runtime.route_policy import route_contribution
-    graph=closed_graph()
+    graph=closed_graph(Proposition('r','R',R))
+    graph=replace(graph,nodes=(replace(graph.nodes[0],proposal=replace(graph.nodes[0].proposal,bank_id='sign')),)+graph.nodes[1:])
     graph=replace(graph,nodes=(replace(graph.nodes[0],children=('b',),
         cq_answers=(CQAnswer('cq','P',True,('t2',)),)),graph.nodes[2]))
     assert route_classification(graph,T)=='CLOSED-derived'
     assert route_contribution(graph,T)['support_ids']==['t1','t2']
     assert route_classification(graph)=='CLOSED-contribution-unresolved'
     contribution.clear_entailment_cache()
-    monkeypatch.setattr(contribution,'entails',lambda *args:'SOLVER_UNKNOWN')
+    original=contribution.entails
+    monkeypatch.setattr(contribution,'entails',lambda premises,goal,timeout:
+        'SOLVER_UNKNOWN' if len(premises)<2 else original(premises,goal,timeout))
     assert route_classification(graph,T)=='CLOSED-contribution-unresolved'
     assert not selectable_routes((graph,),T)
     contribution.clear_entailment_cache()

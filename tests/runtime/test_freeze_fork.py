@@ -84,7 +84,7 @@ def test_native_fork_cli_starts_at_targets(tmp_path):
         provider=MockProvider({})
         def complete(kind,prompt,*args):
             kinds.append(kind);inputs=json.loads(prompt.split('\nINPUT_JSON\n')[1])
-            if kind=='classify_target': value=dict(classification='own_thesis',reason='P')
+            if kind=='classify_target': value=dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
             elif kind=='propose_targets': value={'targets':[GOAL.to_dict()]}
             elif kind=='map_leaf': value={'t_id':'open'}
             elif kind=='propose_cuts': value={'proposals':[cut()] if inputs['goal']['id']=='q' else []}

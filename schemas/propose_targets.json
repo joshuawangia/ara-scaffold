@@ -318,6 +318,39 @@
               "type": "null"
             }
           ]
+        },
+        "new_symbols": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "atom",
+                  "predicate"
+                ]
+              },
+              "arity": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "definition": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "arity",
+              "definition"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

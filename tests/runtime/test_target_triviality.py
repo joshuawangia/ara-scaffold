@@ -11,9 +11,9 @@ def test_trivial_target_correction_and_exhaustion(tmp_path):
         assert kind == 'propose_targets'
         assert inputs['target_policy']['minimum_support_commitments'] == 2
         assert inputs['conditionals'][0]['id'] == 't2'
-        return {'targets': [GOAL.to_dict() if 'triviality_feedback' in inputs else Proposition('p', 'P', P).to_dict()]}
+        return {'targets': [Proposition('r','R',R).to_dict() if 'triviality_feedback' in inputs else Proposition('p', 'P', P).to_dict()]}
     calls, requests = rig(tmp_path, own_thesis(reply))
-    assert calls.propose_targets(T, 1) == (GOAL,)
+    assert calls.propose_targets(T, 1) == (Proposition('r','R',R),)
     assert len(requests) == 4
     assert requests[-2][1]['triviality_feedback']['rejected'][0]['reason'] == 'single_commitment_entailment'
     calls, requests = rig(tmp_path/'bad', own_thesis(lambda *_: {'targets': [Proposition('p', 'P', P).to_dict()]}))
@@ -33,14 +33,14 @@ def test_single_commitment_instance_and_attribution():
     instance = Formula('predicate', name='F', terms=(Term('constant','a'),))
     assert trivial_targets((Proposition('p','F(a)',instance),),t)[0]['reason']=='single_commitment_entailment'
     assert trivial_targets((Proposition('p','P argues that Q',Q),),T)[0]['reason']=='attributed_report'
-    assert trivial_targets((GOAL,),T)==[]
+    assert trivial_targets((GOAL,),T)[0]['reason']=='deductive_closure'
 
 
 def test_derived_classification_and_default_selection():
     from ara.runtime.route_policy import route_classification, selectable_routes
     trivial = RouteGraph('t','n',(RouteNode('n',Proposition('p','P',P),'leaf','t1'),),'CLOSED')
-    proposal = Proposal('modus_ponens',(PremiseFill('conditional','P -> Q','t2'),PremiseFill('antecedent','P','t1')),'Q')
-    derived = RouteGraph('d','n',(RouteNode('n',GOAL,'inference',proposal=proposal,children=('a','b')),
+    proposal = Proposal('sign',(PremiseFill('sign_relation','P -> Q','t2'),PremiseFill('observed_sign','P','t1')),'Q')
+    derived = RouteGraph('d','n',(RouteNode('n',Proposition('r','R',R),'inference',proposal=proposal,children=('a','b')),
         RouteNode('a',Proposition('a','P -> Q',T.commitments[1].formula),'leaf','t2'),
         RouteNode('b',Proposition('b','P',P),'leaf','t1')),'CLOSED')
     opened = replace(trivial,id='o',status='OPEN',frontier=('n',))

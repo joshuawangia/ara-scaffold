@@ -150,18 +150,18 @@ def test_named_position_preserved(rig):
     calls, provider, log = rig
     formula = Formula('atom', name='P')
     from test_search_alignment import T as commitments
-    formula = Formula('atom', name='Q')
+    formula = Formula('atom', name='R')
     from ara.bank import load_bank
     from ara.runtime.target_policy import target_context, classifier_inputs
-    inputs = {'commitments': commitments.to_dict(), 'count': 1, 'keep_count': 1, 'attempt': 1, 'attempt_budget': 3, 'named_position': 'Q',
+    inputs = {'commitments': commitments.to_dict(), 'count': 1, 'keep_count': 1, 'attempt': 1, 'attempt_budget': 3, 'named_position': 'R',
               **calls.search_vocabulary(commitments), **target_context(commitments, load_bank(calls.root / 'bank'))}
-    register(calls, provider, 'propose_targets', inputs, {'targets': [{'id': 'p', 'text': 'Q', 'formula': None}]})
-    register(calls, provider, 'formalise', {'proposition': Proposition('p', 'Q').to_dict(),
+    register(calls, provider, 'propose_targets', inputs, {'targets': [{'id': 'p', 'text': 'R', 'formula': None}]})
+    register(calls, provider, 'formalise', {'proposition': Proposition('p', 'R').to_dict(),
              **calls.search_vocabulary(commitments),
              'vocabulary_instruction': 'Reuse catalogue definitions and signatures; preserve the proposition meaning.'},
              {'formula': formula.to_dict()})
-    register(calls, provider, 'classify_target', classifier_inputs(Proposition('p', 'Q', formula), calls.search_vocabulary(commitments)), dict(classification='own_thesis', reason='P'))
-    assert calls.propose_targets(commitments, named_position='Q') == (Proposition('p', 'Q', formula),)
+    register(calls, provider, 'classify_target', classifier_inputs(Proposition('p', 'R', formula), calls.search_vocabulary(commitments), commitments), dict(novelty='new_assertion',fidelity='matches',classification='own_thesis', reason='P'))
+    assert calls.propose_targets(commitments, named_position='R') == (Proposition('p', 'R', formula),)
 
 
 def test_essay_bibliography_excluded_but_title_included(rig):

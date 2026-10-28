@@ -3842,3 +3842,20 @@ loading. Maximum total context falls from 215750 to 48606 tokens, including outp
 allowance, against the same 200000 bound. This proves request admission, not model
 quality or successful live closure. Evidence and final gates are in the external
 Round 23 report; no live pilot or paid call was made.
+
+## Round 24 — retain all exact leaf evidence
+
+Leaf slices retain every commitment whose formula exactly matches the leaf,
+independently of bridge selection and every shrinking level, including k=0.
+Exact matches appear first, with verified endorsed copies ordered before all
+other copies; IDs break ties. Reported/attacked copies remain visible with their
+original roles, never promoted to endorsed. Missing legacy stance stays unknown.
+Each search_context_slice receipt and request lists exact_match_commitment_ids.
+
+The full exact-match set is counted as indispensable leaf context. If it cannot
+fit, the existing disclosed job-local refusal applies; shrinking cannot silently
+drop the leaf's own evidence. Native regressions reproduce the Q-bridge/P-leaf
+probe with earlier-ID reported and attacked copies and a later-ID endorsed copy,
+at normal sizing and forced k=0. The same engine now closes P using the endorsed
+commitment. Exact retention and endorsed-first order have production-wire controls.
+No paid calls or push; scoped verification receipts are in the Round 24 report.

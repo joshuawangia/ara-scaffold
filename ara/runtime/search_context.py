@@ -16,19 +16,23 @@ def leaf_slice(inputs, bridge_limit):
     bridges = sorted(inputs.get('candidate_bridges', []), key=lambda b: (
         -len(leaf_symbols.intersection(set().union(*(signatures[tid] for tid in b['commitment_ids'])))),
         b['bridge_id']))[:bridge_limit]
+    provenance = inputs.get('commitment_provenance')
+    roles = provenance['commitments'] if provenance else {}
+    exact = sorted([c for c in commitments.commitments if c.formula == formula],
+                   key=lambda c: (roles.get(c.id, {}).get('stance') != 'endorsed', c.id))
+    exact_ids = [c.id for c in exact]
     ranked = sorted(commitments.commitments, key=lambda c: (
         c.formula != formula, -len(leaf_symbols & signatures[c.id]), c.id))
     seed_limit = 0 if bridges else 2 * bridge_limit
     selected = {c.id for c in ranked[:seed_limit]}
     selected.update(tid for b in bridges for tid in b['commitment_ids'])
-    if ranked and ranked[0].formula == formula:
-        selected.add(ranked[0].id)
+    selected.update(exact_ids)
     referenced = leaf_symbols | set().union(*(signatures[tid] for tid in selected))
     catalogue = inputs.get('symbol_catalogue')
-    provenance = inputs.get('commitment_provenance')
     data = {k: v for k, v in inputs.items() if k != 'commitment_provenance'}
     data.update(
-        commitments=CommitmentSet(tuple(c for c in commitments.commitments if c.id in selected)).to_dict(),
+        commitments=CommitmentSet(tuple(exact) + tuple(c for c in commitments.commitments
+            if c.id in selected and c.formula != formula)).to_dict(),
         commitments_scope='leaf_slice_of_frozen_T',
         candidate_bridges=bridges,
         commitment_papers={tid: paper for tid, paper in sorted(inputs.get('commitment_papers', {}).items())
@@ -41,6 +45,7 @@ def leaf_slice(inputs, bridge_limit):
         symbol_catalogue=[s for s in catalogue if (s['name'], s['kind'], s['arity']) in referenced]
                          if catalogue is not None else None,
         search_slice=dict(version='leaf-context-v1', bridge_limit=bridge_limit,
+                          exact_match_commitment_ids=exact_ids,
                           ranking='shared_leaf_symbols_then_bridge_id',
                           seed_limit=seed_limit, total_commitments=len(commitments.commitments),
                           total_bridges=len(inputs.get('candidate_bridges', [])),
@@ -70,6 +75,7 @@ def fit_leaf_request(calls, kind, inputs):
                          bridge_limit=bridge_limit, decision='fits' if fits else 'shrink' if bridge_limit else 'refused',
                          input_tokens=count.initial_input_tokens, output_tokens=count.context_output_tokens,
                          total_tokens=total, limit=calls.config['model_context_token_bound'],
+                         exact_match_commitment_ids=data['search_slice']['exact_match_commitment_ids'],
                          bridge_ids=[b['bridge_id'] for b in data['candidate_bridges']],
                          commitment_ids=[c['id'] for c in data['commitments']['commitments']],
                          catalogue_count=len(data['symbol_catalogue'] or []), inputs_sha256=digest(canonical(data)))

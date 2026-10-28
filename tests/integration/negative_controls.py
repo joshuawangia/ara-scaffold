@@ -1658,6 +1658,17 @@ CASES += [
 ]
 
 
+CASES += [
+    ('leaf_all_exact_matches', 'ara/runtime/search_context.py',
+     '[c for c in commitments.commitments if c.formula == formula]',
+     '[c for c in commitments.commitments if c.formula == formula][:1]',
+     'tests/runtime/test_search_context.py::test_all_exact_leaf_evidence_survives_bridges_and_shrinking'),
+    ('leaf_endorsed_exact_first', 'ara/runtime/search_context.py',
+     "roles.get(c.id, {}).get('stance') != 'endorsed'", 'False',
+     'tests/runtime/test_search_context.py::test_all_exact_leaf_evidence_survives_bridges_and_shrinking'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

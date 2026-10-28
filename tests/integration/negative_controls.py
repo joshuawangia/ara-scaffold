@@ -645,7 +645,7 @@ CASES += [
      'refusal_reasons.append(str(exc))', 'raise',
      'tests/runtime/test_construction_shares.py::test_window_refusal_is_accounted_and_later_window_succeeds[formalization]'),
     ('soft_context_skip', 'ara/runtime/calls.py',
-     "'window' if kind in ('select_t_roots', 'build_t_batch') else 'run'", "'run'",
+     "'window' if kind in ('select_t_roots', 'build_t_batch')", "'run' if kind in ('select_t_roots', 'build_t_batch')",
      'tests/runtime/test_construction_shares.py::test_window_refusal_is_accounted_and_later_window_succeeds[correction_context]'),
     ('soft_exhaustion', 'ara/runtime/construction.py',
      'if available <= 0 or symbol_available <= 0:', 'if False:',
@@ -1299,8 +1299,8 @@ CASES += [
      'if len(supports) < 2 or not inferred:', 'if not inferred:',
      'tests/runtime/test_contribution_gate.py::test_supports_exclude_assumptions_and_deduplicate_aliases'),
     ('support_aliases', 'ara/runtime/route_policy.py',
-     'supports.setdefault(formula_hash(commitment.formula), commitment)',
-     'supports.setdefault(commitment.id, commitment)',
+     'supports.setdefault(formula_hash(commitment.formula), {})[commitment.id] = commitment',
+     'supports.setdefault(commitment.id, {})[commitment.id] = commitment',
      'tests/runtime/test_contribution_gate.py::test_supports_exclude_assumptions_and_deduplicate_aliases'),
     ('support_assumptions', 'ara/runtime/route_policy.py',
      "ids = ([node.t_id] if node.kind == 'leaf' else [])",
@@ -1588,7 +1588,7 @@ CASES += [
 
 CASES += [
     ('cross_paper_classification', 'ara/runtime/route_policy.py',
-     "elif papers['paper_count'] < 2:", 'elif False:',
+     "elif not papers['cross_paper_supported']:", 'elif False:',
      'tests/runtime/test_cross_paper.py::test_native_cross_paper_selection_and_report'),
     ('cross_paper_missing_identity', 'ara/runtime/route_policy.py',
      "if papers['status'] != 'verified':", 'if False:',
@@ -1619,6 +1619,42 @@ CASES += [
     ('target_paper_requirement', 'ara/runtime/target_policy.py',
      'minimum_support_papers=2', 'minimum_support_papers=1',
      'tests/runtime/test_cross_paper.py::test_bridge_guidance_reaches_target_and_cut_with_slot_paper_receipt'),
+]
+
+
+CASES += [
+    ('cross_paper_all_formula_provenance', 'ara/runtime/route_policy.py',
+     'supports.setdefault(formula_hash(commitment.formula), {})[commitment.id] = commitment',
+     'supports.setdefault(formula_hash(commitment.formula), {commitment.id: commitment})',
+     'tests/runtime/test_cross_paper.py::test_reversed_cq_order_preserves_all_formula_paper_provenance'),
+    ('cross_paper_matching_distinct_papers', 'ara/runtime/bridges.py',
+     'if a != b), None)', 'if True), None)',
+     'tests/runtime/test_cross_paper.py::test_distinct_formula_paper_matching'),
+    ('cross_paper_matching_distinct_formulas', 'ara/runtime/bridges.py',
+     'for left, right in combinations(groups, 2):', 'for left, right in product(groups, repeat=2):',
+     'tests/runtime/test_cross_paper.py::test_distinct_formula_paper_matching'),
+]
+
+
+CASES += [
+    ('leaf_bridge_relevance', 'ara/runtime/search_context.py',
+     '-len(leaf_symbols.intersection', 'len(leaf_symbols.intersection',
+     'tests/runtime/test_search_context.py::test_leaf_context_selects_ranked_bridges_and_referenced_catalogue'),
+    ('leaf_bridge_bound', 'ara/runtime/search_context.py',
+     "b['bridge_id']))[:bridge_limit]", "b['bridge_id']))[:]",
+     'tests/runtime/test_search_context.py::test_leaf_context_selects_ranked_bridges_and_referenced_catalogue'),
+    ('leaf_catalogue_slice', 'ara/runtime/search_context.py',
+     "if (s['name'], s['kind'], s['arity']) in referenced", 'if True',
+     'tests/runtime/test_search_context.py::test_leaf_context_recounts_and_shrinks_before_dispatch'),
+    ('leaf_context_shrink', 'ara/runtime/search_context.py',
+     'for bridge_limit in (8, 4, 2, 1, 0):', 'for bridge_limit in (8,):',
+     'tests/runtime/test_search_context.py::test_leaf_context_recounts_and_shrinks_before_dispatch'),
+    ('leaf_context_output_allowance', 'ara/runtime/search_context.py',
+     'total = count.initial_input_tokens + count.context_output_tokens', 'total = count.initial_input_tokens',
+     'tests/runtime/test_search_context.py::test_leaf_context_recounts_and_shrinks_before_dispatch'),
+    ('search_context_local_scope', 'ara/runtime/calls.py',
+     "'search' if kind in SEARCH_STAGES or", "'run' if kind in SEARCH_STAGES or",
+     'tests/runtime/test_search_context.py::test_context_refusal_is_job_local_and_preserves_other_searches'),
 ]
 
 

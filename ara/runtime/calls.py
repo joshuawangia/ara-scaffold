@@ -341,6 +341,9 @@ class ModelCalls:
             return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
         if kind != 'isolation_canary':
             self._ensure_provider_ready()
+        if not schema_smoke and kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs:
+            from ara.runtime.search_context import fit_leaf_request
+            inputs = fit_leaf_request(self, kind, inputs)
         # Same-request single flight prevents duplicate dispatch and partial cache reads.
         key = digest(canonical([kind, inputs, schema_smoke]))
         with self._key_lock:
@@ -638,9 +641,12 @@ class ModelCalls:
                         token_count_method=getattr(self.provider, 'estimate_method', 'provider_count'),
                         calibration=self.provider.metadata(kind).get('calibration') if hasattr(self.provider, 'metadata') else None)
         if admission and not fits:
+            from ara.runtime.search_context import SEARCH_STAGES
             self.budget.stop(f'{kind} context bound exceeded by counted request; no truncation', kind,
                              scope=('paper' if kind == 'extract_paper' else
-                                    'window' if kind in ('select_t_roots', 'build_t_batch') else 'run'))
+                                    'window' if kind in ('select_t_roots', 'build_t_batch') else
+                                    'search' if kind in SEARCH_STAGES or
+                                    (kind == 'formalise' and 'commitments_sha256' in inputs) else 'run'))
         return RequestCount(initial, context_output, estimate)
 
     def extract_paper(self, paper: Paper, *, salvaged=(), salvage_only=False) -> PaperExtraction:

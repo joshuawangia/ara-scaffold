@@ -61,7 +61,10 @@ def test_restricted_support_cannot_close_native_route(tmp_path,stance):
     assert [c.id for c in engine.commitments.commitments]==['t2']
     assert any(e['decision'] and e['decision']['reason_code']=='STANCE_CROSSING' for e in calls.log.read())
     inputs=next(i for k,i in requests if k=='propose_cuts')
-    assert inputs['commitment_provenance']==data
+    assert inputs['provenance_sha256']==data['sha256']
+    assert inputs['commitment_roles']['t1']['stance']==stance
+    assert inputs['commitment_roles']['t2']['stance']=='endorsed'
+    assert 'commitment_provenance' not in inputs
     receipt=route_contribution(closed_graph(),T,data)
     assert receipt['classification']=='CLOSED-stance-crossing'
     assert receipt['stance_crossings']==[dict(commitment_id='t1',stance=stance,role='global_premise')]

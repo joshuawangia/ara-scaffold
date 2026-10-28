@@ -39,12 +39,16 @@ def _logical_contribution(route, commitments=None):
                 commitment = Commitment(tid, node.proposition.text, 'graph', node.proposition.formula)
             if commitment is None:
                 return dict(classification='CLOSED-contribution-unresolved', reason='missing_support')
-            supports.setdefault(formula_hash(commitment.formula), commitment)
+            supports.setdefault(formula_hash(commitment.formula), {})[commitment.id] = commitment
         pending.extend(node.children)
-    support_ids = sorted(c.id for c in supports.values())
+    formula_supports = [dict(formula_hash=key, support_ids=sorted(group))
+                        for key, group in sorted(supports.items())]
+    support_ids = sorted(tid for group in formula_supports for tid in group['support_ids'])
+    # One deterministic representative per formula for logic; retain every source above.
+    supports = {key: group[min(group)] for key, group in sorted(supports.items())}
     if len(supports) < 2 or not inferred:
         return dict(classification='CLOSED-single-support', reason='fewer_than_two_distinct_supports',
-                    support_ids=support_ids)
+                    support_ids=support_ids, formula_supports=formula_supports)
     root = nodes[route.root_id].proposition
     receipt = contribution_check(root.formula, CommitmentSet(tuple(supports.values())), both_polarities=False)
     classification = {'trivial':'CLOSED-single-support', 'unresolved':'CLOSED-contribution-unresolved',
@@ -71,7 +75,7 @@ def _logical_contribution(route, commitments=None):
                 else 'CLOSED-structural')
     if leading_report_frame(root.text):
         classification = 'CLOSED-attributed-report'
-    return dict(classification=classification, support_ids=support_ids,
+    return dict(classification=classification, support_ids=support_ids, formula_supports=formula_supports,
                 substantive_inferences=substantive, novelty=novelty, inference_novelty_checks=step_checks, **receipt)
 
 
@@ -99,11 +103,11 @@ def stance_crossings(route, provenance):
 def route_contribution(route, commitments=None, provenance=None):
     receipt = _logical_contribution(route, commitments)
     from ara.runtime.bridges import paper_support
-    papers = paper_support(receipt.get('support_ids', []), provenance)
+    papers = paper_support(receipt.get('formula_supports', []), provenance)
     if receipt['classification'] == 'CLOSED-derived':
         if papers['status'] != 'verified':
             receipt.update(classification='CLOSED-contribution-unresolved', reason='paper_identity_unavailable')
-        elif papers['paper_count'] < 2:
+        elif not papers['cross_paper_supported']:
             receipt.update(classification='CLOSED-single-paper', reason='fewer_than_two_papers')
     crossings = stance_crossings(route, provenance)
     if crossings:

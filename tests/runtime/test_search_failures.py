@@ -87,7 +87,7 @@ def test_failed_job_retries_after_initial_queue_and_preserves_sibling(tmp_path, 
     assert len(list((tmp_path / 'routes').glob('*.json'))) == 5
 
 
-@pytest.mark.parametrize('failure', ['budget', 'context', 'infrastructure'])
+@pytest.mark.parametrize('failure', ['budget', 'infrastructure'])
 def test_global_stop_cancels_queue_without_retry_and_keeps_completed_routes(tmp_path, monkeypatch, failure):
     calls, provider, log, targets = setup(tmp_path, {})
     complete = provider.complete
@@ -96,7 +96,7 @@ def test_global_stop_cancels_queue_without_retry_and_keeps_completed_routes(tmp_
         if kind == 'propose_cuts' and data['goal']['formula'] == Formula('not', (Formula('atom', name='P'),)).to_dict():
             if failure == 'infrastructure':
                 raise OSError('P')
-            calls.budget.stop('context bound' if failure == 'context' else 'token cap', kind)
+            calls.budget.stop('token cap', kind)
         return complete(kind, prompt, *args)
     monkeypatch.setattr(provider, 'complete', stop)
     with pytest.raises(BudgetStop):

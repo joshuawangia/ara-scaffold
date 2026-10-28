@@ -9,7 +9,8 @@ from ara.runtime.search_publication import SearchPublication
 
 def job_failure(exc):
     # ModelCalls has already exhausted transport/validation retries. Accounting,
-    # context and infrastructure stops must never be downgraded to missing work.
+    # run-wide accounting and infrastructure stops must not become missing work.
+    # Counted search-context refusals carry search scope and leave siblings running.
     return isinstance(exc, (Rejected, CountRequestRefused)) or (
         isinstance(exc, BudgetStop) and exc.scope != 'run')
 

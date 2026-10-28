@@ -55,7 +55,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:ff5378c3e863457f975b3e9a4f3873bf724773459e354f65546aab85f0ff627d": {
+  "map_leaf:a670ca2dcadd4e82d77871b5fe9f15008d0d671c87adfbf2dec371082a497d74": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -69,7 +69,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:9d6e994655c1af8811c8113b1795f82de5cda4b665addb75c6a589c307d16811": {
+  "map_leaf:bc3fffe2b7254afd99e021bbcf44450af96c6ba5d7a23977e6351674c21cc5bb": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -83,7 +83,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:480143e7a4abb8faef971eeff9bdcf748884737df14445727cf0a6b7bb8857e6": {
+  "map_leaf:bd81332b26ba96d12eccc213e9ed9bc91567d0041b8db48fb738bb805ae8f807": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -97,7 +97,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:06b5aebbe91728d9668a6a43a528bdcb4850e79273b2d5d1d70af72f188cb271": {
+  "map_leaf:29b122685f8baa37ad19e88d95256fd291dab53521a20839504156bf9d33ff45": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -111,7 +111,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:b4ce1cc20d034bff48ba143c1b64bcd2f6f3e5863c2a53624ebeff4a7db30fa4": {
+  "propose_cuts:0de5d35efdc68af7e4b8d1880946476051244c04ac3e45406411db763e976b08": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -125,7 +125,21 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:056b3899910cb19ed65737d340e660d52e7ea13f1bd01d24ace14ce217d9b90f": {
+  "propose_cuts:349ec4b226c7c168c27a424d7ce80180536c5e0d4002ab9f1521b0e41d0582f0": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"proposals\":[]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "propose_cuts:0efc966303187a14c0481d31ee6c1f437b3e15dfae6466739ccc435097ca248c": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -139,7 +153,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:6919835ca47a52456bbf889fe25e684d2f55438b92f0955c9205a8a000b4edf2": {
+  "propose_cuts:83a325d14cf5b5053829a1ebd9fca841bcb2f42c678041ce983cb94c97ecc577": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -153,7 +167,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:3346334548592d8c41a770f72aa052384c3e2f3ad3622e40733a3d8135784178": {
+  "propose_cuts:47d4fa34ee866dd4fd96f0276ebc5ba472b678f7c397991347df79fd603afc57": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -181,20 +195,6 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:82dfc34282fd7bfbc846b2550275fe28c8b6ae4256c194f778ad500331fec06b": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"proposals\":[]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
   "formalise_slots:b2cf7754c8cbc33a34b2462de444df549c9f2ef552ded16a765a53a6374be5c5": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
@@ -209,7 +209,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:3895cf6fd1eadda3787c53cf24103613d2ccefac346967bc165eb6a2b2920309": {
+  "propose_cuts:ba3e139e3905878bf1abcec7a4b0ce7d6162b1c9d385b7483063d402b5e64a76": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -251,7 +251,7 @@
       "output_tokens": 3
     }
   },
-  "answer_cq:ef11c9551bb5d315ca19501389b30d9e82ce2ecf151c65cf2e9536acb94e43ed": {
+  "answer_cq:a87422e766c1fbd769f0003eb80ccc520fa21e2dea0146837cc542472378e8b7": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -265,7 +265,7 @@
       "output_tokens": 3
     }
   },
-  "answer_cq:a87422e766c1fbd769f0003eb80ccc520fa21e2dea0146837cc542472378e8b7": {
+  "answer_cq:ef11c9551bb5d315ca19501389b30d9e82ce2ecf151c65cf2e9536acb94e43ed": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [

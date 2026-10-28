@@ -132,3 +132,80 @@ def test_bridge_guidance_reaches_target_and_cut_with_slot_paper_receipt(tmp_path
     assert receipts[0]['paper_slots']==[
         dict(slot='sign_relation',commitment_id='t1',paper_id='a'),
         dict(slot='observed_sign',commitment_id='t2',paper_id='b')]
+
+
+def alias_route(directory, cq_ids, formulas=(P,Q,P), papers=('a','a','b')):
+    from ara.bank import load_bank
+    from ara.types import Proposition
+    from test_search_alignment import rig, ROOT
+    t = CommitmentSet(tuple(Commitment('t'+str(i+1),f.name,paper+':1',f)
+        for i,(f,paper) in enumerate(zip(formulas,papers))))
+    artifact, provenance = frozen_metadata(t,papers)
+    goal = Proposition('r','R',R)
+    def reply(kind, inputs):
+        if kind=='propose_targets': return dict(targets=[goal.to_dict()])
+        if kind=='classify_target': return dict(classification='own_thesis',novelty='new_assertion',fidelity='matches',reason='R')
+        if kind=='map_leaf': return dict(t_id='open')
+        if kind=='propose_cuts':
+            return dict(proposals=[dict(bank_id='sign',conclusion_text='R',conclusion_ref='current_goal',
+                premises=[dict(slot=s,text=c.text,t_id=c.id,scope_id=None)
+                    for s,c in zip(('sign_relation','observed_sign'),t.commitments[:2])])]
+                if inputs['goal']['formula']==R.to_dict() else [])
+        if kind=='formalise_slots': return dict(slots=[dict(slot=b['slot'],formula=b['formula']) for b in inputs['slot_bindings']])
+        if kind=='answer_cq': return dict(cq_id=inputs['question']['id'],answer='P Q',answered=True,supporting_t_ids=list(cq_ids))
+        raise AssertionError(kind)
+    calls,_ = rig(directory,reply)
+    calls.config['forward_pass_depth'] = 0
+    (directory/'frozen-t.json').write_text(canonical(artifact))
+    (directory/'commitment-provenance.json').write_text(canonical(provenance))
+    calls.log.record('run_started',config=calls.config,topic='P Q')
+    calls.log.record('symbol_catalogue_frozen',**artifact['symbol_catalogue'])
+    calls.log.record('commitment_provenance_frozen',**provenance)
+    calls.log.record('commitments_frozen',commitments=t.to_dict())
+    assert calls.propose_targets(t,1)==(goal,)
+    routes=search_all(calls,NativeEngine(load_bank(ROOT/'bank'),calls),t,(goal,))
+    route=next(r for r in routes if r.status=='CLOSED')
+    return route,t,provenance
+
+
+def test_reversed_cq_order_preserves_all_formula_paper_provenance(tmp_path):
+    from ara.runtime.report import build_run
+    from ara.runtime.contribution import formula_hash
+    receipts, graphs = [], []
+    for name,ids in [('forward',('t1','t2','t3')),('reverse',('t3','t2','t1'))]:
+        directory=tmp_path/name
+        route,t,provenance=alias_route(directory,ids)
+        receipt=route_contribution(route,t,provenance)
+        assert receipt['classification']=='CLOSED-derived'
+        assert selectable_routes((route,),t,provenance)==(route,)
+        assert receipt['support_ids']==['t1','t2','t3']
+        papers=receipt['paper_support']
+        assert papers['commitment_papers']=={'t1':'a','t2':'a','t3':'b'}
+        groups={g['formula_hash']:g['commitment_papers'] for g in papers['formula_supports']}
+        assert groups=={formula_hash(P):{'t1':'a','t3':'b'},formula_hash(Q):{'t2':'a'}}
+        assert len(papers['matching'])==2
+        assert {m['paper_id'] for m in papers['matching']}=={'a','b'}
+        assert len({m['formula_hash'] for m in papers['matching']})==2
+        assert next(r for r in build_run(directory)['routes'] if r['graph']['id']==route.id)['contribution']==receipt
+        receipts.append(receipt)
+        graph=route.to_dict()
+        for node in graph['nodes']:
+            for answer in node['cq_answers']:
+                answer['supporting_t_ids'].sort()
+        graphs.append(graph)
+    assert receipts[0]==receipts[1]
+    assert graphs[0]==graphs[1]
+
+
+@pytest.mark.parametrize('formulas,papers,expected,matched', [
+    ((P,Q,P),('a','a','b'),'CLOSED-derived',True),
+    ((P,Q,P),('a','a','a'),'CLOSED-single-paper',False),
+    ((P,P,P),('a','a','b'),'CLOSED-single-support',False),
+])
+def test_distinct_formula_paper_matching(tmp_path,formulas,papers,expected,matched):
+    route,t,provenance=alias_route(tmp_path,('t1','t2','t3'),formulas,papers)
+    receipt=route_contribution(route,t,provenance)
+    assert receipt['classification']==expected
+    assert bool(selectable_routes((route,),t,provenance))==matched
+    assert receipt['paper_support']['cross_paper_supported']==matched
+    assert len(receipt['paper_support']['matching'])==(2 if matched else 0)

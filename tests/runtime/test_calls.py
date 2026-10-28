@@ -34,6 +34,9 @@ def rig(tmp_path):
 
 
 def register(calls, provider, kind, inputs, value, **updates):
+    if kind in ('map_leaf', 'propose_cuts'):
+        from ara.runtime.search_context import leaf_slice
+        inputs = leaf_slice(inputs, 8)
     provider.responses[mock_key(kind, calls.render(kind, inputs)[1])] = response(value, **updates)
 
 

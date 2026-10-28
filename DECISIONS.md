@@ -3798,3 +3798,47 @@ Native placeholder regression covers cross-paper acceptance and single-paper
 disclosure through selection and reports. Legacy smoke now waits for explicit
 selection because it has no verified paper identity. No paid calls or push; exact
 full sequential pytest/control receipts are in the external Round 22 report.
+
+## Round 23 — order-independent formula/paper matching
+
+Reachable leaf and CQ evidence keeps every cited commitment in its formula-hash
+group. Logic still checks each distinct formula once, using a deterministic
+representative; choosing that representative no longer discards paper provenance.
+Cross-paper admission requires a matching of two distinct support formulas to two
+distinct verified source IDs. Either formula may use any of its cited commitments.
+The paper receipt retains all formula/commitment/paper associations and a stable
+two-edge witness. Counts alone cannot substitute for that matching.
+
+Reordering CQ supporting IDs leaves contribution receipts, classifications and
+default selection unchanged. Repeated P across papers can supply the second paper
+when Q supplies a distinct formula; P alone across papers remains single-support,
+and P/Q from one paper remains single-paper. Reachability, stance, licensing,
+novelty and CQ checks are preserved. Native report regressions and production-wire
+controls cover provenance loss and reuse of a paper or formula in the matching.
+No paid calls or push; exact verification is in the external Round 23 report.
+
+The Round 23 context repair bounds map_leaf and propose_cuts guidance before
+dispatch. At most eight bridges rank by shared leaf formula symbols, with bridge
+ID ties. Their commitments form the leaf slice; when no bridge is available, at
+most 2*k formula-ranked seed commitments supply bounded fallback leads. An exact
+frozen match is retained even at k=0. Only referenced
+catalogue entries and projected source roles accompany it. Full frozen T,
+catalogue and provenance hashes remain bound to the inputs; local validation and
+licensing still use the complete immutable artifacts. Zero-overlap seeds are
+disclosed bounded leads, not semantic matches. Full CQ wording stays in compact
+scheme signatures; duplicated provenance source text and bank citations do not.
+
+Native request counting includes the output allowance. Oversized guidance shrinks
+k deterministically through 8,4,2,1,0 with a search_context_slice receipt at each
+count. Validation/correction requests are rebuilt and recounted too. Irreducible
+context refusals in search ports use search scope, leaving the shared run budget
+and sibling jobs active; accounting, cost/token caps and infrastructure failures
+retain their run-stop behavior. Existing bounded job retries and partial-result
+disclosure remain. Frozen artifact codecs and configured context limits stay.
+
+Offline replay reproduces all eight fork-4 map/cut admission counts exactly,
+using saved calibration and native local counting without transport or credential
+loading. Maximum total context falls from 215750 to 48606 tokens, including output
+allowance, against the same 200000 bound. This proves request admission, not model
+quality or successful live closure. Evidence and final gates are in the external
+Round 23 report; no live pilot or paid call was made.

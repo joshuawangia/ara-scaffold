@@ -1072,13 +1072,17 @@ class ModelCalls:
 
     def answer_cq(self, question: CriticalQuestion, proposal: Proposal,
                   commitments: CommitmentSet) -> CQAnswer:
+        vocabulary = self.search_vocabulary(commitments)
+        provenance = vocabulary['commitment_provenance']
         def check(data):
             answer = CQAnswer.from_dict(data)
             require(answer.cq_id == question.id, 'wrong CQ id')
             require(all(commitments.get(t) is not None for t in answer.supporting_t_ids), 'unknown CQ T id')
+            require(provenance is None or all(provenance['commitments'][t]['stance'] != 'model_alignment'
+                    for t in answer.supporting_t_ids), 'alignment premises cannot substitute for source CQ evidence')
             return answer
         return self.call('answer_cq', dict(question=question.to_dict(), proposal=proposal.to_dict(),
-                                      commitments=commitments.to_dict(), **self.search_vocabulary(commitments)), check)
+                                      commitments=commitments.to_dict(), **vocabulary), check)
 
     def repair_tier1(self, premises: tuple[PremiseFill, ...], conclusions: tuple[Proposition, ...],
                      commitments: CommitmentSet) -> Tier1Repair:
@@ -1129,10 +1133,14 @@ class ModelCalls:
                 for tid, role in sorted(set(uses)):
                     source = provenance['commitments'].get(tid)
                     require(source is not None, 'outline source role missing frozen commitment')
-                    roles.append(dict(node_id=node.id, evidence_id=tid, role=role,
-                                      stance=source['stance'], attributed_to=source['attributed_to'],
+                    roles.append(dict(node_id=node.id, evidence_id=tid,
+                                      role='alignment_premise' if source['stance']=='model_alignment' and role=='global_premise' else role,
+                                      stance=source['stance'], attributed_to=source.get('attributed_to'),
                                       source_id=source['source_id']))
             outline['source_roles'] = roles
+            if 'alignment' in provenance:
+                from ara.runtime.symbol_alignment import alignment_disclosure
+                outline['alignment_disclosure'] = alignment_disclosure(provenance)
         return outline
 
     def essay_inputs(self, route: RouteGraph) -> dict:

@@ -1,0 +1,1 @@
+{"type":"object","additionalProperties":false,"required":["left","right","relation","reason"],"properties":{"left":{"type":"string","minLength":1},"right":{"type":"string","minLength":1},"relation":{"type":"string","enum":["same_content","entails_left_right","entails_right_left","contrary","unrelated"]},"reason":{"type":"string","minLength":1,"maxLength":1000}}}

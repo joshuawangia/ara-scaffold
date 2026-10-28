@@ -13,7 +13,7 @@
       "output_tokens": 3
     }
   },
-  "propose_targets:3774f10334b0c05dabd8c74ace14b3ea0c5d5b30d0b5e8f9397cee1b56a2b116": {
+  "propose_targets:972b6b5b7b7d13bfc701d6ace6c76c75f2a3d3c801e911dc6dc478e3ee5f4dd4": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -55,7 +55,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:f7e33e3e8f34d3f9fe8c3f38875b1d254b11d48ccd851e111a3925af102663fa": {
+  "map_leaf:7fc70765f443079cebf6abbbfec83fc07c35857fdfae61bf47ff1e58bf74e0bc": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -69,7 +69,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:3707836c821581e8699017c885ccffab8641f1527bd799d5d0ebd44e58ea7b8c": {
+  "map_leaf:d88fa7c2b101dbf2efee9ff03005b36752b3af63abbdb2d7e2d7e7f4098d038c": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -83,7 +83,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:e9d0b48fa96310fdda92df495325b0107194ced9fe8d6583d843cbcd875a7971": {
+  "map_leaf:e4460ed8282505a201736e9fbc6a0d1b7c90683162e9e175e7c79808878d112e": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -97,7 +97,7 @@
       "output_tokens": 3
     }
   },
-  "map_leaf:e1f81834d71a7ded38dad33d749c353d958a7b18422de0915bb3a698caca6858": {
+  "map_leaf:2456aa541e9b05bd5b7d53f02f7fa149b3653c1c450b0c16b784471f733bec2f": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -111,7 +111,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:67da8048b030fad5403e13e5ee4520a66c81035b7b12b98d0ad04c5ca2ce273e": {
+  "propose_cuts:46b72f580a4dac909660dbcf2ecba1eb58e87c9a664b2247d22323ba81744833": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -125,7 +125,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:ef05d5db0c589bb1f69c4862cb6ad1fac4c2aaf2b241faa3dff29760d9f9b8af": {
+  "propose_cuts:e59636a1ab521e159a1602c21d2a4ea869f6a34d79699ad94c8f6bab75c0e9f7": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -139,7 +139,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:41b7e71011c52ab85572982b6be69d8b64d79201be04c0ec3b9b7b0b98261999": {
+  "propose_cuts:cc2a7eeda20897d627fba8a96a8d11821c0d8bbe9247ad3e3fcf3d4611caa70d": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -153,7 +153,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:df70bf11936c182e23bc374a9040dd29883aca9c849487bb5319d55ed3d3b4a3": {
+  "propose_cuts:38c5ad66a2ddd7cbfe56755cc4be77fd41a99a9e4a91bdbd68de1a090475be9b": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -167,7 +167,7 @@
       "output_tokens": 3
     }
   },
-  "formalise_slots:b2cf7754c8cbc33a34b2462de444df549c9f2ef552ded16a765a53a6374be5c5": {
+  "formalise_slots:440f2158946be4eafb7062e423afc87060055ff17dd8806170a6bf60ece48d71": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -181,7 +181,7 @@
       "output_tokens": 3
     }
   },
-  "formalise_slots:2fd818c6bb4840fe28afbdd662b4ca95a141eb48429692aae32b87cfefb2fb85": {
+  "formalise_slots:401f2dd61e65de317d7f89c1a4fc7018c6d0f99599a4695a18ae4befd29a0b8c": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -195,7 +195,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:953f0466b4607426d8c3d9690b00c7f81d7f1d4d03a5ab2e0809da1d15e73dfd": {
+  "propose_cuts:c7099ec49608a685309f2637dcea68a78d42b57e204987ab8c0592b6cbf62b2c": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -209,7 +209,7 @@
       "output_tokens": 3
     }
   },
-  "propose_cuts:d7c002d1eb066d8dc88cf014320c8fee0690178d126ae848ec9ab8e07423e3f1": {
+  "propose_cuts:a1cd89480ff35aba42e787cdff308d766ad4a6b4aaedc83a1b553623d208fb9c": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -223,7 +223,7 @@
       "output_tokens": 3
     }
   },
-  "answer_cq:4a620467967cb831742a202c57fe3851bd3be314f632baf658a099689ce03ce6": {
+  "answer_cq:bdbcd4eb372ae995ed602ba6d03f2303ddedff2fc4270670283a6de8b9a418d0": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -237,7 +237,7 @@
       "output_tokens": 3
     }
   },
-  "answer_cq:1f970e31059865c5b9cee8ebdc5d3f406f7a1fc0a93facb720543fb35382b7c2": {
+  "answer_cq:8745a3300c4c5261113912f06c2ed73083be085a27783ec3a04eb938bc5ebaa9": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -251,7 +251,7 @@
       "output_tokens": 3
     }
   },
-  "answer_cq:a87422e766c1fbd769f0003eb80ccc520fa21e2dea0146837cc542472378e8b7": {
+  "answer_cq:bf24651cc7c37abaa59ba6995bab24970e0d6ad3c27fa08b949ebe99cdf54411": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -265,7 +265,7 @@
       "output_tokens": 3
     }
   },
-  "answer_cq:ef11c9551bb5d315ca19501389b30d9e82ce2ecf151c65cf2e9536acb94e43ed": {
+  "answer_cq:4548ceab6c941b51ff95b8d116aeb280812f6924d498d7d3bf061d10c1fab2aa": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -279,7 +279,7 @@
       "output_tokens": 3
     }
   },
-  "write_essay:bc658a93e38cd1251ec1e1624291af68c398a71daef9c099e6b13aaecd441e74": {
+  "write_essay:bf31997054580490670639285ed9fc397fb6a5942056d0129d8ff46c2938bfe4": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -293,7 +293,7 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:afca31064cea55ec1dc50a342090b850d98f616f7e108a693143d574c4b1320c": {
+  "audit_essay:3ce42035404570d6b31250a2fe9cc1e08e40677a9252a41d7afc3276a95cad29": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -335,7 +335,7 @@
       "output_tokens": 3
     }
   },
-  "write_essay:93ced96f5d6e351adc8b87d6afddc45aa467e6e58d34a86d74d46f07068f8849": {
+  "write_essay:9cd9cde3556fb23fbfa955cd105054a4bf518010153ad925e7404d70e6be20f5": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [

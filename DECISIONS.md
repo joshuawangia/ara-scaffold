@@ -3859,3 +3859,31 @@ probe with earlier-ID reported and attacked copies and a later-ID endorsed copy,
 at normal sizing and forced k=0. The same engine now closes P using the endorsed
 commitment. Exact retention and endorsed-first order have production-wire controls.
 No paid calls or push; scoped verification receipts are in the Round 24 report.
+
+## Construction cross-source alignment before freeze
+
+Round 11 adds a bounded model-judged pass after rich working T and before its sole
+freeze. Definition-token overlap selects at most 150 compatible cross-paper pairs
+by default; it never licenses semantic alignment. Each independent judgment uses
+the same construction formalization provider and logged/cache-validated runtime
+boundary. No search goal is included. Same-content judgments rewrite formulas to
+a shared canonical symbol and preserve originals; directional entailment and
+contrary judgments produce explicit universally closed bridges where needed.
+
+Bridge provenance has kind alignment, stance model_alignment and source_id null,
+with both source definitions and citations retained. A v2 provenance receipt binds
+original and final T/catalogue identities, judgments and mapping; validation
+replays the transformation. Existing strict CommitmentSet and frozen catalogue
+codecs remain unchanged, as do legacy v1 readers for v1 records. New v2 records
+require the updated validator. Source attribution, text and stance are immutable.
+
+The complete set must satisfy signature, uniqueness and bounded Z3 consistency
+checks. An inconsistent or unresolved set is refused as a whole, logged and
+replaced by the original T without automatic partial salvage. Changed alignment
+policy is included in construction plan v13. Search treats bridges as alignment
+premises only, discloses both bridges and canonical rewrites, excludes bridge IDs
+from paper ownership and requires two endorsed source supports for CLOSED-derived.
+CQ source evidence cannot be supplied by an alignment bridge. Other solver,
+bank, novelty and cross-paper gates are unchanged. Placeholder native lifecycle,
+mutation controls and external offline fake-judge evidence establish plumbing;
+no live semantic acceptance or paid generation is claimed.

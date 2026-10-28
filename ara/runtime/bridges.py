@@ -10,6 +10,9 @@ _STOP_WORDS = frozenset('a an the and or not of to in on for from with by as at 
 
 def paper_support(formula_supports, provenance):
     rows = provenance['commitments'] if provenance else {}
+    formula_supports = [{**group, 'support_ids': [tid for tid in group['support_ids']
+        if rows.get(tid, {}).get('stance') != 'model_alignment']} for group in formula_supports]
+    formula_supports = [group for group in formula_supports if group['support_ids']]
     support_ids = sorted({tid for group in formula_supports for tid in group['support_ids']})
     sources = {tid: rows.get(tid, {}).get('source_id') for tid in support_ids}
     missing = sorted(tid for tid,source in sources.items() if not source)

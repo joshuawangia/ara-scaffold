@@ -257,3 +257,61 @@ requires this validator version; older strict readers cannot consume it. Fork,
 resume, search and reports preserve the full validated sidecar through their
 existing interface. Rejected normalization events remain in the log even when no
 commitment is eventually accepted.
+
+## Cross-source symbol alignment
+
+Before the single freeze, rich construction ranks compatible atom/predicate pairs
+from disjoint source-paper sets by TF-IDF-weighted definition-token overlap
+(cosine score at least 0.15). `construction_alignment_candidates` bounds the top
+pairs, default 150; zero explicitly disables judgments. Each pair is a two-symbol
+cluster. This lexical ranking is a lead, not a semantic equivalence assertion.
+Constants are never merged. The plan version and candidate limit bind resume.
+
+`judge_symbol_alignment` uses the construction formalization provider/model and
+its isolation, cache, logging and budget path, including retries. It sees only
+the pair, original definitions, source provenance and frozen-input hashes, never
+search goals. It returns one of `same_content`, `entails_left_right`,
+`entails_right_left`, `contrary`, `unrelated`, with a short reason. The default
+output allowance is 2048 tokens. Changed definitions and prompt/schema identities
+partition the cache. Live schema preflight includes this call.
+
+Same-content components use their lexicographically first symbol; formulas are
+rewritten and evidence IDs merged without changing original source text,
+citations or stance. Other nontrivial relations create explicit commitments
+with `kind: alignment`, `stance: model_alignment` in provenance. Predicate bridges
+are universally quantified over the same ordered argument tuple. Each bridge
+cites both original definitions and evidence citations. Neither equivalence nor
+a bridge is inferred from lexical similarity alone.
+
+The entire alignment set is checked for signature/arity, uniqueness and Z3
+consistency. Unsatisfiable or unresolved sets are refused together and logged;
+original T is retained. In particular, an already inconsistent source T cannot
+receive an accepted nontrivial alignment. This does not suppress or repair source
+contradictions. Model-call validation and budget failures stop before freeze.
+The final working-T input allowance is checked again after alignment.
+
+Existing CommitmentSet, commitments.json and frozen-t-v1 formats stay unchanged.
+`commitment-provenance-v2` adds an `alignment` receipt containing original T and
+symbols, bounded candidates, all judgments, canonical mapping, status and refusal
+reason. The sidecar hash binds the complete receipt and final T/catalogue hashes.
+Its validator replays the judgments; old v1 metadata and legacy absence retain
+their existing behavior. New readers are required for v2. Fork/resume preserve
+and validate the full sidecar and `commitment_provenance_frozen` event.
+
+Search may use bridges as disclosed alignment premises. They are not source CQ
+evidence, belong to no single paper, and cannot replace the requirement for at
+least two endorsed source supports. Existing distinct-formula, cross-paper and
+novelty gates still apply. Route receipts, rendered routes, writer/auditor outlines
+and methodology retain alignment disclosure, including canonical rewrites.
+Offline fake judgments establish only persistence and search plumbing, never
+faithfulness, semantic equivalence or improved real argument quality.
+
+The existing construction-resume command still handles terminal window-provider
+refusals only. A failure during the later alignment stage stops before freeze;
+that stage has no dedicated resume entrypoint. Use a new run with the retained
+cache rather than treating a partial alignment ledger as frozen T.
+
+Persisted consistency refusals remain refusals if a later solver run would resolve
+the query: their final T must still equal original T with an identity mapping and
+no bridge rows. Accepted alignments are rechecked on load. A refused receipt is
+never silently promoted into an accepted alignment during fork or resume.

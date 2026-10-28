@@ -258,7 +258,8 @@ def construction(records, evidence):
         enriched.append(dict(**c, source_evidence=matches,
                              provenance='exact evidence id and citation match' if matches else 'citation only; structured source link unavailable'))
     merged = [payload(r['event']) for r in records if r['event']['stage'] == 'build_t_merged']
-    symbols = merged[-1].get('symbols') if merged else None
+    catalogues = [payload(r['event']) for r in records if r['event']['stage'] == 'symbol_catalogue_frozen']
+    symbols = catalogues[-1]['symbols'] if catalogues else merged[-1].get('symbols') if merged else None
     def classification(commitment, field):
         values = {item.get(field) for item in commitment['source_evidence']}
         return next(iter(values)) if len(values) == 1 and None not in values else '(unknown or ambiguous)'
@@ -270,7 +271,7 @@ def construction(records, evidence):
                               commitments_sha256=digest(canonical(payload(r['event'])['commitments'])),
                               hash_note='SHA-256 of canonical logged commitments, computed by reporter; event_hash is the chain freeze receipt.',
                               payload=payload(r['event'])) for r in freezes],
-                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_'))])
+                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_'))])
 
 
 def route_details(row, commitments, provenance=None):

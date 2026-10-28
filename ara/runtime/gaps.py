@@ -9,6 +9,18 @@ from ara.types import Gap, Formula
 _OPEN = re.compile(r'\b(unresolved|unsolved|is open|problem remains|jury is out|open (?:problem|question|issue)|remains? (?:unknown|unclear|open)|not yet (?:known|resolved|solved))\b', re.I)
 
 
+def frozen_content_key(formula, definitions):
+    """Substitute exact bound definitions while retaining the entire formula AST."""
+    value = formula.to_dict()
+    if formula.op in ('atom', 'predicate'):
+        key = (formula.name, formula.op, len(formula.terms))
+        value['name'] = (['definition', definitions[key]] if key in definitions
+                         else ['unbound', formula.name])
+    if formula.args:
+        value['args'] = [frozen_content_key(child, definitions) for child in formula.args]
+    return value
+
+
 def detect_gaps(commitments, catalogue, provenance):
     if provenance is None or catalogue is None:
         return dict(gaps=(), status='unavailable_legacy', checks=(), set_search='unavailable')
@@ -16,6 +28,8 @@ def detect_gaps(commitments, catalogue, provenance):
     inventory = sorted(commitments.commitments,key=lambda c:c.id)
     endorsed = [c for c in inventory if rows[c.id]['stance']=='endorsed']
     signatures = {c.id:set(symbols(c.formula)) for c in inventory}
+    definitions = {(s['name'],s['kind'],s['arity']):s['definition'] for s in catalogue}
+    content = {c.id:frozen_content_key(c.formula, definitions) for c in inventory}
     gaps, checks = {}, []
     def add(kind, members):
         ids = tuple(sorted(c.id for c in members))
@@ -62,7 +76,8 @@ def detect_gaps(commitments, catalogue, provenance):
     for a in endorsed:
         for b in inventory:
             if rows[b.id]['stance']=='attacked' and rows[a.id]['source_id']!=rows[b.id]['source_id']:
-                if a.formula.canonical()==b.formula.canonical() or a.text==b.text:
+                if (a.formula.canonical()==b.formula.canonical() or a.text==b.text
+                        or (provenance.get('definition_semantics') == 'content' and content[a.id]==content[b.id])):
                     add('stance_conflict',(a,b))
         definitions=[s['definition'] for s in catalogue
                      if (s['name'],s['kind'],s['arity']) in signatures[a.id]]

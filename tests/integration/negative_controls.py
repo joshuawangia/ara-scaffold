@@ -1680,7 +1680,7 @@ CASES += [
     ('cq_scheme_retry', 'ara/engine/search.py', 'if not feedback:\n            return', 'if True:\n            return', 'tests/runtime/test_cq_retrieval.py::test_unsupported_cq_gets_one_different_scheme_correction'),
     ('cq_different_scheme', 'ara/engine/search.py', 'if proposal.bank_id not in {b.id for b in remaining}:', 'if False:', 'tests/runtime/test_cq_retrieval.py::test_unsupported_cq_gets_one_different_scheme_correction'),
     ('gap_contradictions', 'ara/runtime/gaps.py', "return verdict=='SOLVER_UNSAT'", 'return False', 'tests/runtime/test_gaps.py::test_gap_set_witness_and_same_paper_negative'),
-    ('gap_stance_conflict', 'ara/runtime/gaps.py', 'if a.formula.canonical()==b.formula.canonical() or a.text==b.text:', 'if False:', 'tests/runtime/test_gaps.py::test_gap_kinds_and_stance_are_deterministic'),
+    ('gap_stance_conflict', 'ara/runtime/gaps.py', "if (a.formula.canonical()==b.formula.canonical() or a.text==b.text\n                        or (provenance.get('definition_semantics') == 'content' and content[a.id]==content[b.id])):", 'if False:', 'tests/runtime/test_gaps.py::test_gap_kinds_and_stance_are_deterministic'),
     ('gap_open_problem', 'ara/runtime/gaps.py', 'if any(_OPEN.search(text) for text in (a.text,*definitions)):', 'if False:', 'tests/runtime/test_gaps.py::test_gap_kinds_and_stance_are_deterministic'),
     ('gap_side_support', 'ara/runtime/gaps.py', 'supported=bool(witnesses) and all(witnesses)', 'supported=True', 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
     ('gap_target_binding', 'ara/types.py', 'if self.gap is None:', 'if True:', 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
@@ -1695,6 +1695,35 @@ CASES += [
 
 
 CASES += [('gap_open_marker_coverage', 'ara/runtime/gaps.py', '|is open|problem remains|jury is out', '', 'tests/runtime/test_gaps.py::test_explicit_open_markers_beyond_unresolved')]
+
+
+CASES += [
+    ('semantic_cross_paper', 'ara/runtime/semantic_conflicts.py', "if rows[a.id]['source_id'] == rows[b.id]['source_id']:", 'if False:', 'tests/runtime/test_semantic_conflicts.py::test_ranked_pairs_cross_paper_private_symbols_and_roles'),
+    ('semantic_endorsed_side', 'ara/runtime/semantic_conflicts.py', "if 'endorsed' not in (rows[a.id]['stance'], rows[b.id]['stance']):", 'if False:', 'tests/runtime/test_semantic_conflicts.py::test_ranked_pairs_cross_paper_private_symbols_and_roles'),
+    ('semantic_pair_limit', 'ara/runtime/semantic_conflicts.py', 'nsmallest(limit, candidates(),', 'nsmallest(limit + 1, candidates(),', 'tests/runtime/test_semantic_conflicts.py::test_pair_limit_and_context_refusal_are_disclosed'),
+    ('semantic_labels', 'ara/runtime/semantic_conflicts.py', "if result['classification'] not in ('contradicts', 'in_tension'):", 'if False:', 'tests/runtime/test_semantic_conflicts.py::test_isolated_classification_cache_gap_and_immutable_freeze'),
+    ('semantic_resolution_stance', 'ara/runtime/semantic_conflicts.py', "and rows[c.id]['stance'] == 'endorsed'", 'and True', 'tests/runtime/test_semantic_conflicts.py::test_isolated_classification_cache_gap_and_immutable_freeze'),
+    ('semantic_isolated_topic', 'ara/runtime/semantic_conflicts.py', "inputs = dict(topic='', pair=pair,", 'inputs = dict(pair=pair,', 'tests/runtime/test_semantic_conflicts.py::test_isolated_classification_cache_gap_and_immutable_freeze'),
+    ('semantic_target_wiring', 'ara/runtime/calls.py', "detection['gaps'] + classify_pairs(self, commitments, vocabulary)", "detection['gaps']", 'tests/runtime/test_semantic_conflicts.py::test_semantic_gap_drives_resolution_proposal'),
+    ('semantic_context_local', 'ara/runtime/search_context.py', ", 'classify_conflict'", '', 'tests/runtime/test_semantic_conflicts.py::test_pair_limit_and_context_refusal_are_disclosed'),
+    ('tier2_resolution_wiring', 'ara/runtime/orchestration.py', '        propose_tier2_resolutions(calls, paired, commitments, provenance)', '        pass', 'tests/runtime/test_semantic_conflicts.py::test_native_tiers_report_and_resolution_proposal'),
+    ('tier2_route_evidence', 'ara/runtime/conflict_feedback.py', 'route_ids=route_ids, finding=', 'route_ids=(), finding=', 'tests/runtime/test_semantic_conflicts.py::test_native_tiers_report_and_resolution_proposal'),
+    ('tier_report_findings', 'ara/runtime/conflict_feedback.py', 'for a in analyses for finding in a.get(tier, [])', 'for a in [] for finding in a.get(tier, [])', 'tests/runtime/test_semantic_conflicts.py::test_native_tiers_report_and_resolution_proposal'),
+    ('tier_report_section', 'ara/runtime/report_render.py', "'Tier 1 repairs and Tier 2 conflicts'", "'Findings'", 'tests/runtime/test_semantic_conflicts.py::test_native_tiers_report_and_resolution_proposal'),
+]
+
+
+CASES += [
+    ('semantic_pair_ranking', 'ara/runtime/semantic_conflicts.py', "-p['topic_overlap']", "p['topic_overlap']", 'tests/runtime/test_semantic_conflicts.py::test_pair_limit_and_context_refusal_are_disclosed'),
+    ('tier_report_generation', 'ara/runtime/conflict_feedback.py', "if i > boundary and e['stage']=='conflicts_and_robustness'", "if e['stage']=='conflicts_and_robustness'", 'tests/runtime/test_semantic_conflicts.py::test_report_does_not_reuse_findings_from_prior_search_generation'),
+    ('tier_resolution_generation', 'ara/runtime/conflict_feedback.py', "if i > finding_index and e['stage']=='tier2_resolution_candidates'", "if e['stage']=='tier2_resolution_candidates'", 'tests/runtime/test_semantic_conflicts.py::test_report_does_not_reuse_findings_from_prior_search_generation'),
+]
+
+
+CASES += [('tier2_distinct_support_groups', 'ara/runtime/conflict_feedback.py', 'groups = tuple(supports[rid] for rid in route_ids)', 'groups = tuple(supports[route_ids[0]] for rid in route_ids)', 'tests/runtime/test_semantic_conflicts.py::test_tier2_keeps_each_routes_distinct_support_group')]
+
+
+CASES += [('cq_formatted_hedge_native', 'ara/engine/routes.py', "words = ' '.join(re.findall(r'[^\\W_]+', unicodedata.normalize('NFKC', text).casefold()))", 'words = text', 'tests/runtime/test_cq_retrieval.py::test_formatted_hedge_cannot_close_native_route'), ('gap_frozen_content_identity', 'ara/runtime/gaps.py', 'and content[a.id]==content[b.id]', 'and False', 'tests/runtime/test_gaps.py::test_frozen_definition_stance_conflict_reaches_native_proposal'), ('gap_content_structure', 'ara/runtime/gaps.py', "value['args'] = [frozen_content_key(child, definitions) for child in formula.args]", 'value = frozen_content_key(formula.args[0], definitions)', 'tests/runtime/test_gaps.py::test_definition_conflict_preserves_structure_arguments_and_polarity')]
 
 
 def main():

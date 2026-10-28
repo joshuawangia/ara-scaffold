@@ -306,6 +306,9 @@ def render(report, destination: Path):
         search = {**{k:v for k,v in run['search'].items() if k != 'traces'}, 'traces': trace_summaries, 'tree_exports':trees}
         search_file = section('search', '4. Search-tree tracing', search, search,
                              tree_blocks or ['<p>No recorded search trees or routes.</p>'])
+        conflict_summary = {k:v for k,v in run['conflicts'].items() if k not in ('tier1','tier2','semantic_classifications','resolution_candidates')}
+        conflict_summary['resolution_candidate_count'] = len(run['conflicts']['resolution_candidates'])
+        conflict_summary['file'] = section('conflicts', 'Tier 1 repairs and Tier 2 conflicts', run['conflicts'], conflict_summary)
         section('routes', '5. Routes for selection', dict(routes=route_summaries, unassigned_audits=run['unassigned_audits']), route_summaries)
         account = {k:v for k,v in run['accounting'].items() if k not in ('timeline','unresolved_dispatches','unfinalized_measured_responses')}
         account['file'] = section('accounting', '6. Accounting', run['accounting'], account)
@@ -317,7 +320,7 @@ def render(report, destination: Path):
         page.section('Run artifacts (not independently authenticated)', prefix+'-artifacts', artifacts_file,
                      ('<p>'+escape(short(a['path']))+' · '+(link(a['file']) if a.get('file') else escape(a.get('status','')) )+'</p>' for a in artifact_entries))
         exported.append(dict(run_id=prefix, directory=run['directory'], identity=identity, extraction=extraction, construction=built,
-                             search=dict(traces=trace_summaries,file=search_file), routes=route_summaries,
+                             search=dict(traces=trace_summaries,file=search_file), conflicts=conflict_summary, routes=route_summaries,
                              accounting=account, gaps=run['gaps'], tree_exports=trees, sections=sections,
                              events_file=events_file, artifacts_file=artifacts_file))
     event_index = files.write('events/index.json', list(files.events.values()))

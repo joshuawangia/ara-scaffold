@@ -164,9 +164,11 @@ def _save_analyses(calls, targets, results, commitments=None):
     routes = []
     graphs_by_id = {}
     analyses = []
+    paired = []
     for target, analysis in zip(targets, results, strict=True):
         if isinstance(analysis, AnalysisResult):
             analyses.append(analysis.to_dict())
+            paired.append(analysis)
         for result, polarity in ((analysis.target, 'target'), (analysis.negated, 'negation')):
             if result is None:
                 continue
@@ -194,6 +196,9 @@ def _save_analyses(calls, targets, results, commitments=None):
                              truncated=result.truncated, nodes_created=result.nodes_created,
                              independent_closed_routes=result.independent_closed_routes)
     calls.log.record('conflicts_and_robustness', findings={'analyses': analyses})
+    if commitments is not None:
+        from ara.runtime.conflict_feedback import propose_tier2_resolutions
+        propose_tier2_resolutions(calls, paired, commitments, provenance)
     return tuple(routes)
 
 

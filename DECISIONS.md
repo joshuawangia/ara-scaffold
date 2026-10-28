@@ -3910,3 +3910,61 @@ results, not proof that the literature has no gaps or that the CQs are answered.
 The reproducible offline entry point is tools/offline_gap_cq.py. Exact full-suite
 and sequential control receipts belong in /home/dev/ara-work/reports/xi-round25.md.
 No paid calls or push.
+
+## Round 26 — semantic cross-paper conflict candidates and engine feedback
+
+Verified frozen content now supplies deterministic cross-paper pairs ranked by
+shared catalogue-definition terms, then content-word overlap and commitment IDs.
+At least one side must be endorsed; the other may be endorsed, reported or
+attacked. Same-paper and zero-overlap pairs are excluded. A bounded heap retains
+semantic_conflict_pair_limit pairs (default 60; zero disables this stage).
+Lexical topic overlap is a retrieval heuristic, not a semantic completeness claim.
+
+Each selected pair gets an isolated classify_conflict request on the current
+provider, with only its content, definitions, formulas, source roles and frozen
+hashes. The global task topic is excluded. Native schema validation, request
+counting, caching, usage accounting and full prompt/response logging apply.
+The four outcomes are contradicts, in_tension, compatible and unrelated, with a
+short reason. The new schema joins native preflight coverage; prior live
+preflight manifests must be refreshed before a live pilot. The first two produce
+semantic_conflict gap obligations; neither
+asserts a formal contradiction or mutates T. Reported/attacked content identifies
+a candidate disagreement but is never promoted to endorsed resolution support.
+Local context or output refusals are disclosed per pair; run-wide budget stops
+remain run-wide. Frozen codecs and catalogue contracts are unchanged.
+
+The native paired-analysis path retains the engine's Tier 1 repair proposals and
+Tier 2 opposing CLOSED routes. Tier 2 route pairs become resolution obligations
+carrying both conclusions, route IDs and endorsed support from each route. They
+feed the existing target proposal and novelty/own-thesis/fidelity/gap gates.
+This bounded proposal step does not dispatch another search batch. Candidates
+are explicitly proposed_not_searched: no resolution route or successful conflict
+repair is claimed. Resume retains the existing publication and target inventory.
+
+Reports now expose Tier 1 repairs, Tier 2 pairs and resolution candidates in a
+linked lossless section and structured summary; methodology includes the same
+projection. Findings and candidate receipts must follow the current search
+generation, so interrupted resumed analysis cannot reuse an older verdict. Missing or partial analyses are not evidence of no conflicts.
+Semantic judgments remain separate from engine findings. Inconsistent-T novelty
+and all contribution/stance/cross-paper admission gates remain in force.
+
+The offline real-freeze census uses synthetic classifier labels only, exercises
+all four outcomes, and sends a representative semantic gap through target gates.
+Its candidate counts, calibrated request sizes, final tests and sequential
+controls are recorded in /home/dev/ara-work/reports/xi-round26.md. It establishes
+plumbing, not actual literature disagreement or a substantive resolution. No paid
+calls or push.
+
+Round 26 also repairs kappa4 R25-F1 and R25-F2. The shared runtime/engine CQ
+predicate compares normalized Unicode words, ignoring whitespace, case, quotes
+and markdown delimiters. Named partial-answer and insufficient-evidence markers
+cannot become complete CQ support; original answer text and cited IDs remain
+unchanged in downgrade receipts. This is a conservative lexical guard, not a
+semantic assessment of arbitrary answers.
+
+Stance conflict detection compares exact frozen content definitions under the
+verified content marker as well as formula/text identity. Definition substitution
+retains every connective, predicate argument, binder and polarity in the AST;
+shared words or an overlapping subformula do not establish content identity.
+Native tests carry the resulting gap through proposal with both-side endorsed
+support obligations, without altering any frozen artifact.

@@ -59,6 +59,7 @@ def test_novelty_unknown_refuses(monkeypatch):
 def setup(tmp_path, papers=('a','b')):
     goal=Proposition('r','R',R);package=Proposition('pq','P and Q',AND)
     def reply(kind,inputs):
+        if kind=='classify_conflict':return dict(classification='compatible',reason='P Q')
         if kind=='propose_targets':return dict(targets=[package.to_dict(),goal.to_dict()])
         if kind=='classify_target':return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='R')
         if kind=='map_leaf':return dict(t_id='open')

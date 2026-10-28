@@ -105,3 +105,50 @@ def test_explicit_open_markers_beyond_unresolved():
         artifact,provenance=frozen_metadata(t,('a',),{'P':definition})
         gaps=detect_gaps(t,artifact['symbol_catalogue']['symbols'],provenance)['gaps']
         assert len(gaps)==1 and gaps[0].kind=='open_problem'
+
+
+def test_frozen_definition_stance_conflict_reaches_native_proposal(tmp_path):
+    from ara.runtime.commitment_provenance import make_commitment_provenance
+    t=CommitmentSet((Commitment('a','P','a:1',P),Commitment('b','Q','b:1',Q),Commitment('c','R','b:2',R)))
+    artifact,provenance=frozen_metadata(t,('a','b','b'),{'P':'S','Q':'S'})
+    provenance['commitments']['b'].update(stance='attacked',attribution='attacked_view')
+    provenance=make_commitment_provenance(t,artifact['symbol_catalogue'],provenance['commitments'])
+    seen=[]
+    target=Proposition('f','F(a)',Formula.from_dict({'op':'predicate','name':'F','terms':[{'kind':'constant','name':'a'}]}))
+    def reply(kind,d):
+        if kind=='classify_conflict': return dict(classification='compatible',reason='P')
+        if kind=='propose_targets':
+            seen.append(d)
+            return dict(targets=[target.to_dict()])
+        return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='F(a)',resolves_gap=True)
+    calls,_=rig(tmp_path,reply)
+    for name,value in [('frozen-t.json',artifact),('commitment-provenance.json',provenance)]:
+        (tmp_path/name).write_text(canonical(value))
+    before={name:(tmp_path/name).read_bytes() for name in ('frozen-t.json','commitment-provenance.json')}
+    targets=calls.propose_targets(t)
+    resolutions=[v for v in targets if v.gap is not None]
+    assert len(resolutions)==1
+    gap=resolutions[0].gap
+    assert gap.kind=='stance_conflict' and gap.commitment_ids==('a','b')
+    assert gap.support_groups==(('a',),('c',))
+    assert seen[0]['resolution_gap']==gap.to_dict()
+    assert all((tmp_path/name).read_bytes()==value for name,value in before.items())
+
+
+def test_definition_conflict_preserves_structure_arguments_and_polarity():
+    from ara.runtime.gaps import detect_gaps
+    from ara.types import Term
+    fa=Formula('predicate',name='F',terms=(Term('constant','a'),))
+    ga=Formula('predicate',name='G',terms=(Term('constant','a'),))
+    gb=Formula('predicate',name='G',terms=(Term('constant','b'),))
+    for left,right,expected in [(P,Q,True),(P,Q.negated(),False),
+            (Formula('and',(P,R)),Formula('or',(Q,R)),False),
+            (Formula('and',(P,R)),Q,False),(fa,ga,True),(fa,gb,False)]:
+        t=CommitmentSet((Commitment('a','P','a:1',left),Commitment('b','Q','b:1',right)))
+        artifact,provenance=frozen_metadata(t,('a','b'),{'P':'S','Q':'S','F':'S','G':'S'})
+        provenance['commitments']['b']['stance']='attacked'
+        result=detect_gaps(t,artifact['symbol_catalogue']['symbols'],provenance)
+        assert bool([g for g in result['gaps'] if g.kind=='stance_conflict'])==expected
+    artifact,provenance=frozen_metadata(t,('a','b'),{'F':'S','G':'R'})
+    provenance['commitments']['b']['stance']='attacked'
+    assert not detect_gaps(t,artifact['symbol_catalogue']['symbols'],provenance)['gaps']

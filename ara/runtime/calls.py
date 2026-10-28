@@ -933,26 +933,26 @@ class ModelCalls:
                     'search commitment provenance receipt mismatch')
         return vocabulary
 
-    def propose_targets(self, commitments: CommitmentSet, count: int = 30,
-                        named_position: str | None = None) -> tuple[Proposition, ...]:
+    def discover_gaps(self, commitments):
         from ara.runtime.gaps import detect_gaps
-        require(type(count) is int and count > 0, 'target count must be positive')
+        from ara.runtime.semantic_conflicts import classify_pairs
         vocabulary = self.search_vocabulary(commitments)
         detection = detect_gaps(commitments, vocabulary['symbol_catalogue'], vocabulary['commitment_provenance'])
+        return {**detection, 'gaps': detection['gaps'] + classify_pairs(self, commitments, vocabulary)}
+
+    def propose_targets(self, commitments: CommitmentSet, count: int = 30,
+                        named_position: str | None = None) -> tuple[Proposition, ...]:
+        require(type(count) is int and count > 0, 'target count must be positive')
+        vocabulary = self.search_vocabulary(commitments)
+        detection = self.discover_gaps(commitments)
         self.log.record('gaps_detected', **{k:v for k,v in detection.items() if k != 'gaps'},
                         gaps=[g.to_dict() for g in detection['gaps']],
                         commitments_sha256=vocabulary['commitments_sha256'],
                         provenance_sha256=vocabulary['provenance_sha256'])
         if named_position is not None or not detection['gaps']:
             return self._propose_target_pool(commitments, count, named_position)
-        kept, formulas = [], set()
-        for gap in detection['gaps']:
-            candidates = self._propose_target_pool(commitments, min(count,30), resolution_gap=gap)
-            for target in candidates:
-                key = target.formula.canonical()
-                if len(kept) < min(count,30) and key not in formulas:
-                    kept.append(target)
-                    formulas.add(key)
+        kept = list(self.propose_gap_targets(commitments, detection['gaps'], count))
+        formulas = {t.formula.canonical() for t in kept}
         if len(kept) < min(count,30):
             for target in self._propose_target_pool(commitments, min(count,30)):
                 key = target.formula.canonical()
@@ -961,6 +961,18 @@ class ModelCalls:
                     formulas.add(key)
         self.log.record('gap_target_pool_finished', keep_limit=min(count,30),
                         kept=[t.to_dict() for t in kept], gaps_considered=len(detection['gaps']))
+        return tuple(kept)
+
+    def propose_gap_targets(self, commitments, gaps, count=30):
+        require(type(count) is int and count > 0, 'target count must be positive')
+        kept, formulas = [], set()
+        for gap in gaps:
+            candidates = self._propose_target_pool(commitments, min(count,30), resolution_gap=gap)
+            for target in candidates:
+                key = target.formula.canonical()
+                if len(kept) < min(count,30) and key not in formulas:
+                    kept.append(target)
+                    formulas.add(key)
         return tuple(kept)
 
     def _propose_target_pool(self, commitments, count, named_position=None, *, resolution_gap=None):

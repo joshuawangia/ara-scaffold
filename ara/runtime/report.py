@@ -310,6 +310,8 @@ def build_run(directory):
     built['commitment_provenance'] = provenance
     routes = [route_details(r, frozen, provenance) for r in records if r['event']['stage'] == 'route']
     search = searches(records, directory)
+    from ara.runtime.conflict_feedback import conflict_report
+    conflicts = conflict_report(events)
     for trace in search['traces']:
         gaps.extend("PARTIAL SEARCH TRACE: " + text for text in trace['issues'])
     if search['unassigned_trace_receipts']:
@@ -365,7 +367,7 @@ def build_run(directory):
                                for e in events if e['label'] == 'MODEL'}),
                 lineage=[compact(r) for r in records if r['event']['stage'] in
                          ('extraction_provenance_import', 'extraction_paper_reused', 'unknown_usage_reconciled')]),
-                extraction=extraction(records, events), construction=built, search=search, routes=routes,
+                extraction=extraction(records, events), construction=built, search=search, conflicts=conflicts, routes=routes,
                 accounting=dict(**account, local=split_totals([e for i, e in enumerate(events) if i not in inherited]),
                                 inherited=split_totals([e for i, e in enumerate(events) if i in inherited])),
                 human_actions=[compact(r) for r in records if r['event']['label'] == 'HUMAN'],

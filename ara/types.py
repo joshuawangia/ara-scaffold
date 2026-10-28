@@ -158,10 +158,20 @@ class SymbolDefinition(Record):
 @dataclass(frozen=True)
 class Gap(Record):
     id: str
-    kind: Literal['contradiction', 'stance_conflict', 'open_problem']
+    kind: Literal['contradiction', 'stance_conflict', 'open_problem', 'semantic_conflict', 'tier2_conflict']
     commitment_ids: tuple[str, ...]
     paper_ids: tuple[str, ...]
     support_groups: tuple[tuple[str, ...], ...]
+    finding: str | None = None
+    route_ids: tuple[str, ...] = ()
+
+    def to_dict(self):
+        value = super().to_dict()
+        if self.finding is None:
+            del value['finding']
+        if not self.route_ids:
+            del value['route_ids']
+        return value
 
 
 @dataclass(frozen=True)

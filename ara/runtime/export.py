@@ -16,6 +16,7 @@ from ara.runtime.grounding import evidence_items
 
 
 def methodology(log_path: Path) -> str:
+    from ara.runtime.conflict_feedback import conflict_report
     records = read_log(log_path)
     events = [r['event'] for r in records]
     unpublished = pending_search_publications(events)
@@ -136,6 +137,7 @@ def methodology(log_path: Path) -> str:
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
         'search': {**search_status(events),
+                   'conflicts': conflict_report(events),
                    'gaps': [json.loads(e['payload_json']) for e in events if e['stage']=='gaps_detected'],
                    'cq_retrieval': [json.loads(e['payload_json']) for e in events if e['stage']=='cq_context_slice'],
                    'cq_downgrades': [json.loads(e['payload_json']) for e in events if e['stage']=='cq_answer_downgraded'],

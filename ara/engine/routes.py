@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 from functools import lru_cache
 import re
+import unicodedata
 
 from ara.bank import Bank
 from ara.types import CommitmentSet, CQAnswer, RouteGraph, RouteNode
@@ -11,7 +12,10 @@ from ara.engine.terminus import is_terminus
 
 
 def partial_cq(text):
-    return bool(re.search(r'\b(partly|partially|to some extent|in part|not fully)\b', text, re.I))
+    # Match visible words across markdown, quotes, Unicode and whitespace;
+    # only the comparison is normalized, never the disclosed answer.
+    words = ' '.join(re.findall(r'[^\W_]+', unicodedata.normalize('NFKC', text).casefold()))
+    return bool(re.search(r'\b(partly|partially|to (?:some|a limited) extent|in part|not fully|(?:evidence (?:is )?)insufficient)\b', words))
 
 
 def cq_supported(answer: CQAnswer, question_id: str, commitments: CommitmentSet) -> bool:

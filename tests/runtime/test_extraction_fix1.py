@@ -211,6 +211,8 @@ class CapacityServer:
             assert request['output_config']['format']['schema']['$defs']['commitment']['properties']['formula'] == {'type': 'string'}
             for item in value['commitments']:
                 item['formula'] = canonical(item['formula'])
+        elif prompt.startswith('ROLE: classify_conflict'):
+            value = dict(classification='compatible', reason='P Q')
         elif prompt.startswith('Classify the supplied target independently'):
             value = dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
         elif prompt.startswith('ROLE: propose_targets'):

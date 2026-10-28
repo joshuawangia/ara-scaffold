@@ -4,7 +4,7 @@ from ara.runtime.search_alignment import symbols
 from ara.types import CommitmentSet, Formula
 
 
-SEARCH_STAGES = frozenset(('map_leaf', 'propose_cuts', 'formalise_slots', 'answer_cq', 'tier1_repair'))
+SEARCH_STAGES = frozenset(('map_leaf', 'propose_cuts', 'formalise_slots', 'answer_cq', 'tier1_repair', 'classify_conflict'))
 
 
 def leaf_slice(inputs, bridge_limit):

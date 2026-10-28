@@ -143,6 +143,7 @@ def alias_route(directory, cq_ids, formulas=(P,Q,P), papers=('a','a','b')):
     artifact, provenance = frozen_metadata(t,papers)
     goal = Proposition('r','R',R)
     def reply(kind, inputs):
+        if kind=='classify_conflict': return dict(classification='compatible',reason='P Q')
         if kind=='propose_targets': return dict(targets=[goal.to_dict()])
         if kind=='classify_target': return dict(classification='own_thesis',novelty='new_assertion',fidelity='matches',reason='R')
         if kind=='map_leaf': return dict(t_id='open')

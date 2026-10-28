@@ -42,10 +42,16 @@ def test_cq_retrieves_outside_premises_ranks_and_shrinks(tmp_path, monkeypatch):
     assert len(slices) > 1 and slices[-1]['decision']=='fits'
 
 
-@pytest.mark.parametrize('text', ['Partly: P', 'To some extent, P', 'Only partially P'])
+@pytest.mark.parametrize('text', ['Partly: P', 'To some extent, P', 'Only partially P',
+    'To some\nextent, P', 'To some\u00a0extent, P', '**To Some Extent**, P',
+    'To **some** extent, P', '_PARTLY_, P', 'To _some_ extent, P', '"NOT FULLY", P', 'To a limited extent, P',
+    'P is plausible, but the evidence is insufficient.'])
 def test_partial_cq_is_disclosed_and_not_supported(tmp_path,text):
     calls, _, t = setup(tmp_path,lambda kind,d: dict(cq_id='cq1',answer=text,answered=True,supporting_t_ids=['p']))
     answer = calls.answer_cq(CriticalQuestion('cq1','P'),proposal(),t)
+    from ara.engine.routes import cq_supported
+    from ara.types import CQAnswer
+    assert not cq_supported(CQAnswer('cq1',text,True,('p',)), 'cq1', t)
     assert not answer.answered and answer.answer == text and answer.supporting_t_ids == ('p',)
     assert any(e['stage']=='cq_answer_downgraded' for e in calls.log.read())
 
@@ -106,3 +112,27 @@ def test_cq_lexical_overlap_retrieves_definitions_without_shared_symbols(tmp_pat
     rows=requests[-1][1]['cq_retrieval']['candidates']
     assert [r['commitment_id'] for r in rows]==['q']
     assert rows[0]['shared_symbols']==0 and rows[0]['content_overlap']==2
+
+
+@pytest.mark.parametrize('text', ['To some\nextent, R', 'To some\u00a0extent, R', 'To **SoMe** extent, R'])
+def test_formatted_hedge_cannot_close_native_route(tmp_path, text):
+    from ara.runtime.route_policy import selectable_routes
+    def reply(kind,d):
+        if kind=='map_leaf':
+            return dict(t_id=next((c['id'] for c in d['commitments']['commitments']
+                if c['formula']==d['leaf']['formula']), 'open'))
+        if kind=='propose_cuts':
+            return dict(proposals=[dict(bank_id='sign',conclusion_text='S',conclusion_ref='current_goal',
+                premises=[dict(slot=slot,text=tid.upper(),t_id=tid,scope_id=None)
+                    for slot,tid in zip(('sign_relation','observed_sign'),('p','q'))])])
+        if kind=='formalise_slots':
+            return dict(slots=[dict(slot=b['slot'],formula=b['formula']) for b in d['slot_bindings']])
+        if kind=='answer_cq':
+            return dict(cq_id=d['question']['id'],answer=text,answered=True,supporting_t_ids=['r'])
+        raise AssertionError(kind)
+    calls,_,t=setup(tmp_path,reply)
+    routes=NativeEngine(load_bank(ROOT/'bank'),calls)._engine(t).search(Proposition('s','S',Formula('atom',name='S'))).routes
+    assert routes and all(r.status=='OPEN' for r in routes)
+    assert not selectable_routes(routes,t)
+    receipts=[json.loads(e['payload_json']) for e in calls.log.read() if e['stage']=='cq_answer_downgraded']
+    assert receipts and all(r['original']['answer']==text and r['original']['supporting_t_ids']==['r'] for r in receipts)

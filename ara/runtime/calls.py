@@ -932,7 +932,7 @@ class ModelCalls:
         from ara.runtime.contribution import formula_hash
         require(type(count) is int and count > 0, 'target count must be positive')
         keep_count = 1 if named_position is not None else min(count, 10)
-        pool_count = 1 if named_position is not None else 20
+        pool_count = 1 if named_position is not None else 30
         def check(data):
             targets = tuple(Proposition.from_dict(p) for p in data['targets'])
             require(1 <= len(targets) <= pool_count, 'target pool outside requested bounds')
@@ -1012,6 +1012,8 @@ class ModelCalls:
     def propose_cuts(self, goal: Proposition, commitments: CommitmentSet,
                      bank: tuple[BankEntry, ...], *, feedback: tuple[dict, ...] = ()) -> tuple[Proposal, ...]:
         from ara.runtime.search_alignment import slot_bindings, search_guidance
+        from ara.runtime.bridges import proposal_bridge
+        vocabulary = self.search_vocabulary(commitments)
         def check(data):
             proposals = tuple(Proposal.from_dict(p) for p in data['proposals'])
             require(len(proposals) <= 3, 'proposal batch exceeds three candidates')
@@ -1025,11 +1027,15 @@ class ModelCalls:
         inputs = dict(goal=goal.to_dict(), commitments=commitments.to_dict(),
                       bank=[b.to_dict() for b in bank], proposal_limit=3, attempt_budget=2,
                       attempt=2 if feedback else 1, rejection_feedback=list(feedback),
-                      **self.search_vocabulary(commitments), **search_guidance(goal, commitments, bank))
+                      **vocabulary, **search_guidance(goal, commitments, bank))
         try:
-            return self._transport_call('propose_cuts', inputs, check, attempt=inputs['attempt'])
+            proposals = self._transport_call('propose_cuts', inputs, check, attempt=inputs['attempt'])
         except InvalidOutput as exc:
             raise RejectedCutBatch(str(exc)) from exc
+        for index,proposal in enumerate(proposals):
+            self.log.record('proposal_bridge', goal_id=goal.id, attempt=inputs['attempt'], proposal_index=index,
+                            **proposal_bridge(proposal,vocabulary))
+        return proposals
 
     def formalise(self, proposition: Proposition, *, commitments=None) -> Formula:
         inputs = {'proposition': proposition.to_dict()}

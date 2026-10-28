@@ -147,3 +147,10 @@ Only exact leading name + argues/holds/believes that report frames retain a
 lexical hard veto, including on historical route display. Native target admission
 requires the logged own-thesis classifier verdict. Offline fake judgments verify
 the wire and policy, not real classifier accuracy.
+
+
+Round 22 requires two verified paper IDs for CLOSED-derived. CLOSED-single-paper
+is disclosed and not offered by default. Missing paper provenance is unresolved.
+Each route contribution contains paper_support with IDs, counts, per-commitment
+source mapping and missing identities; paper counts do not establish semantic
+independence. See [cross-paper contribution](search.md#cross-paper-contribution-and-bridges).

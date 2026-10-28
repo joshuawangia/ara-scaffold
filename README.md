@@ -24,7 +24,10 @@ uv run ara export --run-dir runs/mock-smoke
 
 Mock responses cover the shipped placeholder smoke and feedback example. Other
 inputs fail explicitly. Mock costs are simulated; no provider is called. The
-[verification guide](docs/verification.md) explains offline checks, negative
+legacy smoke fixture has no verified paper identities, so it awaits explicit
+selection before writing: `uv run ara select --run-dir runs/mock-smoke --route ID`
+using an ID from the recorded routes. It does not demonstrate cross-paper success.
+The [verification guide](docs/verification.md) explains offline checks, negative
 controls, opt-in tests and historical live receipts.
 
 ## Commands

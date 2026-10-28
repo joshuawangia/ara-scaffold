@@ -180,15 +180,17 @@ def test_cq_dependencies_are_support_and_unknown_fails_closed(monkeypatch):
     graph=replace(graph,nodes=(replace(graph.nodes[0],proposal=replace(graph.nodes[0].proposal,bank_id='sign')),)+graph.nodes[1:])
     graph=replace(graph,nodes=(replace(graph.nodes[0],children=('b',),
         cq_answers=(CQAnswer('cq','P',True,('t2',)),)),graph.nodes[2]))
-    assert route_classification(graph,T)=='CLOSED-derived'
+    from test_cross_paper import frozen_metadata
+    _,provenance=frozen_metadata(T,('a','b'))
+    assert route_classification(graph,T,provenance)=='CLOSED-derived'
     assert route_contribution(graph,T)['support_ids']==['t1','t2']
     assert route_classification(graph)=='CLOSED-contribution-unresolved'
     contribution.clear_entailment_cache()
     original=contribution.entails
     monkeypatch.setattr(contribution,'entails',lambda premises,goal,timeout:
         'SOLVER_UNKNOWN' if len(premises)<2 else original(premises,goal,timeout))
-    assert route_classification(graph,T)=='CLOSED-contribution-unresolved'
-    assert not selectable_routes((graph,),T)
+    assert route_classification(graph,T,provenance)=='CLOSED-contribution-unresolved'
+    assert not selectable_routes((graph,),T,provenance)
     contribution.clear_entailment_cache()
 
 

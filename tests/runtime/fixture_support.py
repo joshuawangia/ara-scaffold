@@ -78,7 +78,7 @@ def canned(config):
     from ara.runtime.search_alignment import catalogue_inputs, search_guidance
     from ara.runtime.target_policy import target_context, classifier_inputs
     vocabulary = catalogue_inputs(ROOT / 'tests/fixtures/runtime', T)
-    add('propose_targets', {'commitments': T.to_dict(), 'count': 20, 'keep_count': 2, 'attempt': 1, 'attempt_budget': 3, 'named_position': None, **vocabulary, **target_context(T, load_bank(ROOT / 'bank'))},
+    add('propose_targets', {'commitments': T.to_dict(), 'count': 30, 'keep_count': 2, 'attempt': 1, 'attempt_budget': 3, 'named_position': None, **vocabulary, **target_context(T, load_bank(ROOT / 'bank'))},
         {'targets': [t.to_dict() for t in TARGETS]})
     from ara.types import negate_proposition
     for target in TARGETS:

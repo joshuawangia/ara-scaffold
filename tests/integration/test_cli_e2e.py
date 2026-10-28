@@ -51,6 +51,10 @@ def test_native_mock_smoke_and_replay(tmp_path):
         assert analysis['negated']['independent_closed_routes'] == 0
         assert analysis['forward'] and analysis['forward'][0]['consequences']
     assert any(e['decision'] and e['decision']['reason_code'] == 'BANK_LICENSED' for e in events)
+    assert not (run / 'draft.json').exists()
+    assert any(e['stage'] == 'awaiting_selection' for e in events)
+    selected = next(g.id for g in graphs if g.nodes[0].proposition.text == 'P')
+    cli('select', '--run-dir', str(run), '--route', selected)
     draft = json.loads((run / 'draft.json').read_text())
     assert draft['body'] == '[[node:n0]][[node:n1]][[node:n2]] ' + ' '.join(['P'] * 150)
     cli('export', '--run-dir', str(run), '--output', str(run / 'explicit-export'))

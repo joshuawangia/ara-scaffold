@@ -3770,3 +3770,31 @@ scheme fitness, useful synthesis or truthful CQ answers. The external Round 21
 report inventories arbitrary-conclusion schemes and their critical questions,
 source preservation and exact sequential test/control results. No paid calls or
 push; live use still requires current configuration and preflight evidence.
+
+
+## Round 22 — cross-paper routes and bounded bridge guidance
+
+CLOSED-derived now requires at least two distinct source_id values from verified
+commitment provenance among reachable, formula-distinct leaf/CQ supports. A
+qualifying single-paper route is CLOSED-single-paper; missing identity remains
+CLOSED-contribution-unresolved. Neither is selected by default. Citation/page
+strings are not paper identities. Engine closure, stance and novelty checks
+remain unchanged. Explicit human route selection remains available and logged.
+
+The target pool grows from 20 to 30 with the existing keep-at-most-ten policy and
+bounded corrections. Frozen metadata yields deterministic candidate bridges: up
+to 30 pairs and 30 triples from multiple papers sharing catalogue symbols or
+lexical definition terms. Work is capped at 10,000 combinations per size and
+truncation disclosed. Only endorsed supports enter bridge guidance. No catalogue
+or CommitmentSet codec changes; no source definitions are invented.
+
+Target, map and cut calls carry the candidates in logged/cache-bound inputs. Cut
+guidance prefers cross-paper slots for a new-atom conclusion. Exact returned T
+IDs cite the bridge; proposal_bridge receipts record matched bridge IDs and slot
+to paper mappings without changing the proposal codec. Lexical connectivity is
+not proof of topic equivalence, semantic scheme fit, relevance or necessity.
+
+Native placeholder regression covers cross-paper acceptance and single-paper
+disclosure through selection and reports. Legacy smoke now waits for explicit
+selection because it has no verified paper identity. No paid calls or push; exact
+full sequential pytest/control receipts are in the external Round 22 report.

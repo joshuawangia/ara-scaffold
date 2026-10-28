@@ -98,6 +98,13 @@ def stance_crossings(route, provenance):
 
 def route_contribution(route, commitments=None, provenance=None):
     receipt = _logical_contribution(route, commitments)
+    from ara.runtime.bridges import paper_support
+    papers = paper_support(receipt.get('support_ids', []), provenance)
+    if receipt['classification'] == 'CLOSED-derived':
+        if papers['status'] != 'verified':
+            receipt.update(classification='CLOSED-contribution-unresolved', reason='paper_identity_unavailable')
+        elif papers['paper_count'] < 2:
+            receipt.update(classification='CLOSED-single-paper', reason='fewer_than_two_papers')
     crossings = stance_crossings(route, provenance)
     if crossings:
         receipt.update(classification='CLOSED-stance-crossing' if route.status == 'CLOSED' else route.status,
@@ -107,7 +114,7 @@ def route_contribution(route, commitments=None, provenance=None):
               for n in route.nodes if n.kind == 'assumption'
               for c in (commitments.commitments if commitments is not None and provenance else ())
               if formula_hash(n.proposition.formula) == formula_hash(c.formula)]
-    return dict(**receipt, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
+    return dict(**receipt, paper_support=papers, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
                 provenance_sha256=provenance['sha256'] if provenance else None,
                 stance_crossings=crossings)
 

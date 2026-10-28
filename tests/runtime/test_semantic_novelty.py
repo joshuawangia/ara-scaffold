@@ -184,7 +184,9 @@ def test_only_reachable_step_with_root_essential_proposition_qualifies():
     # The whole freeze remains authoritative even when the route doesn't cite R.
     root=replace(sign,id='root')
     route=replace(route,nodes=(root,)+leaves)
-    assert route_contribution(route,T)['classification']=='CLOSED-derived'
+    from test_cross_paper import frozen_metadata
+    _,provenance=frozen_metadata(T,('a','b'))
+    assert route_contribution(route,T,provenance)['classification']=='CLOSED-derived'
     full=CommitmentSet(T.commitments+(Commitment('t3','R','placeholder:3',R),))
     assert route_contribution(route,full)['classification']=='CLOSED-structural'
 

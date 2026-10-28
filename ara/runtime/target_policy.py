@@ -55,7 +55,7 @@ def target_context(commitments, bank):
                     dict(rejected_target='(P and Q) -> R', commitment='R',
                     reason='R alone entails this conditional. State a new main proposition instead of adding antecedents.')],
                 target_policy=dict(stance='own_thesis', minimum_support_commitments=2,
-                    preferred_support_papers=2, exclude_single_commitment_instances=True,
+                    minimum_support_papers=2, exclude_single_commitment_instances=True,
                     exclude_conditional_with_frozen_consequent=True, allow_defeasible_support=True,
                     require_new_main_proposition=True, exclude_boolean_recombination=True),
                 conditionals=[c.to_dict() for c in commitments.commitments if conditional(c.formula)],

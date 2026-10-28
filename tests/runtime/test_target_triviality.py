@@ -45,8 +45,11 @@ def test_derived_classification_and_default_selection():
         RouteNode('b',Proposition('b','P',P),'leaf','t1')),'CLOSED')
     opened = replace(trivial,id='o',status='OPEN',frontier=('n',))
     assert route_classification(trivial)=='CLOSED-single-support'
-    assert route_classification(derived)=='CLOSED-derived'
-    assert selectable_routes((trivial,derived,opened))==(derived,)
+    from test_cross_paper import frozen_metadata
+    _,provenance=frozen_metadata(T,('a','b'))
+    assert route_classification(derived)=='CLOSED-contribution-unresolved'
+    assert route_classification(derived,T,provenance)=='CLOSED-derived'
+    assert selectable_routes((trivial,derived,opened),T,provenance)==(derived,)
     from ara.runtime.render import render_tree
     assert 'CLOSED-single-support' in render_tree(trivial)
     from ara.runtime.report import route_details

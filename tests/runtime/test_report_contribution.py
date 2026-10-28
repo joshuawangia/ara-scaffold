@@ -43,18 +43,22 @@ def test_native_report_preserves_route_polarity_and_nested_contribution(tmp_path
 
     directory, output = tmp_path/'source', tmp_path/'report'
     calls, _ = rig(directory, reply)
-    (directory/'frozen-t.json').write_text(canonical(frozen_artifact(t, [
-        dict(name=n, kind='atom', arity=0, definition=n, evidence_ids=['t1', 't2']) for n in ('P', 'Q')])))
+    from test_cross_paper import frozen_metadata
+    artifact,provenance=frozen_metadata(t,('a','b'))
+    (directory/'frozen-t.json').write_text(canonical(artifact))
+    (directory/'commitment-provenance.json').write_text(canonical(provenance))
     calls.log.record('run_started', config=calls.config, topic='P')
+    calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
+    calls.log.record('commitment_provenance_frozen', **provenance)
     calls.log.record('commitments_frozen', commitments=t.to_dict())
     routes = NativeEngine(load_bank(ROOT/'bank'), calls)._engine(t).search(goal).routes
     graph = routes[0]
     assert graph.status == 'CLOSED'
     assert any(e['decision'] and e['decision']['reason_code'] == 'BANK_LICENSED' for e in calls.log.read())
-    receipt = route_contribution(graph, t)
+    receipt = route_contribution(graph, t, provenance)
     expected = 'CLOSED-derived' if case == 'positive' else 'CLOSED-single-support'
     assert receipt['classification'] == expected and receipt['support_ids'] == ['t1', 't2']
-    assert bool(selectable_routes(routes, t)) == (case == 'positive')
+    assert bool(selectable_routes(routes, t, provenance)) == (case == 'positive')
     if case != 'positive':
         assert receipt['polarity'] == 'target' and receipt['reason'] == 'single_commitment_entailment'
     calls.log.record('route', target=goal.id, polarity='negation', graph=graph.to_dict())

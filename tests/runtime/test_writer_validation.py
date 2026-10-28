@@ -79,7 +79,7 @@ def test_writer_correction_exhaustion_clean_cli_stop(cli_setup, tmp_path, monkey
         return complete(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'complete', reject_writer)
     run = tmp_path / 'exhausted'
-    assert main(['run', '--smoke', '--config', str(config), '--run-dir', str(run)],
+    assert main(['run', '--smoke', '--config', str(config), '--run-dir', str(run), '--route', 'route:p'],
                 calls_factory=factory, engine_factory=engine_factory) == 2
     events = EventLog(run / 'events.jsonl').read()
     writers = [e for e in events if e['label'] == 'MODEL' and e['stage'] == 'write_essay']

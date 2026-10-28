@@ -124,7 +124,7 @@ it waits at selection without writing an essay.
 ## Target proposal and triviality
 
 Target proposals request own theses supported or refuted by at least two distinct
-commitments, preferably from different papers. Inputs include frozen commitments,
+commitments from at least two distinct papers. Inputs include frozen commitments,
 explicit conditionals, shared signatures and available catalogue definitions.
 The preferred paper count is a model instruction, not a deterministic guarantee.
 
@@ -165,7 +165,7 @@ that report frames, which still hard-reject. Words such as "claims about" or
 legacy catalogues remain unavailable; code does not invent their definitions.
 All classification dispositions, cache replays and solver receipts are logged.
 
-Proposal asks for 20 candidates per attempt and retains at most
+Proposal asks for 30 candidates per attempt and retains at most
 `min(target_candidates, 10)`. An explicit named position uses a one-item pool and
 preserves its exact text. A response may supply fewer candidates when it cannot
 fill the pool; received/requested counts and `underfilled` are logged. At most
@@ -370,3 +370,32 @@ also consumes a batch and supplies its reason. The correction is not multiplied
 by validation_attempts. A licensed alternative is retained without another batch;
 normal premise/CQ expansion and node/depth bounds still apply. Unanswered CQs
 keep the route OPEN. Operational/provider failures still propagate.
+
+
+## Cross-paper contribution and bridges
+
+A CLOSED-derived route needs at least two distinct paper IDs among its reachable,
+formula-distinct frozen supports, including cited CQ evidence. Paper identity is
+the exact source_id in verified commitment provenance; differing citation strings,
+pages, authors or T IDs do not establish different papers. An otherwise derived
+route with one paper is CLOSED-single-paper. Missing paper identity yields
+CLOSED-contribution-unresolved. Both remain disclosed and require explicit
+--route selection. Engine CLOSED and its licenses are unchanged. Stance, novelty
+and single-support checks still apply. This counts recorded sources, not semantic
+independence or necessity of every support.
+
+Target, leaf and cut inputs include candidate_bridges and commitment_papers.
+Bridges are pairs or triples of endorsed T commitments from at least two papers,
+linked by a common catalogue symbol or exact case-folded definition term (common
+function words removed). Symbol links take priority; IDs and connections are
+sorted deterministically. At most 30 pairs and 30 triples are returned, with
+10,000 examined combinations per size and explicit truncation. A triple needs a
+connection shared by all three members. Missing catalogue/provenance produces
+no invented candidates. These are lexical leads, not verified topic equivalence
+or semantic scheme fit. Catalogue/CommitmentSet formats and hashes are unchanged.
+
+For a new-atom leaf, cut guidance prefers two-paper premises. A proposal cites a
+bridge by placing its exact T IDs in named premise slots. Runtime logs the matched
+bridge IDs and each slot's verified paper as proposal_bridge; open or scoped
+hypotheses do not supply paper support. The schema stays unchanged. Guidance does
+not force irrelevant premises, license a step, or promise three successful routes.

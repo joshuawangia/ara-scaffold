@@ -41,6 +41,8 @@ def test_smoke_cli_runs_both_polarities_and_exports(cli_setup, tmp_path):
     assert len(graphs) == 4
     parsed = [RouteGraph.from_json(p.read_text()) for p in graphs]
     assert sum(g.status == 'CLOSED' for g in parsed) == 2
+    assert not (run / 'draft.json').exists()  # Legacy smoke has no verified paper identities.
+    assert main(['select', '--run-dir', str(run), '--route', 'route:p'], calls_factory=factory) == 0
     assert json.loads((run / 'draft.json').read_text())['body'] == '[[node:n:p]][[node:n:p:c]][[node:n:p:a]] ' + ' '.join(['P'] * 150)
     assert (run / 'export/essay.txt').read_text() == 'P\n\n' + ' '.join(['P'] * 150) + '\n'
     events = EventLog(run / 'events.jsonl').read()

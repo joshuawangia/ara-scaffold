@@ -21,10 +21,10 @@ def candidate(i):
 
 
 def test_pool_keeps_ten_in_stable_order_and_logs_surplus(tmp_path):
-    pool=[candidate(i) for i in range(20)]
+    pool=[candidate(i) for i in range(30)]
     def reply(kind,inputs):
         if kind=='propose_targets':
-            assert inputs['count']==20 and inputs['keep_count']==10
+            assert inputs['count']==30 and inputs['keep_count']==10
             assert inputs['attempt_budget']==3
             assert any(b['id']=='sign' and b['critical_questions'] for b in inputs['bank'])
             assert inputs['support_examples']
@@ -33,8 +33,8 @@ def test_pool_keeps_ten_in_stable_order_and_logs_surplus(tmp_path):
     calls,_=rig(tmp_path,reply)
     assert calls.propose_targets(T)==tuple(pool[:10])
     events=payloads(calls,'target_pool_candidate')
-    assert len(events)==20
-    assert [e['disposition'] for e in events]==['kept']*10+['over_limit']*10
+    assert len(events)==30
+    assert [e['disposition'] for e in events]==['kept']*10+['over_limit']*20
     assert [e['target'] for e in events]==[p.to_dict() for p in pool]
 
 
@@ -87,8 +87,10 @@ def test_native_new_atom_defeasible_closure(tmp_path,answered):
         if kind=='answer_cq': return dict(cq_id=inputs['question']['id'],answer='P Q',answered=answered,supporting_t_ids=['t1','t2'])
         raise AssertionError(kind)
     calls,_=rig(tmp_path,reply)
-    from ara.runtime.frozen_catalogue import frozen_artifact
-    (tmp_path/'frozen-t.json').write_text(canonical(frozen_artifact(t,[dict(name=n,kind='atom',arity=0,definition=n,evidence_ids=['t1','t2']) for n in ('P','Q')])))
+    from test_cross_paper import frozen_metadata
+    artifact,provenance=frozen_metadata(t,('a','b'))
+    (tmp_path/'frozen-t.json').write_text(canonical(artifact))
+    (tmp_path/'commitment-provenance.json').write_text(canonical(provenance))
     # Establish no classical entailment, even from the complete support pair.
     assert entails((P,Q),R,1000)=='SOLVER_COUNTEREXAMPLE'
     targets=calls.propose_targets(t,1)
@@ -97,7 +99,7 @@ def test_native_new_atom_defeasible_closure(tmp_path,answered):
     routes=search_all(calls,NativeEngine(bank,calls),t,targets)
     route=next(r for r in routes if r.nodes[0].proposition.formula==R)
     assert route.status==('CLOSED' if answered else 'OPEN')
-    receipt=route_contribution(route,t)
+    receipt=route_contribution(route,t,provenance)
     assert receipt['classification']==('CLOSED-derived' if answered else 'OPEN')
     if answered: assert receipt['support_ids']==['t1','t2']
     root=next(n for n in route.nodes if n.id==route.root_id)

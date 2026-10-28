@@ -56,7 +56,7 @@ def test_novelty_unknown_refuses(monkeypatch):
     assert novelty.novelty_check(R,T)['status']=='unresolved'
 
 
-def setup(tmp_path):
+def setup(tmp_path, papers=('a','b')):
     goal=Proposition('r','R',R);package=Proposition('pq','P and Q',AND)
     def reply(kind,inputs):
         if kind=='propose_targets':return dict(targets=[package.to_dict(),goal.to_dict()])
@@ -79,7 +79,7 @@ def setup(tmp_path):
     provenance=make_commitment_provenance(T,artifact['symbol_catalogue'],{c.id:dict(source_id=source,
         source_authors=[],attributed_to=source,page_start=1,page_end=1,evidence_id=c.id,
         attribution='author_claim',stance='endorsed',source_kind='premise',source_text=c.text,
-        omitted_support_ids=[]) for c,source in zip(T.commitments,('a','b'))})
+        omitted_support_ids=[]) for c,source in zip(T.commitments,papers)})
     (tmp_path/'commitment-provenance.json').write_text(canonical(provenance))
     (tmp_path/'commitments.json').write_text(T.to_json())
     bank=load_bank(ROOT/'bank')

@@ -56,7 +56,7 @@ def test_pilot_config_and_caps(tmp_path, cap, expected):
     resolved = captured[0]
     assert {k: resolved[k] for k in ('target_candidates', 'depth_cap', 'node_cap',
             'essay_word_limit', 'essay_min_words', 'write_essay_max_output_tokens')} == {
-                'target_candidates': 10, 'depth_cap': 6, 'node_cap': 500,
+                'target_candidates': 30, 'depth_cap': 6, 'node_cap': 500,
                 'essay_word_limit': 6000, 'essay_min_words': 4500, 'write_essay_max_output_tokens': 20000}
     assert [resolved.get(f'{kind}_max_output_tokens', resolved['max_output_tokens'])
             for kind in ('audit_essay', 'search_evidence', 'verify_originality_citations')] == [24000, 64000, 48000]

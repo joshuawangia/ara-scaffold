@@ -37,6 +37,9 @@ def register(calls, provider, kind, inputs, value, **updates):
     if kind in ('map_leaf', 'propose_cuts'):
         from ara.runtime.search_context import leaf_slice
         inputs = leaf_slice(inputs, 8)
+    if kind == 'answer_cq':
+        from ara.runtime.cq_context import fit_cq_request
+        inputs = fit_cq_request(calls, inputs)
     provider.responses[mock_key(kind, calls.render(kind, inputs)[1])] = response(value, **updates)
 
 
@@ -133,7 +136,7 @@ def test_ports_return_typed_values_and_enforce_references(rig):
     from ara.types import CommitmentSet, Commitment, CriticalQuestion, Proposal, CQAnswer, Tier1Repair
     calls, provider, log = rig
     commitments = CommitmentSet((Commitment('t1', 'P', 'placeholder:1', Formula('atom', name='P')),))
-    question = CriticalQuestion('cq1', '{P}')
+    question = CriticalQuestion('cq1', 'P')
     proposal = Proposal('scheme', (), 'Q')
     inputs = {'question': question.to_dict(), 'proposal': proposal.to_dict(), 'commitments': commitments.to_dict(), **calls.search_vocabulary(commitments)}
     register(calls, provider, 'answer_cq', inputs,

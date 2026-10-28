@@ -136,6 +136,9 @@ def methodology(log_path: Path) -> str:
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
         'search': {**search_status(events),
+                   'gaps': [json.loads(e['payload_json']) for e in events if e['stage']=='gaps_detected'],
+                   'cq_retrieval': [json.loads(e['payload_json']) for e in events if e['stage']=='cq_context_slice'],
+                   'cq_downgrades': [json.loads(e['payload_json']) for e in events if e['stage']=='cq_answer_downgraded'],
                    'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],
                    'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments, provenance_from_events(events, commitments)))
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},

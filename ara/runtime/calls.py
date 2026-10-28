@@ -344,6 +344,9 @@ class ModelCalls:
         if not schema_smoke and kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs:
             from ara.runtime.search_context import fit_leaf_request
             inputs = fit_leaf_request(self, kind, inputs)
+        if not schema_smoke and kind == 'answer_cq' and 'commitments' in inputs:
+            from ara.runtime.cq_context import fit_cq_request
+            inputs = fit_cq_request(self, inputs)
         # Same-request single flight prevents duplicate dispatch and partial cache reads.
         key = digest(canonical([kind, inputs, schema_smoke]))
         with self._key_lock:
@@ -930,14 +933,43 @@ class ModelCalls:
                     'search commitment provenance receipt mismatch')
         return vocabulary
 
-    def propose_targets(self, commitments: CommitmentSet, count: int = 10,
+    def propose_targets(self, commitments: CommitmentSet, count: int = 30,
                         named_position: str | None = None) -> tuple[Proposition, ...]:
+        from ara.runtime.gaps import detect_gaps
+        require(type(count) is int and count > 0, 'target count must be positive')
+        vocabulary = self.search_vocabulary(commitments)
+        detection = detect_gaps(commitments, vocabulary['symbol_catalogue'], vocabulary['commitment_provenance'])
+        self.log.record('gaps_detected', **{k:v for k,v in detection.items() if k != 'gaps'},
+                        gaps=[g.to_dict() for g in detection['gaps']],
+                        commitments_sha256=vocabulary['commitments_sha256'],
+                        provenance_sha256=vocabulary['provenance_sha256'])
+        if named_position is not None or not detection['gaps']:
+            return self._propose_target_pool(commitments, count, named_position)
+        kept, formulas = [], set()
+        for gap in detection['gaps']:
+            candidates = self._propose_target_pool(commitments, min(count,30), resolution_gap=gap)
+            for target in candidates:
+                key = target.formula.canonical()
+                if len(kept) < min(count,30) and key not in formulas:
+                    kept.append(target)
+                    formulas.add(key)
+        if len(kept) < min(count,30):
+            for target in self._propose_target_pool(commitments, min(count,30)):
+                key = target.formula.canonical()
+                if len(kept) < min(count,30) and key not in formulas and target.id not in {t.id for t in kept}:
+                    kept.append(target)
+                    formulas.add(key)
+        self.log.record('gap_target_pool_finished', keep_limit=min(count,30),
+                        kept=[t.to_dict() for t in kept], gaps_considered=len(detection['gaps']))
+        return tuple(kept)
+
+    def _propose_target_pool(self, commitments, count, named_position=None, *, resolution_gap=None):
         from ara.runtime.search_alignment import symbols
         vocabulary = self.search_vocabulary(commitments)
         from ara.runtime.target_policy import target_context, trivial_targets, classifier_inputs
         from ara.runtime.contribution import formula_hash
         require(type(count) is int and count > 0, 'target count must be positive')
-        keep_count = 1 if named_position is not None else min(count, 10)
+        keep_count = 1 if named_position is not None else min(count, 30)
         pool_count = 1 if named_position is not None else 30
         def check(data):
             targets = tuple(Proposition.from_dict(p) for p in data['targets'])
@@ -949,10 +981,15 @@ class ModelCalls:
         inputs = dict(commitments=commitments.to_dict(), count=pool_count, keep_count=keep_count,
                       attempt=1, attempt_budget=3, named_position=named_position,
                       **vocabulary, **target_context(commitments, load_bank(self.root / 'bank')))
+        if resolution_gap is not None:
+            inputs.update(resolution_gap=resolution_gap.to_dict(),
+                resolution_instruction='Propose a new resolving thesis: a distinction, restriction or bridge addressing this gap. Support it by bank schemes using endorsed T from every support group. Empty groups mean no admissible evidence. All novelty and stance gates still apply.')
         frozen = set().union(*(set(symbols(c.formula)) for c in commitments.commitments))
         kept, kept_ids, kept_formulas = [], set(), set()
         for attempt in range(3):
             targets = self.call('propose_targets', inputs, check)
+            if resolution_gap is not None:
+                targets = tuple(replace(p, id=resolution_gap.id + ':' + p.id, gap=resolution_gap) for p in targets)
             targets = tuple(p if p.formula else replace(p, formula=self.formalise(p, commitments=commitments))
                             for p in targets)
             disconnected = [p.id for p in targets if not set(symbols(p.formula)) & frozen]
@@ -975,6 +1012,9 @@ class ModelCalls:
                 classification = self.call('classify_target', content, lambda d: d)
                 self.log.record('target_own_thesis_classification', target_id=target.id,
                                 attempt=attempt + 1, **classification)
+                if target.gap is not None and classification.get('resolves_gap') is not True:
+                    rejected.append(dict(target_id=target.id, target=target.to_dict(),
+                        reason='gap_resolution_not_established', explanation=classification['reason']))
                 if classification['novelty'] != 'new_assertion' or classification['fidelity'] != 'matches':
                     rejected.append(dict(target_id=target.id, target=target.to_dict(), reason='target_content_not_established',
                                          novelty=classification['novelty'], fidelity=classification['fidelity'],
@@ -1076,6 +1116,11 @@ class ModelCalls:
             answer = CQAnswer.from_dict(data)
             require(answer.cq_id == question.id, 'wrong CQ id')
             require(all(commitments.get(t) is not None for t in answer.supporting_t_ids), 'unknown CQ T id')
+            from ara.engine.routes import partial_cq
+            if answer.answered and partial_cq(answer.answer):
+                self.log.record('cq_answer_downgraded', bank_id=proposal.bank_id,
+                                original=answer.to_dict(), reason='partial_answer_is_not_yes')
+                answer = replace(answer, answered=False)
             return answer
         return self.call('answer_cq', dict(question=question.to_dict(), proposal=proposal.to_dict(),
                                       commitments=commitments.to_dict(), **self.search_vocabulary(commitments)), check)

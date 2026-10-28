@@ -12,7 +12,7 @@ seed: 0
 forward_pass_depth: 2
 essay_word_limit: 6000
 essay_min_words: 4500
-target_candidates: 10
+target_candidates: 30
 cache_dir: cache
 runs_dir: runs
 web_search_max_uses: 5
@@ -65,7 +65,7 @@ model_context_token_bound: 200000
 
 # Operator-editable per-run caps; no separate aggregate spend guard.
 pilot:
-  target_candidates: 10
+  target_candidates: 30
   depth_cap: 6
   node_cap: 500
   forward_pass_depth: 2

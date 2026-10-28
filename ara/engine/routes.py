@@ -3,14 +3,20 @@ from __future__ import annotations
 
 from dataclasses import replace
 from functools import lru_cache
+import re
 
 from ara.bank import Bank
 from ara.types import CommitmentSet, CQAnswer, RouteGraph, RouteNode
 from ara.engine.terminus import is_terminus
 
 
+def partial_cq(text):
+    return bool(re.search(r'\b(partly|partially|to some extent|in part|not fully)\b', text, re.I))
+
+
 def cq_supported(answer: CQAnswer, question_id: str, commitments: CommitmentSet) -> bool:
     return (answer.cq_id == question_id and answer.answered and bool(answer.answer.strip())
+            and not partial_cq(answer.answer)
             and bool(answer.supporting_t_ids)
             and all(commitments.get(tid) is not None for tid in answer.supporting_t_ids))
 

@@ -20,21 +20,21 @@ def candidate(i):
         (SymbolDefinition('F','predicate',0,'F'),) + ((SymbolDefinition('R','atom',0,'R'),) if i else ()))
 
 
-def test_pool_keeps_ten_in_stable_order_and_logs_surplus(tmp_path):
+def test_pool_keeps_thirty_in_stable_order(tmp_path):
     pool=[candidate(i) for i in range(30)]
     def reply(kind,inputs):
         if kind=='propose_targets':
-            assert inputs['count']==30 and inputs['keep_count']==10
+            assert inputs['count']==30 and inputs['keep_count']==30
             assert inputs['attempt_budget']==3
             assert any(b['id']=='sign' and b['critical_questions'] for b in inputs['bank'])
             assert inputs['support_examples']
             return dict(targets=[p.to_dict() for p in pool])
         return dict(novelty='new_assertion',fidelity='matches',classification='own_thesis',reason='P')
     calls,_=rig(tmp_path,reply)
-    assert calls.propose_targets(T)==tuple(pool[:10])
+    assert calls.propose_targets(T)==tuple(pool)
     events=payloads(calls,'target_pool_candidate')
     assert len(events)==30
-    assert [e['disposition'] for e in events]==['kept']*10+['over_limit']*20
+    assert [e['disposition'] for e in events]==['kept']*30
     assert [e['target'] for e in events]==[p.to_dict() for p in pool]
 
 

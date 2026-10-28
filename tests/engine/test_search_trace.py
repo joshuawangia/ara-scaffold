@@ -206,7 +206,7 @@ def test_native_500_state_trace_full_report(tmp_path, monkeypatch):
     monkeypatch.setattr(rendering.shutil, 'which', lambda _: None)
     e, ports = engine(table(), depth_cap=6, node_cap=500)
     entry = e.bank.get('expert_opinion')
-    def propose(goal, commitments, entries):
+    def propose(goal, commitments, entries, *, feedback=()):
         child = Formula('and', (goal.formula, P))
         return (proposal(entry.id, goal.formula, **{s.id: child for s in entry.premise_slots}),)
     ports.propose_cuts = propose
@@ -309,7 +309,7 @@ def test_padded_cap_trace_stays_below_pilot_limit_and_preserves_every_route(tmp_
     from test_search import R
     from ara.runtime.report import build_run
     e, ports = engine(table(), depth_cap=6, node_cap=500)
-    def propose(goal, commitments, entries):
+    def propose(goal, commitments, entries, *, feedback=()):
         cuts = []
         for atom in (P, Q, R):
             child = Formula('and', (goal.formula, atom))

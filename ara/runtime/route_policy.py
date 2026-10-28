@@ -109,6 +109,13 @@ def route_contribution(route, commitments=None, provenance=None):
             receipt.update(classification='CLOSED-contribution-unresolved', reason='paper_identity_unavailable')
         elif not papers['cross_paper_supported']:
             receipt.update(classification='CLOSED-single-paper', reason='fewer_than_two_papers')
+    gap = next(n.proposition.gap for n in route.nodes if n.id == route.root_id)
+    if gap is not None:
+        from ara.runtime.gaps import resolution_support
+        resolution = resolution_support(gap, receipt.get('support_ids', []), provenance)
+        receipt['gap_resolution'] = resolution
+        if receipt['classification'] == 'CLOSED-derived' and not resolution['supported']:
+            receipt.update(classification='CLOSED-gap-unresolved', reason='gap_side_support_missing')
     crossings = stance_crossings(route, provenance)
     if crossings:
         receipt.update(classification='CLOSED-stance-crossing' if route.status == 'CLOSED' else route.status,

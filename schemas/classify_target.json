@@ -31,6 +31,9 @@
         "mismatch",
         "unclear"
       ]
+    },
+    "resolves_gap": {
+      "type": "boolean"
     }
   },
   "required": [

@@ -14,3 +14,5 @@ exact supplied content and roles. A smaller search_slice.bridge_limit means
 context admission reduced guidance deterministically. Bank signatures omit
 bibliographic metadata; scheme_signatures retains the actual critical questions.
 Only native licensing decides whether a proposed instance is valid.
+
+If rejection_feedback contains CQ_UNSUPPORTED, this is the single scheme-choice correction: choose a different supplied bank scheme whose CQs fit the available frozen evidence. Do not repeat the failed scheme or invent a missing linking claim. A goal.gap requires endorsed support from every support_group; merely using two unrelated papers is insufficient.

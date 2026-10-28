@@ -33,7 +33,8 @@ def expand_graph(graph, reference):
     for node in graph['nodes']:
         p = node['proposition']
         nodes.append({**{k: v for k, v in node.items() if k != 'proposal_id'},
-                      'proposition': dict(id=p['id'], text=reference('text', p['text_id']),
+                      'proposition': dict(**{k:v for k,v in p.items() if k not in ('text_id','formula_id')},
+                                          text=reference('text', p['text_id']),
                                           formula=reference('formula', p['formula_id'])),
                       'proposal': expand_proposal(node['proposal_id'], reference)})
     return {**graph, 'nodes': nodes}
@@ -246,6 +247,7 @@ def validate_trace(trace):
             issue('proof root differs from target formula')
         if isinstance(target, dict):
             trace['target'] = dict(id=target.get('id', '(unknown)'),
+                                   **{k:v for k,v in target.items() if k not in ('id','text_id','formula_id')},
                                    text=reference('text', target.get('text_id')),
                                    formula=reference('formula', target.get('formula_id')))
         trace['nodes'] = list(nodes.values())

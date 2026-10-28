@@ -3859,3 +3859,54 @@ probe with earlier-ID reported and attacked copies and a later-ID endorsed copy,
 at normal sizing and forced k=0. The same engine now closes P using the endorsed
 commitment. Exact retention and endorsed-first order have production-wire controls.
 No paid calls or push; scoped verification receipts are in the Round 24 report.
+
+## Round 25 — CQ evidence retrieval and gap-driven targets
+
+CQ answers retrieve from all frozen T, independently of the leaf guidance slice.
+Verified endorsed commitments rank by shared question/slot symbols, then lexical
+content-definition overlap and ID. The request projects source roles, retains
+frozen hashes, counts input plus output allowance and shrinks 16/8/4/2/1/0 leads.
+Each citation remains checked against full T; engine stance and support checks
+remain authoritative. Relevance does not establish a linking claim. Legacy roles
+remain unavailable. Count refusal retains search-local failure semantics.
+
+Answers containing partly, partially, to some extent, in part or not fully are
+preserved verbatim but downgraded to unanswered with an explicit receipt. The
+engine independently refuses these as positive CQ support. Unsupported CQs allow
+one extra proposal batch using a different defeasible bank scheme, with failed
+questions and answers as feedback. Repeated schemes are discarded; every new
+proposal still requires normal licensing. Original OPEN routes remain visible.
+
+Gap discovery uses verified frozen metadata. It checks cross-paper endorsed pairs
+sharing symbols with Z3, and one deletion-minimal joint inconsistency witness per
+shared-symbol component. It also records exact formula/content stance conflicts
+and explicit unresolved/open-problem markers in endorsed content/catalogue
+entries. Every discovered gap records kind, commitments, papers and endorsed
+support groups. The component search is bounded witness discovery, not exhaustive
+enumeration of every inconsistent subset or semantic disagreement. Missing
+metadata never invents a gap, stance or definition.
+
+Each gap precedes general target generation. A resolution candidate must pass the
+existing novelty, content/fidelity and own-thesis gates, plus an explicit classifier
+judgment that it addresses the gap. An optional immutable gap obligation travels
+with the target through formalization, negation, search, graph codecs and replay.
+It is absent from legacy proposition encodings. CommitmentSet, commitments.json
+and frozen catalogue v1 are unchanged. CLOSED-derived resolution routes must use
+endorsed evidence from every gap side as well as satisfy the existing cross-paper
+matching rule. Attacked content identifies a conflict; it never becomes positive
+support. Missing side support yields CLOSED-gap-unresolved. Default target
+retention rises to 30, keeping gap candidates first; explicit smaller caller
+limits and the named-position workflow remain supported.
+
+Whole-T classical novelty remains strict: inconsistent frozen T can entail every
+candidate, blocking a resolution thesis. This round does not weaken that gate or
+claim that a classifier judgment proves a substantive resolution.
+
+Offline pilot-5 retrieval found leads for 12/12 CQs across 12 OPEN routes; every
+fake answer remained unsupported. Deterministic discovery found three explicit open-problem candidates and no
+contradiction/stance-conflict candidates. Three distinct fake resolution targets
+passed the mechanical gates; this is not substantive resolution evidence. These are vocabulary/marker
+results, not proof that the literature has no gaps or that the CQs are answered.
+The reproducible offline entry point is tools/offline_gap_cq.py. Exact full-suite
+and sequential control receipts belong in /home/dev/ara-work/reports/xi-round25.md.
+No paid calls or push.

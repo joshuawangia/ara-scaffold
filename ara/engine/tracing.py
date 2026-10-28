@@ -15,6 +15,10 @@ def identity(value):
     return hashlib.sha256(encoded(value).encode()).hexdigest()
 
 
+def proposition_metadata(proposition):
+    return {k:v for k,v in proposition.to_dict().items() if k not in ('text', 'formula')}
+
+
 class TraceRecorder:
     def __init__(self, sink: SearchTraceSink | None):
         self.sink = sink
@@ -39,7 +43,7 @@ class TraceRecorder:
     def graph(self, graph):
         result = graph.to_dict()
         for node, encoded_node in zip(graph.nodes, result['nodes']):
-            encoded_node['proposition'] = dict(id=node.proposition.id,
+            encoded_node['proposition'] = dict(**proposition_metadata(node.proposition),
                 formula_id=self.define('formula', node.proposition.formula.to_dict()),
                 text_id=self.define('text', node.proposition.text))
             del encoded_node['proposal']
@@ -52,7 +56,7 @@ class TraceRecorder:
         if action == 'begin':
             target = data.pop('target')
             formula = target.formula.to_dict()
-            self.sink.record('begin', version=2, **data, target=dict(id=target.id,
+            self.sink.record('begin', version=2, **data, target=dict(**proposition_metadata(target),
                              formula_id=identity(formula), text_id=identity(target.text)))
             self.define('formula', formula)
             self.define('text', target.text)

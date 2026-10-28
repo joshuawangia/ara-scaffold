@@ -1446,19 +1446,19 @@ CASES += [
      'tests/runtime/test_content_provenance.py::test_invalid_patch_keeps_active_definition_feedback'),
     ('target_pool_size', 'ara/runtime/calls.py',
      "pool_count = 1 if named_position is not None else 30", "pool_count = 1 if named_position is not None else 10",
-     'tests/runtime/test_target_pool.py::test_pool_keeps_ten_in_stable_order_and_logs_surplus'),
+     'tests/runtime/test_target_pool.py::test_pool_keeps_thirty_in_stable_order'),
     ('target_pool_limit', 'ara/runtime/calls.py',
-     "keep_count = 1 if named_position is not None else min(count, 10)", "keep_count = 1 if named_position is not None else 20",
-     'tests/runtime/test_target_pool.py::test_pool_keeps_ten_in_stable_order_and_logs_surplus'),
+     "keep_count = 1 if named_position is not None else min(count, 30)", "keep_count = 1 if named_position is not None else 20",
+     'tests/runtime/test_target_pool.py::test_pool_keeps_thirty_in_stable_order'),
     ('target_pool_survivors', 'ara/runtime/calls.py',
-     "return tuple(kept)", "return tuple(kept[-1:])",
+     "        return tuple(kept)\n\n    def propose_cuts", "        return tuple(kept[-1:])\n\n    def propose_cuts",
      'tests/runtime/test_target_pool.py::test_two_corrections_preserve_survivors_and_give_witnesses'),
     ('target_concrete_witness', 'ara/runtime/target_policy.py',
      "entailing_commitment=witness.to_dict() if witness else None", "entailing_commitment=None",
      'tests/runtime/test_target_pool.py::test_two_corrections_preserve_survivors_and_give_witnesses'),
     ('target_bank_guidance', 'ara/runtime/target_policy.py',
      "bank=[b.to_dict() for b in bank.entries]", "bank=[]",
-     'tests/runtime/test_target_pool.py::test_pool_keeps_ten_in_stable_order_and_logs_surplus'),
+     'tests/runtime/test_target_pool.py::test_pool_keeps_thirty_in_stable_order'),
     ('target_new_vocabulary', 'ara/runtime/calls.py',
      "                if reasons:", "                if reasons or target.id in disconnected:",
      'tests/runtime/test_target_pool.py::test_native_new_atom_defeasible_closure'),
@@ -1667,6 +1667,34 @@ CASES += [
      "roles.get(c.id, {}).get('stance') != 'endorsed'", 'False',
      'tests/runtime/test_search_context.py::test_all_exact_leaf_evidence_survives_bridges_and_shrinking'),
 ]
+
+
+CASES += [
+    ('cq_rank_symbols', 'ara/runtime/cq_context.py', "-r['shared_symbols']", "r['shared_symbols']", 'tests/runtime/test_cq_retrieval.py::test_cq_retrieves_outside_premises_ranks_and_shrinks'),
+    ('cq_endorsed_retrieval', 'ara/runtime/cq_context.py', "if provenance is not None and rows[c.id]['stance'] != 'endorsed':", 'if False:', 'tests/runtime/test_cq_retrieval.py::test_retrieval_excludes_restricted_evidence_but_full_T_ids_remain_valid'),
+    ('cq_bound_retrieval', 'ara/runtime/cq_context.py', 'candidates = ranked[:limit]', 'candidates = ranked', 'tests/runtime/test_cq_retrieval.py::test_cq_retrieves_outside_premises_ranks_and_shrinks'),
+    ('cq_output_allowance', 'ara/runtime/cq_context.py', 'total = count.initial_input_tokens + count.context_output_tokens', 'total = count.initial_input_tokens', 'tests/runtime/test_cq_retrieval.py::test_cq_retrieves_outside_premises_ranks_and_shrinks'),
+    ('cq_lexical_retrieval', 'ara/runtime/cq_context.py', 'if shared or lexical:', 'if shared:', 'tests/runtime/test_cq_retrieval.py::test_cq_lexical_overlap_retrieves_definitions_without_shared_symbols'),
+    ('cq_partial_downgrade', 'ara/runtime/calls.py', 'if answer.answered and partial_cq(answer.answer):', 'if False:', 'tests/runtime/test_cq_retrieval.py::test_partial_cq_is_disclosed_and_not_supported'),
+    ('cq_partial_engine', 'ara/engine/routes.py', 'and not partial_cq(answer.answer)', 'and True', 'tests/runtime/test_cq_retrieval.py::test_retrieval_excludes_restricted_evidence_but_full_T_ids_remain_valid'),
+    ('cq_scheme_retry', 'ara/engine/search.py', 'if not feedback:\n            return', 'if True:\n            return', 'tests/runtime/test_cq_retrieval.py::test_unsupported_cq_gets_one_different_scheme_correction'),
+    ('cq_different_scheme', 'ara/engine/search.py', 'if proposal.bank_id not in {b.id for b in remaining}:', 'if False:', 'tests/runtime/test_cq_retrieval.py::test_unsupported_cq_gets_one_different_scheme_correction'),
+    ('gap_contradictions', 'ara/runtime/gaps.py', "return verdict=='SOLVER_UNSAT'", 'return False', 'tests/runtime/test_gaps.py::test_gap_set_witness_and_same_paper_negative'),
+    ('gap_stance_conflict', 'ara/runtime/gaps.py', 'if a.formula.canonical()==b.formula.canonical() or a.text==b.text:', 'if False:', 'tests/runtime/test_gaps.py::test_gap_kinds_and_stance_are_deterministic'),
+    ('gap_open_problem', 'ara/runtime/gaps.py', 'if any(_OPEN.search(text) for text in (a.text,*definitions)):', 'if False:', 'tests/runtime/test_gaps.py::test_gap_kinds_and_stance_are_deterministic'),
+    ('gap_side_support', 'ara/runtime/gaps.py', 'supported=bool(witnesses) and all(witnesses)', 'supported=True', 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
+    ('gap_target_binding', 'ara/types.py', 'if self.gap is None:', 'if True:', 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
+    ('gap_resolving_thesis', 'ara/runtime/calls.py', "if target.gap is not None and classification.get('resolves_gap') is not True:", 'if False:', 'tests/runtime/test_gaps.py::test_unrelated_thesis_is_not_retained_as_resolution'),
+]
+
+
+CASES += [
+    ('cq_trace_retry_indices', 'ara/engine/search.py', "last_index = payload['proposal_index']", 'last_index = -1', 'tests/runtime/test_cq_retrieval.py::test_unsupported_cq_gets_one_different_scheme_correction'),
+    ('gap_trace_metadata', 'ara/engine/tracing.py', "encoded_node['proposition'] = dict(**proposition_metadata(node.proposition),", "encoded_node['proposition'] = dict(id=node.proposition.id,", 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
+]
+
+
+CASES += [('gap_open_marker_coverage', 'ara/runtime/gaps.py', '|is open|problem remains|jury is out', '', 'tests/runtime/test_gaps.py::test_explicit_open_markers_beyond_unresolved')]
 
 
 def main():

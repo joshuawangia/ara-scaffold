@@ -135,6 +135,41 @@ class Engine:
             emit(self.sink, 'discarded', 'PROPOSAL_CORRECTION',
                  detail='; '.join(f['reason'] for f in feedback), node_id=node.id)
 
+    def _cq_cuts(self, node, state_id, trace, feedback):
+        attempted = set()
+        last_index = -1
+        def initial_trace(action, **payload):
+            nonlocal last_index
+            if action == 'proposal':
+                last_index = payload['proposal_index']
+            trace(action, **payload)
+        for index, proposal, license in self._licensed_cuts(node, state_id, initial_trace):
+            attempted.add(proposal.bank_id)
+            yield index, proposal, license
+        if not feedback:
+            return
+        remaining = tuple(b for b in self.bank.entries if b.id not in attempted and b.kind == 'defeasible')
+        if not remaining:
+            return
+        emit(self.sink, 'discarded', 'CQ_SCHEME_CORRECTION', detail='Unsupported CQs; one different-scheme retry.', node_id=node.id)
+        try:
+            proposals = self.proposer.propose_cuts(node.proposition, self.frozen_commitments,
+                remaining, feedback=tuple(feedback))
+        except InvalidProposalBatch as exc:
+            emit(self.sink, 'discarded', 'INVALID_PROPOSAL_BATCH', detail=str(exc), node_id=node.id)
+            return
+        for index, proposal in enumerate(proposals, last_index + 1):
+            trace('proposal', state_id=state_id, node_id=node.id, proposal_index=index, proposal=proposal)
+            if proposal.bank_id not in {b.id for b in remaining}:
+                emit(self.sink, 'discarded', 'CQ_REPEATED_SCHEME', bank_id=proposal.bank_id, node_id=node.id)
+                trace('prune', state_id=state_id, node_id=node.id, proposal_index=index, reason='CQ_REPEATED_SCHEME')
+                continue
+            license = self.licenser.check(proposal, node.proposition, node.id)
+            if license.licensed:
+                yield index, proposal, license
+            else:
+                trace('prune', state_id=state_id, node_id=node.id, proposal_index=index, reason=license.decision.reason_code)
+
     def _search(self, target, prefix, search_id, trace):
         trace('begin', search_id=search_id, target=target, config=self.config.to_dict(),
               bank_version=self.bank.bank_version)
@@ -179,7 +214,8 @@ class Engine:
                 continue
             trace('expand', state_id=state_id, node_id=node.id, depth=state.depths[node.id])
             produced = False
-            for proposal_index, proposal, license in self._licensed_cuts(node, state_id, trace):
+            cq_feedback = []
+            for proposal_index, proposal, license in self._cq_cuts(node, state_id, trace, cq_feedback):
                 self._licenses.append((proposal, license))
                 if created + len(license.premises) > self.config.node_cap:
                     truncated = True
@@ -216,6 +252,10 @@ class Engine:
                                 for q in entry.critical_questions)
                 for q, answer in zip(entry.critical_questions, answers):
                     supported = cq_supported(answer, q.id, self.commitments)
+                    if not supported:
+                        cq_feedback.append(dict(reason='CQ_UNSUPPORTED', bank_id=entry.id,
+                            question=q.to_dict(), answer=answer.to_dict(),
+                            instruction='Choose a different bank scheme whose CQs fit available frozen evidence; do not invent support.'))
                     for tid in answer.supporting_t_ids:
                         if self.frozen_commitments.get(tid) is not None and self.commitments.get(tid) is None:
                             emit(self.sink, 'discarded', 'STANCE_CROSSING', detail=tid, node_id=node.id)

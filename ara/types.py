@@ -156,14 +156,26 @@ class SymbolDefinition(Record):
 
 
 @dataclass(frozen=True)
+class Gap(Record):
+    id: str
+    kind: Literal['contradiction', 'stance_conflict', 'open_problem']
+    commitment_ids: tuple[str, ...]
+    paper_ids: tuple[str, ...]
+    support_groups: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True)
 class Proposition(Record):
     id: str
     text: str
     formula: Formula | None = None
     new_symbols: tuple[SymbolDefinition, ...] = ()
+    gap: Gap | None = None
 
     def to_dict(self):
         value = super().to_dict()
+        if self.gap is None:
+            del value['gap']
         if not self.new_symbols:
             del value['new_symbols']
         return value
@@ -174,7 +186,7 @@ def negate_proposition(proposition: Proposition) -> Proposition:
     if proposition.formula is None:
         raise ValueError('negation requires a formula')
     formula = proposition.formula.negated()
-    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols)
+    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols, proposition.gap)
 
 
 @dataclass(frozen=True)

@@ -1,4 +1,4 @@
-"""Solver contribution gates and conservative attribution screening."""
+"""Solver contribution gates, advisory lexical evidence and exact report frames."""
 import re
 from collections import Counter
 from ara.runtime.search_alignment import symbols
@@ -10,21 +10,30 @@ _ATTRIBUTION = re.compile(
     r"\baccording\s+to\b|\bon\s+.+?[’']s\s+account\b|"
     r"[’']s\s+(view|position|thesis|claim|belief|account)\b", re.I)
 
+_CATALOGUE_HINTS = re.compile(_ATTRIBUTION.pattern + r'|\b(attribution|attitude|reported|attributed)\b', re.I)
+
 
 def attributed_report(text):
     return bool(_ATTRIBUTION.search(text))
 
 
-def top_level_attribution(formula, catalogue):
-    while formula.op in ('forall', 'exists', 'not'):
-        formula = formula.args[0]
-    if formula.op not in ('atom', 'predicate'):
-        return False
-    return any(s['name'] == formula.name and s['kind'] == formula.op and
-               s['arity'] == len(formula.terms) and
-               (attributed_report(s['definition']) or attributed_report(s['name']) or
-                re.search(r'\b(attribution|attitude|reported|attributed)\b', s['definition'], re.I))
-               for s in catalogue or [])
+def leading_report_frame(text):
+    return bool(re.match(r"^\s*[A-Z][\w’'-]*(?:\s+[A-Z][\w’'-]*){0,3}\s+"
+                         r"(?i:argues|holds|believes)\s+(?i:that)\b", text))
+
+
+def attribution_hits(target, catalogue=None):
+    sources = [('target_text', target.text)]
+    sources += [('proposed_definition:' + s.name, s.definition) for s in target.new_symbols]
+    used = set(symbols(target.formula))
+    sources += [('catalogue', text) for s in catalogue or []
+                if (s['name'], s['kind'], s['arity']) in used for text in (s['name'], s['definition'])]
+    hits = []
+    for source, text in sources:
+        pattern = _CATALOGUE_HINTS if source == 'catalogue' else _ATTRIBUTION
+        hits.extend(dict(source=source, text=text, match=m.group(), start=m.start(), end=m.end())
+                    for m in pattern.finditer(text))
+    return hits
 
 
 def target_context(commitments, bank):
@@ -66,7 +75,7 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None):
         reason = receipt['reason'] if receipt['status'] != 'candidate' else None
         if reason is None and novelty['status'] != 'candidate':
             reason = novelty['reason']
-        if attributed_report(target.text) or top_level_attribution(target.formula, catalogue):
+        if leading_report_frame(target.text):
             reason = 'attributed_report'
         if reason:
             witness = commitments.get(receipt.get('commitment_id'))
@@ -102,6 +111,7 @@ def classifier_inputs(target, vocabulary, commitments):
     return dict(target=target.to_dict(), rendered_content=render(target.formula),
                 frozen_content=content['frozen_content'], proposed_definitions=content['proposed_definitions'],
                 definition_issues=content['issues'],
+                lexical_attribution_hits=attribution_hits(target, vocabulary['symbol_catalogue']),
                 definition_semantics=vocabulary['definition_semantics'],
                 commitments_sha256=vocabulary['commitments_sha256'],
                 catalogue_sha256=vocabulary['catalogue_sha256'],

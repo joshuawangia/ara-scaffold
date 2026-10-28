@@ -75,7 +75,7 @@ def canned(config):
             'usage': {'input_tokens': 5, 'output_tokens': 3}}
     add('build_t', {'literature': (ROOT / 'tests/fixtures/runtime/smoke-literature.txt').read_text(),
                     'audience': 'runtime audience'}, T.to_dict())
-    from ara.runtime.search_alignment import catalogue_inputs
+    from ara.runtime.search_alignment import catalogue_inputs, search_guidance
     from ara.runtime.target_policy import target_context, classifier_inputs
     vocabulary = catalogue_inputs(ROOT / 'tests/fixtures/runtime', T)
     add('propose_targets', {'commitments': T.to_dict(), 'count': 20, 'keep_count': 2, 'attempt': 1, 'attempt_budget': 3, 'named_position': None, **vocabulary, **target_context(T, load_bank(ROOT / 'bank'))},
@@ -85,10 +85,10 @@ def canned(config):
         add('classify_target', classifier_inputs(target, vocabulary, T),
             dict(novelty='new_assertion',fidelity='matches',classification='own_thesis', reason='P'))
         for goal in (target, negate_proposition(target)):
-            add('map_leaf', dict(leaf=goal.to_dict(), commitments=T.to_dict(), **vocabulary),
+            add('map_leaf', dict(leaf=goal.to_dict(), commitments=T.to_dict(), **vocabulary, **search_guidance(goal,T,load_bank(ROOT/'bank').entries)),
                 {'t_id': 'open'})
             add('propose_cuts', {'goal': goal.to_dict(), 'commitments': T.to_dict(), 'bank': [],
-                'proposal_limit': 3, 'attempt_budget': 1, **vocabulary}, {'proposals': []})
+                'proposal_limit': 3, 'attempt_budget': 2, 'attempt':1, 'rejection_feedback':[], **vocabulary, **search_guidance(goal,T,())}, {'proposals': []})
     route = fixture_route(TARGETS[0])
     add('write_essay', {'outline': calls.essay_outline(route), 'word_limit': 300, 'minimum_words': 150, 'feedback': []}, DRAFT)
     add('audit_essay', calls.audit_inputs(route, DRAFT),

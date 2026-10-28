@@ -11,7 +11,7 @@ class Scripted(Ports):
         super().__init__()
         self.cuts, self.answered, self.goals, self.repairs = cuts or {}, answered, [], []
 
-    def propose_cuts(self, goal, commitments, bank):
+    def propose_cuts(self, goal, commitments, bank, *, feedback=()):
         self.goals.append(goal.formula.canonical())
         return self.cuts.get(goal.formula.canonical(), ())
 

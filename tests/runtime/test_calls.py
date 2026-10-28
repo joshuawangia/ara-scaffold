@@ -140,7 +140,9 @@ def test_ports_return_typed_values_and_enforce_references(rig):
     register(calls, provider, 'tier1_repair', repair_input, {'action': 'unresolved', 'detail': 'P', 'proposals': []})
     assert calls.repair_tier1((), (), commitments) == Tier1Repair('unresolved', 'P', ())
     leaf = Proposition('q', 'Q')
-    register(calls, provider, 'map_leaf', {'leaf': leaf.to_dict(), 'commitments': commitments.to_dict(), **calls.search_vocabulary(commitments)}, {'t_id': 'missing'})
+    from ara.runtime.search_alignment import search_guidance
+    from ara.bank import load_bank
+    register(calls, provider, 'map_leaf', {'leaf': leaf.to_dict(), 'commitments': commitments.to_dict(), **calls.search_vocabulary(commitments), **search_guidance(leaf,commitments,load_bank(calls.root/'bank').entries)}, {'t_id': 'missing'})
     with pytest.raises(Rejected, match='unknown T id'):
         calls.map_leaf(leaf, commitments)
 

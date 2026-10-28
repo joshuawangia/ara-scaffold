@@ -9,7 +9,7 @@ import random
 from typing import Mapping, TYPE_CHECKING
 
 from ara.bank import Bank
-from ara.ports import CQAnswerer, CutProposer, EventSink, Formaliser, LeafMapper, Tier1Repairer, SearchTraceFactory
+from ara.ports import InvalidProposalBatch, CQAnswerer, CutProposer, EventSink, Formaliser, LeafMapper, Tier1Repairer, SearchTraceFactory
 from ara.types import CommitmentSet, ProofScope, Proposal, Proposition, Record, RouteGraph, RouteNode
 from ara.engine.licensing import Licenser, License, emit
 from ara.engine.routes import cq_supported, dialectical_cost, finish, independent_count
@@ -97,6 +97,44 @@ class Engine:
         with context as sink:
             return self._search(target, prefix, search_id, TraceRecorder(sink))
 
+    def _licensed_cuts(self, node, state_id, trace):
+        feedback, seen, index = [], set(), 0
+        for attempt in range(2):
+            try:
+                proposals = self.proposer.propose_cuts(node.proposition, self.frozen_commitments,
+                    self.bank.entries, **({'feedback': tuple(feedback)} if attempt else {}))
+            except InvalidProposalBatch as exc:
+                feedback = [dict(reason=str(exc))]
+                emit(self.sink, 'discarded', 'INVALID_PROPOSAL_BATCH', detail=str(exc), node_id=node.id)
+                proposals = ()
+            else:
+                feedback = [] if proposals else [dict(reason='NO_PROPOSALS')]
+            admitted = False
+            for proposal in proposals:
+                proposal_index = index
+                index += 1
+                trace('proposal', state_id=state_id, node_id=node.id,
+                      proposal_index=proposal_index, proposal=proposal)
+                if proposal.to_json() in seen:
+                    reason = 'DUPLICATE_PROPOSAL'
+                    emit(self.sink, 'discarded', reason, bank_id=proposal.bank_id, node_id=node.id)
+                    license = None
+                else:
+                    seen.add(proposal.to_json())
+                    license = self.licenser.check(proposal, node.proposition, node.id)
+                    reason = license.decision.reason_code
+                if license is None or not license.licensed:
+                    feedback.append(dict(reason=reason, proposal=proposal.to_dict()))
+                    trace('prune', state_id=state_id, node_id=node.id,
+                          proposal_index=proposal_index, reason=reason)
+                    continue
+                admitted = True
+                yield proposal_index, proposal, license
+            if admitted or attempt == 1:
+                return
+            emit(self.sink, 'discarded', 'PROPOSAL_CORRECTION',
+                 detail='; '.join(f['reason'] for f in feedback), node_id=node.id)
+
     def _search(self, target, prefix, search_id, trace):
         trace('begin', search_id=search_id, target=target, config=self.config.to_dict(),
               bank_version=self.bank.bank_version)
@@ -140,22 +178,8 @@ class Engine:
                      node_id=node.id, reason='CYCLE')
                 continue
             trace('expand', state_id=state_id, node_id=node.id, depth=state.depths[node.id])
-            proposals = self.proposer.propose_cuts(node.proposition, self.frozen_commitments, self.bank.entries)
-            produced, seen = False, set()
-            for proposal_index, proposal in enumerate(proposals):
-                trace('proposal', state_id=state_id, node_id=node.id,
-                      proposal_index=proposal_index, proposal=proposal)
-                if proposal.to_json() in seen:
-                    emit(self.sink, 'discarded', 'DUPLICATE_PROPOSAL', bank_id=proposal.bank_id, node_id=node.id)
-                    trace('prune', state_id=state_id, node_id=node.id, proposal_index=proposal_index,
-                          reason='DUPLICATE_PROPOSAL')
-                    continue
-                seen.add(proposal.to_json())
-                license = self.licenser.check(proposal, node.proposition, node.id)
-                if not license.licensed:
-                    trace('prune', state_id=state_id, node_id=node.id, proposal_index=proposal_index,
-                          reason=license.decision.reason_code)
-                    continue
+            produced = False
+            for proposal_index, proposal, license in self._licensed_cuts(node, state_id, trace):
                 self._licenses.append((proposal, license))
                 if created + len(license.premises) > self.config.node_cap:
                     truncated = True

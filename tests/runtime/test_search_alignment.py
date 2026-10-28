@@ -144,6 +144,8 @@ def test_corrupt_catalogue_refused_without_dispatch(tmp_path):
 def test_proposal_reference_correction(tmp_path, defect):
     seen = []
     def reply(kind, inputs):
+        if kind=='map_leaf': return {'t_id':'open'}
+        if kind=='formalise_slots': return {'slots':[dict(slot=b['slot'],formula=b['formula']) for b in inputs['slot_bindings']]}
         assert kind == 'propose_cuts'
         seen.append(inputs)
         proposal = cut()
@@ -153,8 +155,10 @@ def test_proposal_reference_correction(tmp_path, defect):
             if defect == 'goal': proposal['conclusion_text'] = 'R'
         return {'proposals': [proposal]}
     calls, _ = rig(tmp_path, reply)
-    proposals = calls.propose_cuts(GOAL, T, load_bank(ROOT/'bank').entries)
-    assert len(seen) == 2 and 'validation_feedback' in seen[1]
+    route = NativeEngine(load_bank(ROOT/'bank'), calls)._engine(T).search(GOAL).routes[0]
+    assert route.status=='CLOSED'
+    proposals = [route.nodes[0].proposal]
+    assert len(seen) == 2 and seen[1]['rejection_feedback']
     assert proposals[0].conclusion_ref == 'current_goal'
     assert proposals[0].premises[0].t_id == 't2'
     assert proposals[0].premises[0].text == 'P -> Q'
@@ -182,7 +186,7 @@ def test_three_proposal_batch_keeps_valid_alternative(tmp_path):
     def reply(kind, inputs):
         if kind == 'map_leaf': return {'t_id': 'open'}
         if kind == 'propose_cuts':
-            assert inputs['proposal_limit'] == 3 and inputs['attempt_budget'] == 1
+            assert inputs['proposal_limit'] == 3 and inputs['attempt_budget'] == 2
             return {'proposals': [cut(bank_id='P'), cut(bank_id='Q'), cut()]}
         if kind == 'formalise_slots':
             return {'slots': [{'slot': 'conditional', 'formula': PQ.to_dict()},

@@ -503,7 +503,7 @@ CASES += [
      'current = events[start:]', 'current = events',
      'tests/runtime/test_report.py::test_historical_success_is_not_current_success_and_pending_is_visible'),
     ('search_trace_prunes', 'ara/engine/search.py',
-     "trace('prune', state_id=state_id, node_id=node.id, proposal_index=proposal_index,\n                          reason=license.decision.reason_code)", 'pass',
+     "trace('prune', state_id=state_id, node_id=node.id,\n                          proposal_index=proposal_index, reason=reason)", 'pass',
      'tests/engine/test_search_trace.py::test_trace_branches_rejections_and_completed_graphs'),
 ]
 
@@ -1211,7 +1211,7 @@ CASES += [
     ('search_goal_reference_text', 'ara/engine/licensing.py', '            if proposal.conclusion_text != goal.text:', '            if False:', 'tests/runtime/test_search_alignment.py::test_explicit_goal_reference_does_not_override_changed_text'),
     ('search_catalogue_inputs', 'ara/runtime/calls.py', 'vocabulary = catalogue_inputs(self.log.path.parent, commitments)', "vocabulary = dict(symbol_catalogue=None, catalogue_sha256=None, catalogue_status='unavailable_legacy', commitments_sha256=digest(canonical(commitments.to_dict())), commitment_provenance=None, provenance_status='unavailable_legacy', provenance_sha256=None, definition_semantics='unavailable_legacy')", 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
     ('search_target_preflight', 'ara/runtime/calls.py', '            if len(kept) >= keep_count:', '            if True:', 'tests/runtime/test_target_pool.py::test_two_corrections_preserve_survivors_and_give_witnesses'),
-    ('search_proposal_batch', 'ara/runtime/calls.py', 'proposal_limit=3, attempt_budget=1,', 'proposal_limit=1, attempt_budget=1,', 'tests/runtime/test_search_alignment.py::test_three_proposal_batch_keeps_valid_alternative'),
+    ('search_proposal_batch', 'ara/runtime/calls.py', 'proposal_limit=3, attempt_budget=2,', 'proposal_limit=1, attempt_budget=2,', 'tests/runtime/test_search_alignment.py::test_three_proposal_batch_keeps_valid_alternative'),
     ('search_proposal_batch_bound', 'ara/runtime/calls.py', "require(len(proposals) <= 3, 'proposal batch exceeds three candidates')", "require(True, 'proposal batch exceeds three candidates')", 'tests/runtime/test_search_alignment.py::test_proposal_batch_bound_is_enforced'),
     ('search_joint_slots', 'ara/engine/licensing.py', 'premises = self.formaliser.formalise_slots(proposal, goal, entry, self.commitments)', 'premises = tuple(self.formalise(Proposition(s.id, by_slot[s.id].text)) for s in entry.premise_slots)', 'tests/runtime/test_search_alignment.py::test_current_goal_reference_prevents_reformalization'),
     ('search_shared_metavariables', 'ara/runtime/calls.py', 'shared_metavariables=metavariable_bindings(entry, goal, bindings),', 'shared_metavariables=[],', 'tests/runtime/test_search_alignment.py::test_joint_open_slots_share_goal_vocabulary_and_still_require_entailment'),
@@ -1265,7 +1265,7 @@ CASES += [
 CASES += [
     ('target_attribution_exclusion', 'ara/runtime/target_policy.py',
      "            reason = 'attributed_report'", '            pass',
-     'tests/runtime/test_target_triviality.py::test_single_commitment_instance_and_attribution'),
+     'tests/runtime/test_contribution_gate.py::test_exact_leading_report_stays_hard_rejection'),
     ('target_two_corrections', 'ara/runtime/calls.py',
      '        for attempt in range(3):', '        for attempt in range(2):',
      'tests/runtime/test_target_triviality.py::test_trivial_target_correction_and_exhaustion'),
@@ -1321,12 +1321,12 @@ CASES += [
     ('broader_attribution_lexicon', 'ara/runtime/target_policy.py',
      'believes?|defends?|endorses?|says?|states?|thinks?|accounts?',
      'says?|states?|thinks?|accounts?',
-     'tests/runtime/test_contribution_gate.py::test_attributed_reports_rejected_even_when_model_says_own'),
+     'tests/runtime/test_contribution_gate.py::test_attributed_reports_rejected_by_classifier'),
     ('catalogue_attribution', 'ara/runtime/target_policy.py',
-     'or top_level_attribution(target.formula, catalogue)', 'or False',
-     'tests/runtime/test_contribution_gate.py::test_catalogue_top_level_attribution_is_rejected'),
+     "if (s['name'], s['kind'], s['arity']) in used for text", 'if False for text',
+     'tests/runtime/test_contribution_gate.py::test_catalogue_attribution_is_classifier_evidence'),
     ('closure_attribution', 'ara/runtime/route_policy.py',
-     'if attributed_report(root.text):', 'if False:',
+     'if leading_report_frame(root.text):', 'if False:',
      'tests/runtime/test_contribution_gate.py::test_native_attributed_closure_not_default_selectable'),
 ]
 
@@ -1560,6 +1560,31 @@ CASES += [
      'bind(key, target.text)', 'proposed[key] = target.text',
      'tests/runtime/test_nonlogical_contribution.py::test_automatic_and_explicit_bindings_share_collision_policy'),
 ]
+
+CASES += [
+    ('lexical_hit_receipt', 'ara/runtime/calls.py',
+     "hits=content['lexical_attribution_hits']", 'hits=[]',
+     'tests/runtime/test_search_guidance.py::test_own_voice_lexical_hits_are_advisory_through_selection'),
+    ('lexical_classifier_evidence', 'ara/runtime/target_policy.py',
+     "lexical_attribution_hits=attribution_hits(target, vocabulary['symbol_catalogue'])", 'lexical_attribution_hits=[]',
+     'tests/runtime/test_search_guidance.py::test_own_voice_lexical_hits_are_advisory_through_selection'),
+    ('lexical_advisory_selection', 'ara/runtime/route_policy.py',
+     'if leading_report_frame(root.text):', "if leading_report_frame(root.text) or 'account' in root.text:",
+     'tests/runtime/test_search_guidance.py::test_own_voice_lexical_hits_are_advisory_through_selection'),
+    ('cut_correction_budget', 'ara/engine/search.py',
+     'for attempt in range(2):', 'for attempt in range(1):',
+     'tests/runtime/test_search_guidance.py::test_native_new_atom_guidance_and_one_concrete_correction'),
+    ('cut_validation_budget', 'ara/runtime/calls.py',
+     "self._transport_call('propose_cuts', inputs, check, attempt=inputs['attempt'])", "self.call('propose_cuts', inputs, check)",
+     'tests/runtime/test_search_guidance.py::test_empty_batches_exhaust_one_correction[True]'),
+    ('cut_correction_feedback', 'ara/runtime/calls.py',
+     'rejection_feedback=list(feedback)', 'rejection_feedback=[]',
+     'tests/runtime/test_search_guidance.py::test_native_new_atom_guidance_and_one_concrete_correction'),
+    ('leaf_scheme_guidance', 'ara/runtime/search_alignment.py',
+     "for b in bank if b.kind == 'defeasible'", "for b in bank if False",
+     'tests/runtime/test_search_guidance.py::test_native_new_atom_guidance_and_one_concrete_correction'),
+]
+
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

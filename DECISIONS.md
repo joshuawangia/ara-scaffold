@@ -3742,3 +3742,31 @@ R5 uses one name-collision check for automatic and explicit proposed definitions
 Both reject reuse of a frozen name with a different signature; both accept a
 fresh F(a) binding. No CommitmentSet or frozen catalogue codec changes. Exact
 full-suite and control receipts belong to the external Round 20 report.
+
+## Round 21 — advisory attribution and new-atom scheme guidance
+
+Broad lexical attribution screening is advisory for search. Every text/definition
+hit is logged and supplied to the isolated own-thesis classifier. Its verdict is
+authoritative; exact leading name + argues/holds/believes that frames retain a
+hard rejection. Route display uses the same narrow exception. Construction's
+shared attributed_report helper remains unchanged. The classifier prompt treats
+named report patterns as strong evidence and distinguishes own-voice uses of
+"claims about" and "account". Fake classifier tests verify required judgments,
+not live model accuracy. Novelty, fidelity, stance and source integrity gates stay.
+
+Leaf mapping and cut proposal receive goal novelty, the actual non-logical bank
+signatures and CQs alongside the frozen catalogue. New atoms map to open and
+require a scheme's own conclusion, never an irrelevant hypothesis or nearby old
+claim. The native engine permits three candidates in a batch and one correction
+when none is licensed, with concrete engine/validation feedback. An empty batch
+reports NO_PROPOSALS. Validation retries cannot multiply this correction budget;
+operational errors still propagate. Licensed alternatives and all CQ/node/depth
+checks remain. This replaces the single cut batch from Round 12.
+
+Placeholder native closure and a separate offline fake-provider replay of the
+real pilot leaf exercise reachability. The latter is retained only in ignored
+run evidence; no real source content is committed. It does not establish semantic
+scheme fitness, useful synthesis or truthful CQ answers. The external Round 21
+report inventories arbitrary-conclusion schemes and their critical questions,
+source preservation and exact sequential test/control results. No paid calls or
+push; live use still requires current configuration and preflight evidence.

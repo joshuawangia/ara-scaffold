@@ -12,9 +12,13 @@ from ara.types import (
 )
 
 
+class InvalidProposalBatch(ValueError):
+    """An accounted proposal response failed validation; one engine correction may follow."""
+
+
 class CutProposer(Protocol):
     def propose_cuts(self, goal: Proposition, commitments: CommitmentSet,
-                     bank: tuple[BankEntry, ...]) -> tuple[Proposal, ...]: ...
+                     bank: tuple[BankEntry, ...], *, feedback: tuple[dict, ...] = ()) -> tuple[Proposal, ...]: ...
 
 
 class Formaliser(Protocol):

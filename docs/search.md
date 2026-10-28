@@ -157,8 +157,11 @@ The same logged classifier sees the entire T content list and rendered target
 content. It rejects restatement, renaming, definitional packaging, text/formula
 mismatch and uncertain judgments. These model judgments are not semantic proofs.
 Only `own_thesis` passes; `attributed_report` and `unclear` are disclosed and
-excluded. Deterministic attitude/report phrases and top-level attribution
-predicates identified by catalogue definitions also reject candidates. Missing
+excluded. Lexical attitude/report matches in text and used catalogue definitions are
+advisory: every hit is logged and passed to the classifier as evidence. Its
+verdict is authoritative except for exact leading name + argues/holds/believes
+that report frames, which still hard-reject. Words such as "claims about" or
+"account" alone no longer veto own-voice assertions. Missing
 legacy catalogues remain unavailable; code does not invent their definitions.
 All classification dispositions, cache replays and solver receipts are logged.
 
@@ -349,3 +352,21 @@ does not erase these roles. The prompts require reported/attacked material to
 remain reporting or conditional hypotheses, including in dependent conclusions;
 the model audit treats endorsement promotion as an added inference. This is a
 model-audited writing obligation, not a deterministic semantic guarantee.
+
+
+## New-atom leaf guidance and correction
+
+Both leaf mapping and cut proposal receive bounded goal-novelty evidence,
+non-logical scheme signatures (premise/conclusion slots and critical questions),
+and the frozen catalogue. A new atom should map to open unless its formula
+actually matches T. Cut proposal then supplies scheme instances whose own
+conclusion is the new atom, with fitting premises from T. Mapping never invents
+a scheme or asserts closure. A signature fit is not proof of semantic suitability.
+
+Each leaf has a batch of at most three cut proposals and one correction when no
+proposal is licensed. The engine supplies concrete rejection codes and rejected
+instances, or NO_PROPOSALS for an empty batch. Accounted local validation failure
+also consumes a batch and supplies its reason. The correction is not multiplied
+by validation_attempts. A licensed alternative is retained without another batch;
+normal premise/CQ expansion and node/depth bounds still apply. Unanswered CQs
+keep the route OPEN. Operational/provider failures still propagate.

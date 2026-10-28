@@ -81,3 +81,14 @@ def metavariable_bindings(entry, goal, bindings):
                 match(premise.formula, fixed[premise.slot], schema, env)), 8))
     return [dict(formulas={k: v.to_dict() for k, v in fs.items()},
                  terms={k: v.to_dict() for k, v in ts.items()}) for fs, ts in envs]
+
+
+def search_guidance(goal, commitments, bank):
+    """Expose actual non-logical signatures alongside the frozen search vocabulary."""
+    from ara.runtime.novelty import novelty_check
+    return dict(goal_novelty=novelty_check(goal.formula, commitments) if goal.formula is not None
+                else dict(status='unresolved', reason='unformalised_goal'),
+                scheme_signatures=[dict(bank_id=b.id, premise_slots=[s.to_dict() for s in b.premise_slots],
+                    conclusion_slot=b.conclusion_slot.to_dict(),
+                    critical_questions=[q.to_dict() for q in b.critical_questions])
+                    for b in bank if b.kind == 'defeasible'])

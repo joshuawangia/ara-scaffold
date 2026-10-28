@@ -15,6 +15,7 @@ from jsonschema import ValidationError
 from ara.runtime.validation import decode_response, guard_complexity, validate_local
 
 from ara.bank import load_bank
+from ara.ports import InvalidProposalBatch
 from ara.runtime.budget import Budget, BudgetStop, UnpricedModel
 from ara.runtime.cache import Cache, cache_key, canonical, digest
 from ara.runtime.logging import EventLog, now
@@ -34,6 +35,10 @@ class RequestCount:
 
 
 class Rejected(ValueError):
+    pass
+
+
+class RejectedCutBatch(Rejected, InvalidProposalBatch):
     pass
 
 
@@ -956,6 +961,8 @@ class ModelCalls:
                 self.log.record('target_contribution_preflight', attempt=attempt + 1, **receipt)
             for target in targets:
                 content = classifier_inputs(target, vocabulary, commitments)
+                self.log.record('target_lexical_attribution', target_id=target.id, attempt=attempt + 1,
+                                hits=content['lexical_attribution_hits'], policy='advisory')
                 for issue in content['definition_issues']:
                     rejected.append(dict(target_id=target.id, target=target.to_dict(), **issue,
                                          explanation='Proposed content must bind a fresh assertion, not rename frozen content.'))
@@ -1003,8 +1010,8 @@ class ModelCalls:
         return tuple(kept)
 
     def propose_cuts(self, goal: Proposition, commitments: CommitmentSet,
-                     bank: tuple[BankEntry, ...]) -> tuple[Proposal, ...]:
-        from ara.runtime.search_alignment import slot_bindings
+                     bank: tuple[BankEntry, ...], *, feedback: tuple[dict, ...] = ()) -> tuple[Proposal, ...]:
+        from ara.runtime.search_alignment import slot_bindings, search_guidance
         def check(data):
             proposals = tuple(Proposal.from_dict(p) for p in data['proposals'])
             require(len(proposals) <= 3, 'proposal batch exceeds three candidates')
@@ -1015,9 +1022,14 @@ class ModelCalls:
                         'current-goal reference text mismatch')
             # Exact existing text is an identity binding, never a semantic similarity decision.
             return tuple(replace(p, conclusion_ref='current_goal') for p in proposals)
-        return self.call('propose_cuts', dict(goal=goal.to_dict(), commitments=commitments.to_dict(),
-                         bank=[b.to_dict() for b in bank], proposal_limit=3, attempt_budget=1,
-                         **self.search_vocabulary(commitments)), check)
+        inputs = dict(goal=goal.to_dict(), commitments=commitments.to_dict(),
+                      bank=[b.to_dict() for b in bank], proposal_limit=3, attempt_budget=2,
+                      attempt=2 if feedback else 1, rejection_feedback=list(feedback),
+                      **self.search_vocabulary(commitments), **search_guidance(goal, commitments, bank))
+        try:
+            return self._transport_call('propose_cuts', inputs, check, attempt=inputs['attempt'])
+        except InvalidOutput as exc:
+            raise RejectedCutBatch(str(exc)) from exc
 
     def formalise(self, proposition: Proposition, *, commitments=None) -> Formula:
         inputs = {'proposition': proposition.to_dict()}
@@ -1041,8 +1053,10 @@ class ModelCalls:
         def check(data):
             require(data['t_id'] == 'open' or commitments.get(data['t_id']) is not None, 'unknown T id')
             return data['t_id']
+        from ara.runtime.search_alignment import search_guidance
         return self.call('map_leaf', dict(leaf=leaf.to_dict(), commitments=commitments.to_dict(),
-                                               **self.search_vocabulary(commitments)), check)
+                         **self.search_vocabulary(commitments),
+                         **search_guidance(leaf, commitments, load_bank(self.root / 'bank').entries)), check)
 
     def answer_cq(self, question: CriticalQuestion, proposal: Proposal,
                   commitments: CommitmentSet) -> CQAnswer:

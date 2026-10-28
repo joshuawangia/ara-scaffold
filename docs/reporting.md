@@ -141,3 +141,9 @@ A scheme's own conclusion must contain an essential new proposition of the targe
 Deductive rules, including conditional proof and hypothetical syllogism, may wrap
 a qualifying scheme but never supply one. Engine CLOSED still records valid
 deductions such as Q from {P, P -> Q}; those routes remain structural for novelty.
+
+Round 21 treats broad lexical attribution matches as advisory classifier evidence.
+Only exact leading name + argues/holds/believes that report frames retain a
+lexical hard veto, including on historical route display. Native target admission
+requires the logged own-thesis classifier verdict. Offline fake judgments verify
+the wire and policy, not real classifier accuracy.

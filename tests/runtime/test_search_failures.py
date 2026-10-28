@@ -66,10 +66,10 @@ def test_failed_job_retries_after_initial_queue_and_preserves_sibling(tmp_path, 
     calls, provider, log, targets = setup(tmp_path, {'not:p': 100, 'q': 2}, concurrency)
     routes = search_all(calls, NativeEngine(Bank('1', ()), calls), CommitmentSet(()), targets)
     assert len(routes) == 5  # Includes P even though its negative search never completed.
-    assert provider.attempts == {'p': 1, 'not:p': 4, 'q': 3, 'not:q': 1, 'r': 1, 'not:r': 1}
+    assert provider.attempts == {'p': 2, 'not:p': 4, 'q': 4, 'not:q': 2, 'r': 2, 'not:r': 2}
     if concurrency == 1:
-        assert provider.order == ['p', 'not:p', 'not:p', 'q', 'q', 'not:q', 'r', 'not:r',
-                                  'not:p', 'not:p', 'q']
+        assert provider.order == ['p', 'p', 'not:p', 'not:p', 'q', 'q', 'not:q', 'not:q', 'r', 'r', 'not:r', 'not:r',
+                                  'not:p', 'not:p', 'q', 'q']
     started = payloads(log, 'search_job_started')
     assert [p['job_index'] for p in started] == [0, 1, 1, 2, 2, 3, 4, 5]
     assert [p['attempt'] for p in started] == [1, 1, 2, 1, 2, 1, 1, 1]

@@ -43,10 +43,11 @@ def test_solver_preflight_rejects_single_support_and_both_polarities(tmp_path,fo
     "On P's account, Q",'P holds Q','P maintains Q',"P's position is Q",
     'P endorses Q','P says Q','P’s view is Q',
 ])
-def test_attributed_reports_rejected_even_when_model_says_own(tmp_path,text):
-    calls,requests=rig(tmp_path,provider_for(Proposition('q',text,Q)))
+def test_attributed_reports_rejected_by_classifier(tmp_path,text):
+    calls,requests=rig(tmp_path,provider_for(Proposition('r',text,R),'attributed_report'))
     assert calls.propose_targets(T,1)==()
-    assert any(r['reason']=='attributed_report' for e in payloads(calls,'target_triviality_preflight') for r in e['rejected'])
+    assert all(i['lexical_attribution_hits'] for k,i in requests if k=='classify_target')
+    assert any(r['reason']=='own_thesis_not_established' for e in payloads(calls,'target_triviality_preflight') for r in e['rejected'])
 
 
 @pytest.mark.parametrize('classification',['attributed_report','unclear'])
@@ -191,15 +192,15 @@ def test_cq_dependencies_are_support_and_unknown_fails_closed(monkeypatch):
     contribution.clear_entailment_cache()
 
 
-def test_catalogue_top_level_attribution_is_rejected(tmp_path):
+def test_catalogue_attribution_is_classifier_evidence(tmp_path):
     from ara.runtime.frozen_catalogue import frozen_artifact
     from ara.runtime.cache import canonical
-    calls,_=rig(tmp_path,provider_for(GOAL))
+    calls,_=rig(tmp_path,provider_for(GOAL,'attributed_report'))
     symbols=[dict(name=n,kind='atom',arity=0,definition='P believes that Q' if n=='Q' else 'P',
                   evidence_ids=['t2']) for n in ('P','Q')]
     (tmp_path/'frozen-t.json').write_text(canonical(frozen_artifact(T,symbols)))
     assert calls.propose_targets(T,1)==()
-    assert any(r['reason']=='attributed_report' for e in payloads(calls,'target_triviality_preflight') for r in e['rejected'])
+    assert any(h['source']=='catalogue' for e in payloads(calls,'target_lexical_attribution') for h in e['hits'])
 
 
 def test_native_attributed_closure_not_default_selectable(tmp_path):
@@ -229,3 +230,10 @@ def test_validity_without_commitments():
     from ara.runtime.contribution import contribution_check
     result=contribution_check(Formula('implies',(P,P)),CommitmentSet(()))
     assert result['status']=='trivial' and result['reason']=='valid_without_support'
+
+
+@pytest.mark.parametrize('text',['P argues that R','P holds that R','P believes that R'])
+def test_exact_leading_report_stays_hard_rejection(tmp_path,text):
+    calls,_=rig(tmp_path,provider_for(Proposition('r',text,R)))
+    assert calls.propose_targets(T,1)==()
+    assert any(r['reason']=='attributed_report' for e in payloads(calls,'target_triviality_preflight') for r in e['rejected'])

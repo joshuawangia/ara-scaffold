@@ -1,6 +1,6 @@
 """Contribution display/selection policy; historical CLOSED and licenses are unchanged."""
 from ara.runtime.contribution import contribution_check, formula_hash
-from ara.runtime.target_policy import attributed_report
+from ara.runtime.target_policy import leading_report_frame
 from ara.runtime.novelty import novelty_check
 from ara.types import Commitment, CommitmentSet
 from functools import lru_cache
@@ -69,7 +69,7 @@ def _logical_contribution(route, commitments=None):
             classification = ('CLOSED-contribution-unresolved'
                 if any(s.get('novelty', {}).get('status') == 'unresolved' for s in step_checks)
                 else 'CLOSED-structural')
-    if attributed_report(root.text):
+    if leading_report_frame(root.text):
         classification = 'CLOSED-attributed-report'
     return dict(classification=classification, support_ids=support_ids,
                 substantive_inferences=substantive, novelty=novelty, inference_novelty_checks=step_checks, **receipt)

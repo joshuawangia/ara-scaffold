@@ -3859,3 +3859,43 @@ probe with earlier-ID reported and attacked copies and a later-ID endorsed copy,
 at normal sizing and forced k=0. The same engine now closes P using the endorsed
 commitment. Exact retention and endorsed-first order have production-wire controls.
 No paid calls or push; scoped verification receipts are in the Round 24 report.
+
+## Omega round 14 — Codex rich extraction
+
+O14.1. Codex CLI can now extract rich source graphs through the existing
+ModelCalls extraction lifecycle. Claude Code still refuses extraction; both
+subscription transports refuse external web retrieval. No tool, credential,
+filesystem isolation, refresh or output-screening policy changes accompany this
+capability. The effective extraction model is pinned in both ordinary and
+full-extraction settings; O14.5 records the operator's default-provider decision.
+
+O14.2. `ara-openai-strict-v2` omits object-level branch refinements from the wire
+rather than emitting invalid partial strict objects at the response root. The
+native schema retains and enforces those refinements. Structural unions remain
+projected; reverse optional-null mapping follows the declared object fields
+before local validation. The version partitions caches and completed Codex
+paper reuse. `schema-preflight` selects the real transport projection, enumerates
+all extraction variants and requires complete locally valid Codex responses.
+The Anthropic grammar gate retains its one-token behavior.
+
+O14.3. Page-range planning subtracts the provider's actual output reservation
+from the configured context bound. This preserves Codex's doubled allowance and
+lossless subdivision; a page that cannot fit refuses before dispatch. Per-call
+admission, paper continuation limits, corrections, immutable range receipts,
+reconciliation, grounding and quarantine stay in the native path. Local estimates
+are not a proven Codex tokenizer bound; CLI output tokens remain soft reservations.
+Live schema compatibility and graph acceptance do not establish source fidelity
+or adequate extraction quality; compare retained graph and grounding evidence.
+
+O14.4. Offline accepted-range salvage applies the same Codex optional-null
+normalization before patch merge and native validation. Retained wire responses
+remain unchanged; recovery neither creates a provider nor calls a model.
+
+O14.5. The operator explicitly chose `codex_cli` / `gpt-6-luna` as the committed
+default for every stage, including extraction, pilot and extraction-full. No
+API or Claude fallback is configured. API models/pricing and the API adapter
+remain available through explicit configuration. Existing isolation, pilot
+schema-proof and full-extraction cap requirements remain in force. Default
+selection does not upgrade the weak two-paper extraction quality result to an
+adequacy claim. Offline/API test fixtures now select their historical transport
+and model contract explicitly; dedicated tests exercise the real defaults.

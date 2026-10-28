@@ -1,4 +1,5 @@
 """Offline PDF intake through the production CLI and model boundary; P/Q/R only."""
+from fixture_support import api_fixture_config
 import copy
 from dataclasses import FrozenInstanceError
 import json
@@ -56,7 +57,7 @@ def offline(monkeypatch):
 
 @pytest.fixture
 def rig(tmp_path):
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(provider='mock', validation_attempts=1, extraction_max_failed_papers=0, cache_dir=str(tmp_path / 'cache'), target_candidates=1)
     config_path = tmp_path / 'config.yaml'
     config_path.write_text(yaml.safe_dump(config))

@@ -5,17 +5,21 @@
 ## Anthropic API
 
 Set `ANTHROPIC_API_KEY` in the environment. If the operator keeps it in a shell
-file, source that file in the same shell as the command:
+file, source that file in the same shell as the command. This example assumes
+the explicit API configuration described below is saved as `runs/api.yaml`:
 
 ```sh
 set -a; . ~/.config/ara/anthropic.env; set +a
-uv run ara run --smoke --run-dir runs/real-smoke
+uv run ara run --smoke --config runs/api.yaml --run-dir runs/real-smoke
 ```
 
-Default provider/model: Anthropic / `claude-opus-5`, using the official SDK,
-adaptive thinking and structured output with strict local schema checks.
-Extraction alone uses `stages.extraction.model: claude-sonnet-5-5`, with
-`fallbacks: []`, high effort and adaptive thinking. Other stages remain on Opus 5.
+The committed default is `codex_cli` / `gpt-6-luna` for every stage and profile,
+including extraction. The Anthropic API adapter remains available by explicit
+configuration: set `provider: anthropic`, pin an API model such as `claude-opus-5`,
+and set the extraction model in both `stages.extraction` and any selected profile.
+Copy the full configuration to an ignored private file before editing. The API
+adapter uses the official SDK, adaptive thinking and strict local schema checks.
+No default route falls back to the API.
 The stage model, effort, thinking and fallbacks partition caches; receipts and
 methodology disclose requested/served models and versions. Sonnet rates were
 verified on the provider pricing page on 2026-10-21: USD2/M input, USD10/M output,
@@ -187,8 +191,11 @@ events also reject. Only validated output and typed receipts are retained;
 reasoning and free-text diagnostics are discarded. Output and cache replay are
 screened for credentials and Git identity.
 
-Construction, symbolic search and writing calls can use Codex. Extraction and
-`search_evidence` refuse on this transport. Extract separately using the API.
+Construction, rich extraction, symbolic search and writing calls can use Codex.
+`search_evidence` still refuses: external retrieval tools remain disabled.
+The committed extraction and profile settings pin `gpt-6-luna` with no fallback.
+When changing models, pin the effective extraction model as well as the main model. See
+[Codex extraction](extraction.md#codex-subscription-extraction).
 Provider switching is implemented for rich construction stages only; setting
 `stages.search_evidence.provider` does not create an API transport. A run whose
 main provider is Codex cannot complete web verification through this
@@ -196,7 +203,7 @@ configuration. To retain the full API lifecycle while using subscription
 construction, keep the main provider `anthropic` and override the rich
 construction stages. See `ara/runtime/construction_stages.py:5` and
 `ara/runtime/calls.py:212`. API extraction uses the model resolved from the chosen
-profile: Sonnet in the ordinary extraction profile, Opus in `extraction-full`.
+profile; override its committed Codex model explicitly when opting into the API.
 
 A requested model pin is not a serving receipt. When the CLI omits serving model
 identity, ARA records `unverified`; it does not infer identity from the request.
@@ -225,8 +232,8 @@ preflight after changing a schema, model, effort, system prompt, projection
 version or pinned CLI version. It tests construction, corrections, targets,
 own-thesis classification, search and writing with placeholders, keeping local
 constraints authoritative; it does
-not prove pilot success. API-only extraction and web retrieval are not Codex
-schema cases. Use the separate ChatGPT auth file; never the worker login.
+not prove pilot success. Extraction has its own `schema-preflight` command;
+web retrieval has no Codex schema case. Use the separate ChatGPT auth file; never the worker login.
 
 The current contract includes `classify_target`: older 15-case proofs must be
 refreshed to cover all 16 cases. This is schema-acceptance evidence, not proof of

@@ -1,4 +1,5 @@
 """Exercise the real subprocess boundary with a disposable offline executable."""
+from fixture_support import api_fixture_config
 import json
 import os
 from pathlib import Path
@@ -114,7 +115,7 @@ print(encoded)
     binary.chmod(0o755)
     mode = binary.with_suffix('.json')
     mode.write_text(json.dumps({'mode':'ok'}))
-    config = yaml.safe_load((ROOT/'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(provider='claude_code', model='claude-opus-5-5', token_cap=1000000,
                   cost_cap_usd=0, validation_attempts=1,
                   claude_code={'binary':str(binary),'timeout_seconds':1,'retry_backoff_seconds':0,
@@ -318,7 +319,7 @@ def test_ancestor_instructions_refuse_before_process(cli,tmp_path,monkeypatch):
 
 def test_existing_provider_cache_identity_is_unchanged(tmp_path):
     from ara.runtime.providers import MockProvider
-    config=yaml.safe_load((ROOT/'config.yaml').read_text())
+    config=api_fixture_config()
     provider=MockProvider({})
     log=EventLog(tmp_path/'events.jsonl')
     cache=Cache(tmp_path/'cache')

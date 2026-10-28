@@ -1669,6 +1669,47 @@ CASES += [
 ]
 
 
+
+CASES += [
+    ('codex_extraction_transport', 'ara/runtime/codex_cli.py',
+     "api_only_stages = ('search_evidence',)", "api_only_stages = ('extract_paper', 'search_evidence')",
+     'tests/runtime/test_codex_extraction.py::test_native_extraction_and_targeted_correction'),
+    ('codex_extraction_root_object', 'ara/runtime/codex_schema.py',
+     "if alternatives is not None and 'properties' not in node:", 'if alternatives is not None:',
+     'tests/runtime/test_codex_extraction.py::test_all_extraction_mode_wires[inputs0]'),
+    ('codex_extraction_root_nulls', 'ara/runtime/codex_schema.py',
+     "if branches and 'properties' not in node:\n            choices = tagged_branches(branches)", 'if branches:\n            choices = tagged_branches(branches)',
+     'tests/runtime/test_codex_extraction.py::test_all_extraction_mode_wires[inputs0]'),
+    ('codex_extraction_context_output', 'ara/runtime/extraction.py',
+     "bound = calls.config['model_context_token_bound'] - context_output",
+     "bound = calls.config['model_context_token_bound'] - maximum",
+     'tests/runtime/test_codex_extraction.py::test_counted_ranges_include_cli_output_bound_without_truncation'),
+    ('codex_extraction_preflight_wire', 'ara/runtime/preflight.py',
+     'wire = strict_schema(schema) if codex else structured_schema(schema,',
+     'wire = structured_schema(schema,',
+     'tests/runtime/test_codex_extraction.py::test_codex_extraction_preflight_uses_strict_wires'),
+]
+
+
+CASES += [
+    ('codex_extraction_salvage_nulls', 'ara/runtime/salvage.py',
+     "raw = normalize_output(checker.response_schema('extract_paper', request), raw, config)", 'raw = raw',
+     'tests/runtime/test_codex_extraction.py::test_codex_accepted_ranges_can_be_salvaged_offline'),
+]
+
+CASES += [
+    ('codex_default_provider', 'config.yaml',
+     'provider: codex_cli\nmodel: gpt-6-luna', 'provider: anthropic\nmodel: gpt-6-luna',
+     'tests/runtime/test_provider_defaults.py'),
+    ('codex_default_extraction', 'config.yaml',
+     '  extraction:\n    model: gpt-6-luna', '  extraction:\n    model: claude-sonnet-5-5',
+     'tests/runtime/test_provider_defaults.py'),
+    ('codex_default_full_extraction', 'config.yaml',
+     '      model: gpt-6-luna', '      model: claude-opus-5',
+     'tests/runtime/test_provider_defaults.py'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

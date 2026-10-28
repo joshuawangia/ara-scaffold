@@ -96,10 +96,15 @@ def accepted_ranges(events, papers, config, root, log):
                     raise ValueError('salvage reference lacks accepted evidence receipt')
                 existing.append(ExtractedItem(**{k:v for k,v in item.items() if k != 'citation'}))
         raw = json.loads(Response(json.loads(event['response'])).text())
+        if cfg.get('provider') == 'codex_cli':
+            from ara.runtime.codex_schema import normalize_output
+            raw = normalize_output(checker.response_schema('extract_paper', request), raw, config)
         normalize_extraction(raw)
         inputs = copy.deepcopy(request)
         if request.get('mode') == 'targeted_correction':
             candidate = copy.deepcopy(request['candidate'])
+            if cfg.get('provider') == 'codex_cli':
+                candidate = normalize_output(checker.response_schema('extract_paper', request), candidate, config)
             normalize_extraction(candidate)
             normalize_patch_ids(raw, candidate)
             raw = merge_extraction_patch(candidate, raw)

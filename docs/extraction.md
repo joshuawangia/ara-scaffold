@@ -4,10 +4,11 @@
 
 Place manifest-listed PDFs in `literature/fulltext/`. See [local OCR](ocr.md) for
 the default intake requirements. This text-only estimate needs no OCR weights or
-provider credential:
+provider credential; first create `runs/mock-config.yaml` as shown in the
+[offline setup](../README.md#install-and-try-it-offline):
 
 ```sh
-uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --provider mock --ocr off --estimate-only --run-dir runs/extraction-estimate
+uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --config runs/mock-config.yaml --provider mock --ocr off --estimate-only --run-dir runs/extraction-estimate
 ```
 
 With credentials configured, extract the chosen sources through the normal logged
@@ -26,7 +27,7 @@ input-token estimate plus prompt overhead and output allowances exceed those
 limits. Estimates exclude retries and server fallbacks; actual requests reserve
 and account separately. Use an isolated cache for the planned extraction run.
 
-For a full-run plan, use the separate `extraction-full` profile. It selects Opus
+For a full-run plan, use the separate `extraction-full` profile. It selects `gpt-6-luna`
 in `stages.extraction.model` and disables fallbacks. Accepted range unions
 disclose inference coverage rather than imposing a link quota. Range corrections
 use the configured limit (0 through 3), within shared paper-wide count and cost
@@ -244,14 +245,15 @@ a resumed paid run until its accounting is reconciled.
 
 ## Extraction schema preflight
 
-Before a paid extraction, compile all extraction response grammars with a
+Before extraction, compile all response grammars with a
 placeholder-only native gate:
 
 ```sh
 uv run ara schema-preflight --profile extraction-full --config config.yaml --run-dir runs/schema-P
 ```
 
-The gate allows at most USD1 including imported gate history. A repeated gate uses
+For the API adapter, the gate allows at most USD1 including imported gate history.
+The default Codex adapter uses subscription token accounting instead. A repeated gate uses
 a new directory and `--resume-from runs/schema-P`; preserve all prior attempts.
 Both `schema-preflight` and `extract` accept the explicit `--unknown-usage-policy
 count-at-reservation` option. This counts unknown usage at its full reservation
@@ -284,3 +286,42 @@ appropriate only for text-only inputs. Use `--exclude-paper p=REASON` to record 
 explicit exclusion with no evidence. Keep source logs, anchors and sidecars. See
 `ara/runtime/grounding.py:56`, `ara/runtime/grounding.py:95` and the [Mu
 decisions](../DECISIONS.md#mu-round-2-grounded-evidence-and-retained-quarantine).
+
+
+## Codex subscription extraction
+
+The committed defaults select `provider: codex_cli`, `model: gpt-6-luna`, and
+`stages.extraction.model: gpt-6-luna` with no fallbacks, including `pilot`,
+`extraction` and `extraction-full`. Keep those effective settings in private
+configurations when using the subscription. Set finite token and continuation caps; subscription calls
+use token admission and do not consume the configured API-dollar allowance.
+Keep the separate `codex_cli.auth_file` and existing isolation controls from the
+[provider guide](providers.md#codex-cli).
+
+Run the extraction grammar gate with that configuration/profile before new papers:
+
+```sh
+uv run ara schema-preflight --config /path/to/codex.yaml --profile extraction --run-dir runs/codex-extraction-schemas
+uv run ara extract --config /path/to/codex.yaml --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/codex-extraction
+```
+
+The gate tests all distinct initial, correction and reconciliation wire schemas
+using placeholders. Codex requires a complete locally valid JSON response; its
+preflight reserves 4,096 output tokens rather than the API's one-token grammar
+probe. This gate establishes schema acceptance, not extraction quality.
+
+`ara-openai-strict-v2` keeps extraction's root as a closed object. Root-level
+conditional alternatives, uniqueness and other unsupported constraints remain
+local-only. Optional nulls are normalized before the authoritative native schema
+and graph checks. Every response is accounted before validation. The projection
+version participates in cache identity, receipts and completed-paper reuse.
+
+The existing range planner includes the Codex output reservation when deciding
+which complete pages fit. It never truncates a page. An oversized single page
+refuses before dispatch; reconciliation admits the complete graph/source or
+records its failure while retaining accepted ranges. Targeted corrections,
+immutable range receipts, grounding and quarantine retain their normal behavior.
+Offline salvage normalizes retained Codex wire nulls before revalidating ranges.
+The CLI has no hard output-token flag, and local token estimates are not a proven
+Codex tokenizer bound. Served model identity may remain `unverified`. Judge
+extraction quality separately from schema acceptance and lexical grounding.

@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_native_mock_smoke_and_replay(tmp_path):
     config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config.update(provider='mock', model='claude-opus-5', fallbacks=[], stages={})
     config['cache_dir'] = str(tmp_path / 'cache')
     config_path = tmp_path / 'config.yaml'
     config_path.write_text(yaml.safe_dump(config))

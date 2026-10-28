@@ -51,6 +51,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
     """Reuse admission/calibration/scanning, with a distinct wire and isolation."""
     provider_kind = 'codex_cli'
     canary_prompt = CANARY_PROMPT + ' In tools, list visible tool definition names only, comma-separated, preserving namespace prefixes; use an empty string if none are visible. Do not invoke any tool. Generic built-in tool definitions may be visible; do not infer operator customizations from them.'
+    api_only_stages = ('search_evidence',)
     estimate_method = 'API-receipt UTF-8 calibration seed; different Codex tokenizer; upward-only like-for-like correction; no free counter'
 
     def __init__(self, config):
@@ -243,7 +244,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
     def complete(self, kind, prompt, schema, maximum):
         canary = kind=='isolation_canary'
         if not canary and not self.ready: raise CodexCLIError('isolation_preflight_required')
-        if kind in ('extract_paper','search_evidence'): raise CodexCLIError('stage_requires_api_provider')
+        if kind in self.api_only_stages: raise CodexCLIError('stage_requires_api_provider')
         if schema is None: raise CodexCLIError('response_schema_required')
         model = self.model_for(kind)
         with self._slots, tempfile.TemporaryDirectory(prefix='ara-codex-', dir='/tmp') as directory, self._auth_source() as credential:

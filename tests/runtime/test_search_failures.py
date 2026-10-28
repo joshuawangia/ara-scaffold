@@ -1,4 +1,5 @@
 """Partial native search, bounded retries, accounting and selection on placeholders."""
+from fixture_support import api_fixture_config
 from collections import Counter
 import json
 from pathlib import Path
@@ -48,7 +49,7 @@ class SearchProvider(MockProvider):
 
 
 def setup(tmp_path, failures, concurrency=1):
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(search_concurrency=concurrency, token_cap=10**9, cost_cap_usd=1000)
     log = EventLog(tmp_path / 'events.jsonl')
     provider = SearchProvider(failures)
@@ -133,7 +134,7 @@ def test_cli_partial_search_reaches_selection_and_composes(tmp_path, capsys):
             return complete(kind, prompt, schema, maximum)
         return Response(response(value))
     provider.complete = native
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(provider='mock', search_concurrency=1, essay_min_words=0, target_candidates=2,
                   token_cap=10**9, cost_cap_usd=1000, cache_dir=str(tmp_path / 'cache'))
     path = tmp_path / 'config.yaml'

@@ -1,3 +1,4 @@
+from fixture_support import api_fixture_config
 import json
 import os
 from pathlib import Path
@@ -94,7 +95,7 @@ def test_real_provider_path(tmp_path):
     from ara.runtime.cache import Cache
     from ara.runtime.calls import ModelCalls
     from ara.runtime.logging import EventLog
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     calls = ModelCalls(config, AnthropicProvider(config), EventLog(tmp_path / 'events.jsonl'),
                        Cache(tmp_path / 'cache'), ROOT, 'P')
     formula = calls.formalise(Proposition('p', 'P'))

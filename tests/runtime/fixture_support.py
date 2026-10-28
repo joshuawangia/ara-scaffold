@@ -18,6 +18,16 @@ TARGETS = (Proposition('p', 'P', Formula('atom', name='P')), Proposition('q', 'Q
 DRAFT = {'title': 'P', 'body': '[[node:n:p]][[node:n:p:c]][[node:n:p:a]] ' + ' '.join(['P'] * 150), 'bibliography': []}
 
 
+def api_fixture_config():
+    """Explicit historical API pricing/model contract for offline boundary fixtures."""
+    import yaml
+    config=yaml.safe_load((ROOT/'config.yaml').read_text())
+    config.update(provider='anthropic', model='claude-opus-5', fallbacks=['claude-opus-4-8'])
+    config['stages']['extraction']['model']='claude-sonnet-5-5'
+    config['extraction-full']['stages']['extraction']['model']='claude-opus-5'
+    return config
+
+
 class FakeEngine:
     def __init__(self, calls):
         self.calls = calls

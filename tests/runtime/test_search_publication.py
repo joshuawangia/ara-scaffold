@@ -1,4 +1,5 @@
 """Search publication order and durable failure accounting on placeholders."""
+from fixture_support import api_fixture_config
 from threading import Event
 import hashlib
 import json
@@ -27,7 +28,7 @@ def test_native_publication_order_under_reversed_schedule(tmp_path, monkeypatch)
     native_search = Engine.search
     signatures = []
     for concurrency, reverse in ((1, False), (4, False), (4, True)):
-        config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+        config = api_fixture_config()
         config['search_concurrency'] = concurrency
         log = EventLog(tmp_path / f'{concurrency}-{reverse}' / 'events.jsonl')
         provider = MockProvider({})
@@ -64,7 +65,7 @@ def test_unpublished_accounting_is_durable_and_refuses_resume(tmp_path):
     from ara.runtime.logging import SerializedEventLog
     from ara.runtime.search_publication import SearchPublication
     from ara.types import RunEvent, TokenUsage
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     log = EventLog(tmp_path / 'events.jsonl')
     goal = Proposition('p', 'P', Formula('atom', name='P'))
     with SerializedEventLog(log) as writer:
@@ -90,7 +91,7 @@ def test_unpublished_accounting_is_durable_and_refuses_resume(tmp_path):
 
 
 def test_search_failure_publishes_durable_accounting(tmp_path, monkeypatch):
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config['search_concurrency'] = 1
     log = EventLog(tmp_path / 'events.jsonl')
     provider = MockProvider({})

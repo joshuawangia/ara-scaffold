@@ -1,4 +1,5 @@
 """Placeholder concurrency proofs through the native runtime boundaries."""
+from fixture_support import api_fixture_config
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, Event, Lock, get_ident
 import json
@@ -112,7 +113,7 @@ def test_parallel_native_equivalence(tmp_path, monkeypatch):
         completed = [Event() for _ in range(21)]
         completed[0].set()
         directory = tmp_path / f'{concurrency}-{reverse}'
-        config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+        config = api_fixture_config()
         config.update(search_concurrency=concurrency, forward_pass_depth=1, node_cap=100)
         log = EventLog(directory / 'events.jsonl')
         provider = MockProvider({})

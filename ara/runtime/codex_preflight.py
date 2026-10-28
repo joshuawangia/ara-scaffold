@@ -14,7 +14,7 @@ def manifest(config, root):
     cases = []
     for path in sorted((root / 'schemas').glob('*.json')):
         if path.stem in ('formula', 'extract_paper'):
-            continue  # Utility schema and API-only extraction; web retrieval has no JSON schema.
+            continue  # Utility schema; extraction uses schema-preflight; web retrieval has no JSON schema.
         kind = path.stem
         for correction in ((False, True) if kind in KINDS else (False,)):
             _, overrides, scoped = dispatch_settings(config, kind, correction=correction)

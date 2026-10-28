@@ -1,3 +1,4 @@
+from fixture_support import api_fixture_config
 import json
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from fixture_support import ROOT, FakeEngine, TARGETS
 
 @pytest.fixture
 def cli_setup(tmp_path):
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(config['smoke'])
     config['cache_dir'] = str(tmp_path / 'cache')
     path = tmp_path / 'config.yaml'

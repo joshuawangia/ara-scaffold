@@ -1,6 +1,8 @@
 """Recorded real-source verification, plus explicitly opt-in paid capture."""
 from __future__ import annotations
 
+from fixture_support import api_fixture_config
+
 import json
 import os
 from pathlib import Path
@@ -21,7 +23,7 @@ TOPIC = 'Software engineering history'
 
 
 def configuration() -> dict:
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(web_search_max_uses=1, max_output_tokens=4096,
                   cost_cap_usd=4, token_cap=1000000, validation_attempts=1)
     return config

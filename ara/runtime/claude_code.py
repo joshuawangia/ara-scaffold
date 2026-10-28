@@ -104,6 +104,7 @@ def _positive(value, name, *, zero=False, integer=False):
 
 class ClaudeCodeProvider:
     provider_kind = 'claude_code'
+    api_only_stages = ('extract_paper', 'search_evidence')
     estimate_method = ESTIMATE_METHOD
 
     def __init__(self, config):
@@ -200,7 +201,7 @@ class ClaudeCodeProvider:
         return CANARY_SYSTEM if kind == 'isolation_canary' else stage_settings(self.config, kind).get('system_prompt', '')
 
     def estimate(self, kind, prompt, schema, maximum):
-        if kind in ('extract_paper', 'search_evidence'):
+        if kind in self.api_only_stages:
             raise ClaudeCodeError('stage_requires_api_provider')
         size = len((prompt + self.system_for(kind) + canonical(schema or {})).encode())
         initial = self.calibration_state.initial(self.model_for(kind), kind, size)
@@ -350,7 +351,7 @@ class ClaudeCodeProvider:
         canary = kind == 'isolation_canary'
         if not canary and not self.ready:
             raise ClaudeCodeError('isolation_preflight_required')
-        if kind in ('extract_paper', 'search_evidence'):
+        if kind in self.api_only_stages:
             raise ClaudeCodeError('stage_requires_api_provider')
         model = self.model_for(kind)
         if schema is None:

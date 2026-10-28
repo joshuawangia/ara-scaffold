@@ -1,7 +1,7 @@
 construction_targeted_corrections: 2
-provider: anthropic
-model: claude-opus-5
-fallbacks: [claude-opus-4-8]
+provider: codex_cli
+model: gpt-6-luna
+fallbacks: []
 effort: high
 max_output_tokens: 8192
 token_cap: 200000
@@ -22,7 +22,7 @@ stages:
   build_t_batch: {}
   construction_correction: {}
   extraction:
-    model: claude-sonnet-5-5
+    model: gpt-6-luna
     fallbacks: []
     effort: high
     thinking: adaptive
@@ -104,7 +104,7 @@ working_t_symbol_token_budget: 16000
 extraction-full:
   stages:
     extraction:
-      model: claude-opus-5
+      model: gpt-6-luna
       fallbacks: []
       effort: high
       thinking: adaptive
@@ -149,7 +149,8 @@ claude_code:
 
 # ChatGPT subscription transport (Linux, bubblewrap, pinned Codex CLI 0.163.0).
 # Select provider: codex_cli and model: gpt-6-luna; no API-key fallback.
-# Extraction remains Opus 5 via API. Per-stage construction/search settings may
+# Codex is the default for extraction, construction, search and writing.
+# Per-stage construction/search settings may
 # select codex_cli. The isolation canary runs automatically before stage calls.
 codex_cli:
   # Required for pilots after a successful codex-schema-preflight (same profile).

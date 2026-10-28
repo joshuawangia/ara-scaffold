@@ -34,6 +34,7 @@ def codex(tmp_path, monkeypatch):
                   codex_cli={'binary':str(binary), 'auth_file':str(auth), 'retries':0,
                              'retry_backoff_seconds':0, 'timeout_seconds':10})
     def write(mode='ok', token='offline-access'):
+        from rich_fixture import graph
         binary.write_text('''#!/usr/bin/env python3
 import json, os, sys
 from pathlib import Path
@@ -88,6 +89,19 @@ if mode=='usage':
  emit({'type':'error','message':"You've hit your usage limit PRIVATE_CONTEXT_SENTINEL"}); sys.exit(1)
 if mode=='diagnostic':
  print('"api_key":"offline-access" P',file=sys.stderr); sys.exit(7)
+if mode.startswith('extract:'):
+ inputs=json.loads(prompt.split('INPUT_JSON'+chr(10),1)[1])
+ assert 'anyOf' not in schema and schema['additionalProperties'] is False
+ assert set(schema['required'])==set(schema['properties'])
+ value=__GRAPH__
+ value['source_id']=inputs['source_id']
+ page=inputs.get('pages',[{'page':1}])[0]['page']
+ for item in value['items']:
+  item.update(source_id=inputs['source_id'],page_start=page,page_end=page)
+ if inputs.get('mode')=='reconcile_ranges': value['items']=[]
+ if mode=='extract:correction' and inputs.get('mode') not in ('targeted_correction','reconcile_ranges'):
+  value['items'][0]['page_start']=0
+ for key in schema['properties']:value.setdefault(key,None)
 if mode=='identity': value={'formula':{'op':'atom','name':'sentinel@example.invalid'}}
 if mode=='secret': value={'formula':{'op':'atom','name':'offline-access'}}
 if mode=='wire_optional': value={'formula':{'op':'atom','name':'P','args':None,'terms':None,'variable':None}}
@@ -102,7 +116,7 @@ if mode=='mismatch': emit({'type':'model.changed','model':'gpt-5.3-codex'})
 if mode=='canary_leak': value['other_context']='PRIVATE_CONTEXT_SENTINEL'
 emit({'type':'item.completed','item':{'id':'item_0','type':'agent_message','text':json.dumps(value)}})
 emit({'type':'turn.completed','usage':{'input_tokens':100,'cached_input_tokens':20,'output_tokens':10}})
-'''.replace('__OPERATOR_HOME__', repr(str(home))).replace('__TOKEN__', repr(token)).replace('__MODE__',repr(mode)))
+'''.replace('__OPERATOR_HOME__', repr(str(home))).replace('__TOKEN__', repr(token)).replace('__MODE__',repr(mode)).replace('__GRAPH__',repr(graph())))
         binary.chmod(0o700)
     write()
     return config, auth, write, tmp_path
@@ -281,12 +295,12 @@ def test_stage_model_pin(codex):
     assert rows[1]['model_id']==rows[1]['model_version']=='gpt-5.3-codex'
 
 
-def test_extraction_and_web_refuse(codex):
+def test_web_refuses(codex):
     from ara.runtime.codex_cli import CodexCLIProvider
     from ara.runtime.claude_code import ClaudeCodeError
     config,auth,write,tmp=codex
     provider=CodexCLIProvider(config)
-    for kind in ('extract_paper','search_evidence'):
+    for kind in ('search_evidence',):
         with pytest.raises(ClaudeCodeError,match='stage_requires_api_provider'):
             provider.estimate(kind,'P',{},10)
 

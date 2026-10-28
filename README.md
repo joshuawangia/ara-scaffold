@@ -18,7 +18,15 @@ from the operator and run commands from its root:
 ```sh
 uv sync --locked
 uv run pytest
-uv run ara run --smoke --provider mock --run-dir runs/mock-smoke
+uv run python - <<'PY'
+from pathlib import Path
+import yaml
+config = yaml.safe_load(Path('config.yaml').read_text())
+config.update(provider='mock', model='claude-opus-5', stages={}, fallbacks=[])
+Path('runs').mkdir(exist_ok=True)
+Path('runs/mock-config.yaml').write_text(yaml.safe_dump(config))
+PY
+uv run ara run --smoke --config runs/mock-config.yaml --run-dir runs/mock-smoke
 uv run ara export --run-dir runs/mock-smoke
 ```
 
@@ -40,8 +48,8 @@ and `uv run ara COMMAND --help`.
 
 | Task | Command | Details |
 | --- | --- | --- |
-| Estimate PDF extraction without generation | `uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --ocr off --provider mock --estimate-only --run-dir runs/estimate` | [Extraction](docs/extraction.md) |
-| Extract one PDF | `uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction` | API credential and default [OCR setup](docs/ocr.md) required |
+| Estimate PDF extraction without generation | `uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --ocr off --provider mock --config runs/mock-config.yaml --estimate-only --run-dir runs/estimate` | [Extraction](docs/extraction.md) |
+| Extract one PDF | `uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction` | Codex subscription login and default [OCR setup](docs/ocr.md) required; run the [schema preflight](docs/extraction.md#extraction-schema-preflight) first |
 | Plan extraction ranges | `uv run ara plan-extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --ocr off --token-counter local --run-dir runs/extraction-plan` | Local estimates; generation disabled |
 | Plan construction | `uv run ara plan-construction --literature runs/extraction/literature.extracted.txt --topic 'P' --profile pilot --token-counter local --run-dir runs/construction-plan` | [Construction](docs/construction.md); preserve extraction provenance |
 | Construct and search | `uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot` | [Search](docs/search.md); pauses for route selection |
@@ -52,7 +60,7 @@ and `uv run ara COMMAND --help`.
 | Record feedback | `uv run ara feedback --run-dir runs/pilot --text 'P'` | Applies to the next draft, without changing frozen T |
 | Export essay/methodology | `uv run ara export --run-dir runs/pilot` | [Accounting and export](docs/accounting.md); essay requires completed verification |
 | Read one or more runs offline | `uv run ara report --run-dir runs/pilot --out runs/report` | Repeat `--run-dir`; [reporting](docs/reporting.md) |
-| Compile extraction schemas live | `uv run ara schema-preflight --profile extraction-full --config config.yaml --run-dir runs/schema-P` | Paid, USD1 history-inclusive cap; [extraction](docs/extraction.md) |
+| Compile extraction schemas live | `uv run ara schema-preflight --profile extraction-full --config config.yaml --run-dir runs/schema-P` | Subscription by default; API opt-in has a USD1 history-inclusive cap; [extraction](docs/extraction.md) |
 | Validate Codex schemas live | `uv run ara codex-schema-preflight --config runs/codex.yaml --profile pilot --run-dir runs/codex-schemas` | Subscription calls; [providers](docs/providers.md#codex-cli) |
 
 Target checks can exclude candidates, so a request for ten does not guarantee ten
@@ -79,20 +87,19 @@ API keys in the environment.
 
 | Provider | Setup and scope |
 | --- | --- |
-| `anthropic` (default API) | `ANTHROPIC_API_KEY`; official SDK, schema validation and explicit fallback accounting |
+| `anthropic` (explicit API opt-in) | `ANTHROPIC_API_KEY`; official SDK, schema validation and explicit fallback accounting |
 | `claude_code` | Claude Code subscription login, pinned full model ID and Git identity; fresh isolated calls with a budgeted canary |
-| `codex_cli` | Linux/bubblewrap, pinned CLI 0.163.0, explicit separate ChatGPT auth file and pinned model; matching schema preflight required for pilots |
+| `codex_cli` (default) | Linux/bubblewrap, pinned CLI 0.163.0, explicit separate ChatGPT auth file and pinned model; matching schema preflight required for pilots |
 | `mock` | Offline finite placeholder responses; no credentials |
 
-The API default is `claude-opus-5` with explicit `claude-opus-4-8` fallback.
-Ordinary extraction uses `claude-sonnet-5-5` without fallback; `extraction-full`
-uses Opus without fallback. Construction overrides can select providers/models;
-search and writing overrides select model settings within the run's provider.
-Subscription transports refuse PDF extraction and web-evidence retrieval.
-Extract separately with the API. A
-subscription-backed run cannot complete the web-verification stage at this base;
-there is no automatic API fallback. A requested Codex model is not verified serving
-identity. Read [providers and isolation](docs/providers.md) before paid work.
+The default is `codex_cli` / `gpt-6-luna` with no fallback for all stages,
+including extraction and the pilot/full-extraction profiles. The isolation canary
+and matching pilot schema preflight remain required. Full extraction still
+requires explicit caps. The API adapter remains available through a private
+configuration that explicitly selects its provider and models. Codex supports
+rich extraction; external web retrieval still refuses, with no automatic API
+fallback. See [providers](docs/providers.md) and [extraction](docs/extraction.md).
+
 
 | Profile | Limits and use |
 | --- | --- |

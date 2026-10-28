@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from ara.runtime.validation import LinearValidator, normalize_local, encode_local, validate_local, tagged_branches
 
-VERSION = 'ara-openai-strict-v1'
+VERSION = 'ara-openai-strict-v2'
 # Constraints outside this vocabulary remain in the native schema and prompt.
 WIRE_KEYS = frozenset(('type', 'enum', 'description', '$ref'))
 
@@ -24,7 +24,9 @@ def strict_schema(schema):
             if key in node:
                 result[key] = {name:project(child) for name,child in node[key].items()}
         alternatives = node.get('oneOf', node.get('anyOf'))
-        if alternatives is not None:
+        # Object-level alternatives refine the native fields; retaining them as
+        # partial wire objects is invalid strict schema. Keep these rules local.
+        if alternatives is not None and 'properties' not in node:
             result['anyOf'] = [project(child) for child in alternatives]
         if node.get('type') == 'object' or 'properties' in node:
             result['type'] = 'object'
@@ -61,7 +63,7 @@ def _map_value(schema, value, *, encode):
     def visit(node, item, tagged_valid=False):
         node = _resolve(node, root)
         branches = node.get('oneOf', node.get('anyOf'))
-        if branches:
+        if branches and 'properties' not in node:
             choices = tagged_branches(branches)
             if choices:
                 selected = choices.get(item.get('op')) if isinstance(item, dict) and isinstance(item.get('op'), str) else None
@@ -118,7 +120,7 @@ def placeholder(schema):
         if 'enum' in node:
             return node['enum'][0]
         branches = node.get('oneOf', node.get('anyOf'))
-        if branches:
+        if branches and 'properties' not in node:
             return sample(branches[0])
         kind = node.get('type')
         if isinstance(kind,list):
@@ -137,5 +139,8 @@ def placeholder(schema):
             return None
         raise ValueError('No placeholder for untyped Codex schema')
     value = sample(schema)
+    # The extraction initial envelope requires a disposition for empty items.
+    if schema.get('title') == 'extract_paper_v2' and 'empty_reason' in schema.get('properties', {}):
+        value['empty_reason'] = 'P'
     validate_local(schema, value)
     return value

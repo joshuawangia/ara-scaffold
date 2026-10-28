@@ -1,4 +1,5 @@
 """Pilot configuration reaches the native CLI lifecycle and provider boundary."""
+from fixture_support import api_fixture_config
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,7 +19,7 @@ from test_calls import response, rig, register, graph
 
 @pytest.mark.parametrize('cap,expected', [(0, 2), (20, 2), (1001, 0)])
 def test_pilot_config_and_caps(tmp_path, cap, expected):
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     assert config['pilot']['cost_cap_usd'] == 100.0
     assert config['pilot']['token_cap'] == 10_000_000
     assert config['smoke']['essay_min_words'] == 150

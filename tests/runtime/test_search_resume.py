@@ -1,4 +1,5 @@
 """Stopped native search recovery, using placeholder-only provider responses."""
+from fixture_support import api_fixture_config
 import json
 
 import pytest
@@ -18,7 +19,7 @@ from test_calls import response
 
 
 def stopped(tmp_path, monkeypatch, *, licensed=False, partial=False):
-    config = yaml.safe_load((ROOT / 'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(provider='mock', search_concurrency=1, cache_dir=str(tmp_path/'cache'))
     if licensed:
         config['node_cap'] = 2

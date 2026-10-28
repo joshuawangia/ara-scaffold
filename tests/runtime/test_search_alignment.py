@@ -1,4 +1,5 @@
 """Placeholder search regressions through the native runtime boundary."""
+from fixture_support import api_fixture_config
 from dataclasses import replace
 import json
 from pathlib import Path
@@ -44,7 +45,7 @@ def own_thesis(reply):
 
 
 def rig(tmp_path, reply):
-    config = yaml.safe_load((ROOT/'config.yaml').read_text())
+    config = api_fixture_config()
     config.update(validation_attempts=2, search_concurrency=1)
     provider = MockProvider({})
     requests = []

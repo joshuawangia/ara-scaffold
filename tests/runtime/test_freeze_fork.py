@@ -1,4 +1,5 @@
 """Verified frozen-prefix reuse; placeholder inputs and fake calls only."""
+from fixture_support import api_fixture_config
 import json
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from test_search_alignment import T, ROOT
 
 def source(tmp_path):
     directory=tmp_path/'source';log=EventLog(directory/'events.jsonl')
-    config=yaml.safe_load((ROOT/'config.yaml').read_text())
+    config=api_fixture_config()
     config.update(provider='mock',cache_dir=str(tmp_path/'cache'),target_candidates=1)
     bank=load_bank(ROOT/'bank')
     log.record('run_started',config=config,topic='P',audience='P',literature='P',bank_version=bank.bank_version)

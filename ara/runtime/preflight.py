@@ -11,17 +11,20 @@ def schema_preflight(calls):
         for items in ([], [{'id': 'P'}]):
             variants.append({**base, 'mode': 'targeted_correction',
                              'original_mode': base['mode'], 'candidate': {'items': items}})
+    codex = calls.config.get('provider') == 'codex_cli'
+    from ara.runtime.codex_schema import strict_schema, VERSION
     seen = set()
     wires = []
     for inputs in variants:
         schema = calls.response_schema('extract_paper', inputs)
-        wire = structured_schema(schema, calls.config.get('formula_output_depth', 2))
+        wire = strict_schema(schema) if codex else structured_schema(schema, calls.config.get('formula_output_depth', 2))
         identity = digest(canonical(wire))
         if identity not in seen:
             seen.add(identity)
             wires.append((identity, inputs, wire))
     calls.log.record('schema_preflight_started', distinct_schemas=len(wires),
-                     model=calls.requested_model('extract_paper'), maximum_output_tokens=1,
+                     model=calls.requested_model('extract_paper'), maximum_output_tokens=4096 if codex else 1,
+                     schema_transform=VERSION if codex else 'anthropic',
                      wires=[{'schema_id': identity, 'inputs': inputs, 'wire': wire}
                             for identity, inputs, wire in wires])
     for identity, inputs, _ in wires:

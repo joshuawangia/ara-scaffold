@@ -36,12 +36,14 @@ V4_SCHEMA_SHA256 = '7d2778f90a78b5040dc3e9d7975f33b216d96652f3ca134e9d7ce568b72f
 def extraction_acceptance_identity(config: dict, root: Path) -> dict:
     """Effective reusable-paper contract; budgets and recovery allowances are excluded."""
     from ara.runtime.providers import stage_settings
+    from ara.runtime.codex_schema import VERSION as CODEX_SCHEMA_VERSION
     stage = stage_settings(config, 'extract_paper')
     fallbacks = stage.get('fallbacks', ['claude-opus-4-8'])
     return {
         'version': EXTRACTION_ACCEPTANCE_VERSION,
         'require_inference': bool(config.get('extraction_require_inference', False)),
         'provider': config['provider'],
+        **({'schema_transform': CODEX_SCHEMA_VERSION} if config['provider'] == 'codex_cli' else {}),
         'stage': {'model': stage['model'], 'effort': stage['effort'],
                   'thinking': stage.get('thinking', 'adaptive'),
                   'fallbacks': [] if fallbacks == 'off' else list(fallbacks)},
@@ -296,7 +298,8 @@ def extraction_range_plan(calls: ModelCalls, paper: Paper):
     """Count initial ranges exactly as execution does; output density is an explicit scenario."""
     from ara.runtime.windows import counted_windows
     maximum = calls.config['extract_paper_max_output_tokens']
-    bound = calls.config['model_context_token_bound'] - maximum
+    context_output = calls.provider.context_output_tokens(maximum) if hasattr(calls.provider, 'context_output_tokens') else maximum
+    bound = calls.config['model_context_token_bound'] - context_output
     density = calls.config.get('extraction_planned_output_tokens_per_page', 0)
     if type(density) is not int or density < 0:
         raise ValueError('extraction planned output density must be a nonnegative integer')

@@ -3894,3 +3894,27 @@ appends deterministically while preserving the original text verbatim. Measured
 remaining section capacity bounds each addition; condensation still replaces one
 section. The revised regression fails against replacement semantics. The failed
 live attempt remains logged and is not presented as successful evidence.
+
+## nu4 round 2 — audit citation ownership and targeted repair (2026-10-28)
+
+Trailing citation markers previously became part of the next numbered sentence.
+The deterministic splitter now retains them with the preceding terminal
+punctuation. Original-text offsets are shared by audit input and revision, with
+node markers transparent to splitting. The draft itself is not normalized.
+
+A complete adverse audit retains its exact evidence and labels in a typed
+rejection. Native composition can request up to two rounds of replacements for
+only its flagged sentences, then audits the complete result again. Each accepted
+patch preserves unflagged bytes and bibliography; retained sentences keep exact
+citation/node markers. An empty replacement removes an unsupported sentence.
+Schema, size, body, length and node-coverage checks remain binding. No missing-node
+repair is invented when the auditor identifies no sentence to change. Malformed
+inventories and transport failures do not authorize revisions. The post-citation
+audit remains final, so repair cannot alter text after its citations were checked.
+
+`select --draft` admits a saved unverified draft through the same checks, logging
+the input and avoiding fresh outlining/writing. The new revision kind uses writing
+stage routing and the standard logging/cache/budget/isolation boundary. Codex
+schema proof now includes 18 cases. No API fallback or provider-switching change
+is made. Live outcomes and the unexecuted API alternative's estimate belong in
+the external nu4 report, with remaining claims and the exact tested revision.

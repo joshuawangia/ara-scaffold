@@ -38,6 +38,13 @@ class Rejected(ValueError):
     pass
 
 
+class EssayAuditFailed(Rejected):
+    """A complete adverse audit, with the exact evidence and labels retained."""
+    def __init__(self, result, inputs, labels):
+        super().__init__('essay audit failed')
+        self.result, self.inputs, self.labels = result, inputs, labels
+
+
 class RejectedCutBatch(Rejected, InvalidProposalBatch):
     pass
 
@@ -553,6 +560,8 @@ class ModelCalls:
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             if not isinstance(exc, Rejected):
+                raise
+            if isinstance(exc, EssayAuditFailed):
                 raise
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
@@ -1142,26 +1151,31 @@ class ModelCalls:
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
+    def validate_essay(self, route: RouteGraph, data: dict) -> dict:
+        validate_local(self.response_schema('write_essay', {}), data, self.config)
+        require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
+        require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
+        markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
+        require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
+        body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
+        text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
+        require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
+        require(word_count(data) >= self.config['essay_min_words'],
+                'essay writer: minimum words not reached')
+        return data
+
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
-            require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
-            require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
-            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
-            require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
-            body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
-            text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
-            require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
-            require(word_count(data) >= self.config['essay_min_words'],
-                    'essay writer: minimum words not reached')
-            return data
+            return self.validate_essay(route, data)
         if self.config['essay_min_words'] >= 4500:
             from ara.runtime.writing import sectioned_essay
             return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
 
     def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
-        body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
-        parts = [part.strip() for part in re.split(r'(?<=[.!?])\s+|\n+', body) if part.strip()]
+        from ara.runtime.essay_audit import sentence_spans, NODE
+        parts = [NODE.sub('', draft['body'][start:end]).strip()
+                 for start, end in sentence_spans(draft['body'])]
         inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
                   'outline': self.essay_outline(route)}
         if self.config['essay_min_words'] >= 4500:
@@ -1192,7 +1206,8 @@ class ModelCalls:
                       'extra_steps': extra,
                       'faithful': not missing and not extra and markers == ids}
             self.log.record('essay_audit', **result)
-            require(result['faithful'], 'essay audit failed')
+            if not result['faithful']:
+                raise EssayAuditFailed(result, inputs, labels)
             return result
         return self.call('audit_essay', inputs, check)
 

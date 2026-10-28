@@ -16,6 +16,18 @@ def test_sentence_splitter_excludes_bibliography(rig):
                       'outline': {'nodes': [{'id': 'n1', 'text': 'P'}], 'links': []}}
 
 
+@pytest.mark.parametrize('body,expected', [
+    ('[[node:n1]] P. [cite:t1] Q.', ['P. [cite:t1]', 'Q.']),
+    ('P.[cite:t1] [cite:t2]\nQ!', ['P.[cite:t1] [cite:t2]', 'Q!']),
+    ('P. [[node:n1]] [cite:t1] Q?', ['P.  [cite:t1]', 'Q?']),
+    ('P.\n[cite:t1]\nQ.', ['P.\n[cite:t1]', 'Q.']),
+    ('P. Q [cite:t1].', ['P.', 'Q [cite:t1].']),
+])
+def test_trailing_citations_belong_to_preceding_sentence(rig, body, expected):
+    calls, _, _ = rig
+    assert [s['text'] for s in calls.audit_inputs(graph(), {'body': body})['sentences']] == expected
+
+
 @pytest.mark.parametrize('variant', ['missing', 'unknown_node', 'unknown_sentence', 'duplicate', 'absent', 'faithful', 'unsupported_marker'])
 def test_invalid_labels_cannot_approve(rig, variant):
     calls, provider, log = rig

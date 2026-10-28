@@ -60,6 +60,10 @@ final refusals, transport failures, output-token stops, negative essay audits or
 bank-license failures. CLI transport retries and final search-job attempts have
 separate policies below and in [search](search.md).
 
+A complete adverse first audit may start the separate, bounded sentence-revision
+workflow described in [search](search.md). Each revision is a new logged call with
+the auditor's exact evidence and flags; it does not retry or weaken that verdict.
+
 Web admission reserves the
 configured 200,000-token context bound for each potential server iteration. Prices
 and that bound are explicit configuration assumptions; actual provider usage is
@@ -228,8 +232,8 @@ constraints authoritative; it does
 not prove pilot success. API-only extraction and web retrieval are not Codex
 schema cases. Use the separate ChatGPT auth file; never the worker login.
 
-The current contract includes `classify_target`: older 15-case proofs must be
-refreshed to cover all 16 cases. This is schema-acceptance evidence, not proof of
+The current contract includes `outline_essay` and `revise_essay`: older proofs must
+be refreshed to cover all 18 cases. This is schema-acceptance evidence, not proof of
 originality or successful new targets.
 
 For an existing run, pass `--codex-schema-preflight-log PATH` to

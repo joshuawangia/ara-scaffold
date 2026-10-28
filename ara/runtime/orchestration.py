@@ -197,11 +197,16 @@ def _save_analyses(calls, targets, results, commitments=None):
     return tuple(routes)
 
 
-def compose(calls: ModelCalls, route: RouteGraph) -> dict:
-    draft = calls.write_essay(route)
+def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> dict:
+    from ara.runtime.essay_audit import audit_and_revise
+    if draft is None:
+        draft = calls.write_essay(route)
+    else:
+        calls.validate_essay(route, draft)
+        calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
     # Save the unverified draft as a clearly named partial artifact, never export it.
     (calls.log.path.parent / 'draft.unverified.json').write_text(canonical(draft))
-    calls.audit_essay(route, draft)
+    draft = audit_and_revise(calls, route, draft)
     cleaned, verification = calls.verify_originality_citations(draft)
     # Removing unsupported items can change the route's coverage; audit again.
     calls.audit_essay(route, cleaned)

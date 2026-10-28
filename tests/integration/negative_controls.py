@@ -1692,8 +1692,42 @@ CASES += [
      'supporting_commitments=supports', 'supporting_commitments=[]',
      'tests/runtime/test_sectioned_writer.py::test_exact_evidence_context_and_citations_reach_writer_and_audit'),
     ('section_audit', 'ara/runtime/orchestration.py',
-     '    calls.audit_essay(route, draft)', '    pass',
+     '    draft = audit_and_revise(calls, route, draft)', '    pass',
      'tests/runtime/test_sectioned_writer.py::test_sectioned_compose_still_stops_at_adverse_audit'),
+]
+
+
+CASES += [
+    ('audit_trailing_citations', 'ara/runtime/essay_audit.py',
+     r'(?:\s*\[cite:[^\]]+\])*', '',
+     'tests/runtime/test_audit_labels.py::test_trailing_citations_belong_to_preceding_sentence'),
+    ('audit_revision_bound', 'ara/runtime/essay_audit.py',
+     'round_number == 2', 'round_number == 3',
+     'tests/runtime/test_audit_revision.py::test_audit_revision_stops_after_two_rounds'),
+    ('audit_revision_flagged_only', 'ara/runtime/essay_audit.py',
+     'and set(numbers) == set(originals)', '',
+     'tests/runtime/test_audit_revision.py::test_revision_rejects_changes_outside_authorized_span[unflagged]'),
+    ('audit_revision_citations', 'ara/runtime/essay_audit.py',
+     'require(CITE.findall(text) == CITE.findall(old),', 'require(True,',
+     'tests/runtime/test_audit_revision.py::test_revision_rejects_changes_outside_authorized_span[invented_citation]'),
+    ('audit_revision_markers', 'ara/runtime/essay_audit.py',
+     'require(NODE.findall(text) == NODE.findall(old),', 'require(True,',
+     'tests/runtime/test_audit_revision.py::test_revision_rejects_changes_outside_authorized_span[added_node]'),
+    ('audit_revision_preserves_surroundings', 'ara/runtime/essay_audit.py',
+     'body = body[:start] + text + body[end:]', "body = body[:start] + text + body[end:] + ' P'",
+     'tests/runtime/test_audit_revision.py::test_audit_revision_preserves_unflagged_text_and_evidence'),
+    ('audit_revision_evidence', 'ara/runtime/essay_audit.py',
+     'audit_inputs=failure.inputs', 'audit_inputs={}',
+     'tests/runtime/test_audit_revision.py::test_revision_receives_exact_frozen_source_context'),
+    ('audit_revision_minimum', 'ara/runtime/essay_audit.py',
+     'return calls.validate_essay(route, revised)', 'return revised',
+     'tests/runtime/test_audit_revision.py::test_revision_rechecks_minimum_words'),
+    ('audit_revision_reaudit', 'ara/runtime/essay_audit.py',
+     '            calls.audit_essay(route, draft)', '            if round_number == 0: calls.audit_essay(route, draft)',
+     'tests/runtime/test_audit_revision.py::test_audit_revision_stops_after_two_rounds'),
+    ('audit_resume_draft', 'ara/runtime/cli.py',
+     '        compose(calls, chosen, draft)', '        compose(calls, chosen)',
+     'tests/integration/test_cli_e2e.py'),
 ]
 
 

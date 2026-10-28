@@ -195,6 +195,9 @@ def test_sectioned_compose_still_stops_at_adverse_audit(rig, monkeypatch):
     install(calls, provider, monkeypatch, [1000] * 5)
     complete = provider.complete
     def adverse(kind, prompt, schema, maximum):
+        if kind == 'revise_essay':
+            inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+            return Response(response({'revisions': inputs['flagged_sentences']}))
         if kind == 'audit_essay':
             inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
             return Response(response({'labels': [dict(sentence=s['sentence'], node_ids=['n0', 'n1'],
@@ -209,7 +212,8 @@ def test_sectioned_compose_still_stops_at_adverse_audit(rig, monkeypatch):
     assert not any(e['stage'] in ('search_evidence', 'final_draft') for e in log.read())
 
 
-def test_outline_uses_writing_stage_configuration():
+@pytest.mark.parametrize('kind', ['outline_essay', 'revise_essay'])
+def test_outline_uses_writing_stage_configuration(kind):
     from ara.runtime.providers import stage_settings
     assert stage_settings({'model': 'P', 'stages': {'writing': {'model': 'Q'}, 'search': {'model': 'R'}}},
-                          'outline_essay')['model'] == 'Q'
+                          kind)['model'] == 'Q'

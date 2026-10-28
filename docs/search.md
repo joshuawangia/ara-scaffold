@@ -82,6 +82,28 @@ reservation, dispatch and cache identity. A changed schema requires a fresh Code
 schema preflight. Codex still refuses API-only `search_evidence`; reaching the
 first audit does not imply completion of originality/citation checks or export.
 
+Audit sentence boundaries retain citation markers immediately following terminal
+punctuation with the preceding sentence, including across transparent node
+markers. Original text offsets drive repairs; splitting never rewrites the draft.
+A complete adverse audit can trigger at most two targeted revision rounds. Each
+`revise_essay` call receives exactly the audit's evidence, its flagged labels and
+the corresponding original spans. It returns replacements only for those sentence
+numbers. Retained replacements preserve citation/node markers exactly, in order;
+an empty replacement cuts a whole unsupported sentence. Bibliography and all
+unflagged bytes remain unchanged. Each replacement is capped at 8,000 characters
+and at the greater of 1,000 or twice its original character length. Length, body
+and node coverage checks run before the entire draft is audited again. Malformed
+audits and provider failures are not eligible for this repair loop. Missing-node
+failures with no flagged sentences stop because there is no authorized edit span.
+Remaining flags after two rounds stop the run and are logged explicitly.
+
+Use `ara select --run-dir PATH --route ID --draft PATH/draft.unverified.json` to
+resume an existing draft without outlining or writing it again. The draft is
+schema/length/coverage checked and logged before auditing. Revised partials retain
+the unverified filename. Citation/originality checks and the final re-audit still
+follow a faithful first audit; the final re-audit does not revise already-verified
+text. No paid-provider fallback or automatic provider switch is introduced.
+
 Edit `pilot.cost_cap_usd` and `pilot.token_cap` in `config.yaml`, or supply your
 own file with `--config`. Older custom configurations must add `essay_min_words`
 (and a `pilot` mapping to use that profile); a missing minimum is not treated as

@@ -31,24 +31,4 @@ All paths below are under `ara/runtime/` unless stated otherwise.
 | Subscription transport | `claude_code.py`, `codex_cli.py`; `claude_estimation.py` and packaged calibration data; `codex_schema.py`, `codex_preflight.py`, `codex_web.py` | `test_claude*.py`, `test_codex*.py`, `test_subagent_counting.py` |
 | OCR | `ocr.py`, `ocr_spans.py`, `ocr_vl.py`; packaged model manifests | `test_ocr.py`, `test_ocr_spans.py`; installed-weight cases are opt-in |
 | Integrity/accounting | `logging.py`, `provenance.py`, `verification.py`, `budget.py`, `export.py` | `test_incomplete.py`, `test_verification_receipts.py`, `test_verification_export.py`, budget/provider/extraction tests |
-| Writing/verification | `orchestration.py:compose`; `writing.py` section planning/context/assembly; `essay_audit.py` sentence spans/typed failures/targeted revision; writer/audit/verification methods in `calls.py`; `export.py` | `test_writer_validation.py`, `test_sectioned_writer.py`, `test_audit_labels.py`, `test_typed_audit.py`, `test_audit_revision.py`, `test_resumed_draft_scan.py`, `test_essay_outline.py`, `test_known_verification.py` |
-| Reports | `report.py:generate_report`; `report_files.py`, `report_render.py`, `report_traces.py` | `test_report.py`, `test_report_size.py`, `test_report_contribution.py` |
-
-## Fixtures, tools and generated data
-
-| Path | Purpose |
-| --- | --- |
-| `tests/fixtures/runtime/` | Placeholder smoke text and finite canned responses |
-| `tests/fixtures/verification/` | Authorized software-engineering recordings; [capture/replay rules](tests/fixtures/verification/README.md) |
-| `tests/runtime/fixture_support.py`, `rich_fixture.py` | Offline runtime and rich-source fixtures |
-| `tests/integration/negative_controls.py` | Integration mutation runner; also invokes owning engine/runtime controls |
-| `tests/engine/negative_controls.py`, `tests/runtime/*negative_controls.py` | Scoped production-wire mutations; run sequentially and restore |
-| `tools/negative_controls.py`, `tools/ocr_negative_controls.py` | Aggregate and OCR controls |
-| `tools/replay_extraction.py` | Offline historical response replay |
-| `tools/fetch_ocr_models.py`, `tools/ocr_audit.py` | Weight provisioning and local OCR audit |
-| `tools/calibrate_claude_code.py`, `tools/benchmark_search_traces.py` | Token-estimate calibration and trace benchmarking |
-| `literature/` | Bibliographic metadata and ignored local PDFs; [input guidance](literature/README.md) |
-| `runs/`, `cache/`, `*.egg-info/` | Ignored runtime/build outputs; never source authority |
-
-`pyproject.toml` owns pytest discovery (`tests/`), package data and the CLI entry
-point. `uv.lock` pins dependencies. No source-layout moves accompany this map.
+| Publication | `publication.py`, `publication_figures.py`, `publication_pdf.py`, `publication_references.py`; `polish`, `figures`, `render-pdf` CLI commands | `test_publication.py` |

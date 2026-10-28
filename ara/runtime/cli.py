@@ -110,6 +110,13 @@ def parser() -> argparse.ArgumentParser:
     report = sub.add_parser('report', help='render verified run receipts offline; no model calls')
     report.add_argument('--run-dir', type=Path, action='append', required=True)
     report.add_argument('--out', type=Path, required=True)
+    for command in ('polish', 'figures', 'render-pdf'):
+        cmd = sub.add_parser(command)
+        cmd.add_argument('--run-dir', type=Path, required=True)
+        if command == 'polish':
+            cmd.add_argument('--route')
+            cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -464,6 +471,9 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         log = EventLog(args.run_dir / 'events.jsonl')
         log.human(args.command + '_command', json.dumps(raw_args, ensure_ascii=False),
                   argv=raw_args, reported_minutes=args.human_minutes)
+        if args.command in ('polish', 'figures', 'render-pdf'):
+            from ara.runtime.publication import publication_command
+            return publication_command(args, log, ROOT, calls_factory)
         if args.command == 'feedback':
             start = time.monotonic()
             text = args.text if args.text is not None else input('Feedback: ')

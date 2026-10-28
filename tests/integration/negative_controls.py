@@ -1697,143 +1697,43 @@ CASES += [
 ]
 
 
-CASES += [
-    ('audit_trailing_citations', 'ara/runtime/essay_audit.py',
-     r'(?:\s*\[cite:[^\]]+\])*', '',
-     'tests/runtime/test_audit_labels.py::test_trailing_citations_belong_to_preceding_sentence'),
-    ('audit_revision_bound', 'ara/runtime/essay_audit.py',
-     'round_number == 3', 'round_number == 2',
-     'tests/runtime/test_audit_revision.py::test_audit_revision_stops_after_three_rounds'),
-    ('audit_revision_flagged_only', 'ara/runtime/essay_audit.py',
-     'and set(numbers) == set(originals)', '',
-     'tests/runtime/test_audit_revision.py::test_revision_rejects_changes_outside_authorized_span[unflagged]'),
-    ('audit_revision_citations', 'ara/runtime/essay_audit.py',
-     "((CITE, 'citations'), (NODE, 'node markers'))", "((NODE, 'node markers'),)",
-     'tests/runtime/test_audit_revision.py::test_revision_rejects_changes_outside_authorized_span[invented_citation]'),
-    ('audit_revision_markers', 'ara/runtime/essay_audit.py',
-     "((CITE, 'citations'), (NODE, 'node markers'))", "((CITE, 'citations'),)",
-     'tests/runtime/test_audit_revision.py::test_revision_rejects_changes_outside_authorized_span[added_node]'),
-    ('audit_revision_preserves_surroundings', 'ara/runtime/essay_audit.py',
-     'body = body[:start] + text + body[end:]', "body = body[:start] + text + body[end:] + ' P'",
-     'tests/runtime/test_audit_revision.py::test_audit_revision_preserves_unflagged_text_and_evidence'),
-    ('audit_revision_evidence', 'ara/runtime/essay_audit.py',
-     'audit_inputs=failure.inputs', 'audit_inputs={}',
-     'tests/runtime/test_audit_revision.py::test_revision_receives_exact_frozen_source_context'),
-    ('audit_revision_minimum', 'ara/runtime/essay_audit.py',
-     'return calls.validate_essay(route, revised)', 'return revised',
-     'tests/runtime/test_audit_revision.py::test_revision_rechecks_minimum_words'),
-    ('audit_revision_reaudit', 'ara/runtime/essay_audit.py',
-     '            calls.audit_essay(route, draft)', '            if round_number == 0: calls.audit_essay(route, draft)',
-     'tests/runtime/test_audit_revision.py::test_audit_revision_stops_after_three_rounds'),
-    ('audit_resume_draft', 'ara/runtime/cli.py',
-     '        compose(calls, chosen, draft)', '        compose(calls, chosen)',
-     'tests/integration/test_cli_e2e.py'),
-]
-
 
 CASES += [
-    ('codex_web_only_stage', 'ara/runtime/codex_cli.py',
-     "flag.replace('web_search=\"disabled\"', 'web_search=\"live\"')", 'flag',
-     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
-    ('codex_web_event_required', 'ara/runtime/codex_cli.py',
-     "if not web_items: reject('cli_web_search_missing')", 'pass',
-     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_no_event-cli_web_search_missing]'),
-    ('codex_web_action_gate', 'ara/runtime/codex_web.py',
-     "action.get('type') not in ('search', 'open_page', 'find_in_page')", 'False',
-     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_unknown_action-cli_tool_event]'),
-    ('codex_web_pending_action', 'ara/runtime/codex_cli.py',
-     "pending=kind != 'item.completed'", 'pending=False',
-     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology[web_pending]'),
-    ('codex_web_tool_host_mount', 'ara/runtime/codex_cli.py',
-     "wrapper += ['--ro-bind', str(tool_host), '/run/codex-code-mode-host']", 'pass',
-     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology[web]'),
-    ('codex_web_url_gate', 'ara/runtime/codex_web.py',
-     "url.scheme not in ('http', 'https')", 'False',
-     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_bad_url-cli_invalid_web_evidence]'),
-    ('codex_web_query_receipt', 'ara/runtime/codex_web.py',
-     "'queries': sorted(queries)", "'queries': []",
-     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
-    ('codex_web_url_receipt', 'ara/runtime/codex_web.py',
-     "sorted({s['url'] for s in value['sources']})", '[]',
-     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
-    ('codex_web_evidence_excerpt', 'ara/runtime/codex_web.py',
-     "'cited_text': snippet", "'cited_text': 'R'",
-     'tests/runtime/test_codex_cli.py::test_web_evidence_reaches_native_verifier[P Q-True]'),
-    ('codex_web_nonweb_rejected', 'ara/runtime/codex_cli.py',
-     "if rejection: reject(rejection)", "if rejection and not web: reject(rejection)",
-     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_tool:command_execution-cli_tool_event]'),
-    ('codex_web_methodology', 'ara/runtime/export.py',
-     "method='Codex web search'", "method='P'",
-     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
-    ('codex_web_initial_context', 'ara/runtime/codex_cli.py',
-     "estimate.input_tokens - replay - estimate.output_tokens", "estimate.input_tokens - estimate.output_tokens",
-     'tests/runtime/test_codex_cli.py::test_web_admission_separates_initial_context_from_replay'),
+    ('publication_reference_pdf_binding', 'ara/runtime/publication_references.py',
+     "or data.get('pdf_sha256') != hashes[source]", '',
+     'tests/runtime/test_publication.py::test_references_use_logged_metadata_bound_to_source_pdf'),
+    ('publication_clean_markdown', 'ara/runtime/publication.py',
+     "'markdown': NODE.sub('', result['markdown'])", "'markdown': result['markdown']",
+     'tests/runtime/test_publication.py::test_native_polish_logs_sections_and_blocks_unavailable_verification'),
+    ('publication_required_figure', 'ara/runtime/publication.py',
+     "require(set(found) == figure_ids,", 'require(True,',
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_route_gap', 'ara/runtime/publication_figures.py',
+     '    if route.frontier:', '    if True:',
+     'tests/runtime/test_publication.py::test_figures_are_deterministic_source_linked'),
+    ('publication_stale_attempt', 'ara/runtime/publication.py',
+     "require(bool(stages) and stages[-1] == 'publication_completed',", 'require(True,',
+     'tests/runtime/test_publication.py::test_new_failed_attempt_cannot_render_previous_publication'),
+    ('publication_word_bound', 'ara/runtime/publication.py',
+     "require(4500 <= words <= 6000,", "require(True,",
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_citation_preservation', 'ara/runtime/publication.py',
+     "require(CITATION.findall(before) == CITATION.findall(after),", "require(True,",
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_paragraph_log', 'ara/runtime/publication.py',
+     "require([x['paragraph'] for x in value['change_log']] == list(range(len(body))),", "require(True,",
+     'tests/runtime/test_publication.py::test_publication_constraints'),
+    ('publication_targeted_repair', 'ara/runtime/publication.py',
+     "if i not in allowed),", "if False),",
+     'tests/runtime/test_publication.py::test_repair_cannot_change_unflagged_abstract'),
+    ('publication_second_audit', 'ara/runtime/publication.py',
+     'for attempt in range(2):', 'for attempt in range(1):',
+     'tests/runtime/test_publication.py::test_one_targeted_repair_then_audit_or_exact_fallback[1-True]'),
+    ('publication_unsafe_html', 'ara/runtime/publication_pdf.py',
+     "{'html': False}", "{'html': True}",
+     'tests/runtime/test_publication.py::test_html_embeds_only_declared_figures_and_escapes'),
+    ('publication_native_entrypoint', 'ara/runtime/cli.py',
+     "return publication_command(args, log, ROOT, calls_factory)", "return 0",
+     'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
 ]
 
-
-CASES += [
-    ('kappa4_W1_resumed_draft_scan', 'ara/runtime/orchestration.py',
-     '            calls.provider.scan_output(draft)', '            pass',
-     'tests/runtime/test_resumed_draft_scan.py::test_resumed_draft_scan_before_any_effect'),
-]
-
-
-CASES += [
-    ('typed_audit_unmapped', 'ara/runtime/essay_audit.py',
-     "elif role == 'argument_step' and not item['node_ids']:", 'elif False:',
-     'tests/runtime/test_typed_audit.py::test_typed_substantive_failures_reject'),
-    ('typed_audit_citation_judgment', 'ara/runtime/essay_audit.py',
-     "not item['citation_supported'] or ", '',
-     'tests/runtime/test_typed_audit.py::test_source_claim_requires_correct_frozen_citation[miscited]'),
-    ('typed_audit_missing_citation', 'ara/runtime/essay_audit.py',
-     'or not cited or', 'or',
-     'tests/runtime/test_typed_audit.py::test_source_claim_requires_correct_frozen_citation[missing]'),
-    ('typed_audit_bibliography', 'ara/runtime/essay_audit.py',
-     'bibliography.get(tid) != allowed[tid]', 'False',
-     'tests/runtime/test_typed_audit.py::test_source_claim_requires_correct_frozen_citation[bibliography]'),
-    ('typed_audit_coverage', 'ara/runtime/calls.py',
-     "if item['role'] in ('argument_step', 'source_claim')", 'if True',
-     'tests/runtime/test_typed_audit.py::test_presentation_mapping_does_not_fake_route_coverage'),
-    ('typed_audit_root', 'ara/runtime/calls.py',
-     "'root_conclusion': {'node_id': route.root_id", "'root_conclusion': {'node_id': ''",
-     'tests/runtime/test_typed_audit.py::test_root_conclusion_is_explicit_and_a_mapped_argument_step'),
-    ('revision_marker_feedback', 'ara/runtime/essay_audit.py',
-     'forbidden or misplaced markers {actual!r}', 'forbidden or misplaced markers',
-     'tests/runtime/test_audit_revision.py::test_revision_feedback_names_forbidden_marker_and_recovers'),
-    ('revision_marker_inventory', 'ara/runtime/essay_audit.py',
-     'citation_markers=CITE.findall(text)', 'citation_markers=[]',
-     'tests/runtime/test_audit_revision.py::test_audit_revision_preserves_unflagged_text_and_evidence'),
-]
-
-
-def main():
-    assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
-    output = ROOT / 'runs/delta-controls'
-    output.mkdir(parents=True, exist_ok=True)
-    results = []
-    env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
-    for name, filename, old, new, target in CASES:
-        path = ROOT / filename
-        original = path.read_bytes()
-        assert original.decode().count(old) == 1, (name, 'mutation anchor must occur exactly once')
-        for pyc in (ROOT / 'ara/runtime/__pycache__').glob('*.pyc'):
-            pyc.unlink()
-        try:
-            path.write_text(original.decode().replace(old, new))
-            red = subprocess.run(['uv', 'run', 'pytest', '-q', target], cwd=ROOT,
-                                 env=env, capture_output=True, text=True)
-            (output / f'{name}-red.txt').write_text(red.stdout + red.stderr)
-        finally:
-            path.write_bytes(original)
-        green = subprocess.run(['uv', 'run', 'pytest', '-q', target], cwd=ROOT,
-                               env=env, capture_output=True, text=True)
-        (output / f'{name}-green.txt').write_text(green.stdout + green.stderr)
-        results.append({'name': name, 'red': red.returncode, 'restored': green.returncode})
-        (output / 'results.json').write_text(json.dumps(results, indent=2))
-        assert red.returncode == 1 and green.returncode == 0, results[-1]
-        print(f'{name}: red=1 restored=0', flush=True)
-    print(f'{len(results)} red/{len(results)}, all restored green')
-
-
-if __name__ == '__main__':
-    main()

@@ -3895,100 +3895,19 @@ remaining section capacity bounds each addition; condensation still replaces one
 section. The revised regression fails against replacement semantics. The failed
 live attempt remains logged and is not presented as successful evidence.
 
-## nu4 round 2 — audit citation ownership and targeted repair (2026-10-28)
 
-Trailing citation markers previously became part of the next numbered sentence.
-The deterministic splitter now retains them with the preceding terminal
-punctuation. Original-text offsets are shared by audit input and revision, with
-node markers transparent to splitting. The draft itself is not normalized.
+## 2026-10-28 — Publication after drafting
 
-A complete adverse audit retains its exact evidence and labels in a typed
-rejection. Native composition can request up to two rounds of replacements for
-only its flagged sentences, then audits the complete result again. Each accepted
-patch preserves unflagged bytes and bibliography; retained sentences keep exact
-citation/node markers. An empty replacement removes an unsupported sentence.
-Schema, size, body, length and node-coverage checks remain binding. No missing-node
-repair is invented when the auditor identifies no sentence to change. Malformed
-inventories and transport failures do not authorize revisions. The post-citation
-audit remains final, so repair cannot alter text after its citations were checked.
+Publication uses the native ModelCalls isolation, validation, accounting and audit
+boundaries with a pinned subscription model. Frozen citations and paragraph order
+remain invariant; the model may improve prose and choose deterministic figure
+positions. Pure-Python SVG avoids a system graph-layout dependency. PDF rendering
+is local and blocks network requests. Publication artifacts are separate from
+final_draft: a polished or rendered document does not imply successful external
+citation/originality verification. The subscription retrieval refusal is retained
+as blocked status without an API fallback. See [publication](docs/publication.md).
 
-`select --draft` admits a saved unverified draft through the same checks, logging
-the input and avoiding fresh outlining/writing. The new revision kind uses writing
-stage routing and the standard logging/cache/budget/isolation boundary. Codex
-schema proof now includes 18 cases. No API fallback or provider-switching change
-is made. Live outcomes and the unexecuted API alternative's estimate belong in
-the external nu4 report, with remaining claims and the exact tested revision.
-
-## nu4 round 3 — default Codex web evidence retrieval (2026-10-28)
-
-For a Codex main provider, `search_evidence` uses live Codex web search by
-default. There is no API fallback. Extraction and Claude Code's retrieval refusal
-remain unchanged. Only the evidence stage enables web search; the event parser
-accepts its search/open-page/find-in-page events and rejects every other tool or
-unknown event. The existing content-free isolation canary and filesystem,
-credential and identity boundaries remain active. No completed web event means
-no accepted evidence, even if the model returns a plausible summary.
-
-The transport retains queries, web actions, result URLs and quoted snippets.
-This adapter converts the structured final answer rather than raw search-result
-bodies. URLs and passages are therefore explicitly model-reported,
-locally schema-validated evidence, not independently authenticated source text.
-The native citation/originality verifier receives those URL-bound excerpts;
-exact quotation checks, unsupported-item removal and post-verification audit
-remain authoritative. Methodology derives the Codex retrieval disclosure from
-actual receipts. A rejected or absent search is not reported as successful.
-
-Admission separates the initial prompt from reserved search replay. Configured
-search/output limits are reservation assumptions, not hard CLI execution caps;
-measured aggregate tokens and completed web events are retained. Offline tests
-and production-wire mutations cover accepted web events, non-web rejection,
-query/URL receipts, excerpt verification, methodology and initial-context sizing.
-Live execution, remaining limitations and exact tested revision are recorded in
-the external nu4 report; schema-valid text alone does not prove web retrieval.
-
-An isolated live diagnostic exposed two transport requirements: the vendor's
-`codex-code-mode-host` companion must remain reachable in the mount namespace,
-and searches start with a pending `other` action before resolving. The evidence
-stage mounts only that sibling executable read-only under `/run`; a missing
-helper refuses explicitly. The parser allows the exact pending placeholder but
-still requires a recognized completed action. Unknown completed actions and
-non-web tools continue to reject. Fake subprocess regressions execute the
-mounted helper and prove it is not writable. Live search-result payloads were
-observed in diagnostics; they are not used as authenticated source text by this
-adapter, and the model-reported provenance limitation remains explicit.
-
-Kappa4 W1 identified that imported drafts could reach the resume event, artifact
-and first audit without the generated-output scan. `compose(draft=...)` now calls
-the effective provider's identity/credential scanner before even schema
-validation, so malformed imports cannot expose sensitive content in validation
-diagnostics. Identity violations retain `operator_identity_in_output`; credentials
-retain the existing sanitized `credential_in_cli_output`. Clean imports keep the
-native audit and verification lifecycle. The review's content-sensitive fake CLI
-reproduction covers body, title, bibliography and invalid encoded content, with
-unchanged log/anchor/artifact and no audit dispatch on refusal. Its production
-scan-removal control must fail and restore green.
-
-## nu4 round 4 — typed sentence audit and actionable revision feedback (2026-10-29)
-
-The binary extra-inference label conflated presentation with substantive route
-content and supplied little repair guidance. The audit now classifies each
-sentence as a source claim, argument step, framing, exposition, signpost,
-objection, reply or unsupported claim. Unsupported claims fail. Source claims
-need a positive semantic citation judgment and actual markers matching the exact
-frozen-T bibliography; argument steps need a known node mapping. The root
-conclusion is explicit input and a faithful restatement maps to that node, while
-extra unsupported substance in the same sentence still fails. Presentation cannot
-satisfy route coverage. Objections/replies must be marked and CQ-consistent;
-otherwise the model must classify them unsupported. These semantic classifications
-remain model judgments, not deterministic proof. Structural inventory, node
-coverage, source stance, scoped qualifications and downstream verification remain.
-
-Complete adverse audits permit three accepted targeted-revision rounds, with a
-full audit after each; malformed inventories and provider failures do not grant
-repair authority. Each flagged span carries exact ordered citation/node markers.
-Validation feedback names the sentence and observed/required sequences, so a
-retry can remove a forbidden addition instead of repeating it. Retained sentences
-may not add even a valid T marker; whole unsupported spans can be deleted subject
-to word/coverage checks. Bibliography and unflagged bytes remain immutable. Typed
-failure reasons and role counts are logged. Original draft comparisons and live
-verification/export outcomes belong in the external round-4 report.
+Reference metadata is joined from logged extraction inputs through frozen T source
+IDs and matching PDF hashes. A mutable checkout bibliography is not run evidence.
+The recorded title, authors, year and venue remain independently unverified until
+the native external citation path completes; source identity does not prove them.

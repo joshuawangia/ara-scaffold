@@ -295,7 +295,8 @@ class ModelCalls:
         attempts = self.config.get('validation_attempts', 1)
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
-        if kind == 'write_essay':
+        whole_essay = kind == 'write_essay' and 'mode' not in inputs
+        if whole_essay:
             attempts = 4
         request_inputs = inputs
         for attempt in range(attempts):
@@ -306,7 +307,7 @@ class ModelCalls:
                     raise
                 self.log.record('validation_retry', kind=kind, next_attempt=attempt + 2,
                                 reason=str(exc))
-                if kind != 'write_essay':
+                if not whole_essay:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
@@ -1153,13 +1154,20 @@ class ModelCalls:
             require(word_count(data) >= self.config['essay_min_words'],
                     'essay writer: minimum words not reached')
             return data
+        if self.config['essay_min_words'] >= 4500:
+            from ara.runtime.writing import sectioned_essay
+            return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
 
     def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
         body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
         parts = [part.strip() for part in re.split(r'(?<=[.!?])\s+|\n+', body) if part.strip()]
-        return {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
-                'outline': self.essay_outline(route)}
+        inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
+                  'outline': self.essay_outline(route)}
+        if self.config['essay_min_words'] >= 4500:
+            from ara.runtime.writing import source_context
+            inputs['source_evidence'] = source_context(self, route)
+        return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
         inputs = self.audit_inputs(route, draft)

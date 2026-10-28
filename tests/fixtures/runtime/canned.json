@@ -167,34 +167,6 @@
       "output_tokens": 3
     }
   },
-  "write_essay:4774aa9f097eea1712e850e8eb6f15b6da04310bf3137e6d0087dea37a9d8737": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"bibliography\":[],\"body\":\"[[node:n:p]][[node:n:p:c]][[node:n:p:a]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "audit_essay:da455084d1850da090a8cc25d202dcf78cfc5eb511c9a9e0918326beaacdc5a9": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n:p\",\"n:p:c\",\"n:p:a\"],\"sentence\":1}]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
   "search_evidence:0dc40aa7cb66a571fa29e4ff6470fcabbf6026613792b50d34dbb31b5cfacfd9": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
@@ -216,6 +188,34 @@
       {
         "type": "text",
         "text": "{\"items\":[],\"originality\":{\"assessment\":\"unverified\",\"detail\":\"P\",\"evidence_urls\":[]}}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "audit_essay:6e1bb973c586c7571210662698eb46040d583a3b36962ba3ed31057833b1049f": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n:p\",\"n:p:c\",\"n:p:a\"],\"sentence\":1}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "write_essay:94750eb4c0f8ae6f9744d3130eaf9ff31f66601b24c9516228b02233a29d650f": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"bibliography\":[],\"body\":\"[[node:n:p]][[node:n:p:c]][[node:n:p:a]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
       }
     ],
     "usage": {

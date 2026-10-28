@@ -51,13 +51,36 @@ This does not bypass context/token/USD admission or unresolved dispatched calls.
 
 The pilot sets a 6,000-word hard maximum and rejects drafts below 4,500 words,
 using the existing title-and-body whitespace count (bibliography excluded). The
-writer targets about 5,400 words to leave counting margin. Pilot output allowances
-are 20,000 tokens for the writer, 24,000 for each audit, 64,000 for evidence
-search and 48,000 for citation/originality classification. These calls stream
-through the SDK. Other calls retain 8,192 tokens. Per-kind
-`<kind>_max_output_tokens` settings override the global limit in reservation,
-dispatch and cache identity. DECISIONS.md records the observed token ratios and
-sizing arithmetic.
+writer first produces a schema-checked 4–10 section plan with word budgets totalling
+4,800–5,600. Each section is a separate logged `write_essay` call containing the
+plan, content outline, exact supporting T commitments and attributed source text,
+page citations, CQ answers, disclosed limits and all previously accepted sections.
+Nearby grounded source items are bounded context only, never additional premises.
+The same evidence reaches the audit. Missing source graphs are disclosed; missing
+frozen support or oversized required evidence refuses instead of truncating it.
+
+Assembly preserves section order and deduplicates exact T bibliography entries.
+If the title/body count is outside the limits, up to three revision rounds expand
+the largest section deficits or condense the largest excesses. Expansion returns new paragraphs which the runtime appends to the section,
+preserving all accepted prose verbatim. Condensation replaces only the selected
+section when it becomes shorter. No whole-essay regeneration occurs. The original coverage, body, word-count, audit, citation and
+originality checks still follow assembly; provider isolation/output scans remain
+in force. Partial sections persist under `writing/`; they are not final exports.
+
+This path applies whenever `essay_min_words >= 4500`. Short smoke requests retain
+the small whole-essay workflow. Sections are bounded at 1,800 words and 24,000
+body characters, with at most six nearby source items / 12,000 characters per
+support and 80,000 characters of required evidence overall. Full provider context
+and budget admission still applies to every call. These are failure bounds, not
+promises that every route can support a useful long essay.
+
+Pilot output allowances remain 20,000 tokens for each writer call, 24,000 for each
+audit, 64,000 for evidence search and 48,000 for citation/originality classification.
+The outline uses the ordinary 8,192-token allowance and writing-stage routing.
+Per-kind `<kind>_max_output_tokens` settings override the global limit in
+reservation, dispatch and cache identity. A changed schema requires a fresh Codex
+schema preflight. Codex still refuses API-only `search_evidence`; reaching the
+first audit does not imply completion of originality/citation checks or export.
 
 Edit `pilot.cost_cap_usd` and `pilot.token_cap` in `config.yaml`, or supply your
 own file with `--config`. Older custom configurations must add `essay_min_words`

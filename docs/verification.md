@@ -34,8 +34,9 @@ the former audit request. The current writer and auditor share an outline
 containing propositions, inference links with rule/scheme names, and answered
 critical questions. Graph bookkeeping is excluded. Before the audit, writer
 validation requires every node marker and at least two text tokens after markers
-are removed. Invalid drafts use up to four identical-input writer attempts; an
-adverse audit still ends the run. The audit labels additional premises or
+are removed. Short smoke drafts use up to four identical-input writer attempts. Competition
+length uses [section planning and targeted revision](search.md); an adverse audit
+still ends the run. The audit labels additional premises or
 inferences; transitions asserting neither are allowed. Code computes coverage and
 the verdict. It does not request a reconstruction of text production. Later
 historical fresh-clone outcomes were recorded in the external zeta report;

@@ -3859,3 +3859,38 @@ probe with earlier-ID reported and attacked copies and a later-ID endorsed copy,
 at normal sizing and forced k=0. The same engine now closes P using the endorsed
 commitment. Exact retention and endorsed-first order have production-wire controls.
 No paid calls or push; scoped verification receipts are in the Round 24 report.
+
+
+## nu4 — sectioned competition writer (2026-10-28)
+
+Eight historical whole-essay attempts failed the 4,500-word minimum before any
+audit. Identical-input validation retries did not communicate measured shortfalls.
+Competition-length writing now uses a checked 4,800–5,600-word section plan,
+individually logged section calls and deterministic assembly. Up to three targeted
+revision rounds retain accepted sections and communicate measured section/total
+length. The short smoke path stays small. This extends `ModelCalls.write_essay`
+and `compose`, without changing the engine or freezing additional commitments.
+
+Exact frozen support, attributed source text and page citations accompany each
+section and the audit. Bounded neighboring grounded source items remain context,
+not additional premises. Exact T citations are checked locally; semantic fidelity
+remains model-assessed. Required evidence is never silently truncated. Section
+and context bounds, missing-context disclosures, plan/section/revision receipts
+and partial artifacts are described in docs/search.md. The normal final word,
+coverage, audit, originality/citation and isolation checks remain in place.
+
+Offline coverage includes order, retained sections, shortage/excess correction,
+three-round exhaustion, plan budgets, source context and unsupported citations,
+plus production-wire controls. Full-suite, control and live receipts belong in
+`/home/dev/ara-work/reports/nu4-writer.md` with the exact tested revision. A live
+length-valid draft with an audit result is not a verified essay or proof of
+novelty. Codex's API-only evidence-retrieval restriction is outside this repair;
+no API/Claude fallback is introduced. No push; non-author review follows.
+
+The first nu4 live experiment still ended at 3,213 words after three rounds:
+whole-section replacement often returned roughly the same length or shortened
+accepted text. Expansion therefore returns additional paragraphs, which runtime
+appends deterministically while preserving the original text verbatim. Measured
+remaining section capacity bounds each addition; condensation still replaces one
+section. The revised regression fails against replacement semantics. The failed
+live attempt remains logged and is not presented as successful evidence.

@@ -27,6 +27,7 @@ PAYLOADS = {
     'map_leaf': {'t_id': 'open'},
     'answer_cq': {'cq_id': 'cq1', 'answer': 'P', 'answered': True, 'supporting_t_ids': ['t1']},
     'tier1_repair': {'action': 'unresolved', 'detail': 'P', 'proposals': []},
+    'outline_essay': {'title': 'P', 'sections': [dict(id='s'+str(i), heading='P', purpose='P', word_budget=1000, node_ids=['n0']) for i in range(5)]},
     'write_essay': {'title': 'P', 'body': 'P', 'bibliography': [
         {'id': 'c1', 'text': 'placeholder:1', 'url': None}]},
     'audit_essay': {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_premise_or_inference_not_in_outline': False}]},

@@ -1669,6 +1669,34 @@ CASES += [
 ]
 
 
+CASES += [
+    ('section_plan_budget', 'ara/runtime/writing.py',
+     "require(budget_min <= sum(s['word_budget'] for s in sections) <= budget_max,", 'require(True,',
+     'tests/runtime/test_sectioned_writer.py::test_outline_budget_rejected_before_sections'),
+    ('section_assembly', 'ara/runtime/writing.py',
+     "for s in accepted),", "for s in reversed(accepted)),",
+     'tests/runtime/test_sectioned_writer.py::test_section_assembly_preserves_order_and_logged_context'),
+    ('section_expansion', 'ara/runtime/writing.py',
+     'for round_number in range(1, 4):', 'for round_number in range(1, 1):',
+     'tests/runtime/test_sectioned_writer.py::test_expansion_targets_largest_deficit_and_keeps_accepted_sections'),
+    ('section_append_preserves_accepted', 'ara/runtime/writing.py',
+     "body=old['body'] + '\\n\\n' + data['body']", "body=data['body']",
+     'tests/runtime/test_sectioned_writer.py::test_expansion_targets_largest_deficit_and_keeps_accepted_sections'),
+    ('section_round_bound', 'ara/runtime/writing.py',
+     'for round_number in range(1, 4):', 'for round_number in range(1, 5):',
+     'tests/runtime/test_sectioned_writer.py::test_small_additions_exhaust_three_rounds_without_regeneration'),
+    ('section_citation_evidence', 'ara/runtime/writing.py',
+     "and all(allowed.get(b['id']) == b for b in bib)", '',
+     'tests/runtime/test_sectioned_writer.py::test_section_cannot_invent_or_drop_source_citations[citation_text]'),
+    ('section_source_context', 'ara/runtime/writing.py',
+     'supporting_commitments=supports', 'supporting_commitments=[]',
+     'tests/runtime/test_sectioned_writer.py::test_exact_evidence_context_and_citations_reach_writer_and_audit'),
+    ('section_audit', 'ara/runtime/orchestration.py',
+     '    calls.audit_essay(route, draft)', '    pass',
+     'tests/runtime/test_sectioned_writer.py::test_sectioned_compose_still_stops_at_adverse_audit'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

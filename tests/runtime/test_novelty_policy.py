@@ -124,7 +124,8 @@ def test_boolean_feedback_and_bank_guidance_reach_correction(tmp_path):
             attempts.append(inputs)
             assert 'sign' in inputs['substantive_bank_ids']
             assert 'conjunction_introduction' not in inputs['substantive_bank_ids']
-            assert set(inputs['structural_bank_ids'])=={'conjunction_introduction','conjunction_elimination','disjunction_introduction','double_negation'}
+            assert set(inputs['structural_bank_ids'])=={b.id for b in load_bank(ROOT/'bank').entries if b.kind=='deductive'}
+            assert set(inputs['substantive_bank_ids'])=={b.id for b in load_bank(ROOT/'bank').entries if b.kind=='defeasible'}
             assert inputs['target_policy']['exclude_boolean_recombination']
             if len(attempts)>1:
                 rejection=inputs['triviality_feedback']['rejected'][0]
@@ -141,11 +142,11 @@ def test_boolean_feedback_and_bank_guidance_reach_correction(tmp_path):
     assert len(attempts)==3
 
 
-@pytest.mark.parametrize('scheme',['conjunction_introduction','conjunction_elimination','disjunction_introduction','double_negation','unknown'])
+@pytest.mark.parametrize('scheme',[b.id for b in load_bank(ROOT/'bank').entries if b.kind=='deductive']+['unknown'])
 def test_only_known_nonstructural_scheme_counts(scheme):
     from ara.types import RouteGraph
-    nodes=(RouteNode('root',Proposition('pq','P and Q',AND),'inference',
-        proposal=Proposal(scheme,(),'P and Q'),children=('p','q')),
+    nodes=(RouteNode('root',Proposition('r','R',R),'inference',
+        proposal=Proposal(scheme,(),'R'),children=('p','q')),
         RouteNode('p',Proposition('p','P',P),'leaf',t_id='t1'),
         RouteNode('q',Proposition('q','Q',Q),'leaf',t_id='t2'))
     route=RouteGraph('route','root',nodes,'CLOSED')

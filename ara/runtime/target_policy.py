@@ -28,15 +28,14 @@ def top_level_attribution(formula, catalogue):
 
 
 def target_context(commitments, bank):
-    from ara.runtime.route_policy import STRUCTURAL_RULES
     signatures = Counter(s for c in commitments.commitments for s in set(symbols(c.formula)))
     def conditional(formula):
         while formula.op in ('forall','exists'):
             formula = formula.args[0]
         return formula.op == 'implies'
     return dict(bank_version=bank.bank_version, bank=[b.to_dict() for b in bank.entries],
-                substantive_bank_ids=[b.id for b in bank.entries if b.id not in STRUCTURAL_RULES],
-                structural_bank_ids=sorted(STRUCTURAL_RULES),
+                substantive_bank_ids=[b.id for b in bank.entries if b.kind == 'defeasible'],
+                structural_bank_ids=sorted(b.id for b in bank.entries if b.kind == 'deductive'),
                 support_examples=[dict(rejected_target='P and Q', commitments=['P','Q'],
                     reason='A bare conjunction only repackages T and its conjunction-introduction route is structural.'),
                     dict(rejected_target='Q', commitments=['P', 'P -> Q'],

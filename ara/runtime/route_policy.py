@@ -6,16 +6,12 @@ from ara.types import Commitment, CommitmentSet
 from functools import lru_cache
 
 
-STRUCTURAL_RULES = frozenset({'conjunction_introduction', 'conjunction_elimination',
-                              'disjunction_introduction', 'double_negation'})
-
-
 @lru_cache(maxsize=1)
 def substantive_scheme_ids():
     from pathlib import Path
     from ara.bank import load_bank
     bank = load_bank(Path(__file__).resolve().parents[2] / 'bank')
-    return frozenset(b.id for b in bank.entries if b.id not in STRUCTURAL_RULES)
+    return frozenset(b.id for b in bank.entries if b.kind == 'defeasible')
 
 
 def _logical_contribution(route, commitments=None):
@@ -59,24 +55,8 @@ def _logical_contribution(route, commitments=None):
     qualified, step_checks = [], []
     for inference in substantive:
         node = nodes[inference['node_id']]
-        if node.proposal.bank_id == 'conditional_proof':
-            scopes = [s for s in route.scopes if s.discharged_by == node.id]
-            def used(scope):
-                pending, visited = list(scope.result_node_ids), set()
-                while pending:
-                    id = pending.pop()
-                    if id in visited:
-                        continue
-                    visited.add(id)
-                    descendant = nodes[id]
-                    if descendant.kind == 'assumption' and descendant.scope_id == scope.id:
-                        return True
-                    pending.extend(descendant.children)
-                return False
-            if not scopes or not all(used(s) for s in scopes):
-                step_checks.append(dict(**inference, reason='unused_scoped_assumption'))
-                continue
-        # The conclusion must establish the same essential new assertion as the root.
+        # A non-logical scheme must itself conclude the essential new assertion.
+        # Deductive wrappers never supply the qualifying step.
         conclusion = novelty_check(node.proposition.formula, basis)
         step_checks.append(dict(**inference, novelty=conclusion))
         if essential.intersection(conclusion.get('essential_application_keys', ())):

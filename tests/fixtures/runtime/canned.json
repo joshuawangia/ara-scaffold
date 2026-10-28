@@ -13,7 +13,7 @@
       "output_tokens": 3
     }
   },
-  "propose_targets:f5e6e8db24f48287b186a959f1e75bfe100708d0acf6ab3dff79fe4fed2e0c06": {
+  "propose_targets:8f17d5c1a14506e380542f63e6f1e744c4d9d27b01e2df874749119165a978a9": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [

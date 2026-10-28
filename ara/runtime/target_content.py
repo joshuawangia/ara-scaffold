@@ -21,17 +21,18 @@ def content_bindings(target, vocabulary, commitments):
     definitions = {(s['name'],s['kind'],s['arity']):s['definition'] for s in catalogue or []}
     used = {(a.name,a.op,len(a.terms)) for _,a in atomic_applications(target.formula)}
     proposed, issues = {}, []
-    for symbol in target.new_symbols:
-        key = (symbol.name,symbol.kind,symbol.arity)
+    def bind(key, definition):
         if any(key[0] == k[0] for k in frozen | definitions.keys() | proposed.keys()) or key not in used:
-            issues.append(dict(reason='invalid_definition_binding', symbol=symbol.name))
-        proposed[key] = symbol.definition
+            issues.append(dict(reason='invalid_definition_binding', symbol=key[0]))
+        proposed[key] = definition
+    for symbol in target.new_symbols:
+        bind((symbol.name,symbol.kind,symbol.arity), symbol.definition)
     # For one atomic assertion its complete asserted text is its content binding.
     # Compound targets must explicitly define each otherwise unbound fresh symbol.
     if target.formula.op in ('atom','predicate'):
         key = (target.formula.name,target.formula.op,len(target.formula.terms))
         if key not in frozen and key not in definitions and key not in proposed:
-            proposed[key] = target.text
+            bind(key, target.text)
     for key in used - frozen - definitions.keys() - proposed.keys():
         issues.append(dict(reason='missing_definition_binding', symbol=key[0]))
     content = [dict(id=c.id,text=c.text,formula=c.formula.to_dict()) for c in commitments.commitments]

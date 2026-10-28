@@ -1489,7 +1489,7 @@ CASES += [
      "substantive = []", "substantive = [dict(node_id=n.id, bank_id=n.proposal.bank_id) for n in route.nodes if n.proposal and n.proposal.bank_id == 'sign']",
      'tests/runtime/test_semantic_novelty.py::test_only_reachable_step_with_root_essential_proposition_qualifies'),
     ('novelty_bank_guidance', 'ara/runtime/target_policy.py',
-     "substantive_bank_ids=[b.id for b in bank.entries if b.id not in STRUCTURAL_RULES]", "substantive_bank_ids=[]",
+     "substantive_bank_ids=[b.id for b in bank.entries if b.kind == 'defeasible']", "substantive_bank_ids=[]",
      'tests/runtime/test_novelty_policy.py::test_boolean_feedback_and_bank_guidance_reach_correction'),
 ]
 
@@ -1505,7 +1505,7 @@ CASES += [
      'basis = commitments or CommitmentSet(tuple(supports.values()))', 'basis = CommitmentSet(tuple(supports.values()))',
      'tests/runtime/test_semantic_novelty.py::test_only_reachable_step_with_root_essential_proposition_qualifies'),
     ('semantic_unused_assumption', 'ara/runtime/route_policy.py',
-     'if not scopes or not all(used(s) for s in scopes):', 'if False:',
+     "b.kind == 'defeasible'", "b.kind == 'defeasible' or b.id == 'conditional_proof'",
      'tests/runtime/test_semantic_novelty.py::test_unused_conditional_proof_not_counted_but_new_sign_result_qualifies'),
     ('content_definition_wiring', 'ara/runtime/calls.py',
      "for issue in content['definition_issues']:", 'for issue in ():',
@@ -1543,6 +1543,22 @@ CASES += [
     ('semantic_step_unknown_display', 'ara/runtime/route_policy.py',
      "if any(s.get('novelty', {}).get('status') == 'unresolved' for s in step_checks)", 'if False',
      'tests/runtime/test_semantic_novelty.py::test_uncertain_step_novelty_is_disclosed_and_not_derived'),
+]
+
+
+CASES += [
+    ('nonlogical_padded_conclusion', 'ara/runtime/route_policy.py',
+     "b.kind == 'defeasible'", "b.kind == 'defeasible' or b.id == 'conditional_proof'",
+     'tests/runtime/test_nonlogical_contribution.py::test_native_only_new_scheme_conclusion_qualifies[padded]'),
+    ('nonlogical_syllogism_conclusion', 'ara/runtime/route_policy.py',
+     "b.kind == 'defeasible'", "b.kind == 'defeasible' or b.id == 'hypothetical_syllogism'",
+     'tests/runtime/test_nonlogical_contribution.py::test_native_only_new_scheme_conclusion_qualifies[syllogism]'),
+    ('nonlogical_bank_kinds', 'ara/runtime/route_policy.py',
+     "b.kind == 'defeasible'", 'True',
+     'tests/runtime/test_novelty_policy.py::test_only_known_nonstructural_scheme_counts'),
+    ('automatic_binding_collision', 'ara/runtime/target_content.py',
+     'bind(key, target.text)', 'proposed[key] = target.text',
+     'tests/runtime/test_nonlogical_contribution.py::test_automatic_and_explicit_bindings_share_collision_policy'),
 ]
 
 def main():

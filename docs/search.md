@@ -211,21 +211,23 @@ manifest or model/configuration can also invalidate proof. See
 
 Contribution labels supplement the engine's unchanged `CLOSED`/`OPEN` status,
 bank licenses and graph format. `CLOSED-derived` requires a reachable licensed
-nonstructural bank inference concluding an essential new proposition of the root, at least two distinct frozen supports and solver checks that rule out
+non-logical bank scheme whose own conclusion contains an essential new proposition of the root, at least two distinct frozen supports and solver checks that rule out
 validity without support and entailment of the root by any one support. The
 route check tests the root polarity; target preflight tests both polarities.
 
-Conjunction introduction/elimination, disjunction introduction and double
-negation are structural rules. A reachable known bank scheme outside that set
-is required for `CLOSED-derived`; unreachable inferences cannot qualify a route.
-The root and qualifying step conclusion must pass semantic novelty against the
-whole freeze, including commitments not cited in that route. A conditional proof
-with an unused scoped assumption is not a qualifying step. A genuine new result
-from a reachable defeasible step can still qualify when wrapped in such a proof;
-the unused conditional-proof step itself is excluded from the receipt.
+All propositional and first-order logic rules are structural for novelty,
+including conjunction/disjunction introduction and elimination, double negation,
+modus ponens/tollens, conditional proof, hypothetical syllogism and quantifier
+rules. The bank identifies these as `kind=deductive`; only `kind=defeasible`
+schemes can supply a qualifying step. Its own conclusion must contain an essential
+new proposition of the target. Reachable logical wrappers and decorative
+introduction/elimination detours cannot supply that step; unreachable schemes
+cannot qualify either. The root and qualifying scheme conclusion still pass
+semantic novelty against the whole freeze, including uncited commitments.
+A genuine new scheme result can qualify beneath a logical wrapper.
 The proposer receives the actual bank with these two groups identified, frozen
-catalogue definitions, and placeholder examples contrasting a bare conjunction
-with a new thesis linked by a substantive deductive or defeasible scheme.
+catalogue definitions, and placeholder examples contrasting bare packaging
+with a new thesis supported by a non-logical scheme.
 
 CQ evidence counts as support. Assumptions and repeated or alpha-equivalent
 support formulas do not inflate the count. The check traverses reachable nodes;

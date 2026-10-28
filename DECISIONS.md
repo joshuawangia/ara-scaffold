@@ -3718,3 +3718,27 @@ defeasible conclusions rather than non-novel deductive consequences. Formal
 novelty, lexical screening and fake-provider tests do not prove semantic
 originality, faithful paraphrase, scheme fit or model judgment accuracy. No paid
 calls or push. See the external Round 19 handoff for exact pinned gate receipts.
+
+## Round 20 — non-logical scheme conclusions (kappa4 R1/R5)
+
+A CLOSED-derived route requires a reachable non-logical bank scheme whose own
+conclusion contains an essential new proposition of the target. The bank's
+kind=defeasible entries supply these schemes; every kind=deductive entry is
+structural for novelty. This includes propositional and first-order rules,
+modus ponens/tollens, hypothetical syllogism and conditional proof. Logical
+wrappers may surround a qualifying scheme but cannot supply the qualifying step.
+This supersedes Round 19's assumption-reachability heuristic, which counted
+decorative conjunction introduction/elimination paths as assumption use.
+
+Whole-freeze novelty, essential-application matching on the scheme's own
+conclusion, support, stance, license and CQ checks remain. Native regressions
+cover the old-vocabulary sign conclusion, unadorned conditional, matching
+conjunction core, padded assumption, syllogism wrapper and genuine R. The
+licensed deduction {P, P -> Q} proves Q with engine CLOSED and novelty-structural
+classification. Offline fake-provider proof does not establish semantic scheme
+fit, model accuracy or real originality. Live preflight remains a prerequisite.
+
+R5 uses one name-collision check for automatic and explicit proposed definitions.
+Both reject reuse of a frozen name with a different signature; both accept a
+fresh F(a) binding. No CommitmentSet or frozen catalogue codec changes. Exact
+full-suite and control receipts belong to the external Round 20 report.

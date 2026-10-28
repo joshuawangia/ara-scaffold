@@ -135,3 +135,9 @@ definitions are logged during admission, not recomputed by report rendering.
 Step receipts in `inference_novelty_checks` retain conclusion checks and unused
 scope reasons. If no step qualifies and a step's novelty is unknown, the route
 is contribution-unresolved rather than silently reported as structural.
+
+Round 20 restricts qualifying steps to non-logical bank schemes (`kind=defeasible`).
+A scheme's own conclusion must contain an essential new proposition of the target.
+Deductive rules, including conditional proof and hypothetical syllogism, may wrap
+a qualifying scheme but never supply one. Engine CLOSED still records valid
+deductions such as Q from {P, P -> Q}; those routes remain structural for novelty.

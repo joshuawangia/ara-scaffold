@@ -120,7 +120,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         from ara.runtime.symbol_alignment import align_symbols
         commitments, symbols, rows, alignment = align_symbols(calls, commitments, latest['symbols'], latest['provenance'])
         measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(),
-            'count': calls.config['target_candidates'], 'named_position': None}, admission=True)
+            'count': calls.config['target_candidates'], 'named_position': None},
+            purpose='commitments_only_capacity_not_target_readiness')
         if measured.initial_input_tokens > calls.config['working_t_token_budget']:
             calls.budget.stop('aligned T downstream token budget exceeded before freeze', 'judge_symbol_alignment')
         artifact = frozen_artifact(commitments, symbols)

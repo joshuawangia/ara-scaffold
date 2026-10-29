@@ -67,18 +67,18 @@ def close_mandatory(selected, mandatory):
     return selected
 
 
-def depth_cut(items, roots, dependencies, fits):
+def depth_cut(items, roots, dependencies, fits, *, max_depth=None, mandatory=None):
     """Largest complete prerequisite depth that fits, including mandatory bundles.
 
     Cycles terminate at a fixed point. A too-large root/qualifier bundle yields
     no contribution; it is never partially included. IDs are never invented.
     """
-    mandatory = mandatory_dependencies(items)
+    mandatory = mandatory_dependencies(items) if mandatory is None else mandatory
     selected = close_mandatory(roots, mandatory)
     if not fits(selected):
         return set(), {}, -1
     depth = 0
-    while True:
+    while max_depth is None or depth < max_depth:
         expanded = close_mandatory(selected | set().union(*(dependencies[id] for id in selected)), mandatory)
         if expanded == selected or not fits(expanded):
             break

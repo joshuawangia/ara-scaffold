@@ -106,6 +106,7 @@ def methodology(log_path: Path) -> str:
     }
     cli_calls = [(e, p) for e, p in routing if p.get('provider') in ('claude_code', 'codex_cli')]
     provider_methods = {
+        'operator_context_window': [json.loads(e['payload_json']) for e in events if e['stage']=='operator_context_window'],
         'requested_models_by_stage': {kind: sorted({e['model_id'] for e in calls if e['stage'] == kind}) for kind in served_by_kind},
         'providers_by_stage': {kind: sorted({p.get('provider', 'anthropic_or_mock_legacy') for e, p in routing
                                              if e['stage'] == kind}) for kind in served_by_kind},
@@ -118,7 +119,7 @@ def methodology(log_path: Path) -> str:
                          'token_estimate_method', 'calibration', 'usd_cap_policy', 'token_cap_policy', 'effective_prompt_note',
                          'operator_identity_output_scan', 'web_retrieval', 'concurrency', 'max_cli_turns', 'schema_transport',
                          'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan', 'served_model_policy',
-                         'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note', 'visible_tool_policy', 'schema_transform')}
+                         'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note', 'visible_tool_policy', 'schema_transform', 'context_window_decision')}
                        for _,p in cli_calls if p.get('provider') == 'codex_cli'][:1],
         'token_cap_policies': sorted({p.get('token_cap_policy', 'legacy_history_inclusive') for _, p in cli_calls}),
         'estimate_observations': [json.loads(e['payload_json']) for e in events if e['stage']=='provider_estimate_observation'],
@@ -139,6 +140,7 @@ def methodology(log_path: Path) -> str:
         'search': {**search_status(events),
                    'conflicts': conflict_report(events),
                    'gaps': [json.loads(e['payload_json']) for e in events if e['stage']=='gaps_detected'],
+                   'target_context': [json.loads(e['payload_json']) for e in events if e['stage']=='target_context_slice'],
                    'cq_retrieval': [json.loads(e['payload_json']) for e in events if e['stage']=='cq_context_slice'],
                    'cq_downgrades': [json.loads(e['payload_json']) for e in events if e['stage']=='cq_answer_downgraded'],
                    'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],

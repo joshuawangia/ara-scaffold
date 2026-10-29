@@ -4118,3 +4118,28 @@ as structural, and preserve genuine scheme and cross-paper deduction positives.
 - Successful free planning proves reusable artifacts and call inventory, not
   future model acceptance, consistency, budgets or useful synthesis. Canonical
   operating instructions are in docs/construction.md.
+
+## Round 13 — complete target index and coordinated provider window
+
+Target generation now projects only prompt context. All gap IDs/support groups,
+configured whole formal-symbol hops, and mandatory alignment source evidence
+retain exact text/provenance; all remaining frozen IDs retain complete formulas,
+stances and page citations. Reuse the bounded-closure depth traversal rather
+than add a second traversal. Validation closures keep full T and full metadata.
+Do not shrink required hops, trim formulas, infer endorsement from legacy
+absence, or treat omitted alignment disclosure as semantic unrelatedness.
+Exact assembled admission includes correction feedback and schema overhead.
+Commitments-only construction capacity receipts explicitly disclaim target
+readiness. A free recorded-request replay verifies freeze artifacts and receipts,
+restores calibration, and uses the same projection/admission path without
+re-running discovery or generating output.
+
+An operator-authorized Codex context override is distinct from native admission.
+For CLI 0.163.0, the pinned model window metadata bounds explicit overrides;
+unsupported models or above-maximum windows refuse. Pass the setting to each
+isolated invocation, including unchanged canaries. Derive native admission from
+the chosen window minus the doubled target output reserve and positive margin;
+record the operator decision in config, receipts, cache identity and methodology.
+Unconfigured historical runs retain their existing behaviour. Neither a local
+estimate nor an offline fake transport establishes real serving capacity or
+semantic success.

@@ -444,3 +444,42 @@ For placeholder data, a record can bind papers `a` and `b` to commitments `p` an
 The currency verdict and claim framing are supplied research qualifications,
 not proof of an open problem. Normal target novelty, stance, licensing and
 both-side support gates remain authoritative.
+
+## Counted target context
+
+Target prompts retain all frozen commitment IDs. `target_context_hops` (default
+1, nonnegative integer) selects whole shared-formal-symbol hops around all gap
+commitments and support groups. Explicit alignment bridges always bring their
+source evidence, even at zero hops. Canonical symbols already reflect accepted
+same-content alignment. Lexical bridge candidates are not formal graph edges.
+For the general pool, forward support IDs seed the full neighbourhood; the
+existing bounded lexical bridge hints remain available across the complete index.
+
+Selected commitments retain exact text and provenance rows. Every other
+commitment retains its complete formula, stance and page citation in
+`compact_commitments`; legacy provenance is explicitly unavailable. Catalogue
+entries cover all indexed formulas. Relevant alignment pairs touch the full
+neighbourhood; the receipt lists projected pairs, symbols and lexical leads.
+The full frozen hashes bind the projection. Novelty, classifier, formalization
+and route gates still consume full frozen T.
+
+`target_context_slice` records full/compact IDs, boundary neighbours, projected
+fields, input hashes, field byte sizes, assembled prompt bytes and calibrated
+input/output counts. Counts include the schema and current retry feedback.
+Required hops never shrink to fit; an oversized request refuses before dispatch.
+Field byte sizes describe the payload, not additive token counts. Construction's
+commitments-only counts are labelled capacity estimates, not target readiness.
+
+For a stopped run with a logged full assembled target request, free replay uses
+that exact gap, forward leads and feedback, verified against the freeze receipts:
+
+```sh
+uv run ara plan-target-request --run-dir runs/source-copy --out runs/target-plan --gap-id external:P
+```
+
+The source is read-only. The separate output records current-template unpacked
+and packed estimates, original recorded counts, hashes and calibrated method.
+Generation is disabled; this does not rerun discovery or prove source fidelity,
+novelty, successful routes, or live serving capacity. `--context-token-bound`
+changes only the planning comparison. For a coordinated Codex window change use
+`--model-context-window` as described in [providers](providers.md).

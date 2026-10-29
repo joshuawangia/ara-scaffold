@@ -45,6 +45,27 @@ SAFE_EVENTS = frozenset(('thread.started', 'turn.started', 'turn.completed', 'tu
 SAFE_ITEMS = frozenset(('agent_message', 'reasoning', 'error'))
 
 
+def rejected_event(event):
+    """Protocol labels only: diagnostic recognition never authorizes a tool."""
+    def label(value, allowed):
+        return None if value is None else value if isinstance(value, str) and value in allowed else 'unknown'
+    item = event.get('item') if isinstance(event.get('item'), dict) else {}
+    action = item.get('action') if isinstance(item.get('action'), dict) else {}
+    return {
+        'event_type': label(event.get('type'), SAFE_EVENTS),
+        'item_type': label(item.get('type'), SAFE_ITEMS | {
+            'web_search', 'web_fetch', 'open_page', 'find_in_page', 'todo_list', 'plan',
+            'command_execution', 'file_read', 'file_change', 'mcp_tool_call',
+            'tool_call', 'function_call', 'custom_tool_call', 'collab_tool_call', 'image_generation'}),
+        'action_type': label(action.get('type'), {'search', 'open_page', 'find_in_page',
+                                                'other', 'shell', 'open', 'find', 'fetch'}),
+        'tool_name': label(item.get('name', item.get('tool_name')), {
+            'web.run', 'web_search', 'web_fetch', 'open_page', 'find_in_page',
+            'functions.exec_command', 'functions.apply_patch', 'functions.update_plan',
+            'functions.read_mcp_resource', 'functions.spawn_agent'}),
+    }
+
+
 class CodexCLIError(ClaudeCodeError):
     provider_kind = 'codex_cli'
 
@@ -215,7 +236,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 item = event.get('item')
                 if web and isinstance(item, dict) and item.get('type') == 'web_search':
                     try:
-                        checked = codex_web.web_event(item, pending=kind != 'item.completed')
+                        checked = codex_web.web_event(item)
                     except ValueError:
                         rejection = 'cli_tool_event'
                         break
@@ -243,7 +264,9 @@ class CodexCLIProvider(ClaudeCodeProvider):
         def reject(code, retryable=False):
             receipt.update(failure_class=code, retryable=retryable)
             raise CodexCLIError(code, receipt=receipt, response=raw if usage is not None else None, retryable=retryable)
-        if rejection: reject(rejection)
+        if rejection:
+            receipt['rejected_event'] = rejected_event(event)
+            reject(rejection)
         failures = [e for e in events if e.get('type') in ('error','turn.failed')]
         warnings = [e for e in events if e.get('type') in ('item.started','item.updated','item.completed')
                     and e['item']['type']=='error']

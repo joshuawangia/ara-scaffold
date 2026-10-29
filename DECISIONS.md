@@ -4052,3 +4052,25 @@ Publication audit evidence is independent of the writer's length threshold.
 Related-work section matching ignores capitalization while retaining scope,
 citation and route-isolation checks. This supersedes the publication-only
 4,500-word minimum in earlier decisions; the writer profile is unchanged.
+
+## nu4 round 5 — observable web refusal and the pinned Other variant (2026-10-29)
+
+Native retrieval rejected a completed `web_search` event whose action was the
+exact object `{"type":"other"}`. The previous guard accepted that object only
+while pending. The pinned CLI's locally generated protocol schema includes Other
+as a named web-search variant, and the native reproduction confirmed completion
+uses it. The adapter now accepts that exact variant only inside the existing
+web-search stage boundary and preserves the opaque action in receipts. It does
+not relabel Other as a known page operation, accept arbitrary future action names,
+or allow additional payload fields on Other. Shell, file, patch, MCP and generic
+tool events still refuse, as do web events in non-retrieval calls.
+
+Refusal receipts now retain fixed allowlisted event, item, action and tool-name
+labels. Unrecognized values become `unknown`; no arbitrary event text, arguments,
+URL or diagnostic content crosses this boundary. Production-wire controls cover
+the diagnostic, completed/pending Other variants, unexpected Other payloads,
+shell/file refusal and the web-only stage restriction. A fully formed web event
+drives the non-retrieval regression so malformed event data cannot mask a broken
+stage guard. Native outcomes and protocol-generation evidence belong in the
+external round-5 report; this transport change proves no semantic verification
+or final export by itself.

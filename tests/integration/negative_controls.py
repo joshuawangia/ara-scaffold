@@ -1076,7 +1076,7 @@ CASES += [
      "'hooks', 'memories', 'goals', 'multi_agent'", "'hooks', 'memories', 'multi_agent'",
      'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),
     ('codex_tool_event_gate', 'ara/runtime/codex_cli.py',
-     'if rejection: reject(rejection)', 'if False: reject(rejection)',
+     '        if rejection:\n', '        if False:\n',
      'tests/runtime/test_codex_cli.py::test_tool_event_rejected_without_echo'),
     ('codex_unknown_event_gate', 'ara/runtime/codex_cli.py',
      'elif kind not in SAFE_EVENTS:', 'elif False:',
@@ -1741,8 +1741,8 @@ CASES += [
     ('codex_web_action_gate', 'ara/runtime/codex_web.py',
      "action.get('type') not in ('search', 'open_page', 'find_in_page')", 'False',
      'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_unknown_action-cli_tool_event]'),
-    ('codex_web_pending_action', 'ara/runtime/codex_cli.py',
-     "pending=kind != 'item.completed'", 'pending=False',
+    ('codex_web_pending_action', 'ara/runtime/codex_web.py',
+     "action != {'type': 'other'}", 'True',
      'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology[web_pending]'),
     ('codex_web_tool_host_mount', 'ara/runtime/codex_cli.py',
      "wrapper += ['--ro-bind', str(tool_host), '/run/codex-code-mode-host']", 'pass',
@@ -1760,7 +1760,7 @@ CASES += [
      "'cited_text': snippet", "'cited_text': 'R'",
      'tests/runtime/test_codex_cli.py::test_web_evidence_reaches_native_verifier[P Q-True]'),
     ('codex_web_nonweb_rejected', 'ara/runtime/codex_cli.py',
-     "if rejection: reject(rejection)", "if rejection and not web: reject(rejection)",
+     "        if rejection:\n", "        if rejection and not web:\n",
      'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_tool:command_execution-cli_tool_event]'),
     ('codex_web_methodology', 'ara/runtime/export.py',
      "method='Codex web search'", "method='P'",
@@ -1884,6 +1884,31 @@ CASES += [
      "return publication_command(args, log, ROOT, calls_factory)", "return 0",
      'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
 ]
+
+
+CASES += [
+    ('codex_web_completed_other', 'ara/runtime/codex_web.py',
+     "action != {'type': 'other'}", 'True',
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology[web_other_completed]'),
+    ('codex_web_other_payload', 'ara/runtime/codex_web.py',
+     "action != {'type': 'other'}", "not (isinstance(action, dict) and action.get('type') == 'other')",
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_other_payload-cli_tool_event]'),
+    ('codex_rejected_event_receipt', 'ara/runtime/codex_cli.py',
+     "receipt['rejected_event'] = rejected_event(event)", 'pass',
+     'tests/runtime/test_codex_cli.py::test_tool_event_rejected_without_echo'),
+    ('codex_rejected_event_sanitized', 'ara/runtime/codex_cli.py',
+     "return None if value is None else value if isinstance(value, str) and value in allowed else 'unknown'",
+     'return value',
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_tool:offline-access-cli_tool_event]'),
+    ('codex_web_file_rejected', 'ara/runtime/codex_cli.py',
+     "item['type'] not in SAFE_ITEMS", "item['type'] not in SAFE_ITEMS | {'file_read'}",
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_tool:file_read-cli_tool_event]'),
+    ('codex_web_stage_boundary', 'ara/runtime/codex_cli.py',
+     "if web and isinstance(item, dict) and item.get('type') == 'web_search':",
+     "if isinstance(item, dict) and item.get('type') == 'web_search':",
+     'tests/runtime/test_codex_cli.py::test_tool_event_rejected_without_echo[web_search]'),
+]
+
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

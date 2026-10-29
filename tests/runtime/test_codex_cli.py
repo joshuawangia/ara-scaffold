@@ -94,6 +94,7 @@ if mode.startswith('web'):
    action={'type':'search','query':'P','queries':['P','Q']}
    if mode=='web_pending' and phase!='completed': action={'type':'other'}
    if mode=='web_other_completed': action={'type':'other'}
+   if mode=='web_other_payload' and phase=='completed': action={'type':'other','command':'PRIVATE_CONTEXT_SENTINEL'}
    emit({'type':'item.'+phase,'item':{'id':'web_1','type':'web_search','query':'P','action':action}})
  if mode=='web_commentary': emit({'type':'item.completed','item':{'id':'msg_1','type':'agent_message','text':'P'}})
  if mode=='web_bad_url': value['sources'][0]['url']='file://example.org/P'
@@ -109,7 +110,9 @@ if mode=='verify_web':
  value={'originality':{'assessment':'possible_overlap','evidence_urls':['https://example.org/P'],'detail':'P'},
         'items':[{**i,'status':'verified','action':'retain','detail':'P','evidence_urls':['https://example.org/P'],'source_excerpt':'P Q'} for i in data['items']]}
 if mode.startswith('tool:'):
- emit({'type':'item.completed','item':{'type':mode.split(':',1)[1],'command':'PRIVATE_CONTEXT_SENTINEL','text':'P'}})
+ item={'id':'tool_1','type':mode.split(':',1)[1],'command':'PRIVATE_CONTEXT_SENTINEL','text':'P'}
+ if item['type']=='web_search': item['action']={'type':'search','query':'P'}
+ emit({'type':'item.completed','item':item})
 if mode=='unknown': emit({'type':'future.event','text':'PRIVATE_CONTEXT_SENTINEL'})
 if mode=='warning': emit({'type':'item.completed','item':{'type':'error','message':'P'}})
 if mode=='item_error':
@@ -167,6 +170,9 @@ def test_tool_event_rejected_without_echo(codex, tool):
     text=log.path.read_text()
     assert 'PRIVATE_CONTEXT_SENTINEL' not in text and 'offline-access' not in text
     assert not list((tmp/'cache').rglob('*.json'))
+    row = json.loads([e for e in log.read() if e['label']=='MODEL'][-1]['payload_json'])
+    assert row['cli']['rejected_event'] == {'event_type':'item.completed', 'item_type':tool,
+                                           'action_type':'search' if tool=='web_search' else None, 'tool_name':None}
 
 
 def test_fresh_credential_and_read_only_link(codex):
@@ -530,7 +536,7 @@ def test_codex_resume_can_supply_new_proof_without_editing_history(codex):
     assert stored['codex_cli'].get('schema_preflight_log') is None
 
 
-@pytest.mark.parametrize('mode', ['web', 'web_commentary', 'web_pending'])
+@pytest.mark.parametrize('mode', ['web', 'web_commentary', 'web_pending', 'web_other_completed'])
 def test_web_search_evidence_receipt_and_methodology(codex, mode):
     from ara.runtime.export import methodology
     config, auth, write, tmp = codex
@@ -545,9 +551,11 @@ def test_web_search_evidence_receipt_and_methodology(codex, mode):
     rows = [json.loads(e['payload_json']) for e in log.read() if e['label']=='MODEL']
     assert rows[0]['isolation']['status'] == 'proven'
     web = rows[-1]['cli']['web_search']
-    assert web['queries'] == ['P', 'Q']
+    assert web['queries'] == (['P'] if mode == 'web_other_completed' else ['P', 'Q'])
     assert web['result_urls'] == evidence['urls']
     assert len(web['events']) == 1
+    if mode == 'web_other_completed':
+        assert web['events'][0]['action'] == {'type':'other'}
     assert web['source_provenance'] == 'model-reported from Codex web search; not raw tool results'
     report = methodology(log.path)
     summary = json.loads(report.split('```json\n', 1)[1].split('\n```', 1)[0])
@@ -564,7 +572,9 @@ def test_web_search_evidence_receipt_and_methodology(codex, mode):
     *[('web_tool:'+t, 'cli_tool_event') for t in ('command_execution','file_read','file_change','mcp_tool_call','tool_call','function_call')],
     ('web_no_event','cli_web_search_missing'), ('web_bad_url','cli_invalid_web_evidence'),
     ('web_bad_schema','cli_invalid_web_evidence'), ('web_unknown_action','cli_tool_event'),
-    ('web_other_completed','cli_tool_event'),
+    ('web_other_payload','cli_tool_event'),
+    *[('web_tool:'+t, 'cli_tool_event') for t in ('sentinel@example.invalid', 'offline-access',
+                                                'https://example.org/?token=offline-access')],
 ])
 def test_web_search_fails_closed(codex, mode, code):
     from ara.runtime.calls import Rejected
@@ -575,6 +585,19 @@ def test_web_search_fails_closed(codex, mode, code):
     with pytest.raises(Rejected, match=code): calls.search_evidence({}, [])
     assert 'PRIVATE_CONTEXT_SENTINEL' not in log.path.read_text()
     assert not list((tmp/'cache').rglob('*.json'))
+    if code == 'cli_tool_event':
+        row = json.loads([e for e in log.read() if e['label']=='MODEL'][-1]['payload_json'])
+        rejected = row['cli']['rejected_event']
+        assert rejected['event_type'] == 'item.completed'
+        if mode in ('web_unknown_action', 'web_other_payload'):
+            assert rejected['item_type'] == 'web_search'
+            assert rejected['action_type'] == ('shell' if mode=='web_unknown_action' else 'other')
+        else:
+            tool = mode.split(':',1)[1]
+            expected = tool if tool in ('command_execution','file_read','file_change','mcp_tool_call','tool_call','function_call') else 'unknown'
+            assert rejected['item_type'] == expected
+        assert 'offline-access' not in log.path.read_text()
+        assert 'sentinel@example.invalid' not in log.path.read_text()
 
 
 @pytest.mark.parametrize('quote,retained', [('P Q', True), ('P S', False)])

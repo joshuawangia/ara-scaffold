@@ -199,8 +199,13 @@ source URLs and quoted snippets. The no-tool isolation canary still runs before
 operator content is sent. A response without a completed web event refuses.
 The installed CLI's sibling `codex-code-mode-host` executable is also required
 for this stage and mounted read-only under `/run`, without exposing its host
-directory. A pending `other` web action may precede a recognized completed
-search/open-page/find-in-page action; an unknown completed action still refuses.
+directory. The pinned protocol's exact `{"type":"other"}` web-search action is
+accepted while pending or completed and retained as opaque in the receipt; it
+does not identify a specific search/open-page/find-in-page operation. This is a
+named web-search variant, not a fallback for unknown action names or payloads.
+Every non-web tool event and every web event outside `search_evidence` still
+refuses. Refusal receipts contain fixed, allowlisted event/item/action/tool-name
+labels only; unrecognized strings become `unknown`, without content or URLs.
 
 The evidence wire is locally schema-validated. URLs must be HTTP(S), without
 embedded credentials. Source URLs and snippets are model-reported from web search,

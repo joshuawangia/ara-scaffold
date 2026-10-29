@@ -1,4 +1,4 @@
-# ARA methodology deliverables — version 3
+# ARA methodology deliverables — version 4
 
 Open **metapaper.pdf** for the report. **metapaper.md** is the editable source; **metapaper.html** is the print intermediate.
 
@@ -11,6 +11,8 @@ Open **metapaper.pdf** for the report. **metapaper.md** is the editable source; 
 
 The report distinguishes the frozen correspondence checkpoint, the fork-6 accounting lineage, and later local worker supplements. It does not certify an accepted competition entry, complete campaign accounting, or a resolved L3 result. Identity scans cover the delivered content; private source logs are not included as raw copies.
 
-Twenty-six material findings are placed in the report; its closing placement record identifies each destination. The next research work belongs to the ongoing L3/integration effort, outside this document-production task.
+Thirty material findings are placed in the report; its closing placement record identifies each destination. The next research work belongs to the ongoing L3/integration effort, outside this document-production task.
 
 Version 3 preserves the historical v2 tables and adds gap1r recovery and target-admission refusal, pinned client-window findings, offline packing versus pending A/B forks, R5–R6 audit and citation failures, an eight-finding independent review ledger with dispositions, and explicit zero-substantive-novelty status. Current pending items are in data.json and the report. V1 and v2 remain untouched. The prompt supplement retains its historical inspected scope; new task briefs are identified in the evidence register rather than presented as generation prompts. The fork-6 accounting charts keep their original scope; fresh gap1/gap1r usage is separate.
+
+Version 4 credits 39 distinct Codex worker IDs plus one Claude orchestrator. Exact worker model pins are unrecorded; campaign attribution and live-roster evidence are distinguished. Credits and human actions extend through 2026-10-29 21:09:25 UTC. The research checkpoint remains 20:41:14 UTC, with later literature/closure receipts explicitly dated in §10.4. V1–v3 remain untouched. Eight deterministic figures retain their historical scope.

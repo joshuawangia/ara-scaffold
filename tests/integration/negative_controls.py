@@ -788,7 +788,7 @@ CASES += [
      "calls = calls_factory(config, log, topic)\n            calls.construction_resume = True\n            engine = engine_factory(bank, calls)",
      'tests/runtime/test_construction_resume.py::test_fresh_run_does_not_restore_prior_batches_and_cap_changes_plan'),
     ('construction_stage_dispatch', 'ara/runtime/calls.py',
-     'return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)',
+     'return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)',
      'return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)',
      'tests/runtime/test_construction_stages.py::test_native_construction_routes_selection_formalization_and_correction[False]'),
     ('construction_correction_dispatch', 'ara/runtime/calls.py',
@@ -1720,7 +1720,7 @@ CASES += [
      'audit_inputs=failure.inputs', 'audit_inputs={}',
      'tests/runtime/test_audit_revision.py::test_revision_receives_exact_frozen_source_context'),
     ('audit_revision_minimum', 'ara/runtime/essay_audit.py',
-     'return calls.validate_essay(route, revised)', 'return revised',
+     'return calls.validate_essay(route, revised, minimum_words=0 if final else None)', 'return revised',
      'tests/runtime/test_audit_revision.py::test_revision_rechecks_minimum_words'),
     ('audit_revision_reaudit', 'ara/runtime/essay_audit.py',
      '            calls.audit_essay(route, draft)', '            if round_number == 0: calls.audit_essay(route, draft)',
@@ -1791,7 +1791,7 @@ CASES += [
     ('typed_audit_bibliography', 'ara/runtime/essay_audit.py',
      'bibliography.get(tid) != allowed[tid]', 'False',
      'tests/runtime/test_typed_audit.py::test_source_claim_requires_correct_frozen_citation[bibliography]'),
-    ('typed_audit_coverage', 'ara/runtime/calls.py',
+    ('typed_audit_coverage', 'ara/runtime/essay_audit.py',
      "if item['role'] in ('argument_step', 'source_claim')", 'if True',
      'tests/runtime/test_typed_audit.py::test_presentation_mapping_does_not_fake_route_coverage'),
     ('typed_audit_root', 'ara/runtime/calls.py',
@@ -1934,6 +1934,59 @@ CASES += [
     ('publication_codex_audit_dispatch', 'ara/runtime/construction_stages.py',
      "if kind not in (*KINDS, 'audit_publication'):", 'if kind not in KINDS:',
      'tests/runtime/test_publication_boundaries.py::test_publication_audit_dispatch_uses_effective_provider'),
+CASES += [
+    ('audit_consensus_fresh', 'ara/runtime/essay_audit.py',
+     'calls.audit_essay(route, draft, fresh=True)', 'calls.audit_essay(route, draft)',
+     'tests/runtime/test_audit_consensus.py::test_adverse_history_and_favourable_cache_cannot_approve'),
+    ('audit_consensus_history', 'ara/runtime/essay_audit.py',
+     'all_results = historical + samples', 'all_results = samples',
+     'tests/runtime/test_audit_consensus.py::test_adverse_history_and_favourable_cache_cannot_approve'),
+    ('audit_consensus_dissent', 'ara/runtime/essay_audit.py',
+     "faithful=all(s['faithful'] for s in all_results)", "faithful=any(s['faithful'] for s in all_results)",
+     'tests/runtime/test_audit_consensus.py::test_one_dissent_blocks_and_reports_sentence_agreement'),
+    ('audit_consensus_k', 'ara/runtime/essay_audit.py',
+     'range(1, k + 1)', 'range(1, k)',
+     'tests/runtime/test_audit_consensus.py::test_fresh_unanimous_gate_and_configured_sample_count'),
+    ('audit_consensus_union', 'ara/runtime/essay_audit.py',
+     'for result in all_results for flag', 'for result in samples[:1] for flag',
+     'tests/runtime/test_audit_consensus.py::test_native_final_union_repaired_then_reverified_and_freshly_audited'),
+    ('audit_consensus_reverify', 'ara/runtime/essay_audit.py',
+     'cleaned, verification = calls.verify_originality_citations(draft)',
+     'cleaned, verification = calls.verify_originality_citations(draft) if round_number == 0 else (draft, verification)',
+     'tests/runtime/test_audit_consensus.py::test_native_final_union_repaired_then_reverified_and_freshly_audited'),
+    ('audit_consensus_export_history', 'ara/runtime/export.py',
+     'for e in events[start:] if', 'for e in events if',
+     'tests/runtime/test_audit_consensus.py::test_failed_final_gate_cannot_export_old_success_and_repairs_are_bounded'),
+]
+
+
+CASES += [
+    ('audit_consensus_shared_bound', 'ara/runtime/essay_audit.py',
+     'used = repair_rounds(calls, route)', 'used = 0',
+     'tests/runtime/test_audit_consensus.py::test_initial_and_final_repairs_share_three_round_limit'),
+    ('audit_consensus_history_disclosure', 'ara/runtime/essay_audit.py',
+     'ignored.append(dict(event=index, reason=type(exc).__name__))', 'pass',
+     'tests/runtime/test_audit_consensus.py::test_malformed_history_is_disclosed_not_counted_as_clean_sample'),
+]
+
+
+CASES += [
+    ('audit_consensus_noop_repair', 'ara/runtime/essay_audit.py',
+     "require(not final or text != old, 'revision left flagged sentence unchanged')", 'pass',
+     'tests/runtime/test_audit_consensus.py::test_final_union_rejects_unchanged_flagged_sentences'),
+]
+
+
+CASES += [
+    ('audit_consensus_cleanup_floor', 'ara/runtime/essay_audit.py',
+     'calls.validate_essay(route, cleaned, minimum_words=0)', 'calls.validate_essay(route, cleaned)',
+     'tests/runtime/test_audit_consensus.py::test_verification_cleanup_can_shorten_below_writer_target'),
+    ('audit_consensus_resume_bound', 'ara/runtime/orchestration.py',
+     'repair_rounds=prior_rounds', 'repair_rounds=0',
+     'tests/runtime/test_audit_consensus.py::test_resumed_draft_cannot_reset_repair_allowance'),
+    ('audit_consensus_final_repair_floor', 'ara/runtime/essay_audit.py',
+     'minimum_words=0 if final else None', 'minimum_words=None',
+     'tests/runtime/test_audit_consensus.py::test_final_repair_can_remain_below_writer_target'),
 ]
 
 

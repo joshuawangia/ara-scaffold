@@ -13,6 +13,7 @@ forward_pass_depth: 2
 essay_word_limit: 6000
 essay_min_words: 4500
 publication_min_words: 3000
+essay_audit_samples: 3
 target_candidates: 10
 cache_dir: cache
 runs_dir: runs

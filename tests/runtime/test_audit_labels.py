@@ -49,7 +49,10 @@ def test_invalid_labels_cannot_approve(rig, variant):
     assert not list(calls.cache.path.glob('*.json'))
     if variant == 'missing':
         event = next(e for e in log.read() if e['stage'] == 'essay_audit')
-        assert json.loads(event['payload_json']) == {
+        payload = json.loads(event['payload_json'])
+        assert payload.pop('route_id') == graph().id
+        assert len(payload.pop('prompt_sha256')) == 64
+        assert payload == {
             'covered_node_ids': [], 'missing_node_ids': ['n1'], 'extra_steps': [1],
             'flags': [{'sentence': 1, 'role': 'argument_step', 'reason': 'unmapped_argument_step'}],
             'role_counts': {'argument_step': 1}, 'faithful': False}

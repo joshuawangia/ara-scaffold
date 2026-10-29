@@ -72,7 +72,7 @@ def test_native_mock_smoke_and_replay(tmp_path):
     resumed = EventLog(run / 'events.jsonl').read()[previous_count:]
     assert any(e['stage'] == 'essay_draft_resumed' for e in resumed)
     assert not any(e['stage'] in ('write_essay', 'outline_essay') for e in resumed)
-    assert sum(e['stage'] == 'audit_essay' and e['label'] == 'MODEL' for e in resumed) == 2
+    assert sum(e['stage'] == 'audit_essay' and e['label'] == 'MODEL' for e in resumed) == 4
     replay = tmp_path / 'replay'
     cli('run', '--smoke', '--provider', 'mock', '--config', str(config_path), '--run-dir', str(replay))
     assert [p.read_bytes() for p in files] == [p.read_bytes() for p in sorted((replay / 'routes').glob('*.json'))]

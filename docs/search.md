@@ -79,7 +79,7 @@ audit, 64,000 for evidence search and 48,000 for citation/originality classifica
 The outline uses the ordinary 8,192-token allowance and writing-stage routing.
 Per-kind `<kind>_max_output_tokens` settings override the global limit in
 reservation, dispatch and cache identity. A changed schema requires a fresh Codex
-schema preflight. Codex still refuses API-only `search_evidence`; reaching the
+schema preflight. Codex uses web-only `search_evidence`; reaching the
 first audit does not imply completion of originality/citation checks or export.
 
 Audit sentence boundaries retain citation markers immediately following terminal
@@ -118,8 +118,36 @@ resume an existing draft without outlining or writing it again. The draft is
 screened by the provider's identity/credential scanner before validation, logging,
 saving or audit dispatch, then schema/length/coverage checked. Revised partials retain
 the unverified filename. Citation/originality checks and the final re-audit still
-follow a faithful first audit; the final re-audit does not revise already-verified
-text. No paid-provider fallback or automatic provider switch is introduced.
+follow a faithful first audit. The final gate uses `essay_audit_samples` independent
+fresh requests (default 3, integer at least 3), with identical audit inputs and no
+response-cache reads or writes. Independent requests do not establish statistical
+independence or semantic correctness. A single substantive dissent or missing-node
+verdict blocks export. The gate unions current flags with valid adverse verdicts
+already logged for the same prompt; favourable cached responses cannot erase them.
+Malformed historical responses are disclosed as unusable, never counted as clean
+samples. Current samples retain bounded schema correction; uncorrected malformed responses
+or provider failures stop with an incomplete receipt.
+
+Repairs target the union and share the existing three-round allowance with initial
+repairs. Resuming an imported draft carries forward this route's used repair rounds
+from the latest composition; it cannot reset the allowance.
+A final repair must change every flagged sentence; unchanged replacements
+refuse. Each edited draft goes through citation/originality verification again,
+then another fresh sample batch. The writer/import length target remains in force
+before verification; final cleanup and final repairs may shorten below that target.
+The 6,000-word cap, schema, nontrivial body, marker coverage and citation checks
+remain in force, without lowering the configuration that selects full source context.
+No automatic majority adjudication is performed;
+unresolved findings must be repaired. Receipts, methodology and route reports
+retain each sample, per-sentence dissent/clean sample ids, agreement, historical
+flags and the prompt/draft hashes. Agreement is the larger vote share for the
+binary substantive-flag judgment; unanimous adverse labels still block export.
+
+Starting a new validated composition invalidates the run's previous final artifact
+and essay export. Log-derived export considers only final drafts after that start,
+so a failed new gate cannot republish an earlier successful draft. Historical
+final-draft events remain in the append-only log. No paid-provider fallback or
+automatic provider switch is introduced.
 
 Edit `pilot.cost_cap_usd` and `pilot.token_cap` in `config.yaml`, or supply your
 own file with `--config`. Older custom configurations must add `essay_min_words`

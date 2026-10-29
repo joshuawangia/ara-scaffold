@@ -4095,3 +4095,29 @@ on pinned Opus. Native scoped dispatch shares budget/log/cache and runs each
 provider's isolation canary. This integrates writer round 5 without claiming to
 solve the separately recorded audit-instability redesign. Native outcomes and
 external-verification limits are reported outside tracked source.
+## nu4 round 6 — conservative final audit evidence (2026-10-29)
+
+A final audit is now a batch of at least three fresh requests, configurable through
+`essay_audit_samples` (default 3). Fresh requests retain ordinary admission,
+validation, identity scanning and accounting but neither read nor write the
+response cache. Substantive failures are unioned across samples and valid adverse
+history for the identical audit prompt. No sampled majority silently overrides a
+dissent; no automatic adjudication is implemented. Fresh requests are separate
+provider invocations, not evidence of statistical independence.
+
+The initial and final audit paths share at most three targeted repair rounds.
+After a final repair, citation/originality verification runs again before another
+fresh batch. Per-sentence binary agreement, sample flags, historical findings,
+prompt/draft hashes and incomplete batches are retained in logged receipts and
+methodology; route reports consume those receipts. Starting a new composition
+invalidates previous final artifacts, and log-based export ignores earlier final
+entries for that attempt. Existing history remains immutable. Native outcomes and
+semantic limits belong in the external round-6 report.
+
+The writer's minimum is a construction target, not an export floor after evidence
+cleanup. Final cleanup and final repairs retain the maximum, schema, nontrivial
+body and marker checks without requiring padding back to that target. The run's
+configuration stays unchanged so full source context remains available. Imported
+resumes carry used repair rounds from this route's latest composition; a stopped
+attempt cannot silently obtain another three rounds. Existing pre-policy history
+has no such marker and starts with zero used rounds.

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "audit_publication",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sentence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "node_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "asserts_premise_or_inference_not_in_outline": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sentence",
+          "node_ids",
+          "asserts_premise_or_inference_not_in_outline"
+        ]
+      }
+    }
+  },
+  "required": [
+    "labels"
+  ]
+}

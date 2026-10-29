@@ -89,7 +89,7 @@ def install_publication(rig, monkeypatch, adverse=0, repair_bad=False):
                 if repair_bad: md=md.replace('P '*175,'Q '*175,1)
                 out=dict(markdown=md,figure_placements=[dict(id=x,after_paragraph=5) for x in ['argument-map','source-support']],
                          change_log=[dict(paragraph=i,improvement='P') for i in range(len(paragraphs(md)))])
-        elif kind=='audit_essay':
+        elif kind in ('audit_essay', 'audit_publication'):
             audit_count+=1
             out={'labels':[dict(sentence=s['sentence'],node_ids=['n0','n1'],
                 asserts_premise_or_inference_not_in_outline=audit_count<=adverse and '[cite:p]' in s['text']) for s in data['sentences']]}
@@ -114,7 +114,8 @@ def test_native_polish_logs_sections_and_blocks_unavailable_verification(rig,mon
     assert result['polished'] and result['audit']['faithful']
     assert result['native_citations']['status']=='blocked'
     assert [d['mode'] for k,d in seen if k=='polish_essay']==['section']*5+['whole']
-    assert (directory/'paper.md').read_text().endswith('p:pdf:1#q\n')
+    assert '[cite:' not in (directory/'paper.md').read_text()
+    assert result['citation_receipt']['p']['raw_citation']=='p:pdf:1#p'
     assert '[[node:' not in (directory/'paper.md').read_text()
     assert '[[node:' in result['draft']['body']
     assert load_publication(calls.log.path.parent)[0]==result
@@ -131,7 +132,7 @@ def test_one_targeted_repair_then_audit_or_exact_fallback(rig,monkeypatch,advers
     calls,route,seen=install_publication(rig,monkeypatch,adverse)
     result,_=polish(calls,route,paper())
     assert result['polished'] is expected
-    assert sum(k=='audit_essay' for k,_ in seen)==2
+    assert sum(k=='audit_publication' for k,_ in seen)==2
     assert sum(k=='polish_essay' and d['mode']=='repair' for k,d in seen)==1
     if not expected:
         assert result['draft']==paper() and result['native_citations']['status']=='not_run'
@@ -233,8 +234,8 @@ def test_references_use_logged_metadata_bound_to_source_pdf(rig):
     prompt='P\nINPUT_JSON\n'+canonical(dict(source_id='p',pdf_sha256='abc',record=record))
     log.emit(RunEvent(now(),'extract_paper','MODEL',prompt=prompt))
     records=bibliography_records(log,evidence)
-    text=render_references(dict(bibliography=[dict(id='t',text='p:pdf:1#t',url=None)]),evidence,records)
-    assert 'a; b (2000). P. Q. pp. 1-2.' in text and '[t] p:pdf:1#t' in text
+    text=render_references(dict(body='P',bibliography=[dict(id='t',text='p:pdf:1#t',url=None)]),evidence,records,receipt={'t':dict(source_id='p')})
+    assert 'a; b (2000). P. Q. pp. 1-2.' in text and '[t]' not in text
     assert records['p']['record']==record and records['p']['pdf_sha256']=='abc'
     assert records['p']['verification']=='not_independently_verified'
     # A later record for a different PDF cannot replace this source's identity.
@@ -246,3 +247,129 @@ def test_references_use_logged_metadata_bound_to_source_pdf(rig):
     log.emit(RunEvent(now(),'extract_paper','MODEL',prompt=conflict))
     with pytest.raises(Rejected,match='conflicting bibliography'):
         bibliography_records(log,evidence)
+
+
+def test_polish_can_merge_redundant_paragraphs_without_losing_support():
+    from ara.runtime.publication import validate_polish, paragraphs
+    original='[[node:n0]] P [cite:p]\n\n[[node:n1]] Q [cite:q]'
+    value=dict(markdown='[[node:n0]] P [cite:p] [[node:n1]] Q [cite:q]',figure_placements=[],change_log=[dict(paragraph=0,improvement='P')])
+    assert validate_polish(value,original,set())
+
+
+def test_reading_citations_use_authors_and_provenance_pages():
+    from ara.runtime.publication_references import reading_copy, render_references
+    evidence=dict(supporting_commitments=[dict(commitment=dict(id='t',citation='p:pdf:2-3#t'),provenance=dict(source_id='p',page_start=2,page_end=3))])
+    records={'p':dict(record=dict(id='p',authors='a, P; b, Q',year=2000,title='P',venue='Q',version_details='internal:q'),pdf_sha256='abc')}
+    text,receipt=reading_copy('P [cite:t]',evidence,records,None)
+    assert text=='P (a & b 2000, PDF pp. 2–3)'
+    assert receipt['t']['raw_citation']=='p:pdf:2-3#t'
+    assert receipt['t']['source_id']=='p' and receipt['t']['pdf_sha256']=='abc'
+    assert receipt['t']['bibliography']['version_details']=='internal:q'
+    assert 'internal:q' not in render_references({},evidence,records,receipt=receipt)
+    with pytest.raises(Rejected,match='citation'):
+        reading_copy('P [cite:q]',evidence,records,None)
+
+
+def currency_record():
+    return dict(task='p',created_at='2000',coverage='P',verification=dict(tracked_files_unchanged=True,existing_26_pdfs_unchanged=True),
+        evidence_register=dict(e=dict(work='p',year=2000,pdf_pages=[1,2],section='1',kind='read_fulltext_passages',claim='P'),
+                               m=dict(work='q',year=2000,section='P',kind='metadata_abstract_only',claim='Q')),
+        records=[dict(id='p',authors=['a'],title='P',year=2000)],thesis_currency=[],linking_claims={},query_catalog=[])
+
+
+def test_currency_input_is_logged_and_bound_to_exact_record(rig,tmp_path):
+    from ara.runtime.publication_currency import load_currency
+    from hashlib import sha256
+    calls,_,log=rig; path=tmp_path/'p.json';raw=json.dumps(currency_record(),indent=2);path.write_text(raw)
+    value=load_currency([path],log)
+    assert value['records'][0]['sha256']==sha256(raw.encode()).hexdigest()
+    assert value['evidence']['p:e']['location']=='PDF pp. 1, 2; §1'
+    assert 'p:m' not in value['evidence']
+    assert value['excluded_metadata'][0]['work']=='q'
+    event=[e for e in log.read() if e['stage']=='publication_currency_input'][-1]
+    assert event['label']=='HUMAN' and json.loads(event['payload_json'])['text']==raw
+    path.write_text('{}')
+    assert value['evidence']['p:e']['claim']=='P'
+    with pytest.raises(Rejected,match='currency'):
+        load_currency([path],log)
+
+
+@pytest.mark.parametrize('adverse', [False, True])
+def test_post_polish_audit_receives_currency_and_original_draft(rig,monkeypatch,tmp_path,adverse):
+    from ara.runtime.publication import polish
+    from ara.runtime.publication_currency import load_currency
+    calls,route,seen=install_publication(rig,monkeypatch)
+    path=tmp_path/'p.json';path.write_text(json.dumps(currency_record()));currency=load_currency([path],calls.log)
+    provider=calls.provider;old=provider.complete
+    def complete(kind,prompt,schema,maximum):
+        data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind=='polish_essay' and data['mode']=='whole':
+            out=polished(paper());out['markdown']=out['markdown'].replace('## 5. Conclusion','## 5. Related work and scope of the novelty claim\n\nP [lit:p:e] [lit:p:search]\n\n## 6. Conclusion')
+            from ara.runtime.publication import paragraphs
+            out['change_log']=[dict(paragraph=i,improvement='P') for i in range(len(paragraphs(out['markdown'])))]
+            for f in out['figure_placements']:f['after_paragraph']=len(paragraphs(out['markdown']))-1
+            return Response(response(out))
+        if kind=='audit_publication':
+            assert data['publication_context']['literature_currency']==currency
+            assert data['publication_context']['original_draft']==paper()
+            return Response(response(dict(labels=[dict(sentence=s['sentence'],node_ids=['n0','n1'],asserts_premise_or_inference_not_in_outline=adverse and '[lit:' in s['text']) for s in data['sentences']])))
+        return old(kind,prompt,schema,maximum)
+    monkeypatch.setattr(provider,'complete',complete)
+    result,directory=polish(calls,route,paper(),currency=currency)
+    assert result['polished'] is (not adverse) and result['literature_currency']==currency
+    text=(directory/'paper.md').read_text();assert '[lit:' not in text
+    if adverse:
+        assert result['draft']==paper()
+        assert 'Literature-currency record' not in text
+    else:assert 'Related work and scope of the novelty claim' in text
+    audits=[e for e in calls.log.read() if e['stage']=='audit_publication' and e['label']=='MODEL']
+    assert audits and 'literature_currency' in audits[-1]['prompt']
+
+
+def test_currency_refuses_failed_verification(rig,tmp_path):
+    from ara.runtime.publication_currency import load_currency
+    calls,_,log=rig;path=tmp_path/'p.json'
+    path.write_text(json.dumps(dict(task='p',handoff_verification=dict(verified_at='2000',errors=['P']))))
+    with pytest.raises(Rejected,match='verification'):
+        load_currency([path],log)
+
+
+def test_literature_claims_cannot_escape_the_related_work_section():
+    from ara.runtime.publication_currency import check_currency
+    currency=dict(evidence={'p:e':dict(kind='read_fulltext',work='p'),'p:search':dict(kind='bounded_search_record',work=None)})
+    good='## 1. Related work and scope of the novelty claim\n\nP [lit:p:e] [lit:p:search]\n\n## 2. Conclusion\n\nQ'
+    check_currency(good,currency)
+    for bad in [good+' [lit:p:e]',good.replace('[lit:p:e]','[lit:q:e]'),good.replace('P [lit:p:e]','[[node:n0]] P [lit:p:e]')]:
+        with pytest.raises(Rejected):check_currency(bad,currency)
+
+
+def test_reading_copy_deduplicates_same_page_but_retains_both_ids():
+    from ara.runtime.publication_references import reading_copy
+    evidence=dict(supporting_commitments=[dict(commitment=dict(id=id,citation='p:pdf:2#'+id),provenance=dict(source_id='p',page_start=2,page_end=2)) for id in ('t','u')])
+    records={'p':dict(record=dict(authors=['a'],year=2000),pdf_sha256='abc')}
+    text,receipt=reading_copy('P. [[node:n0]] [cite:t] [[node:n1]] [cite:u]',evidence,records,None)
+    assert text=='P (a 2000, PDF p. 2).'
+    assert set(receipt)=={'t','u'}
+    assert receipt['t']['raw_citation']!=receipt['u']['raw_citation']
+
+
+@pytest.mark.parametrize('words,expected', [(4490,True),(4400,False),(5990,False)])
+def test_publication_word_bounds_use_rendered_citations(rig,monkeypatch,words,expected):
+    from ara.runtime.publication import polish, NODE, FIGURE
+    calls,route,_=install_publication(rig,monkeypatch)
+    provider=calls.provider; old=provider.complete
+    def complete(kind,prompt,schema,maximum):
+        data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind=='polish_essay' and data['mode']=='whole':
+            out=polished(paper())
+            count=len(NODE.sub('',FIGURE.sub('',out['markdown'])).split())
+            out['markdown']=out['markdown'].replace('P '*900,'P '*(900+words-count),1)
+            return Response(response(out))
+        return old(kind,prompt,schema,maximum)
+    monkeypatch.setattr(provider,'complete',complete)
+    result,_=polish(calls,route,paper())
+    assert result['polished'] is expected
+    if expected:
+        assert result['audit_words']==words < 4500 <= result['words'] <= 6000
+    else:
+        assert 'word count' in result['polish_failure']

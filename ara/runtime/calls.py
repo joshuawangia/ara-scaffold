@@ -555,7 +555,7 @@ class ModelCalls:
             if not isinstance(exc, (Rejected, ValueError, ValidationError)):
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
-            if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
+            if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': reason if isinstance(exc, ValidationError) or kind == 'extract_paper' else str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
@@ -1185,10 +1185,12 @@ class ModelCalls:
             inputs['source_evidence'] = source_context(self, route)
         return inputs
 
-    def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
+    def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None) -> dict:
         from collections import Counter
         from ara.runtime.essay_audit import audit_flags
         inputs = self.audit_inputs(route, draft)
+        if publication_context is not None:
+            inputs['publication_context'] = publication_context
         def check(data):
             ids = {n.id for n in route.nodes}
             expected = {s['sentence'] for s in inputs['sentences']}
@@ -1217,7 +1219,7 @@ class ModelCalls:
             if not result['faithful']:
                 raise EssayAuditFailed(result, inputs, labels)
             return result
-        return self.call('audit_essay', inputs, check)
+        return self.call('audit_publication' if publication_context is not None else 'audit_essay', inputs, check)
 
     def search_evidence(self, draft: dict, items: list[dict]) -> dict:
         return self.call('search_evidence', {'draft': draft, 'items': items})

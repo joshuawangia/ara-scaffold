@@ -1847,6 +1847,26 @@ CASES += [
 ]
 
 
+CASES += [
+    ('union_essentiality_basis', 'ara/runtime/novelty.py',
+     "check(union_premises, Formula('iff'", "check((), Formula('iff'",
+     'tests/runtime/test_union_essentiality.py::test_native_union_essentiality_proposal_selection_and_gap_file'),
+    ('union_essentiality_unknown', 'ara/runtime/novelty.py',
+     "if verdict not in ('SOLVER_UNSAT','SOLVER_COUNTEREXAMPLE'):\n                return result('unresolved','novelty_unresolved','A union essential-atom check was unresolved.')",
+     'if False:\n                pass',
+     'tests/runtime/test_union_essentiality.py::test_union_essentiality_unknown_refuses'),
+    ('union_essentiality_forward', 'ara/runtime/synthesis.py',
+     "if novelty['status'] != 'candidate':", 'if False:',
+     'tests/runtime/test_union_essentiality.py::test_forward_union_essentiality_removes_padded_packages'),
+    ('union_essentiality_gap_targets', 'ara/runtime/target_policy.py',
+     "if reason is None and novelty['status'] != 'candidate':", 'if False:',
+     'tests/runtime/test_union_essentiality.py::test_native_union_essentiality_proposal_selection_and_gap_file[padded_or-True]'),
+    ('union_essentiality_both_polarities', 'ara/runtime/novelty.py',
+     "for truth in (True, False):\n            verdict = check(union_premises", "for truth in (True,):\n            verdict = check(union_premises",
+     'tests/runtime/test_union_essentiality.py::test_union_entailment_preserves_both_polarities'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

@@ -221,9 +221,15 @@ synthesis; both premises from paper a make Q single-paper. Paper identity is nev
 inferred from citation strings when provenance is missing.
 
 An essential atomic assertion must lie outside every individual paper's closure
-and affect target truth. It can occur inside a frozen conditional already; it
+and affect target truth under the union of admissible frozen premises. Replacing
+it in the target with true or false must change the target in at least one model
+of that union. The union includes endorsed commitments and disclosed alignment
+premises; reported and attacked content remains excluded. Both substitutions and
+the union's commitment IDs are logged, and solver uncertainty stays unresolved.
+It can occur inside a frozen conditional already; it
 need not have a fresh symbol name. Bare Boolean packages of separately established
-facts and padding a single-paper consequence still fail. Own-thesis, content
+facts and irrelevant wrappers around cross-paper packages still fail. This same
+check governs native, forward-mined and external-gap targets. Own-thesis, content
 fidelity, definition-restatement, source stance and CQ checks remain required.
 
 A deductive synthesis needs distinct endorsed support formulas assignable to at

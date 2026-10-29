@@ -4077,3 +4077,21 @@ Construction plan v14 binds the changed policy. S11-F3: explicitly set the judge
 request topic to the empty string and test the actual rendered request. The
 model sees the pair's definitions/source evidence and freeze hashes, not the
 task topic. Frozen catalogue and CommitmentSet formats remain unchanged.
+
+## Round 28 — Union-relative essentiality (INTEG-F1)
+
+Per-paper target and atomic non-entailment remain required, but essentiality is
+checked under the full admissible frozen union. Checking each paper separately
+let an irrelevant R upgrade `(P and Q) or R` and `R -> (P and Q)` when P and Q
+came from different papers. Substituting true and false for an atomic application
+must change target truth in a model of the union. This implies essentiality under
+each individual paper, so it replaces the weaker per-paper substitution loop.
+Record the union commitment IDs and both solver checks; uncertainty refuses.
+
+The union includes endorsed commitments and model-alignment premises, without
+granting alignment bridges paper ownership or assuming reported/attacked content.
+Union entailment itself is permitted: P from a and P -> Q from b still license
+Q, which changes when Q is replaced by false. The shared novelty gate applies to
+native proposal, route selection, forward mining and external gap-file targets.
+Native regressions retain CLOSED engine proofs while classifying padded packages
+as structural, and preserve genuine scheme and cross-paper deduction positives.

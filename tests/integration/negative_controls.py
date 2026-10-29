@@ -117,7 +117,21 @@ CASES += [
 
 CASES.append(('rich_nullable_provider_schema', 'schemas/extract_paper.json', '"type": "string",\n                "enum": [\n                  "paper_stated"', '"type": ["string", "null"],\n                "enum": [\n                  "paper_stated"', 'tests/runtime/test_provider.py::test_rich_nullable_enum_matches_provider_grammar'))
 
-CASES += [('batch_wire_grammar', 'ara/runtime/providers.py', "encoded_formulas=kind == 'build_t_batch'", 'encoded_formulas=False', 'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'), ('batch_wire_decode', 'ara/runtime/calls.py', "item['formula'] = decode_response(item['formula'])", 'pass', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'), ('batch_wire_invalid_json', 'ara/runtime/calls.py', "raise Rejected('invalid encoded formula JSON') from exc", 'raise', 'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
+CASES += [('batch_wire_grammar',
+  'ara/runtime/providers.py',
+  "encoded_formulas=kind == 'build_t_batch'",
+  'encoded_formulas=False',
+  'tests/runtime/test_provider.py::test_batch_formula_wire_avoids_grammar_expansion'),
+ ('batch_wire_decode',
+  'ara/runtime/calls.py',
+  "item['formula'] = decode_response(item['formula'])",
+  'pass',
+  'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[True]'),
+ ('batch_wire_invalid_json',
+  'ara/runtime/calls.py',
+  "raise Rejected('invalid encoded formula JSON') from exc",
+  'raise',
+  'tests/runtime/test_extraction_rich.py::test_encoded_batch_formula_still_requires_local_validation[False]')]
 
 CASES.append(('batch_bound_variables', 'ara/runtime/construction.py', "require(term.kind != 'variable' or term.name in bound,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_batch_variables_cannot_bypass_symbol_contract[False]'))
 
@@ -1769,7 +1783,11 @@ CASES += [
 ]
 
 
-CASES += [('gap_open_marker_coverage', 'ara/runtime/gaps.py', '|is open|problem remains|jury is out', '', 'tests/runtime/test_gaps.py::test_explicit_open_markers_beyond_unresolved')]
+CASES += [('gap_open_marker_coverage',
+  'ara/runtime/gaps.py',
+  '|is open|problem remains|jury is out',
+  '',
+  'tests/runtime/test_gaps.py::test_explicit_open_markers_beyond_unresolved')]
 
 
 CASES += [
@@ -1865,16 +1883,117 @@ CASES += [
 ]
 
 
-CASES += [('tier2_distinct_support_groups', 'ara/runtime/conflict_feedback.py', 'groups = tuple(supports[rid] for rid in route_ids)', 'groups = tuple(supports[route_ids[0]] for rid in route_ids)', 'tests/runtime/test_semantic_conflicts.py::test_tier2_keeps_each_routes_distinct_support_group')]
+CASES += [('tier2_distinct_support_groups',
+  'ara/runtime/conflict_feedback.py',
+  'groups = tuple(supports[rid] for rid in route_ids)',
+  'groups = tuple(supports[route_ids[0]] for rid in route_ids)',
+  'tests/runtime/test_semantic_conflicts.py::test_tier2_keeps_each_routes_distinct_support_group')]
 
 
-CASES += [('cq_formatted_hedge_native', 'ara/engine/routes.py', "words = ' '.join(re.findall(r'[^\\W_]+', unicodedata.normalize('NFKC', text).casefold()))", 'words = text', 'tests/runtime/test_cq_retrieval.py::test_formatted_hedge_cannot_close_native_route'), ('gap_frozen_content_identity', 'ara/runtime/gaps.py', 'and content[a.id]==content[b.id]', 'and False', 'tests/runtime/test_gaps.py::test_frozen_definition_stance_conflict_reaches_native_proposal'), ('gap_content_structure', 'ara/runtime/gaps.py', "value['args'] = [frozen_content_key(child, definitions) for child in formula.args]", 'value = frozen_content_key(formula.args[0], definitions)', 'tests/runtime/test_gaps.py::test_definition_conflict_preserves_structure_arguments_and_polarity')]
+CASES += [('cq_formatted_hedge_native',
+  'ara/engine/routes.py',
+  "words = ' '.join(re.findall(r'[^\\W_]+', unicodedata.normalize('NFKC', text).casefold()))",
+  'words = text',
+  'tests/runtime/test_cq_retrieval.py::test_formatted_hedge_cannot_close_native_route'),
+ ('gap_frozen_content_identity',
+  'ara/runtime/gaps.py',
+  'and content[a.id]==content[b.id]',
+  'and False',
+  'tests/runtime/test_gaps.py::test_frozen_definition_stance_conflict_reaches_native_proposal'),
+ ('gap_content_structure',
+  'ara/runtime/gaps.py',
+  "value['args'] = [frozen_content_key(child, definitions) for child in formula.args]",
+  'value = frozen_content_key(formula.args[0], definitions)',
+  'tests/runtime/test_gaps.py::test_definition_conflict_preserves_structure_arguments_and_polarity')]
 
 
-CASES += [('per_paper_target_wiring', 'ara/runtime/target_policy.py', 'novelty_check(target.formula, commitments, provenance, basis_ids=required)', 'novelty_check(target.formula, commitments)', 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'), ('per_paper_closure', 'ara/runtime/novelty.py', "if verdict == 'SOLVER_UNSAT':\n            return result('rejected','single_paper_closure'", "if False:\n            return result('rejected','single_paper_closure'", 'tests/runtime/test_per_paper_synthesis.py::test_per_paper_closure_groups_and_padding'), ('per_paper_stance', 'ara/runtime/novelty.py', "if row.get('stance') == 'endorsed' and row.get('source_id'):", "if row.get('source_id'):", 'tests/runtime/test_per_paper_synthesis.py::test_reported_opposition_does_not_remove_forward_synthesis'), ('per_paper_essential', 'ara/runtime/novelty.py', '        if known:\n            continue', '        if False:\n            continue', 'tests/runtime/test_per_paper_synthesis.py::test_per_paper_closure_groups_and_padding'), ('per_paper_unknown', 'ara/runtime/novelty.py', "if verdict != 'SOLVER_COUNTEREXAMPLE':\n            return result('unresolved'", "if False:\n            return result('unresolved'", 'tests/runtime/test_per_paper_synthesis.py::test_per_paper_unknown_is_not_novel'), ('synthesis_deductive_upgrade', 'ara/runtime/route_policy.py', "classification='CLOSED-derived', contribution_kind=(", "classification='CLOSED-structural', contribution_kind=(", 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'), ('synthesis_reachable_license', 'ara/runtime/route_policy.py', "and papers['cross_paper_supported'] and license_receipt['licensed']", "and papers['cross_paper_supported'] and True", 'tests/runtime/test_per_paper_synthesis.py::test_unlicensed_or_unreachable_step_cannot_supply_synthesis'), ('forward_target_wiring', 'ara/runtime/calls.py', "inputs['forward_candidates'] = proposal_forward_candidates(self, commitments, vocabulary)", "inputs['forward_candidates'] = []", 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'), ('forward_endorsed_evidence', 'ara/runtime/synthesis.py', "if rows[c.id]['stance'] in ('endorsed','model_alignment')", 'if True', 'tests/runtime/test_per_paper_synthesis.py::test_forward_uses_native_licenses_and_endorsed_dependencies'), ('forward_endorsed_opposition', 'ara/runtime/synthesis.py', 'tuple(c.formula for c in eligible.commitments), eligible,', 'tuple(c.formula for c in eligible.commitments), commitments,', 'tests/runtime/test_per_paper_synthesis.py::test_reported_opposition_does_not_remove_forward_synthesis'), ('forward_dependency_provenance', 'ara/runtime/synthesis.py', 'ids = set().union(*(dependencies.get(p,set()) for p in premise_keys))', 'ids = set(dependencies.get(premise_keys[0],set()))', 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report')]
+CASES += [('per_paper_target_wiring',
+  'ara/runtime/target_policy.py',
+  'novelty_check(target.formula, commitments, provenance, basis_ids=required)',
+  'novelty_check(target.formula, commitments)',
+  'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'),
+ ('per_paper_closure',
+  'ara/runtime/novelty.py',
+  "if verdict == 'SOLVER_UNSAT':\n            return result('rejected','single_paper_closure'",
+  "if False:\n            return result('rejected','single_paper_closure'",
+  'tests/runtime/test_per_paper_synthesis.py::test_per_paper_closure_groups_and_padding'),
+ ('per_paper_stance',
+  'ara/runtime/novelty.py',
+  "if row.get('stance') == 'endorsed' and row.get('source_id'):",
+  "if row.get('source_id'):",
+  'tests/runtime/test_per_paper_synthesis.py::test_reported_opposition_does_not_remove_forward_synthesis'),
+ ('per_paper_essential',
+  'ara/runtime/novelty.py',
+  '        if known:\n            continue',
+  '        if False:\n            continue',
+  'tests/runtime/test_per_paper_synthesis.py::test_per_paper_closure_groups_and_padding'),
+ ('per_paper_unknown',
+  'ara/runtime/novelty.py',
+  "if verdict != 'SOLVER_COUNTEREXAMPLE':\n            return result('unresolved'",
+  "if False:\n            return result('unresolved'",
+  'tests/runtime/test_per_paper_synthesis.py::test_per_paper_unknown_is_not_novel'),
+ ('synthesis_deductive_upgrade',
+  'ara/runtime/route_policy.py',
+  "classification='CLOSED-derived', contribution_kind=(",
+  "classification='CLOSED-structural', contribution_kind=(",
+  'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'),
+ ('synthesis_reachable_license',
+  'ara/runtime/route_policy.py',
+  "and papers['cross_paper_supported'] and license_receipt['licensed']",
+  "and papers['cross_paper_supported'] and True",
+  'tests/runtime/test_per_paper_synthesis.py::test_unlicensed_or_unreachable_step_cannot_supply_synthesis'),
+ ('forward_target_wiring',
+  'ara/runtime/calls.py',
+  "inputs['forward_candidates'] = proposal_forward_candidates(self, commitments, vocabulary)",
+  "inputs['forward_candidates'] = []",
+  'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'),
+ ('forward_endorsed_evidence',
+  'ara/runtime/synthesis.py',
+  "if rows[c.id]['stance'] in ('endorsed','model_alignment')",
+  'if True',
+  'tests/runtime/test_per_paper_synthesis.py::test_forward_uses_native_licenses_and_endorsed_dependencies'),
+ ('forward_endorsed_opposition',
+  'ara/runtime/synthesis.py',
+  'tuple(c.formula for c in eligible.commitments), eligible,',
+  'tuple(c.formula for c in eligible.commitments), commitments,',
+  'tests/runtime/test_per_paper_synthesis.py::test_reported_opposition_does_not_remove_forward_synthesis'),
+ ('forward_dependency_provenance',
+  'ara/runtime/synthesis.py',
+  'ids = set().union(*(dependencies.get(p,set()) for p in premise_keys))',
+  'ids = set(dependencies.get(premise_keys[0],set()))',
+  'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report')]
 
 
-CASES += [('per_paper_compound_package', 'ara/runtime/novelty_basis.py', 'return boolean_combination_equivalence(basis, target, 1000)', "return 'SOLVER_COUNTEREXAMPLE'", 'tests/runtime/test_per_paper_synthesis.py::test_conditional_premise_package_is_not_a_synthesis'), ('synthesis_mixed_inference', 'ara/runtime/route_policy.py', "if (novelty['status'] == 'candidate'\n                and papers", "if (novelty['status'] == 'candidate' and union == 'SOLVER_UNSAT'\n                and papers", 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_results', 'ara/runtime/synthesis.py', "candidates.extend(recorded)", 'pass', 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_generation', 'ara/runtime/synthesis.py', "if i > boundary and e['stage']=='conflicts_and_robustness'", "if e['stage']=='conflicts_and_robustness'", 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_source', 'ara/runtime/synthesis.py', "or freezes[-1][1]['commitments']!=commitments.to_dict()", '', 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_cache', 'ara/runtime/synthesis.py', '[p.to_dict() for p in observed]', '[]', 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates')]
+CASES += [('per_paper_compound_package',
+  'ara/runtime/novelty_basis.py',
+  'return boolean_combination_equivalence(basis, target, 1000)',
+  "return 'SOLVER_COUNTEREXAMPLE'",
+  'tests/runtime/test_per_paper_synthesis.py::test_conditional_premise_package_is_not_a_synthesis'),
+ ('synthesis_mixed_inference',
+  'ara/runtime/route_policy.py',
+  "if (novelty['status'] == 'candidate'\n                and papers",
+  "if (novelty['status'] == 'candidate' and union == 'SOLVER_UNSAT'\n                and papers",
+  'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'),
+ ('forward_recorded_results',
+  'ara/runtime/synthesis.py',
+  'candidates.extend(recorded)',
+  'pass',
+  'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'),
+ ('forward_recorded_generation',
+  'ara/runtime/synthesis.py',
+  "if i > boundary and e['stage']=='conflicts_and_robustness'",
+  "if e['stage']=='conflicts_and_robustness'",
+  'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'),
+ ('forward_recorded_source',
+  'ara/runtime/synthesis.py',
+  "or freezes[-1][1]['commitments']!=commitments.to_dict()",
+  '',
+  'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'),
+ ('forward_recorded_cache',
+  'ara/runtime/synthesis.py',
+  '[p.to_dict() for p in observed]',
+  '[]',
+  'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates')]
 
 
 CASES += [
@@ -2028,8 +2147,8 @@ CASES += [
      "('publication_length_policy', 'publication_completed',", "('publication_completed',",
      'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
     ('publication_short_evidence', 'ara/runtime/calls.py',
-     "if publication_context is not None or self.config['essay_min_words'] >= 4500:",
-     "if self.config['essay_min_words'] >= 4500:",
+     "if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(\n                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):",
+     "if False:",
      'tests/runtime/test_publication.py::test_publication_literature_sentence_scope_and_typed_support'),
     ('publication_heading_case', 'ara/runtime/publication_currency.py',
      'markdown, re.M|re.S|re.I)', 'markdown, re.M|re.S)',
@@ -2244,6 +2363,18 @@ CASES += [
     ('publication_consensus_history', 'ara/runtime/essay_audit.py',
      "if event['stage'] != kind or", "if event['stage'] != 'audit_essay' or",
      'tests/runtime/test_publication_quality5.py::test_publication_gate_keeps_adverse_history_despite_clean_cache'),
+    ('frozen_citation_web_absence', 'ara/runtime/calls.py', 'local = local_verdicts(self, draft, all_items)', 'local = {}', 'tests/runtime/test_local_citations.py::test_web_absence_cannot_delete_frozen_citations'),
+    ('frozen_citation_missing_pages', 'ara/runtime/citations.py', "require(status != 'unresolved', 'local citation evidence unresolved: ' + item['id'])", 'pass', 'tests/runtime/test_local_citations.py::test_missing_local_pages_refuses_without_deleting_or_web_dispatch'),
+    ('frozen_citation_page_identity', 'ara/runtime/citations.py', "page_hash == paper['grounding']['source_text_sha256'] and", 'True and', 'tests/runtime/test_local_citations.py::test_local_page_content_and_identity_must_support_citation'),
+    ('frozen_citation_page_grounding', 'ara/runtime/citations.py', "not page_grounding['reasons'] and", 'True and', 'tests/runtime/test_local_citations.py::test_local_page_content_and_identity_must_support_citation'),
+    ('frozen_citation_mismatch', 'ara/runtime/citations.py', "mismatch = entry['status'] != 'unresolved' and item['text'] not in (entry['bibliography']['text'], entry['legacy_citation'])", 'mismatch = False', 'tests/runtime/test_local_citations.py::test_positive_bibliography_mismatch_is_logged_removal'),
+    ('frozen_citation_quote', 'ara/runtime/citations.py', "reason = 'exact_quotation_in_cited_pages' if exact else 'quotation_mismatch'", "exact = True\n        reason = 'exact_quotation_in_cited_pages' if exact else 'quotation_mismatch'", 'tests/runtime/test_local_citations.py::test_local_quotation_uses_cited_pages_not_web_absence'),
+    ('frozen_citation_export', 'ara/runtime/export.py', 'check_coverage(events, RouteGraph.from_dict(route), draft)', 'pass', 'tests/runtime/test_local_citations.py::test_cli_zero_citation_export_is_explicit_nonzero'),
+    ('frozen_citation_coverage', 'ara/runtime/citations.py', 'if not required <= cited or not required <= bibliography.keys() or not cited <= bibliography.keys():', 'if False:', 'tests/runtime/test_local_citations.py::test_export_refuses_missing_route_source_coverage'),
+    ('frozen_citation_restoration', 'ara/runtime/orchestration.py', 'draft = restore_citations(calls, route, draft)', 'draft = draft', 'tests/runtime/test_local_citations.py::test_citation_restoration_preserves_prose_and_repair_budget'),
+    ('frozen_citation_premise', 'ara/runtime/essay_audit.py', "elif role == 'argument_step' and premises and not premises <= set(cited):", 'elif False:', 'tests/runtime/test_local_citations.py::test_uncited_source_premise_cannot_hide_as_argument_step'),
+    ('frozen_citation_cited_inference', 'ara/runtime/essay_audit.py', "elif role == 'source_claim' or (cited and 'source_evidence' in inputs):", "elif role == 'source_claim':", 'tests/runtime/test_local_citations.py::test_cited_argument_step_cannot_hide_mismatched_source'),
+    ('frozen_citation_addition', 'ara/runtime/essay_audit.py', 'require(actual == expected or addition,', 'require(actual == expected,', 'tests/runtime/test_local_citations.py::test_miscited_sentence_can_add_only_approved_frozen_markers'),
 ]
 
 
@@ -2280,7 +2411,63 @@ CASES += [
      'bound = window - output - margin', 'bound = window',
      'tests/runtime/test_codex_cli.py::test_context_window_default_and_unpinned_model'),
 
+
+    ('audit_consensus_partial_history', 'ara/runtime/essay_audit.py', 'recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)', 'recovered = None', 'tests/runtime/test_audit_consensus.py::test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit'),
+    ('audit_consensus_partial_schema_history', 'ara/runtime/essay_audit.py', 'if recovered is not None:', 'if False:', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[invalid_label]'),
+    ('audit_consensus_corrected_partial_history', 'ara/runtime/essay_audit.py', "previous.pop('validation_feedback', None)", 'pass', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[corrected_partial]'),
+    ('frozen_citation_native_retention', 'ara/runtime/calls.py', 'local = local_verdicts(self, draft, all_items)', 'local = {}', 'tests/runtime/test_local_citations.py::test_native_competition_compose_cannot_strip_frozen_citations_and_export[True]'),
 ]
+
+
+CASES += [
+    ('frozen_citation_absence_not_mismatch', 'ara/runtime/citations.py', "entry['status'] != 'unresolved' and item['text']", "item['text']", 'tests/runtime/test_local_citations.py::test_missing_local_pages_refuses_without_deleting_or_web_dispatch[S]'),
+    ('frozen_citation_no_provenance', 'ara/runtime/citations.py', "if frozen is not None and frozen.get(item['id']) is not None:", 'if False:', 'tests/runtime/test_local_citations.py::test_frozen_reference_without_provenance_refuses_instead_of_web_removal'),
+]
+
+
+CASES += [
+    ('publication_partial_history_flags', 'ara/runtime/essay_audit.py',
+     'flags = publication_flags(labels, inputs, flags)', 'flags = flags',
+     'tests/runtime/test_publication_quality5.py::test_publication_partial_adverse_history_remains_binding'),
+    ('publication_frozen_citation_retention', 'ara/runtime/calls.py',
+     'local = local_verdicts(self, draft, all_items)', 'local = {}',
+     'tests/runtime/test_publication_quality5.py::test_publication_web_absence_preserves_frozen_citations'),
+]
+
+
+CASES += [('delivery_alignment_source_citations',
+  'ara/runtime/citations.py',
+  "result.update(source['evidence_ids'])",
+  'pass',
+  'tests/runtime/test_delivery_alignment_citations.py::test_native_alignment_composition_preserves_source_citations_and_disclosure'),
+ ('delivery_alignment_writer_evidence',
+  'ara/runtime/writing.py',
+  'ids | citation_ids(ids, provenance)',
+  'ids',
+  'tests/runtime/test_delivery_alignment_citations.py::test_native_alignment_composition_preserves_source_citations_and_disclosure'),
+ ('delivery_alignment_section_citations',
+  'ara/runtime/writing.py',
+  'required = citation_ids(required, provenance)',
+  'required = required',
+  'tests/runtime/test_delivery_alignment_citations.py::test_sectioned_alignment_writer_cites_definition_sources'),
+ ('delivery_alignment_not_bibliography',
+  'ara/runtime/citations.py',
+  "if rows.get(entry['id'], {}).get('stance') == 'model_alignment':",
+  'if False:',
+  'tests/runtime/test_delivery_alignment_citations.py::test_alignment_definition_source_coverage_and_bridge_citation_refuse')]
+
+
+CASES += [('delivery_alignment_reading_sources',
+  'ara/runtime/publication_references.py',
+  "    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])\n"
+  '    supports =',
+  "    sources = evidence['supporting_commitments']\n    supports =",
+  'tests/runtime/test_delivery_alignment_citations.py::test_alignment_publication_preserves_definition_citations_and_judgment_role[reading]'),
+ ('delivery_alignment_figure_role',
+  'ara/runtime/publication_figures.py',
+  "if p.get('stance') == 'model_alignment':",
+  'if False:',
+  'tests/runtime/test_delivery_alignment_citations.py::test_alignment_publication_preserves_definition_citations_and_judgment_role[figures_with_receipts]')]
 
 
 def main():

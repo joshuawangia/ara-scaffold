@@ -165,7 +165,7 @@ def test_revision_receives_exact_frozen_source_context(rig, monkeypatch):
         if kind == 'revise_essay':
             result = {'revisions': [{'sentence': 2, 'text': 'R. [cite:p]'}]}
         else:
-            result = {'labels': [dict(sentence=s['sentence'], node_ids=['n0', 'n1'],
+            result = {'labels': [dict(sentence=s['sentence'], node_ids=['n0', 'n1'] if s['sentence'] == 1 else ['n0'],
                 role='unsupported_claim' if s['text'].startswith('Q.') else 'argument_step', citation_supported=True) for s in data['sentences']]}
         return Response(response(result))
     monkeypatch.setattr(provider, 'complete', complete)

@@ -139,6 +139,11 @@ def methodology(log_path: Path) -> str:
     }
     commitments = frozen_from_events(events)
     summary = {
+        'local_citation_verification': [json.loads(e['payload_json']) for e in events
+                                       if e['stage'] == 'local_citation_verification'],
+        'citation_removals': [dict(event=i, **reason) for i,e in enumerate(events)
+                             if e['stage'] == 'verification_cleanup'
+                             for reason in json.loads(e['payload_json']).get('removal_reasons', [])],
         'essay_audit_consensus': [json.loads(e['payload_json']) for e in events
                                   if e['stage'] == 'essay_audit_consensus'],
         **split_totals(events),
@@ -223,16 +228,32 @@ def methodology(log_path: Path) -> str:
             '\n'.join('```json\n' + canonical(e) + '\n```\n' for e in events))
 
 
-def export_run(log_path: Path, output: Path, redactions: tuple[str, ...] = ()) -> tuple[Path, Path | None]:
+def export_run(log_path: Path, output: Path, redactions: tuple[str, ...] = (), *, strict: bool = True) -> tuple[Path, Path | None]:
     events = [r['event'] for r in read_log(log_path)]
     start = max((i for i, e in enumerate(events) if e['stage'] == 'essay_composition_started'), default=0)
-    drafts = [json.loads(e['payload_json'])['draft'] for e in events[start:] if e['stage'] == 'final_draft']
+    finals = [json.loads(e['payload_json']) for e in events[start:] if e['stage'] == 'final_draft']
+    drafts = [p['draft'] for p in finals]
     output.mkdir(parents=True, exist_ok=True)
     report = output / 'methodology.md'
     report.write_text(methodology(log_path))
     essay_path = None
     if drafts:
         draft = drafts[-1]
+        from ara.runtime.citations import check_coverage
+        try:
+            frozen = frozen_from_events(events)
+            if provenance_from_events(events, frozen) is not None:
+                route_id = finals[-1].get('route_id')
+                routes = [json.loads(e['payload_json'])['graph'] for e in events if e['stage'] == 'route']
+                route = next((r for r in reversed(routes) if r['id'] == route_id), None)
+                if route is None:
+                    raise ValueError('citation coverage: final draft has no recorded route')
+                check_coverage(events, RouteGraph.from_dict(route), draft)
+        except ValueError:
+            (output / 'essay.txt').unlink(missing_ok=True)
+            if strict:
+                raise
+            return report, None
         body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
         text = draft['title'] + '\n\n' + body.strip()
         if draft['bibliography']:

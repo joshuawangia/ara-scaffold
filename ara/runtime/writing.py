@@ -18,24 +18,30 @@ def source_context(calls, route):
     """Exact T support plus bounded source context, never a second premise set."""
     from ara.runtime.calls import require
     from ara.runtime.route_policy import frozen_from_events
+    from ara.runtime.citations import catalogue, support_ids, citation_ids
     events = calls.log.read()
     frozen = frozen_from_events(events)
     provenance = calls.search_vocabulary(frozen)['commitment_provenance'] if frozen is not None else None
-    ids = {n.t_id for n in route.nodes if n.kind == 'leaf' and n.t_id != 'open'}
-    ids.update(tid for n in route.nodes for a in n.cq_answers for tid in a.supporting_t_ids)
-    if frozen is not None:
-        ids.update(role['evidence_id'] for role in calls.essay_outline(route).get('source_roles', []))
+    ids = support_ids(route, frozen)
+    citations = catalogue(events, ids)
     starts = [json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started']
     literature = starts[0].get('literature') if starts else None
     papers = {p['source_id']: p for p in json.loads(literature[len(HEADER):])['papers']} if (
         isinstance(literature, str) and literature.startswith(HEADER)) else {}
-    supports, contexts, bibliography = [], [], []
-    for tid in sorted(ids):
+    supports, contexts, bibliography, alignment_evidence = [], [], [], []
+    for tid in sorted(ids | citation_ids(ids, provenance)):
         commitment = frozen.get(tid) if frozen is not None else None
         require(commitment is not None, 'essay support missing frozen commitment')
         source = provenance['commitments'][tid] if provenance else None
-        supports.append(dict(commitment=commitment.to_dict(), provenance=source))
-        bibliography.append(dict(id=tid, text=commitment.citation, url=None))
+        row = dict(commitment=commitment.to_dict(), provenance=source)
+        if tid in ids:
+            supports.append(row)
+        else:
+            alignment_evidence.append(dict(**row, authority='definition_evidence_not_additional_premise'))
+        if source and source.get('stance') == 'model_alignment':
+            continue
+        bibliography.append(citations[tid]['bibliography'] if tid in citations
+                            else dict(id=tid, text=commitment.citation, url=None))
         if source is None:
             contexts.append(dict(evidence_id=tid, unavailable='source provenance unavailable'))
             continue
@@ -65,8 +71,10 @@ def source_context(calls, route):
                   allowed_bibliography=bibliography,
                   critical_questions=[dict(node_id=n.id, **a.to_dict()) for n in route.nodes for a in n.cq_answers],
                   disclosed_limits=dict(open_node_ids=list(route.frontier),
-                      omitted_support_ids=sorted({id for s in supports if s['provenance']
-                          for id in s['provenance']['omitted_support_ids']})))
+                      omitted_support_ids=sorted({id for s in supports + alignment_evidence if s['provenance']
+                          for id in s['provenance'].get('omitted_support_ids', [])})))
+    if alignment_evidence:
+        result['alignment_source_evidence'] = alignment_evidence
     require(len(canonical(result)) <= MAX_CONTEXT_CHARS,
             'essay required source context exceeds bound; no evidence was truncated')
     return result
@@ -123,6 +131,10 @@ def sectioned_essay(calls, route, inputs, validate):
                         if r['node_id'] in section['node_ids']}
             required.update(n.t_id for n in route.nodes if n.id in section['node_ids']
                             and n.kind == 'leaf' and n.t_id != 'open')
+            from ara.runtime.citations import citation_ids
+            provenance = dict(commitments={s['commitment']['id']: s['provenance']
+                for s in evidence['supporting_commitments'] if s['provenance']})
+            required = citation_ids(required, provenance)
             require(required <= cited, 'essay section missing supporting citation')
             if mode == 'expand':
                 old = extra['current_section']

@@ -632,7 +632,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if not isinstance(exc, BudgetStop):
                 log.record('runtime_error', error_type=type(exc).__name__, message=str(exc))
             # Methodology and partial graphs survive even a clean budget stop.
-            export_run(log.path, log.path.parent / 'export')
+            export_run(log.path, log.path.parent / 'export', strict=False)
         print(f'ara: {exc}', file=sys.stderr)
         return 2
     finally:
@@ -643,7 +643,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if args.command != 'feedback':
                 destination = (args.output if args.command == 'export' else None) or log.path.parent / 'export'
                 redactions = tuple(args.redact) if args.command == 'export' else ()
-                export_run(log.path, destination, redactions)
+                export_run(log.path, destination, redactions, strict=False)
 
 
 if __name__ == '__main__':

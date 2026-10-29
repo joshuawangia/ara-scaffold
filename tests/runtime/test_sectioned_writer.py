@@ -100,7 +100,7 @@ def test_outline_budget_rejected_before_sections(rig, monkeypatch):
     assert all(e['stage'] == 'outline_essay' for e in log.read() if e['label'] == 'MODEL')
 
 
-def seed_sources(calls, log):
+def seed_sources(calls, log, *, local_pages=None, local_hash=None):
     from dataclasses import replace
     from ara.runtime.cache import canonical
     from ara.runtime.extraction import HEADER
@@ -116,6 +116,12 @@ def seed_sources(calls, log):
                  open_gaps=[dict(description='Q', pages=[1])], resolutions=[])
     paper['grounding'] = dict(policy=POLICY, source_text_sha256='P',
         inventory_sha256=receipt_hash(items, [], 'P'))
+    if local_pages is not None:
+        from ara.runtime.cache import digest
+        paper['pdf_sha256'] = 'a' * 64
+        page_hash = local_hash or digest(canonical({1: local_pages}))
+        paper['grounding'].update(source_text_sha256=page_hash,
+                                 inventory_sha256=receipt_hash(items, [], page_hash))
     commitments = CommitmentSet(tuple(Commitment(i['id'], i['text'], i['citation'], Formula('atom', name=n))
                                      for i, n in zip(items[:2], ['P', 'Q'])))
     artifact = frozen_artifact(commitments, [dict(name=n, kind='atom', arity=0, definition=n,
@@ -126,6 +132,14 @@ def seed_sources(calls, log):
     (directory / 'frozen-t.json').write_text(canonical(artifact))
     (directory / 'commitment-provenance.json').write_text(canonical(provenance))
     log.record('run_started', literature=HEADER + canonical(dict(papers=[paper])))
+    if local_pages is not None:
+        from ara.types import RunEvent
+        from ara.runtime.logging import now
+        record = dict(id='p', authors='a', year=2000, title='P', venue='Q', open_access_url=None)
+        inputs = dict(source_id='p', pdf_sha256='a' * 64, record=record,
+                      pages=[dict(page=1, text=local_pages)])
+        log.emit(RunEvent(now(), 'extract_paper', 'MODEL', prompt='INPUT_JSON\n' + canonical(inputs),
+            payload_json=canonical(dict(source_id='p', status='accepted', cache_hit=False, cache_key='P'))))
     log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
     log.record('commitment_provenance_frozen', **provenance)
     log.record('commitments_frozen', commitments=commitments.to_dict())

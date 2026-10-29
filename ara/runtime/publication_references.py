@@ -7,7 +7,9 @@ from ara.runtime.extraction import HEADER
 
 
 def bibliography_records(log, evidence, source_ids=()):
-    wanted = {s['provenance']['source_id'] for s in evidence['supporting_commitments'] if s['provenance']}
+    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])
+    wanted = {s['provenance']['source_id'] for s in sources
+              if s['provenance'] and s['provenance']['source_id'] is not None}
     wanted.update(source_ids)
     events = log.read()
     starts = [json.loads(e['payload_json']) for e in events if e['stage']=='run_started']
@@ -47,7 +49,9 @@ def author_year(record):
 def reading_copy(markdown, evidence, records, currency):
     import re
     from ara.runtime.publication_currency import LIT
-    supports = {s['commitment']['id']:s for s in evidence['supporting_commitments']}
+    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])
+    supports = {s['commitment']['id']:s for s in sources
+                if not s['provenance'] or s['provenance'].get('stance') != 'model_alignment'}
     receipt = {}
     def source_citation(match):
         id = match[1]

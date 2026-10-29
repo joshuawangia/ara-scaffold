@@ -56,12 +56,20 @@ def figure_data(calls, route, citation_receipt=None):
             label += '\nCQ: no answers recorded'
         if source:
             p = source['provenance']
-            label += '\nSource: ' + (citation_receipt[node.t_id]['display'] if citation_receipt else (p['source_id'] if p else 'unavailable') + '; ' + source['commitment']['citation'])
+            if p and p.get('stance') == 'model_alignment':
+                label += '\nModel alignment judgment (not source endorsement)'
+            else:
+                label += '\nSource: ' + (citation_receipt[node.t_id]['display'] if citation_receipt else (p['source_id'] if p else 'unavailable') + '; ' + source['commitment']['citation'])
         rows.append((node.id, label))
         edges.extend((child, node.id) for child in node.children)
     for role in outline.get('source_roles', []):
         source = supports[role['evidence_id']]
         p = source['provenance']
+        if p.get('stance') == 'model_alignment':
+            support_rows.append((str(len(support_rows)), role['node_id'] +
+                ' ← Model alignment judgment (not source endorsement)\n' +
+                source['commitment']['text'] + '; definition evidence: ' + ', '.join(p['evidence_ids'])))
+            continue
         citation = citation_receipt[role['evidence_id']]['display'] if citation_receipt else source['commitment']['citation']
         support_rows.append((str(len(support_rows)), f"{role['node_id']} ← {citation}\nStance: {p['stance']}; attributed to {p['attributed_to']}; role: {role['role']}"))
     if not support_rows:

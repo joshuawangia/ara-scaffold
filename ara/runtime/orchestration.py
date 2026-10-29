@@ -1,6 +1,8 @@
 """Runtime lifecycle; all search, robustness and conflicts belong to engine API."""
 from __future__ import annotations
 
+import json
+
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
@@ -231,12 +233,16 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
         if consistency['status'] != 'consistent':
             calls.log.record('composition_refused', route_id=route.id, support_consistency=consistency)
             raise ValueError('inconsistent or unresolved route supports cannot supply an essay')
+
+    from ara.runtime.citations import restore_citations, check_coverage
     if draft is None:
         draft = calls.write_essay(route)
         prior_rounds = 0
     else:
         calls.screen_imported_draft(draft)
-        calls.validate_essay(route, draft)
+        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision') and
+                       json.loads(e['payload_json']).get('draft') == draft for e in calls.log.read())
+        calls.validate_essay(route, draft, minimum_words=0 if recorded else None)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
         prior_rounds = repair_rounds(calls, route)
     calls.log.record('essay_composition_started', route_id=route.id,
@@ -245,8 +251,13 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
         path.unlink(missing_ok=True)
     # Save the unverified draft as a clearly named partial artifact, never export it.
     (calls.log.path.parent / 'draft.unverified.json').write_text(canonical(draft))
+    draft = restore_citations(calls, route, draft)
+    (calls.log.path.parent / 'draft.unverified.json').write_text(canonical(draft))
     draft = audit_and_revise(calls, route, draft)
     cleaned, verification = audit_and_revise(calls, route, draft, final=True)
+    coverage = check_coverage(calls.log.read(), route, cleaned)
+    if coverage is not None:
+        calls.log.record('essay_citation_coverage', route_id=route.id, **coverage)
     calls.log.record('final_draft', draft=cleaned, route_id=route.id, verification=verification)
     (calls.log.path.parent / 'draft.json').write_text(canonical(cleaned))
     export_run(calls.log.path, calls.log.path.parent / 'export')

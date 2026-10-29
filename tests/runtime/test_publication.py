@@ -13,7 +13,15 @@ from ara.runtime.providers import Response
 def paper():
     body = '\n\n'.join(f'## {i}. {h}\n\n[[node:n{(i-1)%2}]] ' + 'P ' * 900 + ' [cite:p] [cite:q]'
                          for i, h in enumerate(['Introduction', 'Argument', 'Objections and replies', 'Limits', 'Conclusion'], 1))
-    return dict(title='P', body=body, bibliography=[dict(id=t, text='p:pdf:1#'+t, url=None) for t in ['p', 'q']])
+    return dict(title='P', body=body, bibliography=[dict(id=t, text='a (2000). P. Q. PDF p. 1.', url=None) for t in ['p', 'q']])
+
+
+def publication_nodes(text):
+    return [node for tid,node in [('p','n0'),('q','n1')] if '[cite:'+tid+']' in text]
+
+
+def publication_role(text):
+    return 'argument_step' if publication_nodes(text) else 'framing'
 
 
 def polished(draft):
@@ -68,11 +76,11 @@ def test_html_embeds_only_declared_figures_and_escapes(tmp_path):
         paper_html('# P\n\n{{fig:missing}}',manifest,tmp_path)
 
 
-def install_publication(rig, monkeypatch, adverse=0, repair_bad=False):
+def install_publication(rig, monkeypatch, adverse=0, repair_bad=False, *, web_absent=False):
     from ara.runtime.publication import paragraphs
     from ara.runtime.claude_code import ClaudeCodeError
     calls,provider,log = rig
-    route=seed_sources(calls,log)
+    route=seed_sources(calls,log,local_pages='P P P Q Q Q R R R')
     calls.config.update(essay_min_words=4500,token_cap=20_000_000)
     seen=[]
     audit_count=0
@@ -99,17 +107,23 @@ def install_publication(rig, monkeypatch, adverse=0, repair_bad=False):
                          change_log=[dict(paragraph=i,improvement='P') for i in range(len(paragraphs(md)))])
         elif kind in ('audit_essay', 'audit_publication'):
             audit_count+=1
-            out={'labels':[dict(sentence=s['sentence'],node_ids=['n0','n1'],
-                role='unsupported_claim' if audit_count<=adverse*3 and '[cite:p]' in s['text'] else 'argument_step',
+            out={'labels':[dict(sentence=s['sentence'],node_ids=publication_nodes(s['text']),
+                role='unsupported_claim' if audit_count<=adverse*3 and '[cite:p]' in s['text'] else publication_role(s['text']),
                 citation_supported=True,publication_issue='none') for s in data['sentences']]}
         elif kind=='search_evidence':
-            raise ClaudeCodeError('stage_requires_api_provider')
+            if not web_absent:
+                raise ClaudeCodeError('stage_requires_api_provider')
+            out='P'
+        elif kind=='verify_originality_citations' and web_absent:
+            out=dict(items=[{**item,'status':'unverified','action':'remove','detail':'P','evidence_urls':[]}
+                            for item in data['items']],
+                     originality=dict(assessment='unverified',detail='P',evidence_urls=[]))
         else: raise AssertionError(kind)
         return Response(response(out))
     monkeypatch.setattr(provider,'complete',complete)
     estimate = provider.estimate
     def subscription_estimate(kind, prompt, schema, maximum):
-        if kind == 'search_evidence':
+        if kind == 'search_evidence' and not web_absent:
             raise ClaudeCodeError('stage_requires_api_provider')
         return estimate(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'estimate', subscription_estimate)
@@ -364,8 +378,8 @@ def test_post_polish_audit_receives_currency_and_original_draft(rig,monkeypatch,
         if kind=='audit_publication':
             assert data['publication_context']['literature_currency']==currency
             assert data['publication_context']['original_draft']==paper()
-            return Response(response(dict(labels=[dict(sentence=s['sentence'],node_ids=[] if '[lit:' in s['text'] else ['n0','n1'],
-                role=('unsupported_claim' if adverse else 'source_claim') if '[lit:' in s['text'] else 'argument_step',
+            return Response(response(dict(labels=[dict(sentence=s['sentence'],node_ids=[] if '[lit:' in s['text'] else publication_nodes(s['text']),
+                role=('unsupported_claim' if adverse else 'source_claim') if '[lit:' in s['text'] else publication_role(s['text']),
                 citation_supported=True,publication_issue='none') for s in data['sentences']])))
         return old(kind,prompt,schema,maximum)
     monkeypatch.setattr(provider,'complete',complete)
@@ -445,7 +459,7 @@ def test_publication_typed_framing_is_not_a_false_positive(rig,monkeypatch,role)
     monkeypatch.setattr(calls.provider,'complete',classify)
     result,_=polish(calls,route,paper())
     assert result['polished'] and result['repair_rounds']==0
-    assert all(sample['role_counts'][role]==1 for sample in result['audit']['samples'])
+    assert all(sample['role_counts'][role]>=1 for sample in result['audit']['samples'])
 
 
 def test_publication_issue_reaches_targeted_repair(rig,monkeypatch):
@@ -476,11 +490,11 @@ def test_publication_literature_sentence_scope_and_typed_support(rig,monkeypatch
     currency={'evidence':{'p:e':{'kind':'read_fulltext','work':'p'}}}
     calls.config['essay_min_words']=3000
     context=dict(original_draft=paper(),literature_currency=currency)
-    draft=dict(title='P',body='## 1. Related work and scope of the novelty claim\n\nP. [lit:p:e]\n\n## 2. Argument\n\n[[node:n0]] [[node:n1]] Q.',bibliography=[])
+    draft=dict(title='P',body='## 1. Related work and scope of the novelty claim\n\nP. [lit:p:e]\n\n## 2. Argument\n\n[[node:n0]] [[node:n1]] Q. [cite:p] [cite:q]',bibliography=paper()['bibliography'])
     def complete(kind,prompt,schema,maximum):
         data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
-        return Response(response(dict(labels=[dict(sentence=s['sentence'],role='source_claim' if '[lit:' in s['text'] else 'argument_step',
-            node_ids=[] if '[lit:' in s['text'] else ['n0','n1'],citation_supported=True,publication_issue='none') for s in data['sentences']])))
+        return Response(response(dict(labels=[dict(sentence=s['sentence'],role='source_claim' if '[lit:' in s['text'] else publication_role(s['text']),
+            node_ids=[] if '[lit:' in s['text'] else publication_nodes(s['text']),citation_supported=True,publication_issue='none') for s in data['sentences']])))
     monkeypatch.setattr(calls.provider,'complete',complete)
     inputs=calls.audit_inputs(route,draft,publication_context=context)
     assert inputs['source_evidence']['allowed_bibliography']

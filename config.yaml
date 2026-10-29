@@ -80,6 +80,8 @@ pilot:
   validation_attempts: 3
 
 # Extraction is also subject to the enclosing per-run token/cost caps.
+# Codex defaults to three targeted corrections per range. Set
+# extraction_targeted_corrections: 0, 1, 2 or 3 to override this limit.
 extraction_cost_cap_usd: 30.0
 extract_paper_max_output_tokens: 32000
 extraction_estimated_tokens_per_page: 1500

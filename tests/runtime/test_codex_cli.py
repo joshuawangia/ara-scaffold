@@ -101,6 +101,13 @@ if mode.startswith('extract:'):
  if inputs.get('mode')=='reconcile_ranges': value['items']=[]
  if mode=='extract:correction' and inputs.get('mode') not in ('targeted_correction','reconcile_ranges'):
   value['items'][0]['page_start']=0
+ if mode.startswith('extract:duplicate'):
+  if inputs.get('mode')=='targeted_correction':
+   value['items']=[dict(value['items'][6],premise_ids=['p__duplicate_2','q'])]
+   if mode=='extract:duplicate:retry' and 'missing' not in next(i for i in inputs['candidate']['items'] if i['id']=='i')['premise_ids']:
+    value['items'][0]['premise_ids']=['missing']
+  else:
+   value['items'].append(dict(value['items'][0],text='Q Q Q'))
  for key in schema['properties']:value.setdefault(key,None)
 if mode=='identity': value={'formula':{'op':'atom','name':'sentinel@example.invalid'}}
 if mode=='secret': value={'formula':{'op':'atom','name':'offline-access'}}

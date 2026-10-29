@@ -3899,3 +3899,29 @@ schema-proof and full-extraction cap requirements remain in force. Default
 selection does not upgrade the weak two-paper extraction quality result to an
 adequacy claim. Offline/API test fixtures now select their historical transport
 and model contract explicitly; dedicated tests exercise the real defaults.
+
+## Omega round 15 — Structural extraction recovery
+
+O15.1. Rejected initial duplicate IDs use the existing stable patch-ID renamer.
+Every item and every non-ID field is retained. Distinct referenced duplicates
+remain unresolved: correction must explicitly address each referring item.
+No automatic endpoint choice, source-content rewrite or silent item removal
+is permitted. Normalization and raw rejected outputs remain logged separately.
+
+O15.2. Unknown-endpoint diagnostics identify the link, field, missing IDs and
+available candidate/immutable IDs. Relation failures disclose the allowed fields
+by item kind and endpoint-kind restrictions, plus every candidate item carrying
+forbidden relation fields. The local graph checks remain
+authoritative. Failed Codex wire patches receive the same optional-null mapping
+before recovery merge as at the ordinary response boundary.
+
+O15.3. Codex extraction defaults to three targeted corrections per range, with
+the existing 0–3 configuration override. Paper continuation and context limits
+still bound every request. The acceptance identity advances to v7; prior v6
+outcomes require fresh extraction rather than automatic reuse. Native offline
+salvage and previously reviewed v4/v5 revalidation remain available.
+
+O15.4. A two-paper live quality gate must precede a new bridge batch. Acceptance,
+item/inference coverage and grounding/quarantine are separate measurements.
+Structural repair and passing placeholders alone do not establish source
+fidelity, model serving identity, or adequate live extraction quality.

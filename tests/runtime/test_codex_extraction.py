@@ -134,3 +134,24 @@ def test_codex_accepted_ranges_can_be_salvaged_offline(codex):
     result=accepted_ranges(calls.log.read(),(paper,),config,ROOT,replay)
     assert len(result['p'])==1 and len(result['p'][0]['result'].items)==8
     assert not any(e['label']=='MODEL' for e in replay.read())
+
+
+@pytest.mark.parametrize('failed_patch', [False, True])
+def test_codex_duplicate_initial_wire_recovers_and_replays(codex, failed_patch):
+    from ara.runtime.extraction import extract
+    from ara.runtime.salvage import accepted_ranges
+    config,auth,write,tmp=codex
+    config.update(token_cap=2000000)
+    write('extract:duplicate:retry' if failed_patch else 'extract:duplicate')
+    calls=make_calls(config,EventLog(tmp/'events.jsonl'),'P')
+    paper=Paper('p','{"id":"p"}','P',(PageText(1,'P Q R F(x)'),))
+    extract(calls,(paper,))
+    rows=[e for e in calls.log.read() if e['label']=='MODEL' and e['stage']=='extract_paper']
+    assert [json.loads(e['payload_json'])['status'] for e in rows]==['rejected']*(2 if failed_patch else 1)+['accepted']
+    request=json.loads(rows[1]['prompt'].split('INPUT_JSON\n')[1])
+    assert request['required_reference_updates']==['i']
+    assert len(request['candidate']['items'])==9
+    replay=EventLog(tmp/'replay/events.jsonl')
+    result=accepted_ranges(calls.log.read(),(paper,),config,ROOT,replay)
+    assert len(result['p'][0]['result'].items)==9
+    assert not any(e['label']=='MODEL' for e in replay.read())

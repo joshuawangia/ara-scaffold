@@ -178,12 +178,12 @@ def test_rejected_null_inventory_recovers_within_correction_limit(rig, monkeypat
     assert recovery[0]['attempt'] == 1
 
 
-@pytest.mark.parametrize('identity', [None, '', 1, 'duplicate'])
+@pytest.mark.parametrize('identity', [None, '', 1])
 def test_rejected_candidate_ambiguous_ids_still_refuse(rig, monkeypatch, identity):
     calls, provider, papers, *_ = rig
     calls.config.update(extraction_targeted_corrections=2)
     bad = graph()
-    bad['items'][0]['id'] = bad['items'][1]['id'] if identity == 'duplicate' else identity
+    bad['items'][0]['id'] = identity
     sent = sequence(monkeypatch, provider, [bad, graph()])
     with pytest.raises(Rejected):
         calls.extract_paper(papers[0])

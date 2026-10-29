@@ -92,7 +92,23 @@ def normalize_extraction(data: dict) -> list[dict]:
     return changes
 
 
-def normalize_patch_ids(patch: dict, candidate: dict) -> list[dict]:
+RELATIONS_BY_KIND = {
+    'inference': ['premise_ids', 'conclusion_id', 'qualification_ids'],
+    'distinction': ['applies_to'], 'qualification': ['applies_to'],
+    'premise': [], 'intermediate_conclusion': [], 'conclusion': [],
+    'reported_view': [], 'attacked_view': [],
+}
+
+
+def extraction_references(item: dict):
+    """Reference fields only; never interpret source text."""
+    for field in ('premise_ids', 'conclusion_id', 'qualification_ids', 'applies_to'):
+        value = item.get(field)
+        values = value if isinstance(value, (list, tuple)) else [value]
+        yield field, [v for v in values if isinstance(v, str) and v]
+
+
+def normalize_patch_ids(patch: dict, candidate: dict, *, rejected_initial=False) -> list[dict]:
     """Preserve duplicate items; never guess the referent of a distinct duplicate."""
     items = patch.get('items')
     if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
@@ -125,7 +141,8 @@ def normalize_patch_ids(patch: dict, candidate: dict) -> list[dict]:
         if old not in first:
             first[old] = item
             continue
-        require(old not in referenced or item == first[old],
+        ambiguous = old in referenced and item != first[old]
+        require(rejected_initial or not ambiguous,
                 f'ambiguous duplicate correction id {old}; give each distinct item a unique id and explicit references')
         serial = 2
         fresh = f'{old}__duplicate_{serial}'
@@ -139,7 +156,8 @@ def normalize_patch_ids(patch: dict, candidate: dict) -> list[dict]:
         occupied.add(fresh)
         patch_ids.add(fresh)
         changes.append({'path': f'/items/{index}/id', 'operation': 'rename_duplicate_id',
-                        'before': old, 'after': fresh, 'references': 'first_occurrence'})
+                        'before': old, 'after': fresh,
+                        'references': 'requires_correction' if ambiguous else 'first_occurrence'})
     return changes
 
 
@@ -664,7 +682,8 @@ class ModelCalls:
 
     def _extraction_response(self, paper, inputs, pages, prefix, existing=(),
                              allow_incomplete=False, validate_context=None, single_pass=False, recorded_data=None):
-        corrections = self.config.get('extraction_targeted_corrections')
+        corrections = self.config.get('extraction_targeted_corrections',
+                                      3 if self.config.get('provider') == 'codex_cli' else None)
         if corrections is not None and (type(corrections) is not int or corrections not in (0, 1, 2, 3)):
             raise ValueError('extraction_targeted_corrections must be 0, 1, 2 or 3')
         known = {item.id for item in existing}
@@ -685,6 +704,7 @@ class ModelCalls:
             require(not set(ids) & known, 'extraction redeclares immutable evidence')
             mapping = {id: f'{paper.source_id}:{prefix}:{id}' for id in ids}
             available = set(ids) | known
+            relation_feedback = '; allowed_relations_by_kind=' + canonical(RELATIONS_BY_KIND)
             for item in items:
                 require(item.source_id == paper.source_id, 'extraction item source id mismatch')
                 require(1 <= item.page_start <= item.page_end <= len(paper.pages),
@@ -695,16 +715,19 @@ class ModelCalls:
                 require(item.page_start in readable and item.page_end in readable and
                         not any(item.page_start <= page <= item.page_end for page in paper.unread_pages),
                         'extraction cites unread page')
-                refs = (*item.premise_ids, *item.qualification_ids, *item.applies_to,
-                        *((item.conclusion_id,) if item.conclusion_id else ()))
-                require(set(refs) <= available, 'extraction link has unknown endpoint')
+                for field, refs in extraction_references(item.__dict__):
+                    missing = sorted(set(refs) - available)
+                    if missing:
+                        raise Rejected('extraction link has unknown endpoint: ' + canonical({
+                            'link_id': item.id, 'field': field, 'missing_ids': missing,
+                            'valid_item_ids': sorted(ids), 'existing_item_ids': sorted(known)}))
                 if item.kind == 'inference':
                     require(bool(item.premise_ids) and bool(item.conclusion_id) and
-                            item.inference_origin in ('paper_stated', 'reconstructed'), 'invalid stated inference')
+                            item.inference_origin in ('paper_stated', 'reconstructed'), 'invalid stated inference' + relation_feedback)
                 else:
                     require(not item.premise_ids and item.conclusion_id is None and
-                            not item.qualification_ids and item.inference_origin is None, 'node contains inference fields')
-                require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation')
+                            not item.qualification_ids and item.inference_origin is None, 'node contains inference fields' + relation_feedback)
+                require(not item.applies_to or item.kind in ('distinction', 'qualification'), 'invalid qualification relation' + relation_feedback)
             by_id = {item.id: item for item in (*existing, *items)}
             if data.get('no_inference_reason') is not None:
                 require(bool(data['no_inference_reason'].strip()), 'blank no-inference disposition')
@@ -713,9 +736,9 @@ class ModelCalls:
             for item in items:
                 if item.kind == 'inference':
                     require(all(by_id[id].kind != 'inference' for id in (*item.premise_ids, item.conclusion_id)),
-                            'inference endpoint must be a proposition')
+                            'inference endpoint must be a proposition; premise_ids/conclusion_id cannot target inference items' + relation_feedback)
                     require(all(by_id[id].kind in ('distinction', 'qualification') for id in item.qualification_ids),
-                            'inference qualification has wrong kind')
+                            'inference qualification has wrong kind; qualification_ids must target distinction/qualification items' + relation_feedback)
             def mapped(id):
                 return mapping.get(id, id)
             converted = tuple(replace(item, id=mapped(item.id),
@@ -755,9 +778,14 @@ class ModelCalls:
         if corrections is None:
             return self.call('extract_paper', inputs, check)
         candidate = None
+        duplicate_repairs = []
+        required_reference_updates = []
         request = inputs
         for correction in range(corrections + 1):
             def corrected(patch):
+                addressed = {item['id'] for item in patch['items']} | {d['id'] for d in patch.get('discard_items', [])}
+                require(set(required_reference_updates) <= addressed,
+                        'duplicate references require explicit correction: ' + canonical(required_reference_updates))
                 merged = merge_extraction_patch(candidate, patch)
                 extraction_defaults(merged)
                 schema = self.response_schema('extract_paper', inputs)
@@ -775,10 +803,18 @@ class ModelCalls:
                     raise
                 try:
                     rejected = json.loads(exc.feedback['rejected_response'])
+                    if hasattr(self.provider, 'normalize_output'):
+                        rejected = self.provider.normalize_output(self.response_schema('extract_paper', request), rejected)
                     if isinstance(rejected, dict):
                         changes = normalize_extraction(rejected)
                         if candidate is not None:
                             changes += normalize_patch_ids(rejected, candidate)
+                        else:
+                            duplicate_repairs = normalize_patch_ids(rejected, {}, rejected_initial=True)
+                            changes += duplicate_repairs
+                            ambiguous = {c['before'] for c in duplicate_repairs if c['references'] == 'requires_correction'}
+                            required_reference_updates = sorted(item['id'] for item in rejected.get('items', [])
+                                if any(ambiguous.intersection(refs) for _, refs in extraction_references(item)))
                         if changes:
                             self.log.record('extraction_normalized', phase='correction_candidate',
                                             source_id=paper.source_id, attempt=correction + 1,
@@ -791,6 +827,16 @@ class ModelCalls:
                 request = {**inputs, 'mode': 'targeted_correction',
                            'original_mode': inputs.get('mode'), 'candidate': candidate,
                            'validation_error': exc.feedback['error'],
+                           'allowed_relations_by_kind': RELATIONS_BY_KIND,
+                           'duplicate_id_repairs': duplicate_repairs,
+                           'required_reference_updates': required_reference_updates,
+                           'relation_violations': [
+                               {'item_id': item['id'], 'kind': item.get('kind'),
+                                'field': field, 'actual_ids': refs,
+                                'allowed_fields': RELATIONS_BY_KIND.get(item.get('kind'), [])}
+                               for item in candidate['items']
+                               for field, refs in extraction_references(item)
+                               if refs and field not in RELATIONS_BY_KIND.get(item.get('kind'), [])],
                            'valid_page_bounds': {'paper_start': 1, 'paper_end': len(paper.pages),
                                                  'readable_pages': [p.page for p in pages]}}
                 self.log.record('extraction_targeted_correction', source_id=paper.source_id,

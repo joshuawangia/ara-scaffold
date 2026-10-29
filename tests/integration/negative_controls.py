@@ -86,7 +86,7 @@ CASES = [
     ('extraction_import_idempotence', 'ara/runtime/provenance.py', "if any(e['stage'] == IMPORT_STAGE and", "if False and any(e['stage'] == IMPORT_STAGE and", 'tests/runtime/test_extraction_fix1.py::test_fresh_cache_artifact_refused_at_cli_import'),
     ('extraction_partial_methodology', 'ara/runtime/export.py', "for p in outcomes if p['status'] == 'partial'", "for p in outcomes if p['status'] == 'extracted'", 'tests/runtime/test_extraction_fix1.py::test_sparse_image_pages_are_partial[P]'),
     ('rich_id_unique', 'ara/runtime/calls.py', "require(len(ids) == len(set(ids)), 'duplicate extraction id')", "require(True, 'duplicate extraction id')", 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[id]'),
-    ('rich_endpoint', 'ara/runtime/calls.py', 'require(set(refs) <= available,', 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[endpoint]'),
+    ('rich_endpoint', 'ara/runtime/calls.py', 'missing = sorted(set(refs) - available)', 'missing = []', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[endpoint]'),
     ('rich_inference_origin', 'ara/runtime/calls.py', "item.inference_origin in ('paper_stated', 'reconstructed')", 'True', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[origin]'),
     ('rich_coverage', 'ara/runtime/calls.py', "require(data['coverage_complete'] or (allow_incomplete and incomplete),", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_rich_graph_rejects_invalid_links[coverage]'),
     ('rich_no_summary_cap', 'schemas/extract_paper.json', '"text": {\n            "type": "string",', '"text": {\n            "maxLength": 400,\n            "type": "string",', 'tests/runtime/test_extraction_rich.py::test_no_compact_summary_limit'),
@@ -396,7 +396,7 @@ CASES += [
      'if fresh not in patch_ids and fresh in previous and previous[fresh] == normalized:', 'if False:',
      'tests/runtime/test_extraction_v5.py::test_duplicate_repair_is_stable_after_failed_patch'),
     ('v5_duplicate_ambiguity', 'ara/runtime/calls.py',
-     'require(old not in referenced or item == first[old],', 'require(True,',
+     'require(rejected_initial or not ambiguous,', 'require(True,',
      'tests/runtime/test_extraction_v5.py::test_ambiguous_duplicate_reference_is_not_guessed'),
 ]
 
@@ -1707,6 +1707,35 @@ CASES += [
     ('codex_default_full_extraction', 'config.yaml',
      '      model: gpt-6-luna', '      model: claude-opus-5',
      'tests/runtime/test_provider_defaults.py'),
+]
+
+
+CASES += [
+    ('initial_duplicate_repair', 'ara/runtime/calls.py',
+     'duplicate_repairs = normalize_patch_ids(rejected, {}, rejected_initial=True)',
+     'duplicate_repairs = []',
+     'tests/runtime/test_extraction_repairs.py::test_initial_duplicate_ids_preserve_content_and_require_explicit_reference'),
+    ('initial_duplicate_reference_resolution', 'ara/runtime/calls.py',
+     'require(set(required_reference_updates) <= addressed,', 'require(True,',
+     'tests/runtime/test_extraction_repairs.py::test_renamed_ambiguous_references_cannot_pass_with_empty_patch'),
+    ('extraction_endpoint_feedback_inventory', 'ara/runtime/calls.py',
+     "'valid_item_ids': sorted(ids)", "'valid_item_ids': []",
+     'tests/runtime/test_extraction_repairs.py::test_unknown_endpoint_feedback_names_link_field_and_inventory'),
+    ('extraction_relation_feedback_inventory', 'ara/runtime/calls.py',
+     "if refs and field not in RELATIONS_BY_KIND.get(item.get('kind'), [])],", 'if False],',
+     'tests/runtime/test_extraction_repairs.py::test_relation_feedback_lists_all_offending_items'),
+    ('extraction_relation_feedback_table', 'ara/runtime/calls.py',
+     "relation_feedback = '; allowed_relations_by_kind=' + canonical(RELATIONS_BY_KIND)",
+     "relation_feedback = ''",
+     'tests/runtime/test_extraction_repairs.py::test_relation_feedback_includes_allowed_kind_table'),
+    ('codex_three_extraction_corrections', 'ara/runtime/calls.py',
+     "3 if self.config.get('provider') == 'codex_cli' else None",
+     "0 if self.config.get('provider') == 'codex_cli' else None",
+     'tests/runtime/test_extraction_repairs.py::test_codex_defaults_to_three_corrections_and_respects_override[None]'),
+    ('codex_failed_patch_wire_normalization', 'ara/runtime/calls.py',
+     "rejected = self.provider.normalize_output(self.response_schema('extract_paper', request), rejected)",
+     'rejected = rejected',
+     'tests/runtime/test_codex_extraction.py::test_codex_duplicate_initial_wire_recovers_and_replays[True]'),
 ]
 
 

@@ -24,7 +24,7 @@ HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
 PUBLICATION_POLICY = 'quarantine-aware-v1'
 # Bump when validation, normalization, mode schemas or graph interpretation change.
-EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v6'
+EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v7'
 V5_UNION_PROMPT_SHA256 = '7f653b3126df705c7fe2ccd8fb806f0c864146dfee63f12d4b907beb6492e537'
 V5_SCHEMA_SHA256 = 'e5995f28b1d3c311c10de7894e5106634cec33ba70f13310a5dd23d1df323df9'
 # The reviewed predecessors; unknown contracts never migrate by version alone.
@@ -505,12 +505,12 @@ def validate_failure_limit(config):
 def validate_reused_paper(paper, outcome, acceptance):
     previous = outcome.get('acceptance_identity')
     compatible_v4 = bool(previous and acceptance and
-        acceptance.get('version') == 'rich-paper-acceptance-v6' and
+        acceptance.get('version') == EXTRACTION_ACCEPTANCE_VERSION and
         previous.get('version') == 'rich-paper-acceptance-v4' and
         previous.get('prompt_sha256') == V4_PROMPT_SHA256 and
         previous.get('schema_sha256') == V4_SCHEMA_SHA256 and
         all(previous.get(k) == acceptance.get(k) for k in ('provider', 'stage', 'require_inference')))
-    compatible_v5 = bool(previous and acceptance and acceptance.get('version') == 'rich-paper-acceptance-v6' and previous.get('version') == 'rich-paper-acceptance-v5' and
+    compatible_v5 = bool(previous and acceptance and acceptance.get('version') == EXTRACTION_ACCEPTANCE_VERSION and previous.get('version') == 'rich-paper-acceptance-v5' and
         previous.get('prompt_sha256') in (V5_PRE_UNION_PROMPT_SHA256, V5_UNION_PROMPT_SHA256) and
         previous.get('schema_sha256') == V5_SCHEMA_SHA256 and
         all(previous.get(k) == acceptance.get(k) for k in ('provider', 'stage', 'require_inference')))

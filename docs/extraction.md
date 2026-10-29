@@ -179,7 +179,7 @@ the originating snapshot. The artifact carries per-item provenance and original
 snapshot identities and checkpoints. Gaps and resolutions remain snapshot-scoped;
 quarantine is recomputed over the union. A second resume rebuilds from verified
 original snapshots rather than recursively unioning derived copies. The acceptance
-identity remains v6; `completed-snapshot-union-v1` versions this publication
+identity is v7; `completed-snapshot-union-v1` versions this publication
 representation.
 
 ## Extraction and provenance API
@@ -263,7 +263,7 @@ does not establish source extraction quality.
 
 ## Grounding and offline salvage
 
-Current v6 publication screens each item's text against its cited readable pages.
+Current publication screens each item's text against its cited readable pages.
 The screen normalizes NFKC/case, dehyphenates line endings and excludes versioned
 function words. It requires at least half the distinct content tokens and three
 matches (all tokens when fewer than three exist). Template text, one/two-character
@@ -325,3 +325,32 @@ Offline salvage normalizes retained Codex wire nulls before revalidating ranges.
 The CLI has no hard output-token flag, and local token estimates are not a proven
 Codex tokenizer bound. Served model identity may remain `unverified`. Judge
 extraction quality separately from schema acceptance and lexical grounding.
+
+## Structural correction
+
+Codex defaults to three targeted corrections per range. Override this with
+`extraction_targeted_corrections: 0`, `1`, `2` or `3` in the run configuration;
+`extraction-full` explicitly selects three. Paper continuation and context
+admission limits still apply to every correction.
+
+A rejected initial candidate with duplicate item IDs can enter correction.
+The existing renamer assigns stable, collision-free `__duplicate_N` suffixes
+and logs each old/new ID. It preserves every item and its source content; it
+does not rewrite references or silently drop nodes. If distinct duplicates are
+referenced, the next request lists the unresolved referring items in
+`required_reference_updates`. A correction must explicitly return those items
+with source-supported references, or explicitly discard unsupported rejected
+items with reasons. An empty patch cannot implicitly select a duplicate's meaning.
+
+Unknown-endpoint feedback names the link ID, relation field, missing IDs and
+complete candidate/existing ID inventories. Invalid-relation feedback includes
+the allowed relation-by-kind table and lists every candidate item carrying
+fields forbidden for its kind in `relation_violations`. These diagnostics guide the model; the
+runtime does not infer intended links, change source text or relax local checks.
+Codex wire nulls are normalized before a failed patch is merged for another
+attempt. Raw responses and all correction/normalization receipts remain retained.
+
+The acceptance identity is `rich-paper-acceptance-v7`. Existing v6 paper outcomes
+do not automatically qualify for reuse under this changed recovery contract.
+Use fresh extraction evidence; older reviewed v4/v5 migration still requires
+the existing full source and graph revalidation.

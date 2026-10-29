@@ -47,15 +47,16 @@ def target_context(commitments, bank):
                 structural_bank_ids=sorted(b.id for b in bank.entries if b.kind == 'deductive'),
                 support_examples=[dict(rejected_target='P and Q', commitments=['P','Q'],
                     reason='A bare conjunction only repackages T and its conjunction-introduction route is structural.'),
-                    dict(rejected_target='Q', commitments=['P', 'P -> Q'],
-                    reason='Modus ponens is licensed, but Q is already in the classical closure of T.'),
+                    dict(target='Q', commitments=['P', 'P -> Q'], papers=['a','b'],
+                    condition='Modus ponens gives a synthesis when neither paper alone entails Q; both commitments from one paper are not novel.'),
                     dict(bank_id='sign', commitments=['P', 'Q'], target='R',
                     slots=dict(sign_relation='P', observed_sign='Q'),
                     condition='The source content must fit the sign scheme. Answer every supplied CQ with frozen evidence; P and Q need not classically entail R.'),
                     dict(rejected_target='(P and Q) -> R', commitment='R',
                     reason='R alone entails this conditional. State a new main proposition instead of adding antecedents.')],
                 target_policy=dict(stance='own_thesis', minimum_support_commitments=2,
-                    minimum_support_papers=2, exclude_single_commitment_instances=True,
+                    minimum_support_papers=2, novelty_basis='per_paper_endorsed_closure',
+                    allow_cross_paper_deduction=True, exclude_single_commitment_instances=True,
                     exclude_conditional_with_frozen_consequent=True, allow_defeasible_support=True,
                     require_new_main_proposition=True, exclude_boolean_recombination=True),
                 conditionals=[c.to_dict() for c in commitments.commitments if conditional(c.formula)],
@@ -63,13 +64,16 @@ def target_context(commitments, bank):
                                 for (n,k,a),count in sorted(signatures.items()) if count>=2])
 
 
-def trivial_targets(targets, commitments, catalogue=None, receipts=None):
+def trivial_targets(targets, commitments, catalogue=None, receipts=None, provenance=None):
     from ara.runtime.contribution import contribution_check
     from ara.runtime.novelty import novelty_check
+    from ara.types import CommitmentSet
+    basis = CommitmentSet(tuple(c for c in commitments.commitments
+        if provenance is None or provenance['commitments'][c.id]['stance'] == 'endorsed'))
     rejected = []
     for target in targets:
-        receipt = contribution_check(target.formula, commitments)
-        novelty = novelty_check(target.formula, commitments)
+        receipt = contribution_check(target.formula, basis)
+        novelty = novelty_check(target.formula, commitments, provenance)
         if receipts is not None:
             receipts.append(dict(target_id=target.id, novelty=novelty, **receipt))
         reason = receipt['reason'] if receipt['status'] != 'candidate' else None
@@ -89,7 +93,7 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None):
                                  commitment_id=receipt.get('commitment_id'), polarity=receipt.get('polarity'),
                                  entailing_commitment=witness.to_dict() if witness else None,
                                  conditional_consequent_in_t=consequent_in_t, novelty=novelty,
-                                 explanation=novelty['explanation'] if reason in ('deductive_closure','novelty_unresolved','no_essential_new_proposition') else explanation))
+                                 explanation=novelty['explanation'] if reason in ('deductive_closure','single_paper_closure','novelty_unresolved','no_essential_new_proposition') else explanation))
     return rejected
 
 
@@ -108,7 +112,11 @@ def classifier_inputs(target, vocabulary, commitments):
         if formula.variable is not None:
             result['variable'] = formula.variable
         return result
+    provenance = vocabulary['commitment_provenance']
     return dict(target=target.to_dict(), rendered_content=render(target.formula),
+                novelty_policy='per_paper_endorsed_closure; cross_paper_deduction_allowed; essential_assertion_required',
+                source_roles={tid:{key:row.get(key) for key in ('stance','source_id')}
+                              for tid,row in provenance['commitments'].items()} if provenance else None,
                 frozen_content=content['frozen_content'], proposed_definitions=content['proposed_definitions'],
                 definition_issues=content['issues'],
                 lexical_attribution_hits=attribution_hits(target, vocabulary['symbol_catalogue']),

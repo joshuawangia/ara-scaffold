@@ -993,6 +993,8 @@ class ModelCalls:
         inputs = dict(commitments=commitments.to_dict(), count=pool_count, keep_count=keep_count,
                       attempt=1, attempt_budget=3, named_position=named_position,
                       **vocabulary, **target_context(commitments, load_bank(self.root / 'bank')))
+        from ara.runtime.synthesis import proposal_forward_candidates
+        inputs['forward_candidates'] = proposal_forward_candidates(self, commitments, vocabulary)
         if resolution_gap is not None:
             inputs.update(resolution_gap=resolution_gap.to_dict(),
                 resolution_instruction='Propose a new resolving thesis: a distinction, restriction or bridge addressing this gap. Support it by bank schemes using endorsed T from every support group. Empty groups mean no admissible evidence. All novelty and stance gates still apply.')
@@ -1011,7 +1013,7 @@ class ModelCalls:
                             status='disconnected' if disconnected else 'aligned',
                             note='New thesis vocabulary is advisory, not a rejection; native bank licensing and CQ support decide reachability.')
             receipts = []
-            rejected = trivial_targets(targets, commitments, vocabulary['symbol_catalogue'], receipts)
+            rejected = trivial_targets(targets, commitments, vocabulary['symbol_catalogue'], receipts, vocabulary['commitment_provenance'])
             for receipt in receipts:
                 self.log.record('target_contribution_preflight', attempt=attempt + 1, **receipt)
             for target in targets:
@@ -1085,7 +1087,7 @@ class ModelCalls:
         inputs = dict(goal=goal.to_dict(), commitments=commitments.to_dict(),
                       bank=[b.to_dict() for b in bank], proposal_limit=3, attempt_budget=2,
                       attempt=2 if feedback else 1, rejection_feedback=list(feedback),
-                      **vocabulary, **search_guidance(goal, commitments, bank))
+                      **vocabulary, **search_guidance(goal, commitments, bank, vocabulary['commitment_provenance']))
         try:
             proposals = self._transport_call('propose_cuts', inputs, check, attempt=inputs['attempt'])
         except InvalidOutput as exc:
@@ -1118,9 +1120,10 @@ class ModelCalls:
             require(data['t_id'] == 'open' or commitments.get(data['t_id']) is not None, 'unknown T id')
             return data['t_id']
         from ara.runtime.search_alignment import search_guidance
+        vocabulary = self.search_vocabulary(commitments)
         return self.call('map_leaf', dict(leaf=leaf.to_dict(), commitments=commitments.to_dict(),
-                         **self.search_vocabulary(commitments),
-                         **search_guidance(leaf, commitments, load_bank(self.root / 'bank').entries)), check)
+                         **vocabulary,
+                         **search_guidance(leaf, commitments, load_bank(self.root / 'bank').entries, vocabulary['commitment_provenance'])), check)
 
     def answer_cq(self, question: CriticalQuestion, proposal: Proposal,
                   commitments: CommitmentSet) -> CQAnswer:

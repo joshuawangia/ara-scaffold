@@ -1,7 +1,7 @@
-"""Semantic novelty relative to all frozen T, with bounded cached solver receipts."""
+"""Per-paper novelty with bounded solver receipts; conservative legacy fallback."""
 from dataclasses import replace
 from ara.runtime.cache import canonical
-from ara.runtime.contribution import cached_entails
+from ara.runtime.contribution import cached_entails, formula_hash
 from ara.types import Formula
 
 
@@ -35,7 +35,9 @@ def cofactor(formula, key, truth, bound=()):
     return replace(formula, args=tuple(cofactor(a, key, truth, nested) for a in formula.args))
 
 
-def novelty_check(formula, commitments):
+def novelty_check(formula, commitments, provenance=None):
+    if provenance is not None:
+        return per_paper_novelty(formula, commitments, provenance)
     premises = tuple(c.formula for c in commitments.commitments)
     checks = []
     base = dict(basis_commitment_ids=[c.id for c in commitments.commitments], checks=checks)
@@ -68,3 +70,83 @@ def novelty_check(formula, commitments):
     return dict(**base, status='candidate', reason='essential_new_assertion',
                 essential_application_keys=[key for key, _ in essential],
                 essential_new_propositions=[atom.to_dict() for _, atom in essential])
+
+
+def endorsed_papers(commitments, provenance):
+    """Verified source ownership only; model alignments never invent a paper."""
+    groups = {}
+    rows = provenance['commitments']
+    for c in commitments.commitments:
+        row = rows.get(c.id, {})
+        if row.get('stance') == 'endorsed' and row.get('source_id'):
+            groups.setdefault(row['source_id'], []).append(c)
+    return {paper: tuple(sorted(group, key=lambda c:c.id)) for paper, group in sorted(groups.items())}
+
+
+def per_paper_novelty(formula, commitments, provenance):
+    groups = endorsed_papers(commitments, provenance)
+    checks = []
+    base = dict(basis='per_paper_endorsed_closure',
+        basis_commitment_ids=[c.id for group in groups.values() for c in group], checks=checks)
+    def check(premises, goal, scope, paper=None, **details):
+        result = cached_entails(premises, goal, 1000)
+        checks.append(dict(scope=scope, paper_id=paper, solver_result=result, timeout_ms=1000, **details))
+        return result
+    def result(status, reason, explanation, **details):
+        return dict(**base, status=status, reason=reason, explanation=explanation, **details)
+    tautology = check((), formula, 'tautology')
+    if tautology == 'SOLVER_UNSAT':
+        return result('rejected','valid_without_support','The target is true without source support.')
+    if tautology != 'SOLVER_COUNTEREXAMPLE' or not groups:
+        return result('unresolved','novelty_unresolved','No verified per-paper novelty verdict is available.')
+    premises = {p:tuple(c.formula for c in cs) for p,cs in groups.items()}
+    for paper, basis in premises.items():
+        verdict = check(basis, formula, 'per_paper_closure', paper)
+        if verdict == 'SOLVER_UNSAT':
+            return result('rejected','single_paper_closure',
+                'One paper already entails the target; wrappers or unused antecedents do not add a synthesis.',
+                paper_id=paper, entailing_commitment_ids=[c.id for c in groups[paper]])
+        if verdict != 'SOLVER_COUNTEREXAMPLE':
+            return result('unresolved','novelty_unresolved','A bounded per-paper closure check was unresolved.')
+    frozen_forms = {formula_hash(c.formula) for group in groups.values() for c in group}
+    def package(f):
+        return (formula_hash(f) in frozen_forms or
+                (f.op in ('and','or','not','implies','iff') and all(package(a) for a in f.args)))
+    if package(formula):
+        return result('rejected','no_essential_new_proposition',
+            'The target only combines frozen assertions, including compound premises.')
+    essential = []
+    for key, atom in sorted(dict(atomic_applications(formula)).items()):
+        # An atom may occur in a conditional in T without being a consequence
+        # of any individual paper. Mere conjunctions of separately known facts
+        # have no new essential assertion.
+        known = False
+        for paper, basis in premises.items():
+            for goal in (atom, atom.negated()):
+                verdict = check(basis, goal, 'per_paper_atom_closure', paper, application_key=key)
+                if verdict == 'SOLVER_UNSAT':
+                    known = True
+                    break
+                if verdict != 'SOLVER_COUNTEREXAMPLE':
+                    return result('unresolved','novelty_unresolved','An atomic closure check was unresolved.')
+            if known:
+                break
+        if known:
+            continue
+        changed = False
+        for paper, basis in premises.items():
+            for truth in (True, False):
+                verdict = check(basis, Formula('iff',(formula,cofactor(formula,key,truth))),
+                    'essential_atom',paper,application_key=key,substituted_truth=truth)
+                if verdict not in ('SOLVER_UNSAT','SOLVER_COUNTEREXAMPLE'):
+                    return result('unresolved','novelty_unresolved','An essential-atom check was unresolved.')
+                changed |= verdict == 'SOLVER_COUNTEREXAMPLE'
+        if changed:
+            essential.append((key,atom))
+    if not essential:
+        return result('rejected','no_essential_new_proposition',
+            'No essential atomic assertion lies outside every individual paper closure.')
+    return result('candidate','per_paper_new_assertion',
+        'No individual endorsed paper entails this target. Union entailment is allowed.',
+        essential_application_keys=[key for key,_ in essential],
+        essential_new_propositions=[atom.to_dict() for _,atom in essential])

@@ -19,23 +19,23 @@ TEXTS = {'P or Q': T.commitments[0].formula, 'Q': Q, 'R': R, 'S': S,
          'R -> Q': RQ, 'R -> S': RS, 'S -> Q': SQ, 'Q and S': QS, 'Q and S and R': QSR}
 
 
-def frozen_calls(tmp_path, reply):
+def frozen_calls(tmp_path, reply, t=T):
     calls, _ = rig(tmp_path, reply)
     calls.config['forward_pass_depth'] = 0
-    artifact = frozen_artifact(T, [dict(name=n, kind='atom', arity=0, definition=n,
+    artifact = frozen_artifact(t, [dict(name=n, kind='atom', arity=0, definition=n,
         evidence_ids=['t1'] if n in ('P', 'Q') else ['t2']) for n in ('P', 'Q', 'S')])
-    provenance = make_commitment_provenance(T, artifact['symbol_catalogue'], {
+    provenance = make_commitment_provenance(t, artifact['symbol_catalogue'], {
         c.id: dict(source_id=source, source_authors=[], attributed_to=source,
             page_start=1, page_end=1, evidence_id=c.id, attribution='author_claim', stance='endorsed',
             source_kind='premise', source_text=c.text, omitted_support_ids=[])
-        for c, source in zip(T.commitments, ('a', 'b'))})
+        for c, source in zip(t.commitments, ('a', 'b', 'a'))})
     (tmp_path/'frozen-t.json').write_text(canonical(artifact))
     (tmp_path/'commitment-provenance.json').write_text(canonical(provenance))
-    (tmp_path/'commitments.json').write_text(T.to_json())
+    (tmp_path/'commitments.json').write_text(t.to_json())
     calls.log.record('run_started', config=calls.config, topic='P Q R S', bank_version='1.0.0')
     calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
     calls.log.record('commitment_provenance_frozen', **provenance)
-    calls.log.record('commitments_frozen', commitments=T.to_dict(), bank_version='1.0.0')
+    calls.log.record('commitments_frozen', commitments=t.to_dict(), bank_version='1.0.0')
     return calls, provenance
 
 
@@ -71,17 +71,18 @@ def test_native_only_new_scheme_conclusion_qualifies(tmp_path, proof):
         if kind == 'answer_cq':
             return dict(cq_id=inputs['question']['id'], answer='P Q S', answered=True, supporting_t_ids=['t1', 't2'])
         raise AssertionError(kind)
-    calls, provenance = frozen_calls(tmp_path, reply)
-    assert calls.propose_targets(T, 1) == (() if proof == 'old_vocabulary' else (goal,))
+    t = CommitmentSet(T.commitments + (Commitment('t3','Q','a:3',Q),))
+    calls, provenance = frozen_calls(tmp_path, reply, t)
+    assert calls.propose_targets(t, 1) == ((goal,) if proof == 'genuine' else ())
     # Explicit historical targets still run through native licensing and closure.
-    routes = search_all(calls, NativeEngine(load_bank(ROOT/'bank'), calls), T, (goal,))
+    routes = search_all(calls, NativeEngine(load_bank(ROOT/'bank'), calls), t, (goal,))
     closed = [r for r in routes if r.status == 'CLOSED']
     assert closed
     for route in closed:
-        receipt = route_contribution(route, T, provenance)
-        assert receipt['classification'] == ('CLOSED-derived' if proof == 'genuine' else 'CLOSED-structural')
+        receipt = route_contribution(route, t, provenance)
+        assert receipt['classification'] == ('CLOSED-derived' if proof == 'genuine' else 'CLOSED-single-paper')
         assert [s['bank_id'] for s in receipt['substantive_inferences']] == (['sign'] if proof == 'genuine' else [])
-    assert bool(selectable_routes(routes, T, provenance)) == (proof == 'genuine')
+    assert bool(selectable_routes(routes, t, provenance)) == (proof == 'genuine')
 
 
 def test_native_deduction_remains_closed_but_structural(tmp_path):

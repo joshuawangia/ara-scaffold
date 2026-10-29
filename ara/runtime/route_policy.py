@@ -1,5 +1,5 @@
 """Contribution display/selection policy; historical CLOSED and licenses are unchanged."""
-from ara.runtime.contribution import contribution_check, formula_hash
+from ara.runtime.contribution import contribution_check, formula_hash, cached_entails
 from ara.runtime.target_policy import leading_report_frame
 from ara.runtime.novelty import novelty_check
 from ara.types import Commitment, CommitmentSet
@@ -104,6 +104,31 @@ def route_contribution(route, commitments=None, provenance=None):
     receipt = _logical_contribution(route, commitments)
     from ara.runtime.bridges import paper_support
     papers = paper_support(receipt.get('formula_supports', []), provenance)
+    if route.status == 'CLOSED' and commitments is not None and provenance is not None:
+        root = next(n for n in route.nodes if n.id == route.root_id)
+        novelty = novelty_check(root.proposition.formula, commitments, provenance)
+        receipt['per_paper_novelty'] = novelty
+        supports = tuple(commitments.get(tid).formula for tid in receipt.get('support_ids', ()))
+        union = cached_entails(supports, root.proposition.formula, 1000)
+        receipt['support_union_entailment'] = union
+        # CLOSED routes are engine-licensed. Deduction can supply the qualifying
+        # inference when the contribution lies in combining distinct papers.
+        from ara.runtime.synthesis import route_inference_licenses
+        license_receipt = (route_inference_licenses(route)
+            if novelty['status'] == 'candidate' and papers['cross_paper_supported']
+            else dict(licensed=False,checks=[]))
+        receipt['synthesis_inference_licenses'] = license_receipt
+        if (novelty['status'] == 'candidate'
+                and papers['cross_paper_supported'] and license_receipt['licensed']
+                and receipt['classification'] in ('CLOSED-structural','CLOSED-contribution-unresolved')):
+            receipt.update(classification='CLOSED-derived', contribution_kind=(
+                'cross_paper_deduction' if union == 'SOLVER_UNSAT' else 'cross_paper_inference'))
+        if novelty['reason'] == 'single_paper_closure':
+            receipt.update(classification='CLOSED-single-paper', reason='single_paper_closure')
+        elif novelty['status'] == 'unresolved' and receipt['classification'] == 'CLOSED-derived':
+            receipt.update(classification='CLOSED-contribution-unresolved', reason='novelty_unresolved')
+        elif novelty['status'] == 'rejected' and receipt['classification'] == 'CLOSED-derived':
+            receipt.update(classification='CLOSED-structural', reason=novelty['reason'])
     if receipt['classification'] == 'CLOSED-derived':
         if papers['status'] != 'verified':
             receipt.update(classification='CLOSED-contribution-unresolved', reason='paper_identity_unavailable')

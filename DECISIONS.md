@@ -3968,3 +3968,49 @@ retains every connective, predicate argument, binder and polarity in the AST;
 shared words or an overlapping subformula do not establish content identity.
 Native tests carry the resulting gap through proposal with both-side endorsed
 support obligations, without altering any frozen artifact.
+
+
+## Round 27 — per-paper closure and forward synthesis
+
+This supersedes the whole-T novelty gate and non-logical-only contribution rule
+for verified source provenance. A target must escape every individual paper's
+endorsed closure and be non-tautological. Entailment by the union is allowed:
+P from paper a and P -> Q from paper b can yield the new Q. The same premises
+from one paper remain single-paper. Every paper check uses bounded Z3, and an
+unknown verdict stays unresolved. Missing provenance retains the conservative
+legacy policy; no paper ownership or endorsement is invented.
+
+The essential-assertion check is relative to per-paper closure, rather than fresh
+symbol spelling. At least one essential atom must escape both polarities of every
+individual paper's closure. Boolean packages of existing assertions, including
+compound frozen premises, are rejected. Single-paper consequences remain rejected
+through decorative logical detours and unused antecedents. Own-thesis, source
+stance, frozen-definition restatement, faithful rendering and gap-support checks
+remain independent requirements.
+
+A native CLOSED route can be CLOSED-derived through deduction or mixed licensed
+scheme/deduction steps when its verified supports match at least two distinct
+formulas to two distinct papers and no single endorsed paper entails its target.
+Reachable inference bindings are rechecked against the versioned bank; an
+unreachable or unknown step cannot qualify the route. Native CQ and scoped-proof
+checks remain engine responsibilities. Historical engine CLOSED status is not
+rewritten by contribution display or default selection.
+
+Target proposal now includes ranked forward leads carrying exact source support
+IDs, paper IDs, licensed bank IDs and depth. A fresh native pass uses configured
+forward depth and node bounds without a model. Current-generation recorded
+forward results from the exact frozen T are also scanned under a separate bound
+of the same size. Cache inputs include those recorded results; a newer analysis
+boundary invalidates the older findings. Full bounded receipts are logged, and
+up to 30 candidates enter proposal alongside gap candidates. The model still
+renders the thesis, and every ordinary target gate applies. A forward lead is
+neither an accepted target nor an already searched route.
+
+The offline pilot-5 census at depth 2 and 500 consequences found zero qualifying
+forward leads and reached the cap. An earlier six-lead result admitted compound
+premise packages; the final package guard rejects all six. It used 169 frozen commitments from 22
+endorsed papers, without changing any source artifact. This is bounded formal
+plumbing evidence, not an exhaustive count or a semantic novelty claim. Sigma's
+separate symbol-alignment changes are not included in this revision. Reproduction
+uses tools/offline_forward_synthesis.py; exact receipts, gates and limitations
+are recorded in /home/dev/ara-work/reports/xi-round27.md. No paid calls or push.

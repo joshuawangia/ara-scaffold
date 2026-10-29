@@ -190,10 +190,10 @@ Unverified legacy catalogue definitions remain unavailable.
 
 The proposer receives the actual versioned bank, premise slots, CQs and
 placeholder support examples. A new main proposition must not be in T or follow
-from a single commitment. In particular, if R is in T, `(P and Q) -> R` is already
+from one paper's endorsed commitments. In particular, if R is in T, `(P and Q) -> R` is already
 entailed by R alone. Correction feedback includes each rejected target, reason,
 checked polarity, the full entailing commitment when present, and an explanation
-of this conditional trap. Existing solver gates remain unchanged.
+of this conditional trap. Feedback identifies the entailing paper when a multi-commitment paper closure supplies the witness.
 
 A new thesis may introduce new vocabulary; disconnection is disclosed as an
 advisory, not a gate or a reason to replace an otherwise passing candidate.
@@ -205,32 +205,44 @@ native mechanical reachability, not the truth of CQ answers or semantic fitness
 of arbitrary material to a scheme. Neither model classification nor solver
 checks prove originality or faithful text/formula translation.
 
-The classifier schema is part of Codex preflight. Historical 15-case receipts
-must be refreshed for the current 16-case contract before live use; a changed
+The classifier schema is part of Codex preflight. Historical preflight receipts
+must match the current schema manifest before live use; a changed
 manifest or model/configuration can also invalidate proof. See
 [provider preflight](providers.md#codex-cli).
 
 ## Route classification and selection
 
 Contribution labels supplement the engine's unchanged `CLOSED`/`OPEN` status,
-bank licenses and graph format. `CLOSED-derived` requires a reachable licensed
-non-logical bank scheme whose own conclusion contains an essential new proposition of the root, at least two distinct frozen supports and solver checks that rule out
-validity without support and entailment of the root by any one support. The
-route check tests the root polarity; target preflight tests both polarities.
+bank licenses and graph format. With verified provenance, novelty is checked
+against each paper's endorsed commitments. No individual paper may entail the
+root, and the root must not be a tautology. Entailment by the union is allowed.
+For P from paper a and P -> Q from paper b, Q can be a cross-paper deductive
+synthesis; both premises from paper a make Q single-paper. Paper identity is never
+inferred from citation strings when provenance is missing.
 
-All propositional and first-order logic rules are structural for novelty,
-including conjunction/disjunction introduction and elimination, double negation,
-modus ponens/tollens, conditional proof, hypothetical syllogism and quantifier
-rules. The bank identifies these as `kind=deductive`; only `kind=defeasible`
-schemes can supply a qualifying step. Its own conclusion must contain an essential
-new proposition of the target. Reachable logical wrappers and decorative
-introduction/elimination detours cannot supply that step; unreachable schemes
-cannot qualify either. The root and qualifying scheme conclusion still pass
-semantic novelty against the whole freeze, including uncited commitments.
-A genuine new scheme result can qualify beneath a logical wrapper.
-The proposer receives the actual bank with these two groups identified, frozen
-catalogue definitions, and placeholder examples contrasting bare packaging
-with a new thesis supported by a non-logical scheme.
+An essential atomic assertion must lie outside every individual paper's closure
+and affect target truth. It can occur inside a frozen conditional already; it
+need not have a fresh symbol name. Bare Boolean packages of separately established
+facts and padding a single-paper consequence still fail. Own-thesis, content
+fidelity, definition-restatement, source stance and CQ checks remain required.
+
+A deductive synthesis needs distinct endorsed support formulas assignable to at
+least two distinct papers and a reachable licensed inference. Native bank
+rechecks of reachable inference bindings accompany its contribution receipt;
+unknown rules or disconnected inferences cannot upgrade it. Deductive rules
+count when combination supplies the contribution. Defeasible and mixed scheme/deduction routes retain native licensing and CQ
+requirements. Logical detours do not repair a target already entailed by one paper. Solver uncertainty remains unresolved.
+
+Target proposal also receives up to 30 ranked native forward candidates, with
+exact source dependency IDs, paper IDs, bank IDs and depth. The fresh pass uses the configured forward depth/node bounds. Recorded forward
+results from the current search generation and exact freeze are also mined,
+with a separate scan bound equal to the node cap. Both disclose truncation and
+never call a model. Proposal cache inputs include the recorded result payloads;
+a newly started generation cannot reuse old findings.
+The proposer renders these candidates as theses alongside gap targets; all
+admission gates still apply. A candidate is not a searched route or a substantive
+novelty claim. Legacy freezes without source metadata have no forward synthesis
+census and retain conservative legacy novelty checks.
 
 CQ evidence counts as support. Assumptions and repeated or alpha-equivalent
 support formulas do not inflate the count. The check traverses reachable nodes;

@@ -88,7 +88,8 @@ a local configuration file. `stages.construction`, `stages.search`, and
 call-kind override takes precedence. Existing extraction configuration and API
 receipts are retained. This provider refuses extraction and `search_evidence`: it
 has no external retrieval tools, so it cannot replace web verification. Provider
-switching applies only to the rich construction stages. A run with `claude_code`
+switching applies to rich construction and explicitly selected publication audits
+(see [publication](publication.md)). A run with `claude_code`
 as its main provider cannot complete the web-verification stage through a per-kind
 API provider setting. Native symbolic search, construction, and writing calls with
 response schemas use fresh `claude -p` sessions through the usual `ModelCalls`

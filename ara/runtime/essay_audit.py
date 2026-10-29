@@ -12,11 +12,12 @@ CITE = re.compile(r'\[cite:[^\]]+\]')
 BOUNDARY = re.compile(r'''[.!?]["”’')]*(?:\s*\[cite:[^\]]+\])*(?=\s|$)|\n+''')
 
 
-def sentence_spans(body):
+def sentence_spans(body, *, literature=False):
     """Keep original offsets; node markers are transparent to punctuation."""
     masked = NODE.sub(lambda match: ' ' * len(match.group()), body)
     spans, start = [], 0
-    for match in BOUNDARY.finditer(masked):
+    boundary = re.compile(BOUNDARY.pattern.replace(r'\[cite:', r'\[(?:cite|lit):')) if literature else BOUNDARY
+    for match in boundary.finditer(masked):
         end = match.start() if match.group().startswith('\n') else match.end()
         if not NODE.sub('', body[start:end]).strip():
             continue
@@ -61,6 +62,9 @@ def audit_result(route, draft, inputs, data):
     expected = {s['sentence'] for s in inputs['sentences']}
     labels = data['labels']
     flags = audit_flags(labels, inputs, draft)
+    if 'publication_context' in inputs:
+        from ara.runtime.publication_audit import publication_flags
+        flags = publication_flags(labels, inputs, flags)
     numbers = [item['sentence'] for item in labels]
     if len(numbers) != len(set(numbers)) or set(numbers) != expected:
         require(not flags,
@@ -74,7 +78,7 @@ def audit_result(route, draft, inputs, data):
     covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
                for node in item['node_ids']}
     missing = ids - covered
-    extra = [item['sentence'] for item in flags]
+    extra = list(dict.fromkeys(item['sentence'] for item in flags))
     markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
     result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
               'extra_steps': extra, 'flags': flags,
@@ -83,19 +87,22 @@ def audit_result(route, draft, inputs, data):
     return result
 
 
-def audit_consensus(calls, route, draft):
+def audit_consensus(calls, route, draft, *, publication_context=None):
     """Fresh samples plus unresolved adverse history; a dissent never votes away."""
     from ara.runtime.providers import Response
     from ara.runtime.validation import decode_response, validate_local
     k = calls.config.get('essay_audit_samples', 3)
     require(type(k) is int and k >= 3, 'essay_audit_samples must be an integer >= 3')
-    inputs = calls.audit_inputs(route, draft)
-    prompt = calls.render('audit_essay', inputs)[1]
+    context = {} if publication_context is None else dict(publication_context=publication_context)
+    kind = 'audit_publication' if publication_context is not None else 'audit_essay'
+    inputs = calls.audit_inputs(route, draft, **context)
+    scoped = calls._for_construction_stage(kind, inputs)
+    prompt = scoped.render(kind, inputs)[1]
     prompt_hash = digest(prompt)
     historical, failures, ignored = [], [], []
     events = calls.log.read()
     for index, event in enumerate(events, 1):
-        if event['stage'] != 'audit_essay' or event['label'] != 'MODEL':
+        if event['stage'] != kind or event['label'] != 'MODEL':
             continue
         previous = events[index - 2] if index > 1 else {}
         recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
@@ -103,9 +110,9 @@ def audit_consensus(calls, route, draft):
             continue
         try:
             data = decode_response(Response(json.loads(event['response'])).text())
-            schema = calls.response_schema('audit_essay', inputs)
-            if hasattr(calls.provider, 'normalize_output'):
-                data = calls.provider.normalize_output(schema, data)
+            schema = scoped.response_schema(kind, inputs)
+            if hasattr(scoped.provider, 'normalize_output'):
+                data = scoped.provider.normalize_output(schema, data)
             validate_local(schema, data, calls.config)
             result = audit_result(route, draft, inputs, data)
             if recorded is not None:
@@ -119,12 +126,12 @@ def audit_consensus(calls, route, draft):
     samples = []
     for number in range(1, k + 1):
         try:
-            result = calls.audit_essay(route, draft, fresh=True)
+            result = calls.audit_essay(route, draft, fresh=True, **context)
         except EssayAuditFailed as failure:
             failures.append(failure)
             result = failure.result
         except Exception as exc:
-            calls.log.record('essay_audit_consensus', route_id=route.id, prompt_sha256=prompt_hash,
+            calls.log.record('essay_audit_consensus', route_id=route.id, audit_kind=kind, prompt_sha256=prompt_hash,
                 draft_sha256=digest(canonical(draft)), k=k, policy='fresh-unanimous-with-adverse-history',
                 status='incomplete', failed_sample=number, reason=type(exc).__name__,
                 samples=samples, historical_adverse=historical, unusable_history=ignored, faithful=False)
@@ -142,7 +149,7 @@ def audit_consensus(calls, route, draft):
         sentences.append(dict(sentence=n, flagged_samples=flagged, clean_samples=clean,
             historical_flags=sorted({f['reason'] for s in historical for f in s['flags'] if f['sentence']==n}),
             agreement=max(len(flagged), len(clean)) / k))
-    result = dict(route_id=route.id, prompt_sha256=prompt_hash, draft_sha256=digest(canonical(draft)),
+    result = dict(route_id=route.id, audit_kind=kind, prompt_sha256=prompt_hash, draft_sha256=digest(canonical(draft)),
         k=k, policy='fresh-unanimous-with-adverse-history', status='complete', samples=samples,
         historical_adverse=historical, unusable_history=ignored, sentences=sentences,
         unanimous_sentences=sum(s['agreement']==1 for s in sentences), sentence_count=len(sentences),

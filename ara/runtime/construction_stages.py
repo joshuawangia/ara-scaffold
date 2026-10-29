@@ -8,11 +8,12 @@ KINDS = ('select_t_roots', 'build_t_batch')
 def dispatch_settings(config, kind, *, correction=False):
     if kind == 'judge_symbol_alignment':
         return dispatch_settings(config, 'build_t_batch', correction=False)
-    if kind not in KINDS:
+    if kind not in (*KINDS, 'audit_publication'):
         return kind, {}, config
     stages = config.get('stages', {})
     overrides = {}
-    keys = ('construction', kind, 'construction_correction') if correction else ('construction', kind)
+    keys = ((kind,) if kind == 'audit_publication' else
+            ('construction', kind, 'construction_correction') if correction else ('construction', kind))
     for key in keys:
         values = stages.get(key, {})
         if not isinstance(values, dict):

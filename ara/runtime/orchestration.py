@@ -234,8 +234,7 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
         draft = calls.write_essay(route)
         prior_rounds = 0
     else:
-        if hasattr(calls.provider, 'scan_output'):
-            calls.provider.scan_output(draft)
+        calls.screen_imported_draft(draft)
         calls.validate_essay(route, draft)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
         prior_rounds = repair_rounds(calls, route)

@@ -192,10 +192,9 @@ def extraction_failure_reason(exc):
 
 class ModelCalls:
     def __init__(self, config: dict, provider: Provider, log: EventLog, cache: Cache,
-                 root: Path, topic: str, *, provider_factory=None):
+                 root: Path, topic: str, *, provider_factory=None, imported_draft=None):
         self.config, self.provider, self.log, self.cache = config, provider, log, cache
         self.root, self.topic = Path(root), topic
-        self.budget = Budget(config, log)
         self._paper_budget = None
         self.construction_resume = False
         self._key_lock = Lock()
@@ -210,7 +209,17 @@ class ModelCalls:
             provider.calibration_state = self._calibration_state
         self._stage_provider_lock = RLock()
         self._reservations = threading.local()
+        if imported_draft is not None:
+            self.screen_imported_draft(imported_draft, kind='audit_publication')
+        self.budget = Budget(config, log)
         self._ensure_provider_ready(force=True)
+
+    def screen_imported_draft(self, draft, *, kind='audit_essay'):
+        """One input screen shared by resumed writing and publication."""
+        providers = [self.provider, self._for_construction_stage(kind, {}).provider]
+        for provider in {id(p): p for p in providers}.values():
+            if hasattr(provider, 'scan_output'):
+                provider.scan_output(draft)
 
     def _subscription(self):
         return getattr(self.provider, 'provider_kind', None) in ('claude_code', 'codex_cli')
@@ -298,8 +307,8 @@ class ModelCalls:
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
-    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False) -> Any:
-        attempts = self.config.get('validation_attempts', 1)
+    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False, validation_attempts: int | None = None) -> Any:
+        attempts = self.config.get('validation_attempts', 1) if validation_attempts is None else validation_attempts
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
         whole_essay = kind == 'write_essay' and 'mode' not in inputs
@@ -558,7 +567,7 @@ class ModelCalls:
             if not isinstance(exc, (Rejected, ValueError, ValidationError)):
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
-            if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
+            if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': reason if isinstance(exc, ValidationError) or kind == 'extract_paper' else str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
@@ -1250,30 +1259,39 @@ class ModelCalls:
             return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
 
-    def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
+    def audit_inputs(self, route: RouteGraph, draft: dict, *, publication_context=None) -> dict:
         from ara.runtime.essay_audit import sentence_spans, NODE
-        parts = [NODE.sub('', draft['body'][start:end]).strip()
-                 for start, end in sentence_spans(draft['body'])]
+        spans = sentence_spans(draft['body'], literature=publication_context is not None)
+        parts = [NODE.sub('', draft['body'][start:end]).strip() for start, end in spans]
         inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
                   'outline': self.essay_outline(route),
                   'root_conclusion': {'node_id': route.root_id,
                                       'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
-        if self.config['essay_min_words'] >= 4500:
+        if publication_context is not None or self.config['essay_min_words'] >= 4500:
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
+        if publication_context is not None:
+            from ara.runtime.publication_audit import sentence_sections
+            inputs['publication_context'] = publication_context
+            for sentence, section, (start, end) in zip(inputs['sentences'], sentence_sections(draft['body'], spans), spans):
+                sentence.update(section=section, field='body', start=start, end=end)
+            inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title'],
+                section='Title', field='title', start=0, end=len(draft['title'])))
         return inputs
 
-    def audit_essay(self, route: RouteGraph, draft: dict, *, fresh=False) -> dict:
+    def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None, fresh=False) -> dict:
         from ara.runtime.essay_audit import audit_result
-        inputs = self.audit_inputs(route, draft)
+        inputs = self.audit_inputs(route, draft, publication_context=publication_context)
+        kind = 'audit_publication' if publication_context is not None else 'audit_essay'
         def check(data):
             result = audit_result(route, draft, inputs, data)
             self.log.record('essay_audit', route_id=route.id,
-                            prompt_sha256=digest(self.render('audit_essay', inputs)[1]), **result)
+                            prompt_sha256=digest(self.render(kind, inputs)[1]), **result)
             if not result['faithful']:
                 raise EssayAuditFailed(result, inputs, data['labels'])
             return result
-        return self.call('audit_essay', inputs, check, fresh=fresh)
+        return self.call(kind, inputs, check, fresh=fresh)
+
 
     def search_evidence(self, draft: dict, items: list[dict]) -> dict:
         return self.call('search_evidence', {'draft': draft, 'items': items})

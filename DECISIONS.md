@@ -4302,6 +4302,66 @@ to word/coverage checks. Bibliography and unflagged bytes remain immutable. Type
 failure reasons and role counts are logged. Original draft comparisons and live
 verification/export outcomes belong in the external round-4 report.
 
+## 2026-10-28 — Publication after drafting
+
+Publication uses the native ModelCalls isolation, validation, accounting and audit
+boundaries with a pinned subscription model. Frozen citations and paragraph order
+remain invariant; the model may improve prose and choose deterministic figure
+positions. Pure-Python SVG avoids a system graph-layout dependency. PDF rendering
+is local and blocks network requests. Publication artifacts are separate from
+final_draft: a polished or rendered document does not imply successful external
+citation/originality verification. The subscription retrieval refusal is retained
+as blocked status without an API fallback. See [publication](docs/publication.md).
+
+Reference metadata is joined from logged extraction inputs through frozen T source
+IDs and matching PDF hashes. A mutable checkout bibliography is not run evidence.
+The recorded title, authors, year and venue remain independently unverified until
+the native external citation path completes; source identity does not prove them.
+
+
+## 2026-10-29 — Publication evidence and reading citations
+
+The publication-only currency input retains exact operator-provided records and
+verification receipts. Its page-linked claims can support related-work positioning
+but never enlarge frozen route support. A separate publication prompt uses native
+audit labels to check both original-draft fidelity and bounded literature claims;
+pilot audit prompts and schemas remain unchanged.
+
+Editorial quality requires merging redundant paragraphs rather than preserving
+every repeated marker occurrence. Distinct citation/node inventories remain local
+invariants; claim preservation and qualifications remain audit judgments. Reading
+citations are deterministic author–year displays of provenance, with physical PDF
+pages explicitly labelled. The raw identifiers remain in accompanying receipts.
+
+Publication reading word count (quality followup): enforce the 4,500–6,000 bound on the reading text with rendered citations, excluding references and internal markers. Raw citation IDs make the annotated copy shorter; its count remains diagnostic, not a second minimum. This supersedes the dual-count gate noted above.
+
+
+## Publication typed audit and bounded repairs (2026-10-29)
+
+Publication adopts the writer's typed sentence audit. Presentation roles do not
+require route mappings and never establish coverage; source, inference and
+unsupported-claim checks retain their native semantics. The separate publication
+schema adds reason categories for placement, unsupported elaboration and draft
+fidelity. Logged currency claims remain a related-work-only exception, never
+route evidence. Publication passes the exact adverse inputs and reason categories
+into up to three targeted rounds, auditing after each and retaining original
+fallback after exhaustion. Each round keeps unflagged paragraphs unchanged.
+Attempted and accepted round counts remain distinct in artifacts and events.
+This supersedes the original publication stage's single-repair limit.
+
+
+## Publication length profile (2026-10-29)
+
+The publication minimum is an ARA profile choice, separate from the writer's
+minimum. It now defaults to 3,000 reading words and can be configured in the run
+or overridden by the publication CLI. The 6,000-word maximum stays fixed.
+Prompts prefer concise supported writing over padding. The effective bounds,
+counting basis and profile status are logged and included in methodology.
+Publication audit evidence is independent of the writer's length threshold.
+Related-work section matching ignores capitalization while retaining scope,
+citation and route-isolation checks. This supersedes the publication-only
+4,500-word minimum in earlier decisions; the writer profile is unchanged.
+
 ## nu4 round 5 — observable web refusal and the pinned Other variant (2026-10-29)
 
 Native retrieval rejected a completed `web_search` event whose action was the
@@ -4324,6 +4384,26 @@ stage guard. Native outcomes and protocol-generation evidence belong in the
 external round-5 report; this transport change proves no semantic verification
 or final export by itself.
 
+
+## 2026-10-29 — Publication import and repair boundaries (quality 4)
+
+Imported publication drafts share the writer-resume sensitive-content screen;
+both effective publication providers screen the entire object before preflight,
+validation diagnostics or content-bearing effects. Direct publication repeats the
+screen before logging. Rejected imports never become fallback artifacts.
+
+Publication audits label the current title as well as current body/headings.
+Title-only changes therefore invalidate audit cache identity. Flagged sentence
+field offsets bind permission to one owning block and paragraph occurrence;
+duplicate text does not enlarge permission. Only flagged title/heading/prose
+blocks may change; every unflagged block and all separators remain byte-identical.
+The three-round repair limit and complete re-audit remain in force.
+
+An explicit publication audit provider selects isolated Codex while editing stays
+on pinned Opus. Native scoped dispatch shares budget/log/cache and runs each
+provider's isolation canary. This integrates writer round 5 without claiming to
+solve the separately recorded audit-instability redesign. Native outcomes and
+external-verification limits are reported outside tracked source.
 ## nu4 round 6 — conservative final audit evidence (2026-10-29)
 
 A final audit is now a batch of at least three fresh requests, configurable through
@@ -4350,3 +4430,23 @@ configuration stays unchanged so full source context remains available. Imported
 resumes carry used repair rounds from this route's latest composition; a stopped
 attempt cannot silently obtain another three rounds. Existing pre-policy history
 has no such marker and starts with zero used rounds.
+
+
+## Publication quality 5: bounded structural correction and conservative audit reuse
+
+The publication repair loop now permits two structural attempts inside each of at
+most three audit-driven rounds. It reuses the native validation-feedback transport,
+with a per-call attempt bound rather than changing the global retry policy. A
+rejected candidate never becomes the next baseline or reaches semantic audit.
+Exact validator failure, rendered counts and shrinking sections guide the retry.
+The existing occurrence binding is tightened to preserve unflagged sentence spans
+inside flagged paragraphs. The editor must preserve length and supported content.
+
+Publication uses the same conservative consensus gate introduced by nu4 round 6,
+parameterized by publication context and its effective provider. At least three
+fresh samples are required; flags are unioned with adverse history for the same
+input. Favourable cached results cannot approve publication. Titles, headings,
+source evidence and logged currency evidence remain in the audited input. The
+post-verification audit uses the same gate. This reuses one semantic gate rather
+than creating a separate publication voting rule. Offline checks establish the
+enforcement mechanics; live publication is explicitly deferred by the operator.

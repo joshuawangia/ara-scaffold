@@ -143,6 +143,9 @@ def methodology(log_path: Path) -> str:
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
+        'publication': {stage: [json.loads(e['payload_json']) for e in events if e['stage']==stage]
+                        for stage in ('publication_length_policy', 'publication_completed', 'publication_figures', 'publication_pdf',
+                                      'publication_verification_blocked', 'publication_currency_input')},
         'search': {**search_status(events),
                    'conflicts': conflict_report(events),
                    'gaps': [json.loads(e['payload_json']) for e in events if e['stage']=='gaps_detected'],

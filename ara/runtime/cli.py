@@ -118,6 +118,17 @@ def parser() -> argparse.ArgumentParser:
     report = sub.add_parser('report', help='render verified run receipts offline; no model calls')
     report.add_argument('--run-dir', type=Path, action='append', required=True)
     report.add_argument('--out', type=Path, required=True)
+    for command in ('polish', 'figures', 'render-pdf'):
+        cmd = sub.add_parser(command)
+        cmd.add_argument('--run-dir', type=Path, required=True)
+        if command == 'polish':
+            cmd.add_argument('--route')
+            cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--audit-provider', choices=('claude_code', 'codex_cli'), default='claude_code')
+            cmd.add_argument('--audit-model', help='audit model; defaults to the run writer model for Codex')
+            cmd.add_argument('--min-words', type=int, help='ARA publication floor; defaults to publication_min_words in the run config or 3000')
+            cmd.add_argument('--literature-currency', type=Path, action='append', default=[])
+            cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
@@ -152,9 +163,9 @@ def make_provider(config: dict, root: Path = ROOT):
     return provider
 
 
-def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> ModelCalls:
+def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT, *, imported_draft=None) -> ModelCalls:
     return ModelCalls(config, make_provider(config, root), log, Cache(Path(config['cache_dir'])), root, topic,
-                      provider_factory=lambda settings: make_provider(settings, root))
+                      provider_factory=lambda settings: make_provider(settings, root), imported_draft=imported_draft)
 
 
 def apply_profile(config, name):
@@ -524,6 +535,9 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         log = EventLog(args.run_dir / 'events.jsonl')
         log.human(args.command + '_command', json.dumps(raw_args, ensure_ascii=False),
                   argv=raw_args, reported_minutes=args.human_minutes)
+        if args.command in ('polish', 'figures', 'render-pdf'):
+            from ara.runtime.publication import publication_command
+            return publication_command(args, log, ROOT, calls_factory)
         if args.command == 'feedback':
             start = time.monotonic()
             text = args.text if args.text is not None else input('Feedback: ')

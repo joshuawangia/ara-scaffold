@@ -13,6 +13,8 @@ PROPOSAL = {'bank_id': 'modus_ponens', 'premises': [
     {'slot': 'antecedent', 'text': 'P', 't_id': 't1', 'scope_id': None}], 'conclusion_text': 'Q'}
 PAYLOADS = {
     'classify_conflict': {'classification': 'in_tension', 'reason': 'P Q'},
+    'audit_publication': {'labels': [{'sentence': 1, 'node_ids': ['p'], 'role':'argument_step', 'citation_supported':True, 'publication_issue':'none'}]},
+    'polish_essay': {'markdown': 'P', 'figure_placements': [], 'change_log': [{'paragraph': 0, 'improvement': 'P'}]},
     'classify_target': {'classification': 'own_thesis', 'novelty':'new_assertion', 'fidelity':'matches', 'reason': 'P'},
     'extract_paper': {'schema_version': 2, 'source_id': 'p', 'coverage_complete': True, 'new_gaps': [],
         'items': [{'id': 'p', 'source_id': 'p', 'kind': 'premise', 'attribution': 'author_claim',

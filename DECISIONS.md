@@ -4124,3 +4124,36 @@ Placeholder regressions cover the native quantified package, unused R/negated R,
 inconsistent CQ support through reporting and composition, equivalent connective
 forms, and native alignment freeze through the actual proposer request. Fake
 judgments establish plumbing only, not semantic alignment quality or originality.
+
+## Alignment recovery and unresolved outcomes (Sigma round 12)
+
+- New alignment replies contain only relation/reason. Candidate identities are
+  bound by runtime code; extra or changed identifiers are refused without repair.
+- Exhausted output validation retries emit `alignment_unresolved` with pair,
+  reason and attempts. Default absolute maximum is 5, configurable with
+  `construction_alignment_max_unresolved`; excess refuses freeze. Operational
+  and accounting failures remain stops. Unresolved is not unrelated or aligned.
+- Alignment policy v3 persists the unresolved inventory/limit, with complete
+  candidate partition validation. Existing v1/v2 receipts remain readable;
+  new policy/schema and plan v15 intentionally invalidate old call/preflight
+  identities. CommitmentSet and outer frozen catalogue codecs stay unchanged.
+- Native `resume-alignment` verifies completed construction and accepted judgment
+  receipts before provider creation, preserves prior accounted calls, performs no
+  construction replay, and continues the existing freeze/targets/search path.
+  Its plan-only form performs neither provider creation nor token counting and
+  writes to a separate output directory. A single advisory resume lock is shared
+  with construction recovery. Partial/already-frozen or incomplete states refuse.
+- Successful free planning proves reusable artifacts and call inventory, not
+  future model acceptance, consistency, budgets or useful synthesis. Canonical
+  operating instructions are in docs/construction.md.
+
+
+### Round 29 integration — Sigma round 12 and S12-F1
+
+Integrated the exact Sigma round-12 construction/alignment recovery head with
+consistent-support novelty. Shared decision, source-map and control additions
+are retained from both branches. The native forward regression uses the new
+relation/reason-only alignment response, requires no unresolved pairs and an
+accepted P/Q entailment, and retains the rendered R lead and frozen-byte checks.
+Runtime supplies candidate identities; the schema must not accept echoed IDs.
+Combined-tree full gates supersede the interrupted pre-integration controls.

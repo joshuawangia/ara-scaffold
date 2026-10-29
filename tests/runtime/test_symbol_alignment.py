@@ -93,7 +93,7 @@ def configure_judge(rig, monkeypatch, relation='entails_left_right'):
         assert kind=='judge_symbol_alignment'
         inputs=json.loads(prompt.split('\nINPUT_JSON\n')[1]); requests.append(inputs)
         pair=inputs['candidate']
-        return Response(response(judgment(pair['left']['name'],pair['right']['name'],relation)))
+        return Response(response(dict(relation=relation,reason='P Q')))
     monkeypatch.setattr(calls.provider,'complete',complete)
     return calls,requests
 

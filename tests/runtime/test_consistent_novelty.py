@@ -170,7 +170,7 @@ def test_forward_rejects_quantified_packages_and_keeps_alignment_lead(tmp_path, 
     def reply(kind, data):
         if kind == 'judge_symbol_alignment':
             left, right = (data['candidate'][side]['name'] for side in ('left', 'right'))
-            return dict(left=left, right=right, relation='entails_left_right' if (left, right) == ('P', 'Q') else 'unrelated', reason='P Q')
+            return dict(relation='entails_left_right' if (left, right) == ('P', 'Q') else 'unrelated', reason='P Q')
         if kind == 'propose_targets': return dict(targets=[Proposition('r', 'R', R).to_dict()])
         if kind == 'classify_target':
             return dict(classification='own_thesis', novelty='new_assertion', fidelity='matches', reason='R')
@@ -183,7 +183,11 @@ def test_forward_rejects_quantified_packages_and_keeps_alignment_lead(tmp_path, 
                      provenance=meta['commitments'])
     aligned = prepare_commitments(calls, load_bank(ROOT/'bank'), 'P', 'P')
     vocabulary = calls.search_vocabulary(aligned)
-    assert vocabulary['commitment_provenance']['alignment']['status'] == 'accepted'
+    alignment = vocabulary['commitment_provenance']['alignment']
+    assert alignment['status'] == 'accepted'
+    assert not alignment['unresolved']
+    assert any(j['left'] == 'P' and j['right'] == 'Q' and j['relation'] == 'entails_left_right'
+               for j in alignment['judgments'])
     before = {name: (tmp_path/name).read_bytes() for name in ('commitments.json', 'frozen-t.json', 'commitment-provenance.json')}
     targets = calls.propose_targets(aligned, 1)
     assert targets and targets[0].formula == R

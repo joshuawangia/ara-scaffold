@@ -1,4 +1,5 @@
 construction_alignment_candidates: 150
+construction_alignment_max_unresolved: 5 # Absolute count; above this limit refuses freeze.
 construction_alignment_min_score: 0.10
 construction_alignment_paper_diversity: true
 judge_symbol_alignment_max_output_tokens: 2048

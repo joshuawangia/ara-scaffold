@@ -4552,3 +4552,21 @@ in reports/xi-round30.md; historical branch results are not combined-head proof.
 Publication reading copies include the separately disclosed definition evidence,
 and figure labels distinguish model alignment judgments from attributed source
 support. Both raw and reading-citation figure paths retain that distinction.
+
+
+## Round 14 — normalize stage admission before provider reuse
+
+Resolve and normalize each effective construction/correction configuration before
+forming its provider-cache key. Constructor-side normalization is insufficient:
+a subsequent lookup can pair a fresh inherited bound with the already-normalized
+provider. The scoped request and provider must agree on the effective window and
+bound on first use, provider reuse and response-cache replay. Smaller/larger
+supported stage windows are explicit choices; clearing an inherited override
+refuses rather than silently falling back to the transport default. Preserve the
+parent run configuration and all isolation canaries.
+
+Integrate the settled consistent-support search and solver-lifetime fix. Preserve
+its target_bases argument when mutating the full frozen commitment argument in
+the target-context negative control. Anchor uniqueness remains mandatory; both
+mutation and restoration must execute on the combined source. Regenerate only
+combined target prompt keys, retaining all recorded response values.

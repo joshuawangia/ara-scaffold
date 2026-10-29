@@ -2470,6 +2470,28 @@ CASES += [('delivery_alignment_reading_sources',
   'tests/runtime/test_delivery_alignment_citations.py::test_alignment_publication_preserves_definition_citations_and_judgment_role[figures_with_receipts]')]
 
 
+CASES += [('codex_stage_window_normalization',
+  'ara/runtime/construction_stages.py',
+  'apply_context_window(resolved, inherited_window=inherited_window)',
+  'pass',
+  'tests/runtime/test_codex_cli.py::test_effective_stage_window_matches_admission_wire_and_cached_receipts'),
+ ('codex_stage_window_clear_cached',
+  'ara/runtime/codex_window.py',
+  "if inherited_window is not None and config.get('model_context_window') is None:",
+  'if False:',
+  'tests/runtime/test_codex_cli.py::test_stage_cannot_clear_inherited_window_before_startup_or_after_provider_cache'),
+ ('codex_stage_window_clear_startup',
+  'ara/runtime/codex_window.py',
+  "if settings.get('model_context_window') is None:",
+  'if False:',
+  'tests/runtime/test_codex_cli.py::test_stage_cannot_clear_inherited_window_before_startup_or_after_provider_cache'),
+ ('codex_stage_window_clear_group',
+  'ara/runtime/construction_stages.py',
+  "if values.get('model_context_window') is not None:",
+  'if False:',
+  'tests/runtime/test_construction_stages.py::test_stage_cannot_clear_window_inherited_from_construction_group')]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

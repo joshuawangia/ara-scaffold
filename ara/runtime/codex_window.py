@@ -37,13 +37,17 @@ def context_window_decision(config, model=None):
         evidence='pinned CLI embedded model catalogue; configured client window, serving capacity unverified')
 
 
-def apply_context_window(config):
+def apply_context_window(config, *, inherited_window=None):
+    if inherited_window is not None and config.get('model_context_window') is None:
+        raise ValueError('stage cannot clear an inherited model_context_window')
     decision = context_window_decision(config)
     if decision is not None:
         # Stage changes must not silently opt into an unknown larger window.
         for kind in config.get('stages', {}):
             settings = stage_settings(config, kind)
             if kind != 'extraction' and settings['provider'] == 'codex_cli':
+                if settings.get('model_context_window') is None:
+                    raise ValueError('stage cannot clear an inherited model_context_window')
                 context_window_decision(settings, settings['model'])
         config['model_context_token_bound'] = decision['model_context_token_bound']
     return decision

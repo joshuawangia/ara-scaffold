@@ -12,16 +12,23 @@ def dispatch_settings(config, kind, *, correction=False):
         return kind, {}, config
     stages = config.get('stages', {})
     overrides = {}
+    inherited_window = config.get('model_context_window')
     keys = ((kind,) if kind == 'audit_publication' else
             ('construction', kind, 'construction_correction') if correction else ('construction', kind))
     for key in keys:
         values = stages.get(key, {})
         if not isinstance(values, dict):
             raise ValueError(f'construction stage {key} must be a mapping')
+        if values.get('model_context_window') is not None:
+            inherited_window = values['model_context_window']
         overrides.update(values)
     stage = 'construction_correction' if correction else kind
     # Scoped providers must not resolve the original stage over this correction.
     resolved = {**stage_settings(config, kind), **overrides, 'stages': {}}
+    # Normalize before provider-cache identity, including a repeated/cached lookup.
+    # Provider construction must not be what determines the admission bound.
+    from ara.runtime.codex_window import apply_context_window
+    apply_context_window(resolved, inherited_window=inherited_window)
     return stage, overrides, resolved
 
 

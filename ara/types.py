@@ -184,6 +184,7 @@ class Proposition(Record):
     formula: Formula | None = None
     new_symbols: tuple[SymbolDefinition, ...] = ()
     gap: Gap | None = None
+    basis_commitment_ids: tuple[str, ...] = ()
 
     def to_dict(self):
         value = super().to_dict()
@@ -191,6 +192,8 @@ class Proposition(Record):
             del value['gap']
         if not self.new_symbols:
             del value['new_symbols']
+        if not self.basis_commitment_ids:
+            del value['basis_commitment_ids']
         return value
 
 
@@ -199,7 +202,8 @@ def negate_proposition(proposition: Proposition) -> Proposition:
     if proposition.formula is None:
         raise ValueError('negation requires a formula')
     formula = proposition.formula.negated()
-    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols, proposition.gap)
+    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols, proposition.gap,
+                       proposition.basis_commitment_ids)
 
 
 @dataclass(frozen=True)

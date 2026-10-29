@@ -4095,3 +4095,32 @@ Q, which changes when Q is replaced by false. The shared novelty gate applies to
 native proposal, route selection, forward mining and external gap-file targets.
 Native regressions retain CLOSED engine proofs while classifying padded packages
 as structural, and preserve genuine scheme and cross-paper deduction positives.
+
+## Round 29 — Consistent support and equivalent-package novelty
+
+Supersedes Round 28's whole-T union essentiality: an unrelated contradiction
+must not disable a consistent route. Route and forward novelty use their exact
+support IDs and require satisfiability. Jointly inconsistent route support is
+`CLOSED-conflict`, remains engine CLOSED, is excluded from selection/composition,
+and is published as a hash-bound conflict/gap receipt. Solver uncertainty refuses.
+Before search, optional `basis_commitment_ids` (or an exact matching forward
+lead's dependencies) seed an ID-ordered greedy maximal consistent subset.
+Required IDs cannot be dropped. Every attempted set, omission and solver result
+is logged. This subset is deterministic, not unique or maximum; frozen T is
+unchanged. Internally inconsistent papers receive disclosed consistent projections
+preserving the target's required supports; no ex-falso paper closure is accepted.
+
+Vacuous quantifiers are normalized only for novelty checking. A bounded Z3 check
+uses two independent interpretations, including separate individual domains,
+agreeing on basis formula truth values but disagreeing on target truth. UNSAT
+means the target is a Boolean combination of those assertions and is rejected.
+Basis assertions are not assumed true in this check: ordinary cross-paper modus
+ponens remains eligible. The gate covers proposal, selection, forward and external
+gap targets. Unknown/timeout is unresolved. The proposal schema adds optional
+basis IDs; existing CommitmentSet and frozen metadata codecs are unchanged.
+Applicable schema preflight receipts must be refreshed before live use.
+
+Placeholder regressions cover the native quantified package, unused R/negated R,
+inconsistent CQ support through reporting and composition, equivalent connective
+forms, and native alignment freeze through the actual proposer request. Fake
+judgments establish plumbing only, not semantic alignment quality or originality.

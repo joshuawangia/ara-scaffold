@@ -4,6 +4,36 @@ from ara.runtime.cache import canonical, digest
 from ara.types import Gap
 
 
+def route_support_gap(route_id, support_ids, provenance):
+    rows = provenance['commitments'] if provenance else {}
+    ids = tuple(sorted(set(support_ids)))
+    papers = tuple(sorted({rows[tid]['source_id'] for tid in ids
+        if rows.get(tid, {}).get('stance') == 'endorsed' and rows[tid].get('source_id')}))
+    groups = tuple(tuple(tid for tid in ids if rows.get(tid, {}).get('stance') == 'endorsed'
+        and rows[tid].get('source_id') == paper) for paper in papers)
+    value = dict(kind='contradiction', commitment_ids=ids, paper_ids=papers, support_groups=groups,
+                 route_ids=(route_id,), finding='Jointly inconsistent route supports; not an admissible derivation basis.')
+    return Gap('gap:' + digest(canonical(value)), **value)
+
+
+def _support_conflict_receipt(events):
+    boundary = max((i for i, e in enumerate(events)
+        if e['stage'] in ('commitments_frozen', 'analysis_started', 'search_publication_started')), default=-1)
+    receipts = [json.loads(e['payload_json']) for i, e in enumerate(events)
+                if i > boundary and e['stage'] == 'route_support_conflicts']
+    return receipts[-1] if receipts else None
+
+
+def support_conflict_gaps(events, commitments, provenance):
+    receipt = _support_conflict_receipt(events)
+    if provenance is None or receipt is None:
+        return ()
+    if (receipt['commitments_sha256'] != digest(canonical(commitments.to_dict()))
+            or receipt['provenance_sha256'] != provenance['sha256']):
+        return ()
+    return tuple(Gap.from_dict(g) for g in receipt['gaps'])
+
+
 def tier2_gaps(analyses, commitments, provenance):
     if provenance is None:
         return ()
@@ -55,7 +85,9 @@ def conflict_report(events):
                    if i > finding_index and e['stage']=='tier2_resolution_candidates']
     resolutions = [p for p in resolutions if p.get('analyses_sha256')==identity]
     semantic = [json.loads(e['payload_json']) for e in events if e['stage']=='semantic_pair_classified']
+    support_conflicts = _support_conflict_receipt(events)
     return dict(**tiers, counts={tier:len(values) for tier,values in tiers.items()},
+        support_conflicts=support_conflicts['gaps'] if support_conflicts else [],
         analysis_status='recorded_bounded_analyses' if findings else 'not_recorded',
         analyses_count=len(analyses),
         resolution_candidates=resolutions[-1]['candidates'] if resolutions else [],

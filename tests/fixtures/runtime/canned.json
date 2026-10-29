@@ -69,20 +69,6 @@
       "output_tokens": 3
     }
   },
-  "propose_targets:f549daaa14a7237f11d81008bbb06a7835328d990cc0d6b7d016038f50efe25b": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
   "map_leaf:1e37e2dff7ad74ea777be6f491c850539fe3df0250ee509a27009ada7c90fdd4": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
@@ -216,6 +202,20 @@
       {
         "type": "text",
         "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n:p\",\"n:p:c\",\"n:p:a\"],\"sentence\":1}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "propose_targets:c2fd70d3d7cb0e9cad4ba79bfbb3a74e155e5376ede4fec9b9db717266092c24": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
       }
     ],
     "usage": {

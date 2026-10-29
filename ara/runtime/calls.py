@@ -940,7 +940,9 @@ class ModelCalls:
         from ara.runtime.external_gaps import load_external_gaps
         external = load_external_gaps(self, commitments, vocabulary)
         detection = detect_gaps(commitments, vocabulary['symbol_catalogue'], vocabulary['commitment_provenance'])
-        return {**detection, 'gaps': external + detection['gaps'] + classify_pairs(self, commitments, vocabulary)}
+        from ara.runtime.conflict_feedback import support_conflict_gaps
+        support_gaps = support_conflict_gaps(self.log.read(), commitments, vocabulary['commitment_provenance'])
+        return {**detection, 'gaps': external + detection['gaps'] + support_gaps + classify_pairs(self, commitments, vocabulary)}
 
     def propose_targets(self, commitments: CommitmentSet, count: int = 30,
                         named_position: str | None = None) -> tuple[Proposition, ...]:
@@ -997,6 +999,7 @@ class ModelCalls:
                       **vocabulary, **target_context(commitments, load_bank(self.root / 'bank')))
         from ara.runtime.synthesis import proposal_forward_candidates
         inputs['forward_candidates'] = proposal_forward_candidates(self, commitments, vocabulary)
+        target_bases = {Formula.from_dict(c['formula']).canonical(): tuple(c['support_ids']) for c in inputs['forward_candidates']}
         if resolution_gap is not None:
             inputs.update(resolution_gap=resolution_gap.to_dict(),
                 resolution_instruction='Propose a new resolving thesis: a distinction, restriction or bridge addressing this gap. Support it by bank schemes using endorsed T from every support group. Empty groups mean no admissible evidence. All novelty and stance gates still apply. External AI findings are hypotheses, not source endorsements. Preserve their search scope, currency verdict, evidence qualifications and exact claim_framing; never claim exhaustive absence.')
@@ -1015,7 +1018,8 @@ class ModelCalls:
                             status='disconnected' if disconnected else 'aligned',
                             note='New thesis vocabulary is advisory, not a rejection; native bank licensing and CQ support decide reachability.')
             receipts = []
-            rejected = trivial_targets(targets, commitments, vocabulary['symbol_catalogue'], receipts, vocabulary['commitment_provenance'])
+            rejected = trivial_targets(targets, commitments, vocabulary['symbol_catalogue'], receipts,
+                                       vocabulary['commitment_provenance'], target_bases)
             for receipt in receipts:
                 self.log.record('target_contribution_preflight', attempt=attempt + 1, **receipt)
             for target in targets:

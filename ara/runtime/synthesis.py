@@ -16,7 +16,7 @@ def _rank_result(commitments, eligible, provenance, result, origin):
     direct_atoms = {key for c in eligible.commitments
                     if c.formula.op in ('atom','predicate') or (c.formula.op == 'not' and c.formula.args[0].op in ('atom','predicate'))
                     for key,_ in atomic_applications(c.formula)}
-    candidates = []
+    candidates, conflicts = [], []
     for consequence in result.consequences:
         key = consequence.formula.canonical()
         premise_keys = [p.canonical() for p in consequence.premises]
@@ -28,6 +28,12 @@ def _rank_result(commitments, eligible, provenance, result, origin):
         licenses[key] = bank_ids
         if consequence.flagged or not ids:
             continue
+        from ara.runtime.novelty_basis import support_consistency
+        consistency = support_consistency(commitments, ids)
+        if consistency['status'] != 'consistent':
+            conflicts.append(dict(formula=consequence.formula.to_dict(), support_ids=sorted(ids),
+                                  origin=origin, consistency=consistency))
+            continue
         groups = {}
         for tid in sorted(ids):
             groups.setdefault(formula_hash(commitments.get(tid).formula), []).append(tid)
@@ -36,7 +42,7 @@ def _rank_result(commitments, eligible, provenance, result, origin):
             continue
         if all(key in direct_atoms for key,_ in atomic_applications(consequence.formula)):
             continue
-        novelty = novelty_check(consequence.formula, commitments, provenance)
+        novelty = novelty_check(consequence.formula, commitments, provenance, support_ids=tuple(sorted(ids)))
         if novelty['status'] != 'candidate':
             continue
         candidates.append(dict(formula=consequence.formula.to_dict(),support_ids=sorted(ids),
@@ -44,7 +50,7 @@ def _rank_result(commitments, eligible, provenance, result, origin):
             alignment_support_ids=sorted(tid for tid in ids if provenance['commitments'][tid]['stance']=='model_alignment'),
             endorsed_support_ids=sorted(tid for tid in ids if provenance['commitments'][tid]['stance']=='endorsed'),
             candidate_id='forward:'+digest(key),origin=origin))
-    return candidates
+    return candidates, conflicts
 
 
 def forward_candidates(commitments, provenance, bank, sink, *, depth=2, node_cap=500, observed=()):
@@ -55,11 +61,13 @@ def forward_candidates(commitments, provenance, bank, sink, *, depth=2, node_cap
     # The forward engine uses its canonical AST adapter; no model port is invoked.
     result = forward_pass(tuple(c.formula for c in eligible.commitments), eligible,
                           Licenser(bank, None, sink), depth, node_cap)
-    candidates = _rank_result(commitments,eligible,provenance,result,'fresh_forward')
+    candidates, conflicts = _rank_result(commitments,eligible,provenance,result,'fresh_forward')
     remaining = node_cap
     for prior in observed:
         selected = ForwardResult(prior.consequences[:remaining],prior.truncated,prior.route_id)
-        candidates.extend(_rank_result(commitments,eligible,provenance,selected,'recorded_forward'))
+        recorded, recorded_conflicts = _rank_result(commitments,eligible,provenance,selected,'recorded_forward')
+        candidates.extend(recorded)
+        conflicts.extend(recorded_conflicts)
         remaining -= len(selected.consequences)
         if not remaining:
             break
@@ -69,6 +77,7 @@ def forward_candidates(commitments, provenance, bank, sink, *, depth=2, node_cap
         unique.setdefault(candidate['candidate_id'],candidate)
     available = sum(len(prior.consequences) for prior in observed)
     return dict(status='bounded_native_forward',candidates=list(unique.values()),
+                support_conflicts=conflicts,
                 licensed_consequences=len(result.consequences),truncated=result.truncated,
                 observed_consequences=available,observed_scanned=node_cap-remaining,
                 observed_truncated=available>node_cap or any(p.truncated for p in observed),

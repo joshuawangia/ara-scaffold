@@ -69,20 +69,6 @@
       "output_tokens": 3
     }
   },
-  "propose_targets:f549daaa14a7237f11d81008bbb06a7835328d990cc0d6b7d016038f50efe25b": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
   "map_leaf:75acccb3cc699509e2c45ac21bc490ee2dcb172cb8dfac97f917f41be9bb018e": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
@@ -342,6 +328,20 @@
       {
         "type": "text",
         "text": "{\"bibliography\":[],\"body\":\"[[node:n0]][[node:n1]][[node:n2]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "propose_targets:c2fd70d3d7cb0e9cad4ba79bfbb3a74e155e5376ede4fec9b9db717266092c24": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
       }
     ],
     "usage": {

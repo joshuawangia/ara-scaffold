@@ -6,7 +6,7 @@ import pytest
 from ara.runtime.calls import EssayAuditFailed
 from ara.runtime.providers import Response
 from test_calls import rig, response
-from test_publication import install_publication, paper, polished
+from test_publication import install_publication, paper, polished, publication_nodes, publication_role
 
 
 def editor(rig, monkeypatch, *, forever=False, invalid_forever=False):
@@ -21,8 +21,8 @@ def editor(rig, monkeypatch, *, forever=False, invalid_forever=False):
             labels = []
             for s in data['sentences']:
                 flag = s['section'] == 'Introduction' and (forever or s['text'].startswith('P '))
-                labels.append(dict(sentence=s['sentence'], role='unsupported_claim' if flag else 'argument_step',
-                                   node_ids=['n0','n1'], citation_supported=True, publication_issue='none'))
+                labels.append(dict(sentence=s['sentence'], role='unsupported_claim' if flag else publication_role(s['text']),
+                                   node_ids=publication_nodes(s['text']), citation_supported=True, publication_issue='none'))
             return Response(response(dict(labels=labels)))
         if kind == 'polish_essay' and data['mode'] == 'repair':
             repairs.append(data); n=data['repair_round'];counts[n]=counts.get(n,0)+1
@@ -140,7 +140,7 @@ def test_repair_cannot_rewrite_unflagged_sentence_in_flagged_paragraph(rig,monke
         if kind=='polish_essay' and data['mode']=='repair':
             return Response(response(dict(polished(paper()),markdown=data['markdown'].replace('R. S.', 'Q. Q.',1))))
         if kind=='audit_publication':
-            return Response(response(dict(labels=[dict(sentence=s['sentence'],role='unsupported_claim' if s['text']=='R.' else 'argument_step',node_ids=['n0','n1'],citation_supported=True,publication_issue='none') for s in data['sentences']])))
+            return Response(response(dict(labels=[dict(sentence=s['sentence'],role='unsupported_claim' if s['text']=='R.' else publication_role(s['text']),node_ids=publication_nodes(s['text']),citation_supported=True,publication_issue='none') for s in data['sentences']])))
         return original(kind,prompt,schema,maximum)
     monkeypatch.setattr(calls.provider,'complete',complete)
     result,_=polish(calls,route,paper())
@@ -166,3 +166,51 @@ def test_post_verification_gate_also_requires_fresh_unanimous_samples(rig,monkey
     with pytest.raises(EssayAuditFailed):polish(calls,route,paper())
     assert audits==6
     assert not (calls.log.path.parent/'publication/latest.json').exists()
+
+
+@pytest.mark.parametrize('malformed',['partial','duplicate','unknown_node'])
+def test_publication_partial_adverse_history_remains_binding(rig,monkeypatch,malformed):
+    from ara.runtime.calls import Rejected
+    from ara.runtime.essay_audit import audit_consensus
+    from ara.runtime.publication import as_draft
+    calls,route,_=install_publication(rig,monkeypatch)
+    calls.config['validation_attempts']=1
+    current=as_draft(polished(paper())['markdown'],paper()['bibliography'])
+    context=dict(original_draft=paper(),literature_currency=None)
+    original=calls.provider.complete;audits=0
+    def complete(kind,prompt,schema,maximum):
+        nonlocal audits
+        value=original(kind,prompt,schema,maximum)
+        if kind=='audit_publication':
+            audits+=1
+            if audits==1:
+                out=json.loads(value.text());out['labels'][-1]['publication_issue']='unsupported_elaboration'
+                if malformed=='partial':out['labels'].pop(0)
+                elif malformed=='duplicate':out['labels'].append(dict(out['labels'][0]))
+                else:out['labels'][0]['node_ids']=['unknown']
+                return Response(response(out))
+        return value
+    monkeypatch.setattr(calls.provider,'complete',complete)
+    with pytest.raises(Rejected):calls.audit_essay(route,current,publication_context=context)
+    with pytest.raises(EssayAuditFailed) as failure:
+        audit_consensus(calls,route,current,publication_context=context)
+    assert audits==4
+    assert any(f['reason']=='unsupported_elaboration' for f in failure.value.result['flags'])
+    assert failure.value.result['historical_adverse']
+
+
+def test_publication_web_absence_preserves_frozen_citations(rig,monkeypatch):
+    from ara.runtime.publication import polish
+    calls,route,seen=install_publication(rig,monkeypatch,web_absent=True)
+    result,directory=polish(calls,route,paper())
+    assert result['polished'] and result['native_citations']['status']=='pass'
+    assert result['draft']['bibliography']==paper()['bibliography']
+    assert result['draft']['body'].count('[cite:p]')==5
+    assert result['draft']['body'].count('[cite:q]')==5
+    verified=result['native_citations']['result']['items']
+    assert {item['id'] for item in verified}=={'p','q'}
+    assert all(item['status']=='verified' and item['verification_basis']=='local_frozen_T' for item in verified)
+    assert all(not data['items'] for kind,data in seen if kind in ('search_evidence','verify_originality_citations'))
+    assert sum(kind=='audit_publication' for kind,_ in seen)==6
+    assert any(e['stage']=='local_citation_verification' for e in calls.log.read())
+    assert (directory/'citation-receipt.json').exists()

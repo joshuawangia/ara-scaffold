@@ -12,7 +12,7 @@ from ara.runtime.providers import Response
 from ara.types import RunEvent
 from test_calls import rig, response
 from test_claude_code import cli
-from test_publication import install_publication, paper, polished
+from test_publication import install_publication, paper, polished, publication_nodes, publication_role
 from test_sectioned_writer import seed_sources
 
 
@@ -84,7 +84,7 @@ def boundary_provider(rig, monkeypatch, mode):
             for s in data['sentences']:
                 unsupported=bool(re.search(r'\bR\b',s['text']))
                 source=mode in ('duplicate','duplicate_allowed') and s['section']=='Introduction' and s['text']=='P.'
-                labels.append(dict(sentence=s['sentence'],role='unsupported_claim' if unsupported else 'source_claim' if source else 'argument_step',node_ids=['n0','n1'],citation_supported=not source,publication_issue='unsupported_elaboration' if unsupported else 'none'))
+                labels.append(dict(sentence=s['sentence'],role='unsupported_claim' if unsupported else 'source_claim' if source else publication_role(s['text']),node_ids=publication_nodes(s['text']),citation_supported=not source,publication_issue='unsupported_elaboration' if unsupported else 'none'))
             return Response(response(dict(labels=labels)))
         return original(kind,prompt,schema,maximum)
     monkeypatch.setattr(calls.provider,'complete',complete)
@@ -157,7 +157,7 @@ def test_publication_audit_dispatch_uses_effective_provider(rig,monkeypatch):
         assert kind=='audit_publication'
         audited.append(kind)
         data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
-        return Response(response({'labels':[dict(sentence=s['sentence'],role='argument_step',node_ids=['n0','n1'],citation_supported=True,publication_issue='none') for s in data['sentences']]},model='P'))
+        return Response(response({'labels':[dict(sentence=s['sentence'],role=publication_role(s['text']),node_ids=publication_nodes(s['text']),citation_supported=True,publication_issue='none') for s in data['sentences']]},model='P'))
     monkeypatch.setattr(auditor,'complete',complete)
     calls.provider_factory=lambda settings: auditor
     calls.audit_essay(route,paper(),publication_context=dict(original_draft=paper(),literature_currency=None))

@@ -180,3 +180,22 @@ own isolation preflight. This selects only publication auditing; external
 citation/originality retrieval remains on the publication provider and explicitly
 blocked there. It does not change pilot routing or claim stable model judgments.
 The live receipt distinguishes schema/transport proof from the semantic verdict.
+
+## Frozen citations and malformed audit history
+
+Publication uses the writer's retained-page citation verification before external
+search. References from exported drafts keep their canonical bibliography and raw
+T locators in the citation receipt. An empty web result cannot remove references
+verified against frozen commitments, retained pages and their recorded hashes.
+Missing local evidence refuses verification; it is not evidence for deleting a
+citation. External quotations and originality still follow the native retrieval
+path and may remain blocked under the publication provider.
+
+Valid adverse labels from incomplete, duplicate or otherwise malformed historical
+audits remain binding. Publication-specific issues use the same flag calculation
+for complete samples and partial-history recovery, including current titles,
+headings and literature positioning. Such a receipt supplies adverse evidence
+only, never a clean verdict. Validation-feedback retries do not change which
+unchanged audit input the history belongs to. Every cited sentence is checked for
+citation support regardless of its typed role; restated source premises require
+their frozen evidence citations even when labelled as argument steps.

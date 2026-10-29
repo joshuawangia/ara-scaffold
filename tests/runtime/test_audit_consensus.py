@@ -277,3 +277,78 @@ def test_final_repair_can_remain_below_writer_target(rig,monkeypatch):
     assert word_count(result)<7 and 'Q' not in result['body']
     assert len(repairs)==1 and repairs[0]['minimum_words']==0
     assert (log.path.parent/'export/essay.txt').exists()
+
+
+def invalid_adverse_sample(mode):
+    value = sample(2)
+    if mode in ('partial', 'corrected_partial'):
+        value['labels'] = value['labels'][:2]
+    elif mode == 'duplicate':
+        value['labels'].append(sample()['labels'][1])
+    elif mode == 'unknown_node':
+        value['labels'][0]['node_ids'] = ['nX']
+    elif mode == 'invalid_label':
+        value['labels'][0]['role'] = 'P'
+    return value
+
+
+@pytest.mark.parametrize('mode', ['partial', 'duplicate', 'unknown_node', 'invalid_label', 'corrected_partial'])
+def test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume(rig, monkeypatch, mode):
+    from ara.runtime.calls import ModelCalls, Rejected
+    from ara.runtime.essay_audit import audit_consensus
+    calls, provider, log = rig
+    values = [invalid_adverse_sample(mode)]
+    if mode == 'corrected_partial':
+        calls.config['validation_attempts'] = 2
+        values.insert(0, {'labels': []})
+    responder(provider, monkeypatch, values + [sample()] * 9)
+    with pytest.raises(Rejected):
+        audit_consensus(calls, graph(), draft())
+    resumed = ModelCalls(calls.config, provider, log, calls.cache, calls.root, calls.topic)
+    for _ in range(2):
+        with pytest.raises(EssayAuditFailed) as failure:
+            audit_consensus(resumed, graph(), draft())
+        result = failure.value.result
+        assert result['extra_steps'] == [2]
+        assert result['sentences'][1]['historical_flags'] == ['unsupported_claim']
+        assert len(result['samples']) == 3 and all(s['faithful'] for s in result['samples'])
+        assert any(h['extra_steps'] == [2] for h in result['historical_adverse'])
+    changed = {**draft(), 'body': draft()['body'].replace('Q.', 'S.')}
+    assert audit_consensus(resumed, graph(), changed)['faithful']
+
+
+@pytest.mark.parametrize('mode', ['partial', 'duplicate', 'unknown_node'])
+def test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit(rig, monkeypatch, mode):
+    from ara.runtime.calls import ModelCalls, Rejected
+    from ara.runtime.orchestration import compose
+    calls, provider, log = rig
+    log.record('route', graph=graph().to_dict())
+    audits = 0
+    def complete(kind, prompt, schema, maximum):
+        nonlocal audits
+        data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'audit_essay':
+            audits += 1
+            value = invalid_adverse_sample(mode) if audits == 2 else sample()
+        elif kind == 'search_evidence':
+            value = 'P'
+        elif kind == 'verify_originality_citations':
+            value = dict(items=[], originality=dict(assessment='unverified', detail='P', evidence_urls=[]))
+        elif kind == 'revise_essay':
+            # A favorable reroll must not substitute for a real repair.
+            value = {'revisions': [dict(sentence=s['sentence'], text=s['text'])
+                                   for s in data['flagged_sentences']]}
+        else:
+            raise AssertionError(kind)
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', complete)
+    with pytest.raises(Rejected):
+        compose(calls, graph(), draft())
+    resumed = ModelCalls(calls.config, provider, log, calls.cache, calls.root, calls.topic)
+    with pytest.raises(Rejected):
+        compose(resumed, graph(), draft())
+    gate = json.loads([e['payload_json'] for e in log.read() if e['stage'] == 'essay_audit_consensus'][-1])
+    assert gate['extra_steps'] == [2] and not gate['faithful']
+    assert not any(e['stage'] == 'essay_audit_revision' for e in log.read())
+    assert not (log.path.parent / 'draft.json').exists()
+    assert not (log.path.parent / 'export/essay.txt').exists()

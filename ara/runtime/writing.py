@@ -18,13 +18,12 @@ def source_context(calls, route):
     """Exact T support plus bounded source context, never a second premise set."""
     from ara.runtime.calls import require
     from ara.runtime.route_policy import frozen_from_events
+    from ara.runtime.citations import catalogue, support_ids
     events = calls.log.read()
     frozen = frozen_from_events(events)
     provenance = calls.search_vocabulary(frozen)['commitment_provenance'] if frozen is not None else None
-    ids = {n.t_id for n in route.nodes if n.kind == 'leaf' and n.t_id != 'open'}
-    ids.update(tid for n in route.nodes for a in n.cq_answers for tid in a.supporting_t_ids)
-    if frozen is not None:
-        ids.update(role['evidence_id'] for role in calls.essay_outline(route).get('source_roles', []))
+    ids = support_ids(route, frozen)
+    citations = catalogue(events, ids)
     starts = [json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started']
     literature = starts[0].get('literature') if starts else None
     papers = {p['source_id']: p for p in json.loads(literature[len(HEADER):])['papers']} if (
@@ -35,7 +34,8 @@ def source_context(calls, route):
         require(commitment is not None, 'essay support missing frozen commitment')
         source = provenance['commitments'][tid] if provenance else None
         supports.append(dict(commitment=commitment.to_dict(), provenance=source))
-        bibliography.append(dict(id=tid, text=commitment.citation, url=None))
+        bibliography.append(citations[tid]['bibliography'] if tid in citations
+                            else dict(id=tid, text=commitment.citation, url=None))
         if source is None:
             contexts.append(dict(evidence_id=tid, unavailable='source provenance unavailable'))
             continue

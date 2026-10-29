@@ -1190,7 +1190,8 @@ class ModelCalls:
                   'outline': self.essay_outline(route),
                   'root_conclusion': {'node_id': route.root_id,
                                       'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
-        if publication_context is not None or self.config['essay_min_words'] >= 4500:
+        if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
+                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
         if publication_context is not None:
@@ -1229,7 +1230,10 @@ class ModelCalls:
         return items
 
     def verify_originality_citations(self, draft: dict) -> tuple[dict, dict]:
-        items = self.verification_items(draft)
+        from ara.runtime.citations import local_verdicts
+        all_items = self.verification_items(draft)
+        local = local_verdicts(self, draft, all_items)
+        items = [item for item in all_items if item['id'] not in local]
         evidence = self.search_evidence(draft, items)
         def check(data):
             expected = {i['id']: i for i in items}
@@ -1266,16 +1270,26 @@ class ModelCalls:
                     'originality requires search evidence')
             return data
         result = self.call('verify_originality_citations', {'draft': draft, 'items': items, 'evidence': evidence}, check)
+        remote = {item['id']: item for item in result['items']}
+        result = {**result, 'items': [local[item['id']] if item['id'] in local else remote[item['id']]
+                                     for item in all_items]}
         cleaned = json.loads(canonical(draft))
         removed = []
+        removal_reasons = []
         for item in result['items']:
             if item['status'] == 'unverified':
                 removed.append(item['id'])
+                removal_reasons.append(dict(id=item['id'], reason=item.get('removal_reason', item['detail']),
+                                            basis=item.get('verification_basis', 'web_evidence')))
                 cleaned['body'] = cleaned['body'].replace(item['text'], '')
                 if item['kind'] == 'citation':
                     cleaned['bibliography'] = [b for b in cleaned['bibliography'] if b['id'] != item['id']]
                     cleaned['body'] = cleaned['body'].replace(f'[cite:{item["id"]}]', '')
                 else:
                     cleaned['body'] = cleaned['body'].replace('""', '').replace('“”', '')
-        self.log.record('verification_cleanup', removed_ids=removed, draft=cleaned, verification=result)
+            elif item.get('verification_basis') == 'local_frozen_T' and item['kind'] == 'citation':
+                cleaned['bibliography'] = [item['local_evidence']['bibliography'] if b['id'] == item['id'] else b
+                                           for b in cleaned['bibliography']]
+        self.log.record('verification_cleanup', removed_ids=removed, removal_reasons=removal_reasons,
+                        draft=cleaned, verification=result)
         return cleaned, result

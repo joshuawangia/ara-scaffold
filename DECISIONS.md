@@ -4141,3 +4141,59 @@ source evidence and logged currency evidence remain in the audited input. The
 post-verification audit uses the same gate. This reuses one semantic gate rather
 than creating a separate publication voting rule. Offline checks establish the
 enforcement mechanics; live publication is explicitly deferred by the operator.
+## nu4 round 7 — retain citations against local frozen evidence (2026-10-29)
+
+Frozen-route references are checked first against retained extraction inputs and
+frozen provenance. PDF identity, page-text hash, source text, attribution and page
+bounds must match. Bibliography entries use the retained paper metadata and physical
+PDF pages, with commitment IDs preserved. Unavailable local evidence is a refusal,
+not a negative web verdict. Positive mismatches may remove a citation or quotation;
+methodology records each removal reason. Supplementary web retrieval still assesses
+external references and originality. Local lexical evidence is not semantic proof.
+
+A citation-only restoration pass can append allowed markers to original sentence
+bytes and rebuild the canonical bibliography; it cannot rewrite prose or renew the
+semantic repair budget. Typed repairs can add frozen citations to miscited claims.
+Mapped source premises require citations even under an argument-step label. The
+existing fresh conservative final audit remains in force. Export independently
+checks route support coverage and canonical locally verified bibliography entries,
+refuses empty or partial support, and removes a stale essay on refusal. Legacy
+runs without source provenance cannot claim this local verification. Evidence and
+native route results are retained in the external round-7 report.
+
+
+Round 7 also closes review R2-F1: incomplete or structurally invalid historical
+audit responses cannot discard valid adverse labels on an unchanged draft. The
+history reader salvages individually schema-valid, in-range labels with known
+node references, retains their substantive flags in the union, and discloses that
+these are partial adverse facts rather than complete coverage verdicts. An invalid
+neighbor or a duplicate inventory cannot make three later clean calls erase them.
+Validation-feedback retries are matched to the same underlying prompt and input;
+a changed draft remains a different audit obligation. Current malformed responses
+still refuse. Unparseable history cannot supply labels and remains explicitly
+unusable. R2-F2 is the frozen-citation retention/export policy above. Native resume
+regressions and production-wire mutations cover both review reproductions.
+
+Missing local metadata cannot be treated as a positive bibliography mismatch.
+Unresolved local evidence refuses before any mismatch-based removal, including a
+known frozen reference with no recorded provenance. This preserves the distinction
+between absence and a proven mismatch even when bibliography wording is unfamiliar.
+
+
+### Publication quality5 round-7 integration (2026-10-29)
+
+- Merge the writer's retained-page citation verification and malformed-history
+  recovery without duplicating either mechanism in publication. Preserve the
+  shared imported-draft screen and publication's effective audit-provider scope.
+- Calculate native and publication-specific flags in one shared path so partial
+  historical inventories retain valid adverse publication labels. Partial
+  recovery supplies adverse evidence only. Keep fresh minimum-three consensus
+  before and after verification, with no favourable cache replay.
+- Publication fixtures now retain hash-bound pages and use the canonical exported
+  bibliography. A native publication regression checks that absent web evidence
+  cannot erase locally verified frozen citations; source-premise mappings require
+  their sentence-level citations. Preserve the existing structural retry bound,
+  exact flagged occurrence permissions, title/heading audit and length profile.
+- This round is code and offline verification only. No live publication run or
+  accepted-paper claim is authorized by these implementation receipts. Full
+  verification and remaining limits belong in the external quality5 report.

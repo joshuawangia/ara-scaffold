@@ -95,7 +95,7 @@ def test_audit_rejects_extra_step(rig):
     calls.config['validation_attempts'] = 3
     draft = {'title': 'P', 'body': '[[node:n1]] P Q', 'bibliography': []}
     register(calls, provider, 'audit_essay', calls.audit_inputs(graph(), draft),
-             {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'asserts_premise_or_inference_not_in_outline': True}]})
+             {'labels': [{'sentence': 1, 'node_ids': ['n1'], 'role': 'unsupported_claim', 'citation_supported': True}]})
     with pytest.raises(Rejected, match='audit'):
         calls.audit_essay(graph(), draft)
     assert provider.calls == 1

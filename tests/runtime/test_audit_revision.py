@@ -20,8 +20,8 @@ def replies(provider, monkeypatch, *, always_adverse=False, replacement='R. [cit
         seen.append((kind, data))
         if kind == 'audit_essay':
             result = {'labels': [dict(sentence=s['sentence'], node_ids=['n1'],
-                asserts_premise_or_inference_not_in_outline=(s['sentence'] == 2 and
-                    (always_adverse or s['text'].startswith('Q.')))) for s in data['sentences']]}
+                role='unsupported_claim' if (s['sentence'] == 2 and
+                    (always_adverse or s['text'].startswith('Q.'))) else 'argument_step', citation_supported=True) for s in data['sentences']]}
         elif kind == 'revise_essay':
             result = {'revisions': [{'sentence': number, 'text': replacement}]}
         else:
@@ -44,24 +44,47 @@ def test_audit_revision_preserves_unflagged_text_and_evidence(rig, monkeypatch):
     repair = seen[1][1]
     assert repair['audit_inputs'] == expected_inputs
     assert repair['flags'] == [{'sentence': 2, 'node_ids': ['n1'],
-                              'asserts_premise_or_inference_not_in_outline': True}]
-    assert repair['flagged_sentences'] == [{'sentence': 2, 'text': 'Q. [cite:t1]'}]
+                              'role': 'unsupported_claim', 'citation_supported': True}]
+    assert repair['flagged_sentences'] == [{'sentence': 2, 'text': 'Q. [cite:t1]', 'citation_markers': ['[cite:t1]'], 'node_markers': []}]
     assert repair['bibliography'] == before['bibliography']
     assert len([e for e in log.read() if e['stage'] == 'essay_audit_revision']) == 1
     assert json.loads((log.path.parent / 'draft.unverified.json').read_text()) == result
 
 
-def test_audit_revision_stops_after_two_rounds(rig, monkeypatch):
+def test_audit_revision_stops_after_three_rounds(rig, monkeypatch):
     from ara.runtime.essay_audit import audit_and_revise
     calls, provider, log = rig
     seen = replies(provider, monkeypatch, always_adverse=True)
     with pytest.raises(Rejected, match='essay audit failed'):
         audit_and_revise(calls, graph(), draft())
-    assert [k for k, _ in seen].count('revise_essay') == 2
-    assert [k for k, _ in seen].count('audit_essay') == 3
+    assert [k for k, _ in seen].count('revise_essay') == 3
+    assert [k for k, _ in seen].count('audit_essay') == 4
     assert not (log.path.parent / 'draft.json').exists()
     stop = json.loads(next(e['payload_json'] for e in log.read() if e['stage'] == 'essay_audit_revision_exhausted'))
-    assert stop['extra_steps'] == [2] and stop['rounds'] == 2
+    assert stop['extra_steps'] == [2] and stop['rounds'] == 3
+
+
+def test_revision_feedback_names_forbidden_marker_and_recovers(rig, monkeypatch):
+    from ara.runtime.essay_audit import audit_and_revise
+    calls, provider, _ = rig
+    calls.config['validation_attempts'] = 2
+    seen = replies(provider, monkeypatch)
+    original = provider.complete
+    repairs = []
+    def complete(kind, prompt, schema, maximum):
+        data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'revise_essay':
+            repairs.append(data)
+            if len(repairs) == 1:
+                return Response(response({'revisions': [{'sentence': 2, 'text': 'R. [cite:t2]'}]}))
+            assert '[cite:t2]' in data['validation_feedback']['error']
+            assert '[cite:t1]' in data['validation_feedback']['error']
+        return original(kind, prompt, schema, maximum)
+    monkeypatch.setattr(provider, 'complete', complete)
+    result = audit_and_revise(calls, graph(), draft())
+    assert 'Q.' not in result['body'] and '[cite:t2]' not in result['body']
+    assert repairs[0]['flagged_sentences'][0]['citation_markers'] == ['[cite:t1]']
+    assert len(repairs) == 2
 
 
 @pytest.mark.parametrize('number,replacement,reason', [
@@ -143,7 +166,7 @@ def test_revision_receives_exact_frozen_source_context(rig, monkeypatch):
             result = {'revisions': [{'sentence': 2, 'text': 'R. [cite:p]'}]}
         else:
             result = {'labels': [dict(sentence=s['sentence'], node_ids=['n0', 'n1'],
-                asserts_premise_or_inference_not_in_outline=s['text'].startswith('Q.')) for s in data['sentences']]}
+                role='unsupported_claim' if s['text'].startswith('Q.') else 'argument_step', citation_supported=True) for s in data['sentences']]}
         return Response(response(result))
     monkeypatch.setattr(provider, 'complete', complete)
     result = audit_and_revise(calls, route, before)
@@ -165,7 +188,7 @@ def test_audit_without_complete_flagged_inventory_does_not_revise(rig, monkeypat
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
         sentences = data['sentences'][:1] if incomplete else data['sentences']
         return Response(response({'labels': [dict(sentence=s['sentence'], node_ids=[],
-            asserts_premise_or_inference_not_in_outline=incomplete) for s in sentences]}))
+            role='unsupported_claim' if incomplete else 'signpost', citation_supported=True) for s in sentences]}))
     monkeypatch.setattr(provider, 'complete', complete)
     with pytest.raises(Rejected, match='essay audit failed'):
         audit_and_revise(calls, graph(), draft())

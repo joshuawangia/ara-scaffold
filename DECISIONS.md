@@ -3967,3 +3967,28 @@ native audit and verification lifecycle. The review's content-sensitive fake CLI
 reproduction covers body, title, bibliography and invalid encoded content, with
 unchanged log/anchor/artifact and no audit dispatch on refusal. Its production
 scan-removal control must fail and restore green.
+
+## nu4 round 4 — typed sentence audit and actionable revision feedback (2026-10-29)
+
+The binary extra-inference label conflated presentation with substantive route
+content and supplied little repair guidance. The audit now classifies each
+sentence as a source claim, argument step, framing, exposition, signpost,
+objection, reply or unsupported claim. Unsupported claims fail. Source claims
+need a positive semantic citation judgment and actual markers matching the exact
+frozen-T bibliography; argument steps need a known node mapping. The root
+conclusion is explicit input and a faithful restatement maps to that node, while
+extra unsupported substance in the same sentence still fails. Presentation cannot
+satisfy route coverage. Objections/replies must be marked and CQ-consistent;
+otherwise the model must classify them unsupported. These semantic classifications
+remain model judgments, not deterministic proof. Structural inventory, node
+coverage, source stance, scoped qualifications and downstream verification remain.
+
+Complete adverse audits permit three accepted targeted-revision rounds, with a
+full audit after each; malformed inventories and provider failures do not grant
+repair authority. Each flagged span carries exact ordered citation/node markers.
+Validation feedback names the sentence and observed/required sequences, so a
+retry can remove a forbidden addition instead of repeating it. Retained sentences
+may not add even a valid T marker; whole unsupported spans can be deleted subject
+to word/coverage checks. Bibliography and unflagged bytes remain immutable. Typed
+failure reasons and role counts are logged. Original draft comparisons and live
+verification/export outcomes belong in the external round-4 report.

@@ -30,23 +30,47 @@ def sentence_spans(body):
     return spans
 
 
+def audit_flags(labels, inputs, draft):
+    """Apply the three typed failure rules; semantic role/support comes from audit."""
+    sentences = {s['sentence']: s['text'] for s in inputs['sentences']}
+    allowed = {b['id']: b for b in inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
+    bibliography = {b['id']: b for b in draft.get('bibliography', [])}
+    flags = []
+    for item in labels:
+        role, reason = item['role'], None
+        if role == 'unsupported_claim':
+            reason = 'unsupported_claim'
+        elif role == 'argument_step' and not item['node_ids']:
+            reason = 'unmapped_argument_step'
+        elif role == 'source_claim':
+            cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
+            if (not item['citation_supported'] or not cited or
+                    any(tid not in allowed or bibliography.get(tid) != allowed[tid] for tid in cited)):
+                reason = 'miscited_source_claim'
+        if reason:
+            flags.append(dict(sentence=item['sentence'], role=role, reason=reason))
+    return flags
+
+
 def audit_and_revise(calls, route, draft):
-    for round_number in range(3):
+    for round_number in range(4):
         try:
             calls.audit_essay(route, draft)
             return draft
         except EssayAuditFailed as failure:
             flags = [label for label in failure.labels
-                     if label['asserts_premise_or_inference_not_in_outline']]
-            if round_number == 2 or not flags:
+                     if label['sentence'] in failure.result['extra_steps']]
+            if round_number == 3 or not flags:
                 calls.log.record('essay_audit_revision_exhausted', rounds=round_number,
                                  **failure.result)
                 raise
             spans = sentence_spans(draft['body'])
             originals = {flag['sentence']: draft['body'][slice(*spans[flag['sentence'] - 1])]
                          for flag in flags}
-            inputs = dict(audit_inputs=failure.inputs, flags=flags,
-                          flagged_sentences=[dict(sentence=n, text=text) for n, text in originals.items()],
+            inputs = dict(audit_inputs=failure.inputs, flags=flags, audit_failures=failure.result['flags'],
+                          flagged_sentences=[dict(sentence=n, text=text,
+                              citation_markers=CITE.findall(text), node_markers=NODE.findall(text))
+                              for n, text in originals.items()],
                           bibliography=draft['bibliography'], round=round_number + 1,
                           minimum_words=calls.config['essay_min_words'],
                           word_limit=min(6000, calls.config['essay_word_limit']),
@@ -62,8 +86,11 @@ def audit_and_revise(calls, route, draft):
                     old, text = originals[item['sentence']], item['text']
                     require(len(text) <= max(1000, 2 * len(old)), 'revision sentence size exceeded')
                     if text:
-                        require(CITE.findall(text) == CITE.findall(old), 'revision changed citations')
-                        require(NODE.findall(text) == NODE.findall(old), 'revision changed node markers')
+                        for pattern, name in ((CITE, 'citations'), (NODE, 'node markers')):
+                            expected, actual = pattern.findall(old), pattern.findall(text)
+                            require(actual == expected,
+                                    f'revision changed {name} in sentence {item["sentence"]}: '
+                                    f'forbidden or misplaced markers {actual!r}; required exact sequence {expected!r}')
                     start, end = spans[item['sentence'] - 1]
                     body = body[:start] + text + body[end:]
                 revised = {**draft, 'body': body}

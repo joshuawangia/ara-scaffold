@@ -20,7 +20,7 @@ def content_sensitive_auditor(tmp):
 if not canary:
  data=json.loads(prompt.split('\\nINPUT_JSON\\n')[1])
  if 'sentences' in data:
-  value={'labels':[{'sentence':s['sentence'],'node_ids':['n1'],'asserts_premise_or_inference_not_in_outline':'sentinel@example.invalid' in s['text']} for s in data['sentences']]}
+  value={'labels':[{'sentence':s['sentence'],'node_ids':['n1'],'role':'unsupported_claim' if 'sentinel@example.invalid' in s['text'] else 'argument_step','citation_supported':True} for s in data['sentences']]}
  elif 'flagged_sentences' in data:
   value={'revisions':[{'sentence':s['sentence'],'text':''} for s in data['flagged_sentences']]}
  else: raise AssertionError('unexpected kind')

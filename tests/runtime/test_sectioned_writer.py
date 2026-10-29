@@ -197,11 +197,12 @@ def test_sectioned_compose_still_stops_at_adverse_audit(rig, monkeypatch):
     def adverse(kind, prompt, schema, maximum):
         if kind == 'revise_essay':
             inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
-            return Response(response({'revisions': inputs['flagged_sentences']}))
+            return Response(response({'revisions': [dict(sentence=s['sentence'], text=s['text'])
+                                                   for s in inputs['flagged_sentences']]}))
         if kind == 'audit_essay':
             inputs = json.loads(prompt.split('\nINPUT_JSON\n')[1])
             return Response(response({'labels': [dict(sentence=s['sentence'], node_ids=['n0', 'n1'],
-                asserts_premise_or_inference_not_in_outline=True) for s in inputs['sentences']]}))
+                role='unsupported_claim', citation_supported=True) for s in inputs['sentences']]}))
         return complete(kind, prompt, schema, maximum)
     monkeypatch.setattr(provider, 'complete', adverse)
     with pytest.raises(Rejected, match='audit failed'):

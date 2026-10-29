@@ -95,7 +95,7 @@ def canned(config):
     route = fixture_route(TARGETS[0])
     add('write_essay', {'outline': calls.essay_outline(route), 'word_limit': 300, 'minimum_words': 150, 'feedback': []}, DRAFT)
     add('audit_essay', calls.audit_inputs(route, DRAFT),
-        {'labels': [{'sentence': 1, 'node_ids': ['n:p', 'n:p:c', 'n:p:a'], 'asserts_premise_or_inference_not_in_outline': False}]})
+        {'labels': [{'sentence': 1, 'node_ids': ['n:p', 'n:p:c', 'n:p:a'], 'role': 'argument_step', 'citation_supported': True}]})
     content = [{'type': 'text', 'text': 'P'}]
     add('search_evidence', {'draft': DRAFT, 'items': []}, {}, content)
     add('verify_originality_citations', {'draft': DRAFT, 'items': [],

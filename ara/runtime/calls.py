@@ -1177,33 +1177,41 @@ class ModelCalls:
         parts = [NODE.sub('', draft['body'][start:end]).strip()
                  for start, end in sentence_spans(draft['body'])]
         inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
-                  'outline': self.essay_outline(route)}
+                  'outline': self.essay_outline(route),
+                  'root_conclusion': {'node_id': route.root_id,
+                                      'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
         if self.config['essay_min_words'] >= 4500:
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
         return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
+        from collections import Counter
+        from ara.runtime.essay_audit import audit_flags
         inputs = self.audit_inputs(route, draft)
         def check(data):
             ids = {n.id for n in route.nodes}
             expected = {s['sentence'] for s in inputs['sentences']}
             labels = data['labels']
+            flags = audit_flags(labels, inputs, draft)
             numbers = [item['sentence'] for item in labels]
             if len(numbers) != len(set(numbers)) or set(numbers) != expected:
-                require(not any(item['asserts_premise_or_inference_not_in_outline'] for item in labels),
+                require(not flags,
                         'essay audit failed')
                 # An incomplete non-adverse inventory supplies no audit verdict.
                 # Correct its shape through the normal bounded validation policy;
                 # a complete adverse audit remains final below.
                 raise ValidationError('essay audit: sentence inventory mismatch')
-            covered = {node for item in labels for node in item['node_ids']}
-            require(covered <= ids, 'essay audit: unknown node id')
+            referenced = {node for item in labels for node in item['node_ids']}
+            require(referenced <= ids, 'essay audit: unknown node id')
+            covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
+                       for node in item['node_ids']}
             missing = ids - covered
-            extra = [item['sentence'] for item in labels if item['asserts_premise_or_inference_not_in_outline']]
+            extra = [item['sentence'] for item in flags]
             markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
             result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
-                      'extra_steps': extra,
+                      'extra_steps': extra, 'flags': flags,
+                      'role_counts': dict(Counter(item['role'] for item in labels)),
                       'faithful': not missing and not extra and markers == ids}
             self.log.record('essay_audit', **result)
             if not result['faithful']:

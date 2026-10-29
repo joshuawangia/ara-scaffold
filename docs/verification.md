@@ -36,9 +36,11 @@ critical questions. Graph bookkeeping is excluded. Before the audit, writer
 validation requires every node marker and at least two text tokens after markers
 are removed. Short smoke drafts use up to four identical-input writer attempts. Competition
 length uses [section planning and targeted revision](search.md). Complete adverse
-audits allow two bounded rounds of flagged-sentence revision, each followed by a
-full audit; remaining flags stop the run. The audit labels additional premises or
-inferences; transitions asserting neither are allowed. Code computes coverage and
+audits allow three bounded rounds of flagged-sentence revision, each followed by a
+full audit; remaining flags stop the run. The [typed audit](search.md) distinguishes
+presentation and CQ-consistent objections/replies from substantive source claims
+and argument steps. Unsupported claims, miscited sources and unmapped steps fail.
+The root conclusion is explicit input, not an automatic exemption. Code computes coverage and
 the verdict. It does not request a reconstruction of text production. Later
 historical fresh-clone outcomes were recorded in the external zeta report;
 observed successes do not guarantee that a provider will never refuse. Earlier

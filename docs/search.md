@@ -85,9 +85,22 @@ first audit does not imply completion of originality/citation checks or export.
 Audit sentence boundaries retain citation markers immediately following terminal
 punctuation with the preceding sentence, including across transparent node
 markers. Original text offsets drive repairs; splitting never rewrites the draft.
-A complete adverse audit can trigger at most two targeted revision rounds. Each
+A typed audit distinguishes source claims, argument steps, presentation
+(framing/exposition/signposts), objections/replies, and unsupported claims.
+Unsupported substantive claims fail. Source claims require the auditor's positive
+support judgment plus an actual citation marker and matching frozen-T bibliography
+entry; miscited or missing citations fail. Argument steps require a known route
+node/inference/CQ mapping. The root conclusion is explicit audit input, and a
+faithful restatement maps to its node. A marker alone proves no semantic match.
+Presentation roles cannot introduce new substance or satisfy route coverage;
+objections/replies must be clearly marked and consistent with the route's CQs,
+otherwise the auditor must label them unsupported. Role classification and source
+fidelity remain model judgments. Sentence inventory, known ids and full route
+coverage remain mandatory. Receipts retain role counts and typed failure reasons.
+
+A complete adverse audit can trigger at most three targeted revision rounds. Each
 `revise_essay` call receives exactly the audit's evidence, its flagged labels and
-the corresponding original spans. It returns replacements only for those sentence
+the corresponding original spans and exact citation/node marker sequences. It returns replacements only for those sentence
 numbers. Retained replacements preserve citation/node markers exactly, in order;
 an empty replacement cuts a whole unsupported sentence. Bibliography and all
 unflagged bytes remain unchanged. Each replacement is capped at 8,000 characters
@@ -95,11 +108,15 @@ and at the greater of 1,000 or twice its original character length. Length, body
 and node coverage checks run before the entire draft is audited again. Malformed
 audits and provider failures are not eligible for this repair loop. Missing-node
 failures with no flagged sentences stop because there is no authorized edit span.
-Remaining flags after two rounds stop the run and are logged explicitly.
+Validation feedback identifies the sentence and offending/required marker sequences,
+including markers added to previously uncited sentences. A valid T id still cannot
+be added to a retained replacement. Remaining flags after three rounds stop the
+run and are logged explicitly.
 
 Use `ara select --run-dir PATH --route ID --draft PATH/draft.unverified.json` to
 resume an existing draft without outlining or writing it again. The draft is
-schema/length/coverage checked and logged before auditing. Revised partials retain
+screened by the provider's identity/credential scanner before validation, logging,
+saving or audit dispatch, then schema/length/coverage checked. Revised partials retain
 the unverified filename. Citation/originality checks and the final re-audit still
 follow a faithful first audit; the final re-audit does not revise already-verified
 text. No paid-provider fallback or automatic provider switch is introduced.

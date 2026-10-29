@@ -106,7 +106,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     """One construction lifecycle, one freeze. Search cannot observe provisional batches."""
     if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
-    commitments = calls.build_t(literature, audience)
+    state = getattr(calls, 'alignment_resume', None)
+    commitments = state['commitments'] if state is not None else calls.build_t(literature, audience)
     # Rich construction exposes semantic metadata without changing the strict
     # CommitmentSet codec or the legacy commitments.json artifact.
     from ara.runtime.frozen_catalogue import frozen_artifact

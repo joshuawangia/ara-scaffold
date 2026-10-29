@@ -1867,6 +1867,28 @@ CASES += [
 ]
 
 
+CASES += [
+    ('alignment_bound_candidate_identity', 'ara/runtime/symbol_alignment.py',
+     "return dict(left=candidate['left'],right=candidate['right'],**value)",
+     "return dict(left=candidate['left'],right='R',**value)",
+     'tests/runtime/test_alignment_resume.py::test_binding_rejects_even_an_echoed_mutated_identity'),
+    ('alignment_unresolved_threshold', 'ara/runtime/symbol_alignment.py',
+     'if len(unresolved)>max_unresolved:', 'if False:',
+     'tests/runtime/test_alignment_resume.py::test_unresolved_threshold_refuses_before_freeze'),
+    ('alignment_resume_working_binding', 'ara/runtime/alignment_resume.py',
+     "require(json.loads((directory/f\"working-t-{state['plan_id']}.json\").read_text())==expected,",
+     'require(True,',
+     'tests/runtime/test_alignment_resume.py::test_resume_refuses_damaged_or_incomplete_state_before_provider[working]'),
+    ('alignment_resume_rejection_receipts', 'ara/runtime/alignment_resume.py',
+     "require(data['attempts']==config.get('validation_attempts',1) and\n                [r.get('attempt') for r in rejected]==list(range(1,data['attempts']+1)) and\n                rejected[-1].get('reason')==data['reason'],",
+     'require(True,',
+     'tests/runtime/test_alignment_resume.py::test_unresolved_receipt_without_rejected_attempts_cannot_resume'),
+    ('alignment_unresolved_report', 'ara/runtime/report.py',
+     'unresolved_count=len(unresolved),unresolved=unresolved,', 'unresolved_count=0,unresolved=unresolved,',
+     'tests/runtime/test_alignment_resume.py::test_mutated_id_is_unresolved_and_never_changes_candidate'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

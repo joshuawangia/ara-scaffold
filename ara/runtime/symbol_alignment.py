@@ -13,7 +13,8 @@ from ara.runtime.frozen_catalogue import make_catalogue
 from ara.types import Commitment, CommitmentSet, Formula, Term
 
 LEGACY_POLICY_VERSION = 'cross-source-symbol-alignment-v1'
-POLICY_VERSION = 'cross-source-symbol-alignment-v2'
+RETRIEVAL_POLICY_VERSION = 'cross-source-symbol-alignment-v2'
+POLICY_VERSION = 'cross-source-symbol-alignment-v3'
 CONSISTENCY_REFUSAL = 'alignment consistency not established (unsat or unknown)'
 RELATIONS = {'same_content', 'entails_left_right', 'entails_right_left', 'contrary', 'unrelated'}
 _STOP = frozenset('a an the and or not of to in on for from with by as at is are be that this it its'.split())
@@ -185,32 +186,85 @@ def apply_judgments(commitments, symbols, provenance, judgments):
     return result,catalogue,rows,mapping
 
 
-def align_symbols(calls, commitments, symbols, provenance):
+def unresolved_limit(config):
+    limit=config.get('construction_alignment_max_unresolved',5)
+    if type(limit) is not int or limit < 0:
+        raise ValueError('construction_alignment_max_unresolved must be a nonnegative integer')
+    return limit
+
+
+def bind_judgment(value, candidate):
+    """The response owns only the relation/reason; candidate identity is runtime data."""
     from ara.runtime.calls import require
+    require(isinstance(value,dict) and set(value)=={'relation','reason'},
+            'alignment response must contain only relation and reason')
+    require(value['relation'] in RELATIONS and isinstance(value['reason'],str) and
+            0 < len(value['reason'].strip()) <= 1000, 'invalid alignment verdict')
+    return dict(left=candidate['left'],right=candidate['right'],**value)
+
+
+def _validate_unresolved(rows):
+    if not isinstance(rows,list): raise ValueError('invalid alignment unresolved inventory')
+    for row in rows:
+        if (not isinstance(row,dict) or set(row)!={'left','right','status','reason','attempts'} or
+                row['status']!='alignment_unresolved' or
+                not all(isinstance(row[k],str) and row[k].strip() for k in ('left','right','reason')) or
+                type(row['attempts']) is not int or not 1 <= row['attempts'] <= 3):
+            raise ValueError('invalid alignment unresolved outcome')
+
+
+def align_symbols(calls, commitments, symbols, provenance):
+    from ara.runtime.calls import InvalidOutput, require
     limit=calls.config.get('construction_alignment_candidates',150)
+    max_unresolved=unresolved_limit(calls.config)
     catalogue=make_catalogue(commitments,symbols)
     from ara.runtime.commitment_provenance import make_commitment_provenance
     make_commitment_provenance(commitments,catalogue,provenance)
     inventory=candidate_inventory(symbols,provenance,limit,**retrieval_settings(calls.config))
     candidates=inventory['candidates']
     retrieval={k:v for k,v in inventory.items() if k!='candidates'}
+    restored=getattr(calls,'alignment_resume',None)
+    if restored is not None:
+        require(candidates==restored['candidates'], 'alignment resume candidate inventory changed')
     calls.log.record('symbol_alignment_candidates',policy_version=POLICY_VERSION,limit=limit,
-                     candidates=candidates,retrieval=retrieval,commitments_sha256=catalogue['commitments_sha256'],
-                     catalogue_sha256=catalogue['sha256'])
+                     candidates=candidates,retrieval=retrieval,unresolved_limit=max_unresolved,
+                     commitments_sha256=catalogue['commitments_sha256'],catalogue_sha256=catalogue['sha256'])
     if not candidates: return commitments,symbols,provenance,None
     names={s['name']:s for s in symbols}
-    judgments=[]
+    previous={(j['left'],j['right']):j for j in restored['judgments']} if restored else {}
+    pending={(j['left'],j['right']):j for j in restored['unresolved']} if restored else {}
+    judgments,unresolved=[],[]
     for candidate in candidates:
         left,right=names[candidate['left']],names[candidate['right']]
-        def check(value):
-            _validate_judgments(symbols,provenance,[value])
-            require((value['left'],value['right'])==(left['name'],right['name']), 'alignment judgment changed candidate')
-            return value
-        judgments.append(calls.call('judge_symbol_alignment',dict(topic='',policy_version=POLICY_VERSION,
-            candidate=dict(left=left,right=right,score=candidate['score']),
-            sources={id:provenance[id] for id in sorted(set(left['evidence_ids']+right['evidence_ids']))},
-            commitments_sha256=catalogue['commitments_sha256'],catalogue_sha256=catalogue['sha256']),check))
+        pair=(candidate['left'],candidate['right'])
+        if pair in previous:
+            judgments.append(previous[pair])
+        elif pair in pending:
+            unresolved.append(pending[pair])
+        else:
+            def check(value):
+                bound=bind_judgment(value,candidate)
+                _validate_judgments(symbols,provenance,[bound])
+                return bound
+            try:
+                value=calls.call('judge_symbol_alignment',dict(topic='',policy_version=POLICY_VERSION,
+                    candidate=dict(left=left,right=right,score=candidate['score']),
+                    sources={id:provenance[id] for id in sorted(set(left['evidence_ids']+right['evidence_ids']))},
+                    commitments_sha256=catalogue['commitments_sha256'],catalogue_sha256=catalogue['sha256']),check)
+            except InvalidOutput as exc:
+                outcome=dict(left=pair[0],right=pair[1],status='alignment_unresolved',
+                             reason=str(exc),attempts=calls.config.get('validation_attempts',1))
+                unresolved.append(outcome)
+                calls.log.record('alignment_unresolved',**outcome)
+            else:
+                judgments.append(value)
+        if len(unresolved)>max_unresolved:
+            calls.log.record('symbol_alignment_incomplete',status='unresolved_limit_exceeded',
+                unresolved=unresolved,unresolved_count=len(unresolved),unresolved_limit=max_unresolved,
+                accepted_count=len(judgments),candidate_count=len(candidates))
+            require(False,'alignment unresolved limit exceeded; no freeze')
     receipt=dict(policy_version=POLICY_VERSION,candidate_limit=limit,candidates=candidates,judgments=judgments,retrieval=retrieval,
+                 unresolved=unresolved,unresolved_limit=max_unresolved,
                  original_commitments=commitments.to_dict(),original_symbols=deepcopy(symbols),
                  status='accepted',refusal_reason=None,mapping={s['name']:s['name'] for s in symbols})
     try:
@@ -231,9 +285,11 @@ def validate_alignment(receipt, commitments, symbols, rows):
     if not isinstance(receipt,dict):
         raise ValueError('invalid alignment receipt')
     version=receipt.get('policy_version')
-    if version==POLICY_VERSION:
+    if version in (RETRIEVAL_POLICY_VERSION,POLICY_VERSION):
         fields=fields|{'retrieval'}
-    if set(receipt)!=fields or version not in (LEGACY_POLICY_VERSION,POLICY_VERSION):
+    if version==POLICY_VERSION:
+        fields=fields|{'unresolved','unresolved_limit'}
+    if set(receipt)!=fields or version not in (LEGACY_POLICY_VERSION,RETRIEVAL_POLICY_VERSION,POLICY_VERSION):
         raise ValueError('invalid alignment receipt')
     original=CommitmentSet.from_dict(receipt['original_commitments'])
     source_rows={c.id:rows[c.id] for c in original.commitments}
@@ -249,9 +305,18 @@ def validate_alignment(receipt, commitments, symbols, rows):
         candidates=inventory.pop('candidates')
         if retrieval!=inventory:
             raise ValueError('alignment retrieval replay mismatch')
-    if not candidates or receipt['candidates']!=candidates or len(receipt['judgments'])!=len(candidates):
+    unresolved=receipt.get('unresolved',[])
+    _validate_unresolved(unresolved)
+    if version==POLICY_VERSION and len(unresolved)>unresolved_limit(
+            {'construction_alignment_max_unresolved':receipt['unresolved_limit']}):
+        raise ValueError('alignment unresolved limit exceeded')
+    if not candidates or receipt['candidates']!=candidates:
         raise ValueError('alignment candidate inventory mismatch')
-    if [(j['left'],j['right']) for j in receipt['judgments']] != [(c['left'],c['right']) for c in candidates]:
+    pairs=[(c['left'],c['right']) for c in candidates]
+    accepted=[(j['left'],j['right']) for j in receipt['judgments']]
+    missing=[(j['left'],j['right']) for j in unresolved]
+    if (len(accepted)+len(missing)!=len(pairs) or set(accepted)&set(missing) or
+            accepted!=[p for p in pairs if p not in missing] or missing!=[p for p in pairs if p not in accepted]):
         raise ValueError('alignment judgment inventory mismatch')
     _validate_judgments(original_symbols,source_rows,receipt['judgments'])
     if receipt['status']=='refused' and receipt['refusal_reason']==CONSISTENCY_REFUSAL:
@@ -280,6 +345,7 @@ def alignment_disclosure(provenance):
     if receipt is None:
         return dict(status='unavailable', judgments=[], mapping={})
     return dict(status=receipt['status'],refusal_reason=receipt['refusal_reason'],
-                judgments=receipt['judgments'],
+                judgments=receipt['judgments'],unresolved=receipt.get('unresolved',[]),
+                unresolved_count=len(receipt.get('unresolved',[])),
                 mapping={a:b for a,b in receipt['mapping'].items() if a!=b},
                 note='Model alignment judgments are not source endorsements. Bridges belong to no single paper; at least two endorsed source supports remain required.')

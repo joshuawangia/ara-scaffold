@@ -249,6 +249,19 @@ def extraction(records, events):
                      'Historical successes are not silently substituted for an unattempted current paper.')
 
 
+def alignment_summary(records):
+    events=[r['event'] for r in records]
+    inventories=[payload(e) for e in events if e['stage']=='symbol_alignment_candidates']
+    unresolved=[payload(e) for e in events if e['stage']=='alignment_unresolved']
+    final=[payload(e) for e in events if e['stage'] in
+           ('symbol_alignment_applied','symbol_alignment_refused','symbol_alignment_incomplete')]
+    inventory=inventories[-1] if inventories else {}
+    status=final[-1]['status'] if final else 'unfinished' if inventories else 'unavailable'
+    return dict(status=status,candidate_count=len(inventory.get('candidates',[])),
+        unresolved_count=len(unresolved),unresolved=unresolved,unresolved_limit=inventory.get('unresolved_limit'),
+        note='Unresolved candidates grant no alignment and are not unrelated judgments.')
+
+
 def construction(records, evidence):
     freezes = [r for r in records if r['event']['stage'] == 'commitments_frozen']
     commitments = payload(freezes[-1]['event'])['commitments']['commitments'] if freezes else []
@@ -263,7 +276,7 @@ def construction(records, evidence):
     def classification(commitment, field):
         values = {item.get(field) for item in commitment['source_evidence']}
         return next(iter(values)) if len(values) == 1 and None not in values else '(unknown or ambiguous)'
-    return dict(commitments=enriched,
+    return dict(commitments=enriched, alignment=alignment_summary(records),
                 by_source=dict(Counter(classification(c, 'source_id') for c in enriched)),
                 by_kind=dict(Counter(classification(c, 'kind') for c in enriched)),
                 symbol_catalogue=symbols, symbol_count=len(symbols) if symbols is not None else None,
@@ -271,7 +284,7 @@ def construction(records, evidence):
                               commitments_sha256=digest(canonical(payload(r['event'])['commitments'])),
                               hash_note='SHA-256 of canonical logged commitments, computed by reporter; event_hash is the chain freeze receipt.',
                               payload=payload(r['event'])) for r in freezes],
-                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_'))])
+                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_', 'alignment_'))])
 
 
 def route_details(row, commitments, provenance=None):

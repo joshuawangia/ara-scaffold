@@ -4095,3 +4095,26 @@ Q, which changes when Q is replaced by false. The shared novelty gate applies to
 native proposal, route selection, forward mining and external gap-file targets.
 Native regressions retain CLOSED engine proofs while classifying padded packages
 as structural, and preserve genuine scheme and cross-paper deduction positives.
+
+
+## Alignment recovery and unresolved outcomes (Sigma round 12)
+
+- New alignment replies contain only relation/reason. Candidate identities are
+  bound by runtime code; extra or changed identifiers are refused without repair.
+- Exhausted output validation retries emit `alignment_unresolved` with pair,
+  reason and attempts. Default absolute maximum is 5, configurable with
+  `construction_alignment_max_unresolved`; excess refuses freeze. Operational
+  and accounting failures remain stops. Unresolved is not unrelated or aligned.
+- Alignment policy v3 persists the unresolved inventory/limit, with complete
+  candidate partition validation. Existing v1/v2 receipts remain readable;
+  new policy/schema and plan v15 intentionally invalidate old call/preflight
+  identities. CommitmentSet and outer frozen catalogue codecs stay unchanged.
+- Native `resume-alignment` verifies completed construction and accepted judgment
+  receipts before provider creation, preserves prior accounted calls, performs no
+  construction replay, and continues the existing freeze/targets/search path.
+  Its plan-only form performs neither provider creation nor token counting and
+  writes to a separate output directory. A single advisory resume lock is shared
+  with construction recovery. Partial/already-frozen or incomplete states refuse.
+- Successful free planning proves reusable artifacts and call inventory, not
+  future model acceptance, consistency, budgets or useful synthesis. Canonical
+  operating instructions are in docs/construction.md.

@@ -1,18 +1,18 @@
 # From literature to audited drafts: how ARA was built, run, and corrected
 
-*An anonymised methodology report • Version 2 • correspondence checkpoint: 29 October 2026, 13:52:50 UTC*
+*An anonymised methodology report • Version 3 • correspondence checkpoint: 29 October 2026, 20:41:14 UTC*
 
 ## Abstract
 
-ARA combines language-model proposals with a deterministic, bank-constrained argument engine. This report reconstructs its development and use from correspondence, run receipts, pilot reports, and source-linked reviews. The scaffold was **designed and directed by a human, and built largely by AI coding agents under that direction**. A selected bibliography yielded a smaller accessible corpus, rich extraction records, and frozen working commitments. Models proposed targets and inference steps; the engine checked licenses and searched both polarities. Iteration repaired extraction loss, construction limits, provider isolation, trivial closure, vocabulary mismatch, and short or unsupported writing. A later gap pilot completed construction but stopped before freeze when alignment replies changed an immutable identifier; continuation and failure-isolation repairs remained pending. Formal success repeatedly exceeded substantive success: closed routes could restate sources, package conjunctions, or depend on only one paper. Later literature checks narrowed an apparent gap to a partially anticipated connection whose exact derivation was not found within the stated search scope. The retained outputs include audit-passed drafts and a polished PDF, but external verification and a qualifying cross-paper pilot remain unestablished. Costs, tokens, human decisions, and missing accounting are reported separately rather than inferred from successful execution.
+ARA combines language-model proposals with a deterministic, bank-constrained argument engine. This report reconstructs its development and use from correspondence, run receipts, pilot reports, and source-linked reviews. The scaffold was **designed and directed by a human, and built largely by AI coding agents under that direction**. A selected bibliography yielded a smaller accessible corpus, rich extraction records, and frozen working commitments. Models proposed targets and inference steps; the engine checked licenses and searched both polarities. Iteration repaired extraction loss, construction limits, provider isolation, trivial closure, vocabulary mismatch, and short or unsupported writing. A later gap pilot correctly refused altered identifiers at alignment candidate 36/150. Recovery reused finished construction, froze 160 commitments with no unresolved alignments, then refused the first L3 target request at admission. Offline context packing fit the configured bound; the packed/unpacked fork comparison remains pending. Formal success repeatedly exceeded substantive success: closed routes could restate sources, package conjunctions, or depend on only one paper. Later literature checks narrowed an apparent gap to a partially anticipated connection whose exact derivation was not found within the stated search scope. Later sampled audits exposed nondeterminism, and two native exports lost all citations. No substantive novel contribution is established so far; a qualifying cross-paper pilot, citation repair, and L3 novelty dossier remain pending. Costs, tokens, human decisions, and missing accounting are reported separately rather than inferred from successful execution.
 
 ## 1. Scope, authorship, and evidence
 
 The human chose the research area, supplied the initial literature collection, directed the scaffold, approved budgets and provider changes, set acceptance criteria, and selected routes and subsequent research priorities. Coding agents investigated, implemented, tested, reviewed, and operated the scaffold. Generation inside ARA occurred through separately isolated provider calls. These are different roles: evidence that an ARA call excluded host context does not establish that development workers lacked that context. The operating rule prohibited the human from supplying original philosophical arguments, premises, distinctions, or a personal view. This report documents the recorded actions; it does not independently certify competition compliance. [R1–R3]
 
-The correspondence snapshot contains **26 timestamped entries recording human actions**, including approvals reported indirectly by the coordinating agent. Appendix A lists every such entry. The brief also records earlier human design and bibliography preparation without timestamps. Those activities are disclosed, but no time is invented for them. Native event labels such as `HUMAN` mark command/input boundaries; workers also used those boundaries. They are therefore not a count of distinct human interventions or human labor. [R1, R2]
+The correspondence snapshot contains **29 timestamped entries recording human actions**, including approvals reported indirectly by the coordinating agent. Appendix A lists every such entry. The brief also records earlier human design and bibliography preparation without timestamps. Those activities are disclosed, but no time is invented for them. Native event labels such as `HUMAN` mark command/input boundaries; workers also used those boundaries. They are therefore not a count of distinct human interventions or human labor. [R1, R2]
 
-Evidence is versioned. At the original report’s checkpoint, the observed main revision was `80a3448`; the principal numerical ledger is the frozen fork-6 report, whose last local event is on 28 October. Later writer, publication, literature, and local-branch reports are explicitly identified as supplements. Version 2 adds gap pilot 1 at `0a31afb`, the round-4 typed-audit table, and the pending repair briefs. The correspondence supplement adds no new recorded human-action entry; Appendix A still contains 26 entries. We do not splice their successful stages into a fictional completed run. In particular, the later acquisition of **54 PDFs** did not retroactively enlarge the frozen evidence used by the reported pilots. [R4–R8]
+Evidence is versioned. At the original report’s checkpoint, the observed main revision was `80a3448`; the principal numerical ledger is the frozen fork-6 report, whose last local event is on 28 October. Later writer, publication, literature, and local-branch reports are explicitly identified as supplements. Version 2 preserved gap pilot 1 at `0a31afb` and the round-4 typed-audit table. Version 3 adds recovery at `4cefe35`, the offline context-packing plans at `c99c6b3`, writer rounds 5–6, and four independent reviews. Three later human-action entries extend Appendix A to 29. Findings and closures are tied to their reviewed heads; no global integrated-head verdict is inferred. We do not splice their successful stages into a fictional completed run. In particular, the later acquisition of **54 PDFs** did not retroactively enlarge the frozen evidence used by the reported pilots. [R4–R8]
 
 Every figure has its numerical input and source pointers in `data.json` and `figures/manifest.json`. The data also contains source-file hashes, the anonymised correspondence snapshot, model-receipt accounting components, prompt hashes, and gate dispositions. The companion `prompts.md` supplies recorded instruction variants without reproducing source-paper passages. Raw logs retain full prompts and responses in the private evidence workspace; they are not anonymously publishable by default.
 
@@ -52,7 +52,7 @@ Fork 6 pursued gap-driven targets. It searched **ten targets**, **six** labelled
 
 The initial whole-essay writer produced **eight attempts** across the selected routes, all below the then-configured **4,500-word** minimum; their range was **1,590–4,376 words**. No audit was reached. A sectioned writer then used an outline with section budgets, deterministic assembly, and targeted expansion. Its first length-successful draft reached **4,642 words**, but failed audit on **four sentences**. A repaired **4,604-word** draft passed a subsequent native audit, then stopped before external evidence retrieval. [R1, R7]
 
-Later evidence changes the interpretation of that pass. A new binary audit flagged **101** sentences in the same previously accepted draft. Typed auditing distinguished source claims, argument steps, framing, objections, and unsupported claims. In the later recorded comparison, route 1 began with **75/245** flags and route 2 with **25/245**. Repairs yielded **4,714-word** and **4,619-word** drafts with zero flags in their final pre-verification audits. Both native runs nevertheless stopped at `search_evidence` with `cli_tool_event`. An isolated web diagnostic succeeded, but neither native lifecycle produced accepted retrieval evidence, citation/originality classification, the final audit, or an essay export. **Verified native exports remained zero.** [R7]
+Later evidence changes the interpretation of that pass. A new binary audit flagged **101** sentences in the same previously accepted draft. Typed auditing distinguished source claims, argument steps, framing, objections, and unsupported claims. In the later recorded comparison, route 1 began with **75/245** flags and route 2 with **25/245**. Repairs yielded **4,714-word** and **4,619-word** drafts with zero flags in their final pre-verification audits. Both native runs nevertheless stopped at `search_evidence` with `cli_tool_event`. An isolated web diagnostic succeeded, but neither native lifecycle produced accepted retrieval evidence, citation/originality classification, the final audit, or an essay export. **Verified native exports remained zero at the round-4 checkpoint.** [R7]
 
 **Table 1. Round-4 typed pre-verification audit, reproduced from the writer’s receipt.** “Audit passed” does not mean that retrieval, citation/originality verification, or export passed. [R7]
 
@@ -64,9 +64,31 @@ Later evidence changes the interpretation of that pass. A new binary audit flagg
 | Route 2 accepted repair 1 | 4,525 | 74/244 | Revision required |
 | Route 2 accepted repair 2 | 4,619 | 0/244 | Pre-verification audit passed |
 
-The increase from **25 to 74 flags** on route 2 shows why these labels should not be read as a stable quality score. Native word counts include machine markers. Excluding both node and citation markers, the final drafts contain **4,578** and **4,498 words** respectively; route 2 is two words below the then-configured **4,500-word** floor under that stricter count. Neither draft is a verified export. **Nu4 r5 remains pending**: the brief requests observable event-type refusals, a narrowly bounded web-evidence fix, and native continuation from the audited drafts. No successful retrieval or export is credited to that request. [R7, R17]
+The increase from **25 to 74 flags** on route 2 shows why these labels should not be read as a stable quality score. Native word counts include machine markers. Excluding both node and citation markers, the final drafts contain **4,578** and **4,498 words** respectively; route 2 is two words below the then-configured **4,500-word** floor under that stricter count. Neither round-4 draft was a verified export. Nu4 r5 was pending at the version-2 checkpoint; its later completion and round-6 limitations are reported below. This historical table is unchanged. [R7, R17, R20]
 
 A separate publication branch polished the preserved earlier route-1 draft through isolated Claude Opus calls. It produced a **4,743-word**, **12-page** PDF with **two deterministic figures**. Its native audit covered all route nodes and its exact T-citation membership check passed. External verification remained blocked on that branch. This polished artifact is evidence of successful prose and rendering work on one selected route; it is not the L3 gap paper and is not proof of a verified competition entry. [R8]
+
+### 3.3.1 Later writer rounds: unstable audits and citation-free exports
+
+Round 5 (`0368a17`) identified the refused event as `item.completed → web_search → action.type=other` and permitted that exact native web event only in `search_evidence`. Both routes then completed native export with originality labelled `possible_overlap`. That label is not a novelty pass. After quotation cleanup, route 1 received **44 flags**, then **zero** on a byte-identical cleaned-input prompt without a text repair. Route 2 changed from **eight to six flags** before substantive repair. Final audits could replay an accepted cache sample without reconciling the adverse verdict. These observations show audit nondeterminism, not measured error rates or evidence that the clean sample was correct. [R20, R22]
+
+Round 6 (`d9ac619`) introduced a **k=3 union gate**: fresh requests bypass the response cache, and any current or valid prior same-prompt adverse flag remains binding. It is neither majority voting nor a claim of statistically independent samples. Repairs address the union and return through verification and fresh audit. The exact final-stage batches were: [R20]
+
+| Route / batch | Flags per sample | Prior adverse | Union | Unanimous / sentences | Verdict |
+| --- | --- | ---: | ---: | --- | --- |
+| 1 / 1 | 0, 0, 36 | 44 | 47 | 209/245 | reject |
+| 1 / 2 | 41, 52, 42 | none | 53 | 234/246 | reject |
+| 1 / 3 | 0, 0, 0 | none | 0 | 245/245 | accept |
+| 2 / 1 | 30, 0, 0 | none | 30 | 214/244 | reject |
+| 2 / 2 | 2, 0, 5 | none | 6 | 238/244 | reject |
+| 2 / 3 | 1, 15, 1 | none | 15 | 230/244 | reject |
+| 2 / 4 | 0, 0, 0 | none | 0 | 244/244 | accept |
+
+Unanimity counts agreement in binary votes; unanimous adverse votes still reject. Route 1 used **10 actual fresh audit calls** for **nine valid final-batch samples**; route 2 used **13 calls** for **12 samples**. Initial audits and bounded schema correction explain the difference. The first route-1 batch retained the earlier 44-flag result despite two clean samples. Complete valid adverse history therefore worked; the incomplete-history loophole later found by review remains pending repair (§4.8). [R20, R23]
+
+Both round-6 lifecycles exported, but **each final bibliography had zero entries and each body had zero citation markers**. Native word counts were **5,387 / 4,413**, or **5,336 / 4,385** without machine markers. Both originality verdicts remained `possible_overlap`. External verification had removed the local source citations; subsequent clean audits did not restore them. These are native exports, not submission-ready essays or proof of source fidelity. Route 1 ran before a later cleanup-length/resume-budget correction; route 2 used the corrected source. The report preserves that source-version distinction rather than claiming both ran at the final committed head. [R20]
+
+**Citation repair is pending in R7.** The requested fix verifies frozen-T references against local full text and page evidence first, uses web search as supplementary evidence, and refuses an export whose source claims lack citation coverage. It also must preserve valid adverse evidence from incomplete audit inventories. Publication's separate default floor is **3,000 words**, distinct from the historical writer construction target of **4,500** and the **6,000-word** ceiling. Native counters and marker-free counts must not be interchanged. [R20, R22, R23]
 
 ### 3.4 Gap pilot 1: completed construction, then an alignment stop
 
@@ -79,6 +101,16 @@ The free `resume-construction --plan-only` check also refused: “construction r
 Coverage and semantic limits survived the completed construction stage. Skipped windows included capacity/empty-closure losses, a no-root selection, lexical attribution false positives, and provenance/schema refusals. The sole accepted entailment judgment was disputed on source review and involved an attacked description, not an endorsed safety–retraction bridge. Several original L3 anchors did not survive construction; a surviving retraction-related statement could not silently replace the full retraction rule. Four conflict inputs also lacked bindings because their required source contributed no commitment. These were qualified draft inputs, never admitted frozen gaps. [R16]
 
 Independent review of this exact revision also retained blocking **INTEG-F1**: irrelevant fresh-atom wrappers could package existing cross-paper facts and receive a native derived label. This defect was independent of the earlier identifier stop. The pilot generated no target or route on which to test it; an empty padding-review inventory does not clear the defect. L3 therefore remains partially anticipated, with no resolution established by this pilot. [R16]
+
+### 3.5 Gap1r: recovery reached freeze, then target admission stopped
+
+At `4cefe35`, recovery restored all **74 construction windows**, **159 source commitments**, and **35 accepted legacy judgments**. It completed **115 pending pairs** without replaying construction: **150/150 accepted judgments**, comprising **149 unrelated** and **one right-to-left entailment**, with **zero unresolved**. Applying the one model-alignment bridge produced **frozen T = 160 (159 source + 1 bridge)** across **22/26 papers**, with no canonical rewrites. This is executed continuation evidence, not merely a repair brief. The source inventory retained **134 endorsed, 10 reported, and 15 attacked** commitments. The inherited bridge remains semantically disputed; accepting its receipt did not establish a safety–retraction inference. [R18]
+
+The actual frozen union was satisfiable, so the inconsistent-union failure R28-F2 did **not** occur in this pilot. Six external gaps bound successfully. A new semantic pass classified **60 pairs: 35 compatible, 22 unrelated, three in tension**. Together with three source-level open-problem records, the three tensions and six external records produced **12 hypotheses**. These are not twelve established open problems. Source review found stance reversal in one supposed tension, distinct consequence notions conflated in another, and historically open questions treated as current. Four other comparisons remained unbound because their source supplied no commitment. Missing L3 rule anchors persisted. [R18]
+
+Forward synthesis reached its **depth-2 / 500-consequence cap**, reported truncation, and returned **two leads**. Both were conjunction packaging, with **zero substantive contributions**, despite the native `per_paper_new_assertion` label. Neither supplied a retraction premise. A cited warning against an inference also had an incomplete page span and a misleading positive formula; the frozen record was not silently repaired. These are observed forward-lead false positives, not executed target-admission or selectable-route results. [R18]
+
+The first L3 target request was then refused **before dispatch**: **311,785 estimated input + 16,384 output allowance = 328,169**, against a **200,000** bound. Thus “312k > 200k” describes the input estimate alone; admission counted the larger total. **No target call, target, route, selection, or L3 resolution occurred.** A prior readiness check estimated only **51,998 input tokens** and did not represent the full target request. The full prompt was **627,750 UTF-8 bytes**, including **332,316 bytes** of provenance. The stopped request incurred no generation spend. Recovery's supervisor elapsed time was **13,773.98 seconds**, ending with status **2**. [R18]
 
 ## 4. Iteration: failures, fixes, and mistakes
 
@@ -122,14 +154,34 @@ The coordinating agent acknowledged an idle period from **12:33:41 to 16:49:21 U
 
 Reporting itself needed repair. A **3.7 GB** HTML report crashed Chromium; a later sidecar-based report was approximately **2.45 MB**. Fork 6’s native report rendered on desktop but retained **19 pixels** of mobile overflow. Its event-origin index also mislabelled **15,663** inherited-prefix occurrences; a separate overlay corrected attribution without altering native report bytes. The main accounting deduplicates receipts, so imported lineage must not be summed as new spend. These defects concern the original run reports; this metapaper has its own rendering checks. [R1, R4]
 
-### 4.7 Alignment failure as a design lesson; repairs still pending
+### 4.7 Alignment design lesson and completed recovery
 
-The failed identifier check protected the reference boundary. The surrounding design imposed avoidable risk: it asked a model to retype an immutable identifier, let one candidate’s bounded failure abort the whole run, and supplied no continuation from the finished construction stage. The intended repair is to bind identity from the host-owned candidate record and ask the model only for its relation/verdict and rationale. A bounded per-item failure should remain explicitly unresolved, rather than becoming an unrelated judgment or a successful alignment; continuation should respect a declared unresolved-failure threshold. A native continuation should reuse completed construction and accepted alignment receipts while preserving the one-freeze lifecycle. **These are design requirements, not executed fixes in this report.** [R16, R17]
+The identifier validator was right to refuse gap1's altered reference. The avoidable design error was asking a model to echo an immutable ID, letting one item's bounded failure abort the run, and offering no continuation from finished construction. Sigma r12 moved identity binding into the host-owned candidate record, requested relation/reason only, recorded per-item unresolved outcomes under a declared threshold, and added alignment continuation. Gap1r exercised that continuation with zero unresolved outcomes. Recovery preserves stage receipts; it does not certify the semantics of the retained bridge. [R17, R18, R21]
 
-| Pending item | Requested work | Evidence boundary |
+Sigma r12 and nu4 r5 were pending in version 2 and have results in version 3. Current pending work is the A/B fork comparison, R7 citation/adverse-history repairs, sigma r14's stage-window and integration-control repairs, and the L3 novelty dossier. A requested fix or an uncommitted diagnostic is not credited as a completed result. [R19–R25]
+
+### 4.8 Independent review findings ledger
+
+The ledger records findings at the reviewed head and later evidence of closure. Passing scoped tests did not imply that no blockers remained. All cited reviewer reproductions were offline; synthetic identity/credential sentinels were used, with no claim of a real disclosure. [R21–R24]
+
+| Finding | Reproduced failure | Disposition at this checkpoint |
 | --- | --- | --- |
-| **Sigma r12 — pending** | Remove free-text immutable-ID echo; isolate candidate failures with explicit unresolved accounting; resume alignment from finished construction. | The brief requests tests, a negative control, and a free plan-only check. No implemented repair or successful resumed gap pilot is claimed. |
-| **Nu4 r5 — pending** | Record the rejected native event type safely; repair the web-evidence path without relaxing non-web tool rejection; continue the audited drafts through verification and export. | Round 4’s failures remain the latest credited result here. The diagnostic’s success is not a native export, and the brief is not a completion receipt. |
+| **S12-F1 (P2)** | Old integration fixture echoed left/right IDs; new schema correctly refused. Combined tests 52/53. | Closed in Xi 0c4d472; s13 owning regression confirms. [R21] |
+| **NP-F1 (P1)** | Imported publication drafts reached logs/fallback before sensitive-content screening; synthetic offline probes. | Closed for publication at Pi a6a2f9b; r2 independently reproduced refusal before effects. [R22, R23] |
+| **NP-F2 (P2)** | Repaired current title was absent from audit input and cache identity. | Closed for publication at Pi a6a2f9b; r2 confirms title coverage and invalidation. [R22, R23] |
+| **NP-F3 (P2)** | Substring matching authorized edits to a duplicate unflagged occurrence. | Closed at Pi a6a2f9b; r2 confirms occurrence-bound permission. [R22, R23] |
+| **R2-F1 (P1)** | Invalid/incomplete audit history discarded valid adverse labels; three clean samples exported unchanged text with zero repairs. | Pending R7: preserve valid flags or unresolved blocking obligation. [R23] |
+| **R2-F2 (P1)** | Exact frozen-local citations were sent to external verification; unverified deleted bibliography 2→0 and markers 2→0. | Pending R7: local-source verification and final citation coverage refusal. [R23] |
+| **S13-F2 (P1)** | Stage window 272000 with run window 872000 admitted 587839 using run bound 839232, above effective stage bound 239232. | Pending sigma r14; run-level-only workaround is not closure. [R24] |
+| **S13-F1 (P2)** | Merged full-T mutation anchor missing: 680/681 resolve despite 59/59 combined tests. | Pending integration repair; in-memory adapted control diagnostic is not an applied fix. [R24] |
+
+The s12 review passed **233/233** Sigma tests and **44 controls**, but the combined fixture failed (**52/53**); three additive merge conflicts also needed resolution. The later Xi `0c4d472` integration and s13 review close S12-F1. No production identity-binding or resume bypass was reproduced in s12. [R21, R24]
+
+The np review passed **373/374 collected tests** with one paid-provider skip and **62 scoped controls**, yet independent probes found NP-F1–F3. It also recorded audit instability (NP-N1), distinct publication/writer length policies (NP-N2), and limited offline/semantic evidence (NP-N3). The r2 review passed **429/430 collected tests**, one paid-provider skip, and **82 controls**. It independently closed the three Pi publication findings at `a6a2f9b`, while retaining two Nu4 blockers at `d9ac619`. Closure of those Pi defects does not establish successful polish, source fidelity, or a stable semantic audit. [R22, R23]
+
+R2-F1 is narrower than failure of the whole union design: complete adverse history remains binding. A partial inventory, duplicate sentence, or unknown node can instead make the entire historical response unusable, dropping its valid adverse flag. Three clean samples then export the unchanged draft with **zero repairs**. Refusing the first malformed call is insufficient if resume discards the obligation it discovered. [R23]
+
+The s13 review passed **410/410 scoped tests** across Sigma and a synthetic combined tree, plus **13 scoped controls**. Its runtime reproduction nonetheless dispatched **555,071 input + 32,768 output = 587,839** tokens to a fake provider using a **272,000** stage window, because admission retained the run's **839,232** bound. The effective stage bound was **239,232**. Clearing the stage override also reproduced the configuration split; a uniform run-level window refused correctly. The workaround is to use a run-level window only while the repair remains pending. The merged full-T mutation anchor also remained broken: an adapted in-memory diagnostic went red/green, but that adaptation was not an applied closure. No live service acceptance is inferred from these offline checks. [R24]
 
 ## 5. Gates, rejection, and candidate selection
 
@@ -175,9 +227,29 @@ The API-to-Claude switch followed the credit failure and the human request for a
 
 The Claude canary and review established the recorded configuration’s suppression of operator customizations and identity output. They did not establish absence of vendor built-ins or byte-identical API context. Subsequent reviews caught escaped-output leakage and unsafe diagnostic text; allowlisted diagnostics replaced free-text retention. Codex used fresh processes, temporary configuration, isolated host homes/process state, disabled project instructions, skills, memory, and external tools, plus a context canary. Generic built-in tool definitions could still be visible; actual tool events rejected the response. Strict-schema projection required its own preflight. Isolation evidence is specific to the tested transport/version and threat model, not proof against all contamination. It does not erase pretrained model knowledge or establish that every generated idea came only from the supplied papers. [R13]
 
-The later web-evidence transport deliberately differed from the earlier tool-free transport. Its native runs still rejected an event; sanitized failure receipts did not identify the rejected type. We therefore do not claim a particular forbidden tool ran, or that one successful diagnostic completed the publication lifecycle. [R7]
+The later web-evidence transport deliberately differed from the earlier tool-free transport. Round 4 rejected an unidentified native event; round 5 diagnosed the specific web-search event and narrowly permitted it for `search_evidence`. Subsequent native exports are recorded in §3.3.1, together with their citation loss. That repair did not authorize other tool events. [R7, R20]
 
-### 7.1 Prompt disclosure
+### 7.1 Context window: client configuration, request size, and pending forks
+
+Gap1f was **not launched**. Inspection of the pinned `codex-cli 0.163.0` metadata for requested `gpt-6-luna` found a **272,000 default** and **872,000 maximum** context window. These are client metadata, not verified serving capacity or a served-model identity. The old isolated adapter ignored user configuration and did not pass `model_context_window`. Raising ARA's admission limit alone therefore did not enable the larger provider window. The operator authorized loosening the limit at **19:09:07 UTC**. [R1, R19]
+
+Sigma r13 (`c99c6b3`) added explicit window forwarding, including the canary, and gap-scoped target packing. Its **one-hop** plan retained **three full and 157 compact commitments**, **all IDs/formulas**, **147 symbols**, and **11/150 alignment judgments**, explicitly recording the other judgments as projected. Full frozen T remains authoritative for the downstream gates. The packed prompt measured **204,567 bytes**; its **122,108-token** total is an offline admission estimate, not measured service usage or a fork result. [R19]
+
+| Saved request / configuration | Input estimate | Output allowance | Total / bound | Evidence |
+| --- | ---: | ---: | --- | --- |
+| Historical unpacked L3 | 311,785 | 16,384 | 328,169 / 200,000 | Refused before dispatch |
+| Packed; original bound | 105,724 | 16,384 | 122,108 / 200,000 | Offline plan fits |
+| Packed; explicit 272k window | 105,724 | 16,384 | 122,108 / 239,232 | Offline plan fits |
+| Unpacked current template; 872k window | 312,084 | 16,384 | 328,468 / 839,232 | Offline plan fits |
+| Packed; explicit 872k window | 105,724 | 16,384 | 122,108 / 839,232 | Offline plan fits |
+
+The current unpacked template is **299 tokens** larger than the historically refused one. The derived bound subtracts twice the configured **8,192-token** target output allowance and a **16,384-token** margin from the selected window; admission also includes the request's output reservation. These conservative estimates are not additive field-token measurements. Offline forwarding tests do not establish live larger-window acceptance, and the per-stage mismatch in S13-F2 prevents a blanket correctness claim. [R19, R24]
+
+{{fig:context-admission}}
+
+The requested comparison forks are **A: packed with hops=2** and **B: unpacked with a raised run-level window (600,000 proposed)**. Their target counts, routes, substantive contributions, L3 verdicts, and quality comparison are **pending**. A's actual full-row count is also pending: the three-full/157-compact, 122,108-token result above belongs to the **one-hop offline plan**, not fork A. [R19]
+
+### 7.2 Prompt disclosure
 
 Stage prompts are topic-neutral templates combined at runtime with source text, the frozen catalogue, target/route state, explicit schemas, and correction feedback. Full prompt and response receipts were retained. Worker briefs separately specified implementation tasks, budgets, permitted providers, stop conditions, and expected evidence. They directed scaffold development; they were not all passed verbatim to philosophical generation calls. [R2, R3, R15]
 
@@ -221,23 +293,28 @@ The writer’s round-2 repair/audit supplement records **143,996 input**, **5,88
 
 Gap pilot 1 has a separate local ledger: **242 fresh Codex calls**, comprising **221 main-run calls**, **20 schema-preflight calls**, and **one standalone canary**. Measured fresh usage is **4,769,322 input + 235,926 output + 266,752 cache-read = 5,272,000 tokens**; cache writes and server-tool uses are zero. New API spend is **$0**, while subscription dollar-equivalent is unavailable. Requested model identity remains `gpt-6-luna`; served identities are unverified. The pilot report’s inherited extraction charges are not new spend and are not added again to the fork-6 ledger. Its free recovery inspection made no new model calls. [R16]
 
-Summed measured model wall time in the lineage is **99,802.960 seconds**, approximately **27.723 hours**; unknown-at-reservation receipts add **747.604 seconds** of recorded wall time. Calls can overlap, so neither sum is elapsed campaign duration or human labor. The correspondence span is **8 days, 13 hours, 50 minutes, 47 seconds**. No complete operator-reported labor duration is available. Zero-minute fields on worker-generated command receipts cannot establish zero human effort. [R1, R4]
+Gap1r adds **197 fresh Codex calls**: **177 main-run calls** (two canaries, 115 alignment, 60 semantic classification) and **20 preflight calls**. Its measured components are **724,135 input + 36,474 output + 279,680 cache-read = 1,040,289 tokens**, with **$0 new API spend**. Together gap1 and gap1r used **439 calls / 6,312,289 measured token components**. Inherited extraction charges must not be added again. Gap1f and sigma r13's offline plans made no new generation calls. The enlarged-window A/B runs remain pending, and this report does not manufacture an R5–R6 global token total from their audit-call counts. [R18–R20]
 
-## 9. Limits and interpretation
+Summed measured model wall time in the lineage is **99,802.960 seconds**, approximately **27.723 hours**; unknown-at-reservation receipts add **747.604 seconds** of recorded wall time. Calls can overlap, so neither sum is elapsed campaign duration or human labor. The correspondence span is **8 days, 20 hours, 39 minutes, 11 seconds**. No complete operator-reported labor duration is available. Zero-minute fields on worker-generated command receipts cannot establish zero human effort. [R1, R4]
 
-The strongest supported outcome is an inspectable development-and-generation process with retained failures, a usable formal search mechanism, explicit candidate rejection, and concrete drafts. The following limits change what can be claimed from it:
+## 9. Novelty status and limits
 
-1. **No qualifying cross-paper pilot is established.** Native closure counts included trivial, structural, and single-paper results. The corrected per-paper novelty policy had offline evidence, while its final bounded real-freeze census returned no qualifying candidates. Gap pilot 1 subsequently stopped before freeze, and independent review retained a padding defect at its pinned revision.
-2. **No completed native verification/export is established for the retained essays.** Later drafts passed pre-verification audits; external retrieval failed in their native runs. The separately polished PDF also lacked external verification.
-3. **No certified original L3 result is established.** The accessible literature partially anticipates the connection; important full texts remain unavailable, and later acquisitions were outside the reported frozen evidence.
-4. **Formal and semantic correctness remain distinct.** Licensed derivations, source locators, schema checks, and hashes do not prove faithful formalization, true premises, correct stance interpretation, or reliable model audits. Missing support was disclosed, not resolved by formatting.
-5. **Isolation is bounded.** The recorded versions passed specific canaries and guards; vendor instructions and some generic tool definitions remained. Serving identity for Codex remained unverified. Development-agent context is a separate boundary.
-6. **Accounting and intervention completeness are bounded by retained records.** The principal ledger is a deduplicated lineage subtotal. Some development, orchestration, subscription costs, and human labor remain unmeasured. Appendix A is complete for the frozen correspondence snapshot, not for unlogged life outside it.
-7. **Selection and reporting had known losses.** An outer cap omitted a passing target; a duplicate identifier lost another candidate; native mobile rendering and import-origin labels had defects. These are retained as limitations rather than hidden behind a completion marker.
-8. **Repository privacy was requested but not achieved by the recorded API action.** The visibility request was refused for insufficient administration permission. This report’s local delivery does not claim that the external repository became private.
-9. **The intake rule ambiguity remains disclosed.** Bibliographic titles and human filing labels raised a literal committed-content-rule issue. The intake review found no added argument annotations, but did not independently verify the collection’s completeness or neutrality.
+### 9.1 Honest novelty status
 
-The method’s main correction was to make the evidential boundary more explicit: source acquisition, extraction, formal admission, substantive contribution, audit, and publication each require their own evidence. At the version-2 checkpoint, gap pilot 1 remained stopped before freeze; sigma r12 and nu4 r5 were pending, with no resumed pilot or new verified export credited. This report describes those limits as part of the method by which the drafts were produced.
+**Zero substantive novel contributions have been established so far in the evidence covered here.** This is an evidence status, not a theorem that the architecture can never produce one. Earlier closed routes restated sources, packaged conjunctions, or relied on a single paper. Gap1r's two forward leads again packaged existing commitments; the pilot reached no model target or route. The formal novelty gate is weaker than philosophical novelty: passing a per-paper entailment or own-thesis check does not establish an informative argument, faithful premises, priority in modern literature, or resolution of an acknowledged problem. [R6, R9–R11, R18]
+
+L3 remains partially anticipated and unresolved. The **L3 novelty dossier is pending**. Its brief asks for explicit candidate theses and their closest **2018–2026** sources, with bounded verdicts of anticipated, partially anticipated, or not found within the stated search scope. Comparing only with the **26-paper input corpus** (22 papers represented in gap1r’s frozen T) cannot establish modern-literature novelty. Neither an offline request that fits nor the operator's larger-window authorization is evidence that a new thesis was produced. The A/B fork results and any subsequent literature assessment must be reported separately when available. [R19, R25]
+
+### 9.2 What remains unproven
+
+1. **No qualifying cross-paper pilot.** Recovery meets frozen coverage numerically, with 160 commitments and zero unresolved alignments, but stops before target dispatch. Source stance, missing anchors, and disputed bridge semantics remain. The actual freeze was SAT; the padding false positives were observed. Later Xi integration is not a retrospective rerun of that pilot. [R18, R24]
+2. **Native exports exist, but source fidelity is not established.** R6 exported two essays with no bibliography entries or citation markers. Audit disagreement persists; k=3 catches more adverse samples but does not guarantee correct judgments. Incomplete adverse history can be dropped on resume. Citation coverage and adverse-history repairs remain pending. [R20, R23]
+3. **Context and integration fixes are bounded.** Client metadata and offline packing/forwarding are established. Live larger-window acceptance and fork quality are pending; stage-window admission and the combined full-T control need repair. [R19, R24]
+4. **Formal and semantic correctness differ.** Licenses, citations, hashes, SAT checks and typed labels do not prove true premises, faithful translation or reliable audit judgments. The literature review is access-limited and nonexhaustive. [R5, R18]
+5. **Isolation and identity are bounded.** Specific canaries and guards passed; vendor instructions and some generic tool definitions remained. Codex serving identity remained unverified. Development-agent context is a separate boundary. [R13, R19]
+6. **Accounting and human actions are record-bounded.** The principal ledger is a deduplicated lineage subtotal. Development, orchestration, subscription costs and human labor are incomplete. Appendix A is complete for the frozen correspondence prefix, not unlogged activity. [R1, R4]
+7. **Selection/report losses and intake ambiguity remain disclosed.** A target cap, duplicate ID, native report overflow and origin-label defects had consequences (§§3.2, 4.6). Bibliographic titles and human filing labels raised a literal committed-content-rule issue. No added argument annotations were found, but corpus completeness and neutrality were not independently verified. [R2, R4]
+8. **Privacy status changed.** The earlier visibility API action failed with HTTP 403. The later **20:04:19 UTC** entry records the repository as private, verified via API, and outputs copied/pushed. The old failure is retained as history, not a current privacy verdict. This report is delivered locally and separately scanned for identity. [R1]
 
 ## Appendix A. Complete recorded human-action entries
 
@@ -270,7 +347,10 @@ Timestamps are UTC. Entries are grouped exactly by correspondence record; one en
 | H23 · 2026-10-28 21:06:14 | Requested maximum parallelization of the ongoing work. |
 | H24 · 2026-10-28 21:14:27 | Prohibited further credit-based API work and authorized normal agent calls as the default; the coordinator retained Claude only for the separately requested Opus polish. |
 | H25 · 2026-10-29 06:17:05 | Gave GO for the safety–retraction gap paper and this visual metapaper; approved “not found within stated search scope, partially anticipated,” directed best effort from available sources, and requested an output repository. |
-| H26 · 2026-10-29 06:20:26 | Asked to make the scaffold repository private and place outputs in a folder for later deletion. The visibility API request was refused with HTTP 403 for insufficient administration permission; the log does not establish a successful privacy change. |
+| H26 · 2026-10-29 06:20:26 | Asked to make the scaffold repository private and place outputs in a folder for later deletion. The visibility API request was refused with HTTP 403 for insufficient administration permission; that action did not change visibility; H28 records the later successful change. |
+| H27 · 2026-10-29 19:09:07 | Authorized loosening the token limit. The later adapter change forwards an explicit provider window; raising native admission alone was insufficient. |
+| H28 · 2026-10-29 20:04:19 | Reported the repository private; the coordinator verified visibility through the API, copied outputs, and pushed them. This supersedes the earlier failed privacy request. |
+| H29 · 2026-10-29 20:41:14 | Questioned idle completed agents and context limits, and asked whether the work was pursuing real novelty. The coordinator requested an L3 novelty dossier, delivery integration, and this report revision. |
 
 **Earlier human actions without a timestamp in this log.** The human designed and directed the scaffold, chose the topic, and supplied/committed the initial bibliography and filing labels. The intake review found no added argument annotations, but flagged an unresolved literal-rule tension: bibliographic titles and human-provided grouping labels can name positions despite the repository’s blanket prohibition on committed philosophical content. Four position-related filing labels were not four selected theses. The collection’s claimed completeness and neutrality were not independently verified. No selection policy is promoted here into proof that the corpus was balanced. [R2]
 
@@ -280,7 +360,7 @@ The following local source identifiers are intentionally free of operator identi
 
 | ID | Primary sources and responsibility |
 | --- | --- |
-| R1 | `correspondence/log.txt`, frozen through 2026-10-29 13:52:50 UTC: decisions, iterations, human actions, and timing. |
+| R1 | `correspondence/log.txt`, frozen through 2026-10-29 20:41:14 UTC: decisions, iterations, human actions, and timing. |
 | R2 | `briefs/beta-literature.md`, `reports/beta-literature.md`, `reports/epsilon-pdfs.md`: supplied bibliography, intake scope, rule issues, initial access. |
 | R3 | Scaffold `CLAUDE.md`, `PLAN.md`, `SOURCE_MAP.md`, `DECISIONS.md`, and `docs/`: architecture, boundaries, lifecycle, policies and their limitations. |
 | R4 | `reports/overnight/fork6/{data,accounting}.json`, its content-addressed event sidecars, and `reports/zeta-fork6.md`: deduplicated accounting, gap/search outcomes and report defects. |
@@ -296,8 +376,47 @@ The following local source identifiers are intentionally free of operator identi
 | R14 | `reports/zeta-conflicts.md`: bounded semantic-conflict pass and source/currency review. |
 | R15 | `briefs/` and run MODEL receipts; exact instruction variants in the prompt supplement: task direction, stage instructions, correction history and prompt identities. The instruction supplement remains the version-1 inspected scope. |
 | R16 | `reports/overnight/gap1/handoff.md`, `reports/zeta-gap1.md`, `pilot-exit.json`, `final-local-accounting.json`, and the preserved integration review: failed alignment, construction inventory, source limits, timing and fresh usage. |
-| R17 | `briefs/sigma-round-12.md` and `briefs/nu4-round-5.md`: requested repairs, both pending for this report. |
+| R17 | `briefs/sigma-round-12.md` and `briefs/nu4-round-5.md`: historical repair requests, pending at v2; later results are in R18 and R20. |
+| R18 | `reports/overnight/gap1r/handoff.md`, `reports/zeta-gap1r.md`, `reports/overnight/gap1r/final-local-accounting.json`, `reports/overnight/gap1r/pilot-exit.json`: Gap1r recovery, frozen inventory, source/padding review, admission refusal, timing and fresh accounting. |
+| R19 | `reports/overnight/gap1f/handoff.md`, `reports/sigma-round13.md`, `briefs/zeta-gap-fork2.md`: Gap1f client-window inspection, sigma r13 offline plans/window plumbing, pending packed/unpacked fork brief. |
+| R20 | `reports/nu4-writer.md`, `briefs/nu4-round-7.md`: Nu4 R5–R6 native exports, audit dissent and union batches, citation loss; R7 repair brief remains pending. |
+| R21 | `reports/kappa4-sigma12-review.md`: Kappa4 s12: ID-free response and recovery review, integration fixture blocker. |
+| R22 | `reports/kappa4-nu4pi3-review.md`: Kappa4 np: publication screening/title/occurrence blockers, audit and length-policy notes. |
+| R23 | `reports/kappa4-r2-review.md`: Kappa4 r2: Pi closure evidence, incomplete adverse-history and citation-stripping blockers. |
+| R24 | `reports/kappa4-sigma13-review.md`: Kappa4 s13: stage-window admission mismatch, merged mutation-anchor failure, S12-F1 closure. |
+| R25 | `briefs/eps2-L3-novelty.md`: L3 novelty-dossier brief; requested modern-literature assessment, results pending. |
 
 This document was assembled from existing evidence without new ARA provider calls. Its authoring-agent usage is outside the supplied accounting. Charts were generated deterministically with matplotlib, using serif type, greyscale, and one accent color. Markdown was rendered through local Chromium because the available `ara render-pdf` CLI accepts a native publication run rather than an arbitrary methodology document. Rendering checks cover embedded fonts, figure inventory, captions, page bounds, and horizontal overflow. `verification.json` records the executed checks and artifact hashes.
 
-**Finding placement:** no qualifying pilot and the corrected novelty census → §§4.4, 5, 9; incomplete essay verification → §§3.3, 9; L3 currency and access limits → §§6, 9; extraction/formalization/audit limits → §§3–4, 9; isolation/model identity limits → §§7, 9; accounting and human-record limits → §§1, 8, 9 and Appendix A; target/report losses → §§3.2, 4.6, 5, 9; repository privacy failure → §9 and Appendix A; intake rule ambiguity and unverified collection neutrality → §9 and Appendix A. Gap-pilot abort and absent continuation → §§3.4, 4.7; unfrozen coverage and partial/source-limited alignment → §3.4; independent INTEG-F1 padding defect → §§3.4, 9; native versus marker-free audit counts → §3.3. **13 findings, 13 placed.**
+**Finding placement.** Each material finding is placed in the report as follows.
+
+| Finding | Report section |
+| --- | --- |
+| 1. No substantive novel contribution or qualifying pilot | 5, 9.1 |
+| 2. Historical R4 audit counts versus marker-free words | 3.3 |
+| 3. Gap1 correct ID refusal and missing continuation | 3.4, 4.7 |
+| 4. Recovery and zero unresolved do not certify bridge semantics | 3.5, 9.2 |
+| 5. Source stance, citation spans, omissions and incomplete L3 anchors | 3.4–3.5 |
+| 6. SAT freeze excludes R28-F2 here; observed padding remains | 3.5, 9.1 |
+| 7. Full target request refused despite smaller readiness check | 3.5, 7.1 |
+| 8. Pinned window metadata and omitted adapter forwarding | 7.1 |
+| 9. Offline one-hop packing is not pending two-hop fork A | 7.1 |
+| 10. Audit nondeterminism and k=3 union limits | 3.3.1 |
+| 11. Native exports lost all citations; R7 pending | 3.3.1, 9.2 |
+| 12. Incomplete adverse history can allow unchanged export | 4.8 |
+| 13. L3 partial anticipation, access limits and pending novelty dossier | 6, 9.1 |
+| 14. Isolation and unverified serving identity | 7, 9.2 |
+| 15. Accounting and human record limits | 1, 8, 9.2, Appendix A |
+| 16. Target and native report losses | 3.2, 4.6, 9.2 |
+| 17. Privacy failure superseded by later verified status | 9.2, Appendix A |
+| 18. Intake ambiguity and unverified collection neutrality | 9.2, Appendix A |
+| 19. S12-F1 fixture failure closed at later integrated head | 4.8 |
+| 20. NP-F1 imported publication screening closed for publication | 4.8 |
+| 21. NP-F2 title audit/cache omission closed for publication | 4.8 |
+| 22. NP-F3 duplicate occurrence permission closed for publication | 4.8 |
+| 23. S13-F2 stage-window over-admission pending repair | 4.8, 7.1 |
+| 24. S13-F1 merged mutation control still pending repair | 4.8 |
+| 25. Green scoped tests did not exclude review blockers | 4.8 |
+| 26. Separate length policies and source versions | 3.3.1, 4.8 |
+
+**26 findings, 26 placed.**

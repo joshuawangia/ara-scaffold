@@ -1,4 +1,4 @@
-# ARA methodology deliverables — version 2
+# ARA methodology deliverables — version 3
 
 Open **metapaper.pdf** for the report. **metapaper.md** is the editable source; **metapaper.html** is the print intermediate.
 
@@ -11,6 +11,6 @@ Open **metapaper.pdf** for the report. **metapaper.md** is the editable source; 
 
 The report distinguishes the frozen correspondence checkpoint, the fork-6 accounting lineage, and later local worker supplements. It does not certify an accepted competition entry, complete campaign accounting, or a resolved L3 result. Identity scans cover the delivered content; private source logs are not included as raw copies.
 
-Thirteen material findings are placed in the report; its closing placement record identifies each destination. The next research work belongs to the ongoing L3/integration effort, outside this document-production task.
+Twenty-six material findings are placed in the report; its closing placement record identifies each destination. The next research work belongs to the ongoing L3/integration effort, outside this document-production task.
 
-Version 2 adds gap pilot 1 and its correctly refused alignment stop, distinguishes unfinished construction-to-freeze progress in the funnel/timeline, and reproduces the round-4 typed-audit table. Sigma r12 and nu4 r5 remain pending. The prior version remains in the parent folder; this folder is a self-contained copy. The fork-6 accounting charts retain their original scope; fresh gap-pilot usage is separately recorded in the text and data.
+Version 3 preserves the historical v2 tables and adds gap1r recovery and target-admission refusal, pinned client-window findings, offline packing versus pending A/B forks, R5–R6 audit and citation failures, an eight-finding independent review ledger with dispositions, and explicit zero-substantive-novelty status. Current pending items are in data.json and the report. V1 and v2 remain untouched. The prompt supplement retains its historical inspected scope; new task briefs are identified in the evidence register rather than presented as generation prompts. The fork-6 accounting charts keep their original scope; fresh gap1/gap1r usage is separate.

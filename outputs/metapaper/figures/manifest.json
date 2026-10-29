@@ -24,7 +24,7 @@
   {
     "id": "funnel",
     "file": "figures/funnel.svg",
-    "caption": "Common source evidence, then separate run histories; box area is not proportional to counts. The historical writing lineage used a frozen T. Gap pilot 1 completed construction but stopped at alignment candidate 36/150 after three altered-ID replies; 35 accepted judgments were not applied bridges. Its working set was never frozen, and downstream stages were not reached. Later acquisitions do not enlarge either pilot retrospectively.",
+    "caption": "Separate lineages share extraction evidence; areas are not proportional. Gap1 stopped before freeze. Gap1r reused construction and accepted judgments, froze T, then refused the first L3 target request before dispatch (311,785 input + 16,384 output allowance). Two later writer exports belong to the earlier route lineage; both lost all citations in R6. A/B fork outcomes remain pending.",
     "data": {
       "stages": [
         [
@@ -40,7 +40,7 @@
           5659
         ],
         [
-          "Eligible items after quarantine",
+          "Eligible after quarantine",
           5296
         ]
       ],
@@ -54,178 +54,64 @@
           "3 targets → 6 polarity searches"
         ],
         [
-          "Selected closed routes",
-          "2, supported by one paper"
+          "Selected derived routes",
+          "2, each supported by one paper"
         ],
         [
-          "Verified essay exports",
-          "0"
+          "Round 4 writer checkpoint",
+          "0 native verified exports"
+        ],
+        [
+          "Rounds 5–6 writer checkpoint",
+          "2 exports; R6 bibliography = 0 each"
+        ],
+        [
+          "Substantive novelty established",
+          "0; source-fidelity repair pending"
         ]
       ],
-      "gap_pilot_path": [
+      "gap_path": [
         [
-          "Construction completed",
-          "74 windows: 53 accepted / 21 skipped"
+          "Gap1 construction",
+          "74 windows / 159 commitments / 22 papers"
         ],
         [
-          "Working set — UNFROZEN",
-          "159 commitments / 22 of 26 papers"
+          "Gap1 STOP: alignment 36/150",
+          "35 accepted; altered ID correctly refused"
         ],
         [
-          "STOP: alignment 36/150",
-          "35 accepted judgments; 3 invalid replies"
+          "Gap1r recovery → frozen T",
+          "160 = 159 source + 1 bridge; 0 unresolved"
         ],
         [
-          "NOT REACHED",
-          "Freeze → targets → search → essays"
+          "Forward pass: truncated at 500",
+          "2 packaging leads; 0 contributions"
+        ],
+        [
+          "Gap1r STOP: target admission",
+          "328,169 total > 200,000; not dispatched"
+        ],
+        [
+          "NOT REACHED in gap1r",
+          "Targets → routes → essays; A/B pending"
         ]
       ],
-      "gap_pilot_facts": {
-        "source": [
-          "reports/overnight/gap1/handoff.md",
-          "reports/zeta-gap1.md",
-          "reports/overnight/gap1/pilot-exit.json",
-          "reports/overnight/gap1/final-local-accounting.json"
-        ],
-        "revision": "0a31afb92c319bd0ae38f71e51b3233050d32758",
-        "started_utc": "2026-10-29T09:04:37.624543Z",
-        "stopped_utc": "2026-10-29T13:36:58.286858Z",
-        "exit_code": 2,
-        "wall_seconds": 16340.662315368652,
-        "windows": 74,
-        "accepted_windows": 53,
-        "skipped_windows": 21,
-        "working_commitments": 159,
-        "represented_papers": 22,
-        "available_papers": 26,
-        "stance": {
-          "endorsed": 134,
-          "reported": 10,
-          "attacked": 15
-        },
-        "alignment_candidates": 150,
-        "attempted_candidates": 36,
-        "accepted_judgments": 35,
-        "unrelated": 34,
-        "right_to_left_entailment": 1,
-        "invalid_responses": 3,
-        "alignment_responses": 38,
-        "applied_bridges": 0,
-        "canonical_rewrites": 0,
-        "frozen": false,
-        "targets": 0,
-        "routes": 0,
-        "l3_resolved": false,
-        "failure": "Echoed immutable symbol identifier changed r27_39 to r27-39; all three replies refused.",
-        "resume": "plan-only refused: construction resume requires a terminal window refusal; no alignment resume at this revision",
-        "unresolved_review": "INTEG-F1: irrelevant fresh-atom padding can pass native CLOSED-derived gates; no route generated in this pilot",
-        "local_accounting": {
-          "runs": {
-            "codex-gap-1": {
-              "calls": 221,
-              "kinds": {
-                "isolation_canary": 2,
-                "select_t_roots": 75,
-                "build_t_batch": 106,
-                "judge_symbol_alignment": 38
-              },
-              "usage": {
-                "cache_read_tokens": 266752,
-                "cache_write_tokens": 0,
-                "input_tokens": 4674584,
-                "output_tokens": 230270,
-                "server_tool_uses": 0
-              },
-              "api_usd": 0.0
-            },
-            "codex-gap-1-preflight": {
-              "calls": 1,
-              "kinds": {
-                "isolation_canary": 1
-              },
-              "usage": {
-                "cache_read_tokens": 0,
-                "cache_write_tokens": 0,
-                "input_tokens": 4323,
-                "output_tokens": 2024,
-                "server_tool_uses": 0
-              },
-              "api_usd": 0.0
-            },
-            "codex-gap-1-schema-preflight": {
-              "calls": 20,
-              "kinds": {
-                "isolation_canary": 2,
-                "answer_cq": 1,
-                "audit_essay": 1,
-                "build_t": 1,
-                "build_t_batch": 2,
-                "classify_conflict": 1,
-                "classify_target": 1,
-                "formalise": 1,
-                "formalise_slots": 1,
-                "judge_symbol_alignment": 1,
-                "map_leaf": 1,
-                "propose_cuts": 1,
-                "propose_targets": 1,
-                "select_t_roots": 2,
-                "tier1_repair": 1,
-                "verify_originality_citations": 1,
-                "write_essay": 1
-              },
-              "usage": {
-                "cache_read_tokens": 0,
-                "cache_write_tokens": 0,
-                "input_tokens": 90415,
-                "output_tokens": 3632,
-                "server_tool_uses": 0
-              },
-              "api_usd": 0.0
-            },
-            "codex-gap-1-resume-check": {
-              "calls": 0,
-              "kinds": {},
-              "usage": {},
-              "api_usd": 0
-            }
-          },
-          "usage": {
-            "cache_read_tokens": 266752,
-            "cache_write_tokens": 0,
-            "input_tokens": 4769322,
-            "output_tokens": 235926,
-            "server_tool_uses": 0
-          },
-          "total_calls": 242,
-          "cost_usd": 0.0,
-          "providers": {
-            "codex_cli": 242
-          },
-          "served_models": {
-            "unverified": 242
-          }
-        }
-      },
+      "source": [
+        "reports/overnight/gap1/handoff.md",
+        "reports/overnight/gap1r/handoff.md",
+        "reports/nu4-writer.md"
+      ],
       "quarantine": {
         "direct": 312,
         "dependent": 51,
         "total": 363
-      },
-      "later_pdfs": 54,
-      "source": [
-        "reports/zeta-full26-part7.md",
-        "reports/zeta-codex-pilot-5.md",
-        "reports/zeta-fork3.md",
-        "reports/nu4-writer.md",
-        "reports/eps2-methodology-supplement.md",
-        "reports/overnight/gap1/handoff.md"
-      ]
+      }
     }
   },
   {
     "id": "iterations",
     "file": "figures/iterations.svg",
-    "caption": "Overlapping logged repair episodes, with gap pilot 1 timed from its supervisor receipt. The diamond marks the correctly refused alignment stop on October 29, before freeze. The hatched band is the acknowledged October 28 idle interval, not labor. Sigma r12 and nu4 r5 are pending requests, not completed repairs or successful continuations.",
+    "caption": "Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Sigma r12 and nu4 r5 now have later results; current pending items receive no result bar. Context packing is an offline plan, and native exports do not establish source fidelity or substantive novelty.",
     "data": {
       "episodes": [
         [
@@ -261,8 +147,8 @@
         [
           "Writing / audit",
           "2026-10-28T16:52:30Z",
-          "2026-10-28T21:39:35Z",
-          "Short drafts → sections + repairs"
+          "2026-10-29T18:45:24Z",
+          "44→0 flags; k=3; exports lose citations"
         ],
         [
           "Literature currency",
@@ -271,35 +157,58 @@
           "Historical gaps → qualified L3"
         ],
         [
-          "Gap pilot 1",
+          "Gap1 stop",
           "2026-10-29T09:04:37.624543Z",
           "2026-10-29T13:36:58.286858Z",
-          "STOP: alignment 36/150; no freeze"
+          "Alignment 36/150: correct refusal"
+        ],
+        [
+          "Gap1r recovery",
+          "2026-10-29T15:02:17.273674+00:00",
+          "2026-10-29T18:51:51.254234+00:00",
+          "Frozen T 160 → L3 admission STOP"
+        ],
+        [
+          "Context / packing",
+          "2026-10-29T19:09:07Z",
+          "2026-10-29T19:46:10Z",
+          "Window override + 122k offline plan"
+        ],
+        [
+          "Independent review",
+          "2026-10-29T15:24:58Z",
+          "2026-10-29T20:05:31Z",
+          "s12 / np / r2 / s13: findings ledger"
         ]
       ],
       "idle_start": "2026-10-28T12:33:41Z",
       "idle_end": "2026-10-28T16:49:21Z",
       "pending": [
         {
-          "item": "sigma r12",
+          "item": "Fork A/B results",
           "status": "pending",
-          "source": "briefs/sigma-round-12.md",
-          "requested": "Avoid model-echoed immutable IDs; record per-item unresolved failures; resume alignment from finished construction without silent repair.",
-          "dispatch_timestamp": "2026-10-29T13:50:20Z"
+          "source": "briefs/zeta-gap-fork2.md"
         },
         {
-          "item": "nu4 r5",
+          "item": "Nu4 R7 citation and adverse-history repairs",
           "status": "pending",
-          "source": "briefs/nu4-round-5.md",
-          "requested": "Expose rejected event type safely; diagnose native web-evidence path; preserve tool boundaries; resume verification and export from audited drafts.",
-          "dispatch_timestamp": "2026-10-29T13:52:50Z"
+          "source": "briefs/nu4-round-7.md"
+        },
+        {
+          "item": "Sigma r14 stage-window and merged-control fixes",
+          "status": "pending",
+          "source": "reports/kappa4-sigma13-review.md"
+        },
+        {
+          "item": "L3 novelty dossier",
+          "status": "pending",
+          "source": "briefs/eps2-L3-novelty.md"
         }
       ],
       "source": [
         "correspondence/log.txt",
         "reports/overnight/gap1/pilot-exit.json",
-        "briefs/sigma-round-12.md",
-        "briefs/nu4-round-5.md"
+        "reports/overnight/gap1r/pilot-exit.json"
       ]
     }
   },
@@ -506,6 +415,73 @@
         }
       },
       "source": "data.json/provider_stage_accounting; reconciled to reports/overnight/fork6/accounting.json"
+    }
+  },
+  {
+    "id": "context-admission",
+    "file": "figures/context-admission.svg",
+    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); fork A requests two hops and has no result here. The current unpacked template adds 299 tokens. Uniform run-window arithmetic does not close the later stage-window admission defect. A/B outcomes and live enlarged-window capacity remain pending.",
+    "data": {
+      "plans": [
+        {
+          "label": "Historical unpacked",
+          "input": 311785,
+          "output": 16384,
+          "total": 328169,
+          "bound": 200000,
+          "status": "refused before dispatch"
+        },
+        {
+          "label": "Packed / original bound",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 200000,
+          "status": "offline fit"
+        },
+        {
+          "label": "Packed / 272k window",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 239232,
+          "status": "offline fit"
+        },
+        {
+          "label": "Unpacked / 872k window",
+          "input": 312084,
+          "output": 16384,
+          "total": 328468,
+          "bound": 839232,
+          "status": "offline fit"
+        },
+        {
+          "label": "Packed / 872k window",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 839232,
+          "status": "offline fit"
+        }
+      ],
+      "source": [
+        "reports/overnight/gap1f/handoff.md",
+        "reports/sigma-round13.md",
+        "briefs/zeta-gap-fork2.md"
+      ],
+      "forks": [
+        {
+          "fork": "A",
+          "context": "packed, hops=2",
+          "full_commitments": null,
+          "results": "pending"
+        },
+        {
+          "fork": "B",
+          "context": "unpacked; proposed run-level window 600000",
+          "results": "pending"
+        }
+      ]
     }
   }
 ]

@@ -27,47 +27,44 @@ box(ax,.37,.23,.25,.15,'Search both polarities\nClosed / open\nroute records')
 box(ax,.16,.015,.68,.13,'Human selection → writing → audit → retrieval → re-audit → export\nRejected calls, omissions and decisions remain\nin append-only logs')
 for a,b in [((.165,.80),(.42,.64)),((.495,.80),(.495,.64)),((.825,.80),(.825,.64)),((.70,.565),(.62,.565)),((.18,.64),(.40,.80)),((.495,.49),(.495,.38)),((.495,.23),(.495,.145))]:arrow(ax,a,b)
 save(fig,'architecture','ARA separates the source of a license (L), the premises available to a run (T), and model-suggested hypotheses or cuts (H). Models propose; the deterministic engine decides formal admissibility. The final export path remains gated.',{'source':['scaffold/PLAN.md','scaffold/CLAUDE.md','scaffold/SOURCE_MAP.md'],'nodes':['L','T','H','extraction','engine','runtime','search','selection-writing-verification']})
-# Shared evidence funnel followed by two explicitly separate run histories.
-gap=D['gap_pilot_1']
+# Common extraction evidence, then explicitly separate historical/recovery lineages.
+gap=D['gap_pilot_1']; rec=D['gap_recovery']
 fig,ax=plt.subplots(figsize=(8.4,7.4));ax.set(xlim=(0,10),ylim=(0,10));ax.axis('off')
-funnel=[('Chosen works',53),('Original PDFs / rich graphs',26),('Extracted items',5659),('Eligible items after quarantine',5296)]
+funnel=[('Chosen works',53),('Original PDFs / rich graphs',26),('Extracted items',5659),('Eligible after quarantine',5296)]
 for i,(label,n) in enumerate(funnel):
- y=9.45-i*.76;w=8.7-i*.43;x=(10-w)/2
- ax.add_patch(Polygon([[x,y+.26],[x+w,y+.26],[x+w-.15,y-.26],[x+.15,y-.26]],closed=True,fc=PALE,ec=GRAY))
- ax.text(x+.3,y,label,ha='left',va='center',fontsize=10)
- ax.text(x+w-.3,y,f'{n:,}',ha='right',va='center',fontsize=12,color=ACC)
-ax.text(5,6.65,'363 quarantined: 312 direct + 51 dependent',ha='center',fontsize=9,color=DARK)
-ax.text(2.55,5.95,'Earlier writing lineage',ha='center',fontsize=11,color=ACC)
-ax.text(7.5,5.95,'Gap pilot 1 — fresh construction',ha='center',fontsize=11,color=ACC)
-for x in [2.55,7.5]:
- ax.add_patch(FancyArrowPatch((5,6.5),(x,6.13),arrowstyle='-|>',mutation_scale=12,color=DARK))
-left=[('Pilot 5 frozen T','169 commitments / 22 papers'),('Fork 3 targets → searches','3 targets → 6 polarity searches'),('Selected closed routes','2, supported by one paper'),('Verified essay exports','0')]
-right=[('Construction completed',f"{gap['windows']} windows: {gap['accepted_windows']} accepted / {gap['skipped_windows']} skipped"),('Working set — UNFROZEN',f"{gap['working_commitments']} commitments / {gap['represented_papers']} of {gap['available_papers']} papers"),('STOP: alignment 36/150','35 accepted judgments; 3 invalid replies'),('NOT REACHED','Freeze → targets → search → essays')]
+ y=9.5-i*.62;w=8.7-i*.43;x=(10-w)/2
+ ax.add_patch(Polygon([[x,y+.23],[x+w,y+.23],[x+w-.15,y-.23],[x+.15,y-.23]],closed=True,fc=PALE,ec=GRAY))
+ ax.text(x+.3,y,label,ha='left',va='center',fontsize=10);ax.text(x+w-.3,y,f'{n:,}',ha='right',va='center',fontsize=11,color=ACC)
+ax.text(5,7.14,'363 quarantined: 312 direct + 51 dependent',ha='center',fontsize=9)
+ax.text(2.5,6.65,'Earlier writing lineage',ha='center',fontsize=11,color=ACC)
+ax.text(7.5,6.65,'Gap1 → gap1r recovery',ha='center',fontsize=11,color=ACC)
+left=[('Pilot 5 frozen T','169 commitments / 22 papers'),('Fork 3 targets → searches','3 targets → 6 polarity searches'),('Selected derived routes','2, each supported by one paper'),('Round 4 writer checkpoint','0 native verified exports'),('Rounds 5–6 writer checkpoint','2 exports; R6 bibliography = 0 each'),('Substantive novelty established','0; source-fidelity repair pending')]
+right=[('Gap1 construction','74 windows / 159 commitments / 22 papers'),('Gap1 STOP: alignment 36/150','35 accepted; altered ID correctly refused'),('Gap1r recovery → frozen T','160 = 159 source + 1 bridge; 0 unresolved'),('Forward pass: truncated at 500','2 packaging leads; 0 contributions'),('Gap1r STOP: target admission','328,169 total > 200,000; not dispatched'),('NOT REACHED in gap1r','Targets → routes → essays; A/B pending')]
 for col,items in enumerate([left,right]):
- x=.35 if col==0 else 5.3;w=4.35
+ x=.15 if col==0 else 5.15;w=4.7
  for i,(title,detail) in enumerate(items):
-  y=5.15-i*1.15;accent=(col==1 and i==2)
-  ax.add_patch(FancyBboxPatch((x,y-.37),w,.77,boxstyle='round,pad=.03,rounding_size=.05',fc=PALE if accent else 'white',ec=ACC if accent else GRAY,lw=1.5 if accent else 1))
-  ax.text(x+w/2,y+.11,title,ha='center',va='center',fontsize=10,color=ACC if accent else DARK,weight='bold' if accent else 'normal')
-  ax.text(x+w/2,y-.15,detail,ha='center',va='center',fontsize=9.3)
-  if i<3:
-   ax.add_patch(FancyArrowPatch((x+w/2,y-.40),(x+w/2,y-.71),arrowstyle='-|>',mutation_scale=10,color=GRAY,linestyle='--' if col==1 and i==2 else '-'))
-ax.text(5,.65,'Later acquisition: 54 local PDFs; new texts outside these pilot inputs',ha='center',fontsize=9)
-save(fig,'funnel','Common source evidence, then separate run histories; box area is not proportional to counts. The historical writing lineage used a frozen T. Gap pilot 1 completed construction but stopped at alignment candidate 36/150 after three altered-ID replies; 35 accepted judgments were not applied bridges. Its working set was never frozen, and downstream stages were not reached. Later acquisitions do not enlarge either pilot retrospectively.',{'stages':funnel,'historical_path':left,'gap_pilot_path':right,'gap_pilot_facts':gap,'quarantine':{'direct':312,'dependent':51,'total':363},'later_pdfs':54,'source':['reports/zeta-full26-part7.md','reports/zeta-codex-pilot-5.md','reports/zeta-fork3.md','reports/nu4-writer.md','reports/eps2-methodology-supplement.md','reports/overnight/gap1/handoff.md']})
-# Iteration timeline: timestamped episodes, one row per engineering class.
-timeline=[('Extraction', '2026-10-21T00:26:58Z','2026-10-22T23:59:23Z','Rich graph → grounded union'),('Construction','2026-10-21T03:37:29Z','2026-10-23T19:39:01Z','Closure budgets → soft shares'),('Providers / isolation','2026-10-23T10:02:43Z','2026-10-26T06:23:00Z','Credit stop → Claude → Codex'),('Structure / vocabulary','2026-10-26T15:09:34Z','2026-10-27T14:05:42Z','Atomic T → conditionals + stance'),('Novelty / cross-paper','2026-10-26T23:07:41Z','2026-10-29T06:19:53Z','Trivial closure → per-paper gate'),('Writing / audit','2026-10-28T16:52:30Z','2026-10-28T21:39:35Z','Short drafts → sections + repairs'),('Literature currency','2026-10-28T21:03:17Z','2026-10-29T06:17:05Z','Historical gaps → qualified L3')]
-timeline.append(('Gap pilot 1',gap['started_utc'],gap['stopped_utc'],'STOP: alignment 36/150; no freeze'))
+  y=6.03-i*.90;accent=(col==1 and i in [1,4])
+  ax.add_patch(FancyBboxPatch((x,y-.32),w,.68,boxstyle='round,pad=.03,rounding_size=.05',fc=PALE if accent else 'white',ec=ACC if accent else GRAY,lw=1.4 if accent else 1))
+  ax.text(x+w/2,y+.12,title,ha='center',va='center',fontsize=9.6,color=ACC if accent else DARK)
+  ax.text(x+w/2,y-.13,detail,ha='center',va='center',fontsize=8.5)
+  if i<5:ax.add_patch(FancyArrowPatch((x+w/2,y-.36),(x+w/2,y-.51),arrowstyle='-|>',mutation_scale=9,color=GRAY,linestyle='--' if col==1 and i in [1,4] else '-'))
+ax.text(5,.65,'Later acquisition: 54 PDFs; new texts outside these pilot freezes',ha='center',fontsize=9)
+save(fig,'funnel','Separate lineages share extraction evidence; areas are not proportional. Gap1 stopped before freeze. Gap1r reused construction and accepted judgments, froze T, then refused the first L3 target request before dispatch (311,785 input + 16,384 output allowance). Two later writer exports belong to the earlier route lineage; both lost all citations in R6. A/B fork outcomes remain pending.',{'stages':funnel,'historical_path':left,'gap_path':right,'source':['reports/overnight/gap1/handoff.md','reports/overnight/gap1r/handoff.md','reports/nu4-writer.md'],'quarantine':{'direct':312,'dependent':51,'total':363}})
+# Logged episode spans, not time spent working.
+timeline=[('Extraction','2026-10-21T00:26:58Z','2026-10-22T23:59:23Z','Rich graph → grounded union'),('Construction','2026-10-21T03:37:29Z','2026-10-23T19:39:01Z','Closure budgets → soft shares'),('Providers / isolation','2026-10-23T10:02:43Z','2026-10-26T06:23:00Z','Credit stop → Claude → Codex'),('Structure / vocabulary','2026-10-26T15:09:34Z','2026-10-27T14:05:42Z','Atomic T → conditionals + stance'),('Novelty / cross-paper','2026-10-26T23:07:41Z','2026-10-29T06:19:53Z','Trivial closure → per-paper gate'),('Writing / audit','2026-10-28T16:52:30Z','2026-10-29T18:45:24Z','44→0 flags; k=3; exports lose citations'),('Literature currency','2026-10-28T21:03:17Z','2026-10-29T06:17:05Z','Historical gaps → qualified L3'),('Gap1 stop',gap['started_utc'],gap['stopped_utc'],'Alignment 36/150: correct refusal')]
+iso=lambda t:datetime.datetime.fromtimestamp(t,datetime.timezone.utc).isoformat()
+timeline += [('Gap1r recovery',iso(rec['supervisor']['started_epoch']),iso(rec['supervisor']['ended_epoch']),'Frozen T 160 → L3 admission STOP'),('Context / packing','2026-10-29T19:09:07Z','2026-10-29T19:46:10Z','Window override + 122k offline plan'),('Independent review','2026-10-29T15:24:58Z','2026-10-29T20:05:31Z','s12 / np / r2 / s13: findings ledger')]
 start=datetime.datetime.fromisoformat(D['scope']['correspondence_start'].replace('Z','+00:00'))
 hours=lambda t:(datetime.datetime.fromisoformat(t.replace('Z','+00:00'))-start).total_seconds()/3600
-fig,ax=plt.subplots(figsize=(8.4,5.2))
-for i,(label,a,b,text) in enumerate(timeline):
- ax.barh(i,hours(b)-hours(a),left=hours(a),color=ACC if i>3 else GRAY,height=.42)
- ax.text(hours(b) if hours(a)>170 else hours(a),i-.29,text,fontsize=8.4,va='bottom',ha='right' if hours(a)>170 else 'left')
- if label=='Gap pilot 1':ax.plot(hours(b),i,marker='D',color=ACC,markersize=5)
-ax.set_yticks(range(len(timeline)),[x[0] for x in timeline]);ax.invert_yaxis();ax.set_xticks([0,24,48,72,96,120,144,168,192,216],['21','22','23','24','25','26','27','28','29','30']);ax.set_xlabel('October 2026 (UTC); bars span logged episodes, not continuous labor');ax.set_xlim(-1,217);ax.grid(axis='x',alpha=.2)
-a=hours('2026-10-28T12:33:41Z');b=hours('2026-10-28T16:49:21Z');ax.axvspan(a,b,facecolor='none',edgecolor=ACC,hatch='////',lw=.5)
-ax.set_title('Pending: sigma r12 and nu4 r5 — no repair results credited',fontsize=10,pad=20)
-save(fig,'iterations','Overlapping logged repair episodes, with gap pilot 1 timed from its supervisor receipt. The diamond marks the correctly refused alignment stop on October 29, before freeze. The hatched band is the acknowledged October 28 idle interval, not labor. Sigma r12 and nu4 r5 are pending requests, not completed repairs or successful continuations.',{'episodes':timeline,'idle_start':'2026-10-28T12:33:41Z','idle_end':'2026-10-28T16:49:21Z','pending':D['pending_work'],'source':['correspondence/log.txt','reports/overnight/gap1/pilot-exit.json','briefs/sigma-round-12.md','briefs/nu4-round-5.md']})
+fig,ax=plt.subplots(figsize=(8.4,6.5))
+for i,(label,a,b,txt) in enumerate(timeline):
+ ax.barh(i,max(.3,hours(b)-hours(a)),left=hours(a),color=ACC if i>3 else GRAY,height=.38)
+ ax.text(hours(b) if hours(a)>170 else hours(a),i-.29,txt,fontsize=8.1,va='bottom',ha='right' if hours(a)>170 else 'left')
+ if label in ['Gap1 stop','Gap1r recovery']:ax.plot(hours(b),i,marker='D',color=ACC,markersize=4)
+ax.set_yticks(range(len(timeline)),[x[0] for x in timeline]);ax.invert_yaxis();ax.set_xticks([0,24,48,72,96,120,144,168,192,216],['21','22','23','24','25','26','27','28','29','30']);ax.set_xlabel('October 2026 (UTC); logged episode spans, not continuous labor');ax.set_xlim(-1,217);ax.grid(axis='x',alpha=.2)
+ax.axvspan(hours('2026-10-28T12:33:41Z'),hours('2026-10-28T16:49:21Z'),facecolor='none',edgecolor=ACC,hatch='////',lw=.5)
+ax.set_title('Pending: A/B outcomes, citation/history fix, window fix, novelty dossier',fontsize=9,pad=20)
+save(fig,'iterations','Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Sigma r12 and nu4 r5 now have later results; current pending items receive no result bar. Context packing is an offline plan, and native exports do not establish source fidelity or substantive novelty.',{'episodes':timeline,'idle_start':'2026-10-28T12:33:41Z','idle_end':'2026-10-28T16:49:21Z','pending':D['pending_work'],'source':['correspondence/log.txt','reports/overnight/gap1/pilot-exit.json','reports/overnight/gap1r/pilot-exit.json']})
 # Gate incidences: candidates can have multiple reasons; no false stacked total.
 ps=D['pilots'][2:];reasons=['attributed_report','own_thesis_not_established','single_commitment_entailment','target_content_not_established','gap_resolution_not_established','duplicate_retained_target']
 labels=['Attribution screen','Own-thesis classifier','Single-support entailment','Content / restatement','Gap not resolved','Duplicate retained ID']
@@ -105,6 +102,16 @@ for j,g in enumerate(groups):
 ax.set_yticks([0,1],['Claude Code','Codex CLI']);ax.set_xlabel('Millions of measured tokens, including cache components');ax.set_xlim(0,65);ax.invert_yaxis();ax.legend(loc='upper center',bbox_to_anchor=(.5,-.24),ncol=3,frameon=False,fontsize=8);ax.grid(axis='x',alpha=.15)
 for i,total in enumerate(left):ax.text(total+.5,i,f'{total:.3f}M',va='center',fontsize=9)
 save(fig,'subscription-tokens','Measured subscription usage in the same deduplicated lineage, grouped by native stage. Cache reads and writes are retained; these are accounting components, not unique prose tokens. Unknown reservations and an unclassified-provider legacy receipt are shown in the accompanying table, not these bars. Coding-agent and orchestration conversations are outside this ledger.',{'groups':groups,'measured_values':values,'source':'data.json/provider_stage_accounting; reconciled to reports/overnight/fork6/accounting.json'})
+# Admission totals and bounds. Later rows are plans, not live runs.
+plans=D['context_window']['plans'];fig,ax=plt.subplots(figsize=(8.4,4.2));y=np.arange(len(plans))
+ax.barh(y,[p['input']/1000 for p in plans],color=GRAY,label='Estimated input')
+ax.barh(y,[p['output']/1000 for p in plans],left=[p['input']/1000 for p in plans],color=ACC,label='Output allowance')
+for i,p in enumerate(plans):
+ ax.plot([p['bound']/1000]*2,[i-.31,i+.31],color=DARK,lw=2)
+ ax.text(max(p['total'],p['bound'])/1000+9,i,f"{p['total']:,} / {p['bound']:,}",va='center',fontsize=8)
+ax.set_yticks(y,[p['label'] for p in plans]);ax.invert_yaxis();ax.set_xlim(0,1110);ax.set_xticks([0,200,400,600,800]);ax.set_xlabel('Thousands of estimated tokens; vertical ticks show admission bounds');ax.grid(axis='x',alpha=.15)
+ax.legend(loc='upper center',bbox_to_anchor=(.5,-.24),ncol=2,frameon=False,fontsize=9)
+save(fig,'context-admission','Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); fork A requests two hops and has no result here. The current unpacked template adds 299 tokens. Uniform run-window arithmetic does not close the later stage-window admission defect. A/B outcomes and live enlarged-window capacity remain pending.',{'plans':plans,'source':D['context_window']['source'],'forks':D['context_window']['forks']})
 D['figures']=figures
 D['accounting_reconciliation']={}
 for cls in ['measured','unknown_at_reservation','unclassified']:

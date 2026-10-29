@@ -166,12 +166,15 @@ def test_pdf_native_browser_offline(tmp_path):
     assert result['horizontal_overflow']==[]
 
 
+@pytest.mark.parametrize('audit_provider', ['claude_code', 'codex_cli'])
 @pytest.mark.parametrize('configured,override,expected',[(None,None,3000),(3600,None,3600),(3600,3200,3200)])
-def test_publication_cli_pins_provider_and_runs_offline_followups(rig,monkeypatch,configured,override,expected):
+def test_publication_cli_pins_provider_and_runs_offline_followups(rig,monkeypatch,configured,override,expected,audit_provider):
     from ara.runtime.cli import main
     from ara.runtime.publication import MODEL
     calls,route,seen=install_publication(rig,monkeypatch)
     log=calls.log
+    if audit_provider=='codex_cli':
+        calls.config['pricing']['gpt-6-luna']=calls.config['pricing'][calls.config['model']]
     if configured is not None: calls.config['publication_min_words']=configured
     # Seed the ordinary run metadata through its existing event format.
     original_read=log.read
@@ -194,19 +197,38 @@ def test_publication_cli_pins_provider_and_runs_offline_followups(rig,monkeypatc
     replacement.record('route',graph=route.to_dict())
     (replacement.path.parent/'draft.unverified.json').write_text(json.dumps(paper()))
     settings=[]
-    def factory(config,newlog,topic):
+    def factory(config,newlog,topic,*,imported_draft=None):
         settings.append(config)
         calls.log=newlog
         calls.config=config
+        if audit_provider=='codex_cli':
+            from ara.runtime.providers import MockProvider
+            def audit_factory(settings):
+                backend=MockProvider({},settings['model'])
+                def complete(kind,prompt,schema,maximum):
+                    raw=calls.provider.complete(kind,prompt,schema,maximum).raw
+                    return Response({**raw,'model':settings['model']})
+                backend.complete=complete
+                return backend
+            calls.provider_factory=audit_factory
+        calls.screen_imported_draft(imported_draft, kind='audit_publication')
         return calls
     args=['--run-dir',str(replacement.path.parent)]
     extra=[] if override is None else ['--min-words',str(override)]
+    extra+=['--audit-provider',audit_provider]
+    if audit_provider=='codex_cli':extra+=['--audit-model','gpt-6-luna']
     assert main(['polish',*args,'--route',route.id,*extra],calls_factory=factory)==2
     assert settings[0]['publication_min_words']==settings[0]['essay_min_words']==expected
     inputs=[d for k,d in seen if k=='polish_essay']
     assert all(d['minimum_words']==expected and d['maximum_words']==6000 for d in inputs)
     assert all(d['source_evidence']['allowed_bibliography'] for k,d in seen if k=='audit_publication')
-    assert settings[0]['provider']=='claude_code' and settings[0]['model']==MODEL and settings[0]['stages']=={}
+    assert settings[0]['provider']=='claude_code' and settings[0]['model']==MODEL
+    if audit_provider=='codex_cli':
+        assert settings[0]['stages']['audit_publication']['provider']=='codex_cli'
+        assert settings[0]['stages']['audit_publication']['model']=='gpt-6-luna'
+        audits=[json.loads(e['payload_json']) for e in replacement.read() if e['stage']=='audit_publication']
+        assert audits[-1]['requested_model']=='gpt-6-luna'
+    else:assert settings[0]['stages']=={}
     assert main(['figures',*args],calls_factory=lambda *a: pytest.fail('offline command opened provider'))==0
     assert main(['render-pdf',*args],calls_factory=lambda *a: pytest.fail('offline command opened provider'))==0
     completed=[json.loads(e['payload_json']) for e in replacement.read() if e['stage']=='publication_pdf']

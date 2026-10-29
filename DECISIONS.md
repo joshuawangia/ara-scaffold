@@ -4074,3 +4074,24 @@ drives the non-retrieval regression so malformed event data cannot mask a broken
 stage guard. Native outcomes and protocol-generation evidence belong in the
 external round-5 report; this transport change proves no semantic verification
 or final export by itself.
+
+
+## 2026-10-29 — Publication import and repair boundaries (quality 4)
+
+Imported publication drafts share the writer-resume sensitive-content screen;
+both effective publication providers screen the entire object before preflight,
+validation diagnostics or content-bearing effects. Direct publication repeats the
+screen before logging. Rejected imports never become fallback artifacts.
+
+Publication audits label the current title as well as current body/headings.
+Title-only changes therefore invalidate audit cache identity. Flagged sentence
+field offsets bind permission to one owning block and paragraph occurrence;
+duplicate text does not enlarge permission. Only flagged title/heading/prose
+blocks may change; every unflagged block and all separators remain byte-identical.
+The three-round repair limit and complete re-audit remain in force.
+
+An explicit publication audit provider selects isolated Codex while editing stays
+on pinned Opus. Native scoped dispatch shares budget/log/cache and runs each
+provider's isolation canary. This integrates writer round 5 without claiming to
+solve the separately recorded audit-instability redesign. Native outcomes and
+external-verification limits are reported outside tracked source.

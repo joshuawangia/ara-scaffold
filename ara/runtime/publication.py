@@ -109,6 +109,7 @@ def as_draft(markdown, bibliography):
 
 
 def polish(calls, route, draft, *, currency=None):
+    calls.screen_imported_draft(draft, kind='audit_publication')
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -166,23 +167,24 @@ def polish(calls, route, draft, *, currency=None):
                     role=next(f['role'] for f in audit['flags'] if f['sentence']==sentence['sentence']),
                     reasons=[f['reason'] for f in audit['flags'] if f['sentence']==sentence['sentence']])
                     for sentence in inputs['sentences'] if sentence['sentence'] in audit['extra_steps']]
+                from ara.runtime.publication_audit import repair_locations, validate_repair_scope
                 prior = paragraphs(candidate['markdown'])
-                allowed = [i for i,p in enumerate(prior) if any(s['text'] in NODE.sub('',p) for s in flagged)]
-                require(bool(allowed), 'publication audit repair could not locate flagged paragraphs')
+                flagged = repair_locations(candidate['markdown'], flagged)
+                allowed_blocks = sorted({s['location']['block_index'] for s in flagged})
+                allowed = sorted({s['location']['paragraph_index'] for s in flagged
+                                  if s['location']['paragraph_index'] is not None})
+                require(bool(allowed_blocks), 'publication audit repair could not locate flagged spans')
                 def validate_repair(value):
                     check_whole(value)
-                    after = paragraphs(value['markdown'])
-                    require(len(prior)==len(after), 'publication repair changed paragraph inventory')
-                    require(all(a == b for i,(a,b) in enumerate(zip(prior,after)) if i not in allowed),
-                            'publication repair changed an unflagged paragraph')
+                    validate_repair_scope(candidate['markdown'], value['markdown'], allowed_blocks)
                     return value
                 repair_rounds = attempt + 1
                 candidate = calls.call('polish_essay',dict(**base,mode='repair',repair_round=repair_rounds,markdown=candidate['markdown'],
-                    original_markdown=original,paragraphs=prior,allowed_paragraphs=allowed,
+                    original_markdown=original,paragraphs=prior,allowed_paragraphs=allowed,allowed_blocks=allowed_blocks,
                     flagged_sentences=flagged,audit_failures=audit['flags'],audit=audit),validate_repair)
                 accepted_repair_rounds += 1
                 calls.log.record('publication_repair',round=repair_rounds,flagged_sentences=flagged,
-                                 audit_failures=audit['flags'],allowed_paragraphs=allowed,**candidate)
+                                 audit_failures=audit['flags'],allowed_paragraphs=allowed,allowed_blocks=allowed_blocks,**candidate)
     except Rejected as exc:
         failure = str(exc)
         audit = {**audit,'faithful':False}
@@ -278,20 +280,29 @@ def publication_command(args, log, root, calls_factory):
         draft_path = args.draft or args.run_dir/('draft.json' if (args.run_dir/'draft.json').exists() else 'draft.unverified.json')
         draft = json.loads(draft_path.read_text())
         from ara.runtime.validation import validate_local
-        validate_local(json.loads((root/'schemas/write_essay.json').read_text()),draft,run['config'])
+        from ara.runtime.providers import stage_settings
         config = deepcopy(run['config'])
+        writer_settings = stage_settings(config, 'audit_essay')
         minimum = args.min_words if args.min_words is not None else config.get('publication_min_words', 3000)
         length_policy(minimum)
         config.update(provider='claude_code',model=MODEL,stages={},fallbacks=[],validation_attempts=1,
                       publication_min_words=minimum,essay_min_words=minimum,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
+        if args.audit_provider == 'codex_cli':
+            audit_model = args.audit_model or writer_settings['model']
+            require(audit_model.startswith('gpt-'), 'Codex publication audit requires a configured GPT model')
+            config['stages']['audit_publication'] = dict(provider='codex_cli', model=audit_model,
+                effort=writer_settings['effort'], system_prompt=writer_settings.get('system_prompt', ''))
+        elif args.audit_model is not None:
+            require(args.audit_model == MODEL, 'Claude publication audit uses the pinned publication model')
         config.setdefault('claude_code', {}).setdefault('timeout_seconds', 900)
         if args.unknown_usage_policy:
             config['unknown_usage_policy'] = args.unknown_usage_policy
+        calls = calls_factory(config,log,run['topic'],imported_draft=draft)
+        validate_local(json.loads((root/'schemas/write_essay.json').read_text()),draft,run['config'])
         log.record('publication_configuration',config=config,draft_path=str(draft_path),draft_sha256=digest(canonical(draft)))
         from ara.runtime.publication_currency import load_currency
         currency = load_currency(args.literature_currency, log)
-        calls = calls_factory(config,log,run['topic'])
         result,directory = polish(calls,route,draft,currency=currency)
         print(str(directory/'paper.md'))
         print('audit=' + ('pass' if result['polished'] else 'fail') + '; native_citations=' + result['native_citations']['status'])

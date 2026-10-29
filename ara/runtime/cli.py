@@ -116,6 +116,8 @@ def parser() -> argparse.ArgumentParser:
         if command == 'polish':
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--audit-provider', choices=('claude_code', 'codex_cli'), default='claude_code')
+            cmd.add_argument('--audit-model', help='audit model; defaults to the run writer model for Codex')
             cmd.add_argument('--min-words', type=int, help='ARA publication floor; defaults to publication_min_words in the run config or 3000')
             cmd.add_argument('--literature-currency', type=Path, action='append', default=[])
             cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
@@ -153,9 +155,9 @@ def make_provider(config: dict, root: Path = ROOT):
     return provider
 
 
-def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> ModelCalls:
+def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT, *, imported_draft=None) -> ModelCalls:
     return ModelCalls(config, make_provider(config, root), log, Cache(Path(config['cache_dir'])), root, topic,
-                      provider_factory=lambda settings: make_provider(settings, root))
+                      provider_factory=lambda settings: make_provider(settings, root), imported_draft=imported_draft)
 
 
 def apply_profile(config, name):

@@ -1773,7 +1773,7 @@ CASES += [
 
 CASES += [
     ('kappa4_W1_resumed_draft_scan', 'ara/runtime/orchestration.py',
-     '            calls.provider.scan_output(draft)', '            pass',
+     '        calls.screen_imported_draft(draft)', '        pass',
      'tests/runtime/test_resumed_draft_scan.py::test_resumed_draft_scan_before_any_effect'),
 ]
 
@@ -1831,8 +1831,8 @@ CASES += [
     ('publication_paragraph_log', 'ara/runtime/publication.py',
      "require([x['paragraph'] for x in value['change_log']] == list(range(len(body))),", "require(True,",
      'tests/runtime/test_publication.py::test_publication_constraints'),
-    ('publication_targeted_repair', 'ara/runtime/publication.py',
-     "if i not in allowed),", "if False),",
+    ('publication_targeted_repair', 'ara/runtime/publication_audit.py',
+     "if index not in allowed_blocks:", "if False:",
      'tests/runtime/test_publication.py::test_repair_cannot_change_unflagged_abstract'),
     ('publication_second_audit', 'ara/runtime/publication.py',
      'for attempt in range(4):', 'for attempt in range(3):',
@@ -1907,6 +1907,33 @@ CASES += [
      "if web and isinstance(item, dict) and item.get('type') == 'web_search':",
      "if isinstance(item, dict) and item.get('type') == 'web_search':",
      'tests/runtime/test_codex_cli.py::test_tool_event_rejected_without_echo[web_search]'),
+]
+
+
+
+CASES += [
+    ('publication_import_screen', 'ara/runtime/calls.py',
+     "            self.screen_imported_draft(imported_draft, kind='audit_publication')", '            pass',
+     'tests/runtime/test_publication_boundaries.py::test_publication_import_screen_before_effects'),
+    ('publication_effective_import_screen', 'ara/runtime/calls.py',
+     'providers = [self.provider, self._for_construction_stage(kind, {}).provider]', 'providers = [self.provider]',
+     'tests/runtime/test_publication_boundaries.py::test_import_screen_includes_effective_audit_provider'),
+    ('publication_current_title_audit', 'ara/runtime/calls.py',
+     "text=draft['title'],", "text='',",
+     'tests/runtime/test_publication_boundaries.py::test_changed_publication_title_cannot_reuse_audit_cache'),
+    ('publication_unflagged_structure', 'ara/runtime/publication_audit.py',
+     'if index not in allowed_blocks:', "if index not in allowed_blocks and a['kind'] == 'paragraph':",
+     'tests/runtime/test_publication_boundaries.py::test_repair_cannot_edit_unflagged_title_or_heading'),
+    ('publication_duplicate_occurrence', 'ara/runtime/publication.py',
+     "allowed_blocks = sorted({s['location']['block_index'] for s in flagged})",
+     "allowed_blocks = list(range(1000))",
+     'tests/runtime/test_publication_boundaries.py::test_duplicate_sentence_repair_uses_only_flagged_occurrence[duplicate-False]'),
+    ('publication_cli_audit_selection', 'ara/runtime/publication.py',
+     "if args.audit_provider == 'codex_cli':", 'if False:',
+     'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
+    ('publication_codex_audit_dispatch', 'ara/runtime/construction_stages.py',
+     "if kind not in (*KINDS, 'audit_publication'):", 'if kind not in KINDS:',
+     'tests/runtime/test_publication_boundaries.py::test_publication_audit_dispatch_uses_effective_provider'),
 ]
 
 

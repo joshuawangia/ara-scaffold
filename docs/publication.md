@@ -24,8 +24,8 @@ cache, schema validation, budget and append-only receipts apply. It opens one
 logical call per section and one whole-paper call. Transport retries retain their
 native bounded policy; publication validation does not silently regenerate a
 section. A complete adverse typed audit permits up to three targeted repair rounds,
-each followed by a full audit. Every round receives exact flagged sentence numbers,
-text, typed roles and reason categories; only their paragraphs may change.
+each followed by a full audit of the current title, headings and body. Every round receives exact flagged sentence numbers,
+text, typed roles and reason categories; only their owning blocks may change. Title/heading edits require a flag on that specific block; duplicate sentence text elsewhere grants no permission. Field offsets identify the flagged occurrence and its paragraph/block index. Unflagged blocks and separators are compared byte-for-byte.
 Attempted and accepted repair counts are recorded separately.
 Remaining failure retains the original draft and explicitly records fallback.
 
@@ -144,3 +144,22 @@ actually cites; an imported currency record stays in logs when unused.
 Free-form import/version notes remain in the citation receipt, not the reading
 bibliography. The related-work prose and audit still receive these notes so that
 substantive version and access limits are preserved.
+
+## Imported drafts and separately selected audits
+
+Imported drafts use the same `ModelCalls.screen_imported_draft` as writer resume.
+The complete object, including unexpected fields, is screened by the publication
+provider and any separately selected audit provider before schema diagnostics,
+provider preflight, content-bearing logs, dispatch or fallback publication.
+Direct `polish` calls repeat that screen before any publication effect.
+
+Use `--audit-provider codex_cli` to retain Opus for all editing calls and run
+`audit_publication` through the isolated Codex adapter. `--audit-model` selects its
+pin; absent that override, the recorded writer model is used and must be a GPT
+model. Without the flag the existing pinned Claude audit remains available.
+Provider scopes share the same budget, append-only log and cache boundary, with
+provider/model/settings included in cache identity. Each provider performs its
+own isolation preflight. This selects only publication auditing; external
+citation/originality retrieval remains on the publication provider and explicitly
+blocked there. It does not change pilot routing or claim stable model judgments.
+The live receipt distinguishes schema/transport proof from the semantic verdict.

@@ -192,10 +192,9 @@ def extraction_failure_reason(exc):
 
 class ModelCalls:
     def __init__(self, config: dict, provider: Provider, log: EventLog, cache: Cache,
-                 root: Path, topic: str, *, provider_factory=None):
+                 root: Path, topic: str, *, provider_factory=None, imported_draft=None):
         self.config, self.provider, self.log, self.cache = config, provider, log, cache
         self.root, self.topic = Path(root), topic
-        self.budget = Budget(config, log)
         self._paper_budget = None
         self.construction_resume = False
         self._key_lock = Lock()
@@ -210,7 +209,17 @@ class ModelCalls:
             provider.calibration_state = self._calibration_state
         self._stage_provider_lock = RLock()
         self._reservations = threading.local()
+        if imported_draft is not None:
+            self.screen_imported_draft(imported_draft, kind='audit_publication')
+        self.budget = Budget(config, log)
         self._ensure_provider_ready(force=True)
+
+    def screen_imported_draft(self, draft, *, kind='audit_essay'):
+        """One input screen shared by resumed writing and publication."""
+        providers = [self.provider, self._for_construction_stage(kind, {}).provider]
+        for provider in {id(p): p for p in providers}.values():
+            if hasattr(provider, 'scan_output'):
+                provider.scan_output(draft)
 
     def _subscription(self):
         return getattr(self.provider, 'provider_kind', None) in ('claude_code', 'codex_cli')
@@ -1186,8 +1195,10 @@ class ModelCalls:
         if publication_context is not None:
             from ara.runtime.publication_audit import sentence_sections
             inputs['publication_context'] = publication_context
-            for sentence, section in zip(inputs['sentences'], sentence_sections(draft['body'], spans)):
-                sentence['section'] = section
+            for sentence, section, (start, end) in zip(inputs['sentences'], sentence_sections(draft['body'], spans), spans):
+                sentence.update(section=section, field='body', start=start, end=end)
+            inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title'],
+                section='Title', field='title', start=0, end=len(draft['title'])))
         return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None) -> dict:

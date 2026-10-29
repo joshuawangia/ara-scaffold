@@ -1925,6 +1925,14 @@ CASES += [
 ]
 
 
+CASES += [
+    ('boolean_solver_lifetime_lock', 'ara/formal.py',
+     'with _SOLVER_LOCK:\n        return _boolean_combination_equivalence(basis, target, timeout_ms)',
+     'with _SOLVER_LOCK:\n        pass\n    return _boolean_combination_equivalence(basis, target, timeout_ms)',
+     'tests/test_boolean_package.py::test_boolean_z3_objects_are_released_under_the_solver_lock'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

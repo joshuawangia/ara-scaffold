@@ -4157,3 +4157,15 @@ relation/reason-only alignment response, requires no unresolved pairs and an
 accepted P/Q entailment, and retains the rendered R lead and frozen-byte checks.
 Runtime supplies candidate identities; the schema must not accept echoed IDs.
 Combined-tree full gates supersede the interrupted pre-integration controls.
+
+
+### Round 29 verification repair — Z3 object lifetime
+
+The combined full mutation run exposed a native abort in a restored parallel
+search test. Boolean equivalence serialized Z3 calls but retained compiler/solver
+locals until after releasing the shared lock. Their destructors could race with
+another search thread using Z3's default context. A deterministic real-object
+finalization regression failed on that implementation. As with entailment, a
+private helper now owns and releases every Z3 object before its locked caller
+returns. A control removes the lock boundary; native alignment search is rerun.
+The interrupted gate evidence is retained, and final gates use the repaired head.

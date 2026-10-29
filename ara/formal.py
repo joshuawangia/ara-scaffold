@@ -66,11 +66,15 @@ def boolean_combination_equivalence(basis: tuple[Formula, ...], target: Formula,
     if timeout_ms <= 0:
         raise ValueError('solver timeout must be positive')
     with _SOLVER_LOCK:
-        left, right, solver = Compiler('left:'), Compiler('right:'), z3.Solver()
-        solver.set(timeout=timeout_ms)
-        solver.add(*(left.compile(f) == right.compile(f) for f in basis))
-        solver.add(left.compile(target) != right.compile(target))
-        return _solver_result(solver)
+        return _boolean_combination_equivalence(basis, target, timeout_ms)
+
+
+def _boolean_combination_equivalence(basis, target, timeout_ms):
+    left, right, solver = Compiler('left:'), Compiler('right:'), z3.Solver()
+    solver.set(timeout=timeout_ms)
+    solver.add(*(left.compile(f) == right.compile(f) for f in basis))
+    solver.add(left.compile(target) != right.compile(target))
+    return _solver_result(solver)
 
 
 def _solver_result(solver):

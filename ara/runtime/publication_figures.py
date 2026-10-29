@@ -38,7 +38,7 @@ def _svg(title, rows, links=()):
             + ''.join(edges + boxes) + '</svg>\n')
 
 
-def figure_data(calls, route):
+def figure_data(calls, route, citation_receipt=None):
     evidence = source_context(calls, route)
     supports = {s['commitment']['id']: s for s in evidence['supporting_commitments']}
     outline = calls.essay_outline(route)
@@ -56,14 +56,14 @@ def figure_data(calls, route):
             label += '\nCQ: no answers recorded'
         if source:
             p = source['provenance']
-            label += '\nSource: ' + (p['source_id'] if p else 'unavailable') + '; ' + source['commitment']['citation']
+            label += '\nSource: ' + (citation_receipt[node.t_id]['display'] if citation_receipt else (p['source_id'] if p else 'unavailable') + '; ' + source['commitment']['citation'])
         rows.append((node.id, label))
         edges.extend((child, node.id) for child in node.children)
     for role in outline.get('source_roles', []):
         source = supports[role['evidence_id']]
         p = source['provenance']
-        support_rows.append((str(len(support_rows)), f"{role['node_id']} ← {p['source_id']} (pp. {p['page_start']}–{p['page_end']})\n"
-            f"{source['commitment']['citation']}\nStance: {p['stance']}; attributed to {p['attributed_to']}; role: {role['role']}"))
+        citation = citation_receipt[role['evidence_id']]['display'] if citation_receipt else source['commitment']['citation']
+        support_rows.append((str(len(support_rows)), f"{role['node_id']} ← {citation}\nStance: {p['stance']}; attributed to {p['attributed_to']}; role: {role['role']}"))
     if not support_rows:
         support_rows = [('none', 'Source provenance unavailable; no source support inferred.')]
     result = [dict(id='argument-map', caption='Route premises, inference schemes and conclusion. Arrows follow premise-to-conclusion links; CQ labels report recorded answers.', rows=rows, links=edges),
@@ -75,10 +75,10 @@ def figure_data(calls, route):
     return result
 
 
-def generate_figures(calls, route, directory: Path):
+def generate_figures(calls, route, directory: Path, citation_receipt=None):
     directory.mkdir(parents=True, exist_ok=True)
     manifest = []
-    for item in figure_data(calls, route):
+    for item in figure_data(calls, route, citation_receipt):
         svg = _svg(item['id'].replace('-', ' ').title(), item['rows'], item['links'])
         name = item['id'] + '.svg'
         (directory / name).write_text(svg)

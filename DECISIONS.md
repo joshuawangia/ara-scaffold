@@ -3911,3 +3911,20 @@ Reference metadata is joined from logged extraction inputs through frozen T sour
 IDs and matching PDF hashes. A mutable checkout bibliography is not run evidence.
 The recorded title, authors, year and venue remain independently unverified until
 the native external citation path completes; source identity does not prove them.
+
+
+## 2026-10-29 — Publication evidence and reading citations
+
+The publication-only currency input retains exact operator-provided records and
+verification receipts. Its page-linked claims can support related-work positioning
+but never enlarge frozen route support. A separate publication prompt uses native
+audit labels to check both original-draft fidelity and bounded literature claims;
+pilot audit prompts and schemas remain unchanged.
+
+Editorial quality requires merging redundant paragraphs rather than preserving
+every repeated marker occurrence. Distinct citation/node inventories remain local
+invariants; claim preservation and qualifications remain audit judgments. Reading
+citations are deterministic author–year displays of provenance, with physical PDF
+pages explicitly labelled. The raw identifiers remain in accompanying receipts.
+
+Publication reading word count (quality followup): enforce the 4,500–6,000 bound on the reading text with rendered citations, excluding references and internal markers. Raw citation IDs make the annotated copy shorter; its count remains diagnostic, not a second minimum. This supersedes the dual-count gate noted above.

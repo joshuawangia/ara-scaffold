@@ -37,11 +37,11 @@ def strip_figures(markdown):
     return FIGURE.sub('', markdown)
 
 
-def validate_polish(value, original, figure_ids, *, whole=False):
+def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None):
     markdown = value['markdown']
     body = paragraphs(strip_figures(markdown))
     if whole:
-        words = len(NODE.sub('', FIGURE.sub('', markdown)).split())
+        words = len(NODE.sub('', FIGURE.sub('', reading_markdown if reading_markdown is not None else markdown)).split())
         require(4500 <= words <= 6000, 'publication word count outside 4500–6000')
         abstract = re.search(r'^## Abstract\s*\n(.*?)(?=^## \d+\.)',markdown,re.M|re.S)
         require(abstract is not None and 150 <= len(abstract[1].split()) <= 200, 'publication abstract must contain 150–200 words')
@@ -50,18 +50,13 @@ def validate_polish(value, original, figure_ids, *, whole=False):
         require([int(n) for n,_ in headings] == list(range(1,len(headings)+1)), 'publication numbered sections invalid')
         labels = ' '.join(h.lower() for _,h in headings)
         require(all(term in labels for term in ('introduction','argument','objection','repl','limit','conclusion')), 'publication required section missing')
-        original_paragraphs = paragraphs(original)
-        main = body[1:]
-    else:
-        original_paragraphs, main = paragraphs(original), body
     require([x['paragraph'] for x in value['change_log']] == list(range(len(body))), 'publication paragraph change log incomplete')
-    require(len(main) == len(original_paragraphs), 'publication paragraph inventory changed')
-    for before,after in zip(original_paragraphs,main):
-        require(CITATION.findall(before) == CITATION.findall(after), 'publication paragraph citation sequence changed')
-        require(NODE.findall(before) == NODE.findall(after), 'publication paragraph node markers changed')
+    require(set(CITATION.findall(markdown)) == set(CITATION.findall(original)), 'publication citation inventory changed')
+    require(set(NODE.findall(markdown)) == set(NODE.findall(original)), 'publication node coverage changed')
     if whole:
-        require(set(CITATION.findall(body[0])) <= set(CITATION.findall(original)), 'publication abstract citation invented')
         require(not NODE.findall(body[0]), 'publication abstract must not duplicate node markers')
+        from ara.runtime.publication_currency import check_currency
+        check_currency(markdown,currency)
     found = FIGURE.findall(markdown)
     placements = value['figure_placements']
     require(found == [p['id'] for p in placements] and len(found) == len(set(found)) and set(found) <= figure_ids,
@@ -102,18 +97,29 @@ def as_draft(markdown, bibliography):
     return dict(title=lines[0].removeprefix('# ').strip(), body='\n'.join(lines[1:]).strip(), bibliography=bibliography)
 
 
-def polish(calls, route, draft):
+def polish(calls, route, draft, *, currency=None):
     from ara.runtime.publication_figures import figure_data
     evidence = source_context(calls, route)
     citation_check(draft,evidence)
     figures = figure_data(calls,route)
+    publication_context = dict(original_draft=draft, literature_currency=currency)
+    from ara.runtime.publication_references import bibliography_records, render_references, reading_copy
+    source_ids = {e['work'] for e in currency['evidence'].values() if e['work']} if currency else set()
+    records = bibliography_records(calls.log,evidence,source_ids)
+    if currency:
+        for id,record in currency['sources'].items():
+            records.setdefault(id,dict(record=record,verification='logged_currency_record'))
+    def check_whole(value):
+        reading,_ = reading_copy(value['markdown'],evidence,records,currency)
+        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading)
+        return value
     figure_ids = {f['id'] for f in figures}
     chunks = sections(draft,calls.log.read())
     original = '\n\n'.join(chunks)
     calls.log.record('publication_started', route_id=route.id, original_draft=draft,
                      original_sha256=digest(canonical(draft)), requested_model=MODEL)
     base = dict(outline=calls.essay_outline(route), source_evidence=evidence,
-                figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'])
+                figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'], literature_currency=currency)
     accepted = []
     candidate = None
     audit = dict(faithful=False)
@@ -128,12 +134,12 @@ def polish(calls, route, draft):
         merged = '\n\n'.join(v['markdown'] for v in accepted)
         candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
             original_markdown=original,paragraphs=paragraphs(merged)),
-            lambda value: validate_polish(value,original,figure_ids,whole=True))
+            check_whole)
         for attempt in range(2):
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
             try:
-                audit = calls.audit_essay(route,current)
+                audit = calls.audit_essay(route,current,publication_context=publication_context)
                 break
             except Rejected:
                 events = calls.log.read()
@@ -147,8 +153,9 @@ def polish(calls, route, draft):
                 allowed = [i for i,p in enumerate(prior) if any(s in NODE.sub('',p) for s in flagged)]
                 require(bool(allowed), 'publication audit repair could not locate flagged paragraphs')
                 def validate_repair(value):
-                    validate_polish(value,original,figure_ids,whole=True)
+                    check_whole(value)
                     after = paragraphs(value['markdown'])
+                    require(len(prior)==len(after), 'publication repair changed paragraph inventory')
                     require(all(a == b for i,(a,b) in enumerate(zip(prior,after)) if i not in allowed),
                             'publication repair changed an unflagged paragraph')
                     return value
@@ -168,7 +175,7 @@ def polish(calls, route, draft):
             cleaned, verification = calls.verify_originality_citations(chosen)
             native_citations = dict(status='pass' if cleaned == chosen and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
             if native_citations['status'] == 'pass':
-                calls.audit_essay(route,chosen)
+                calls.audit_essay(route,chosen,publication_context=publication_context)
         except (ClaudeCodeError, Rejected) as exc:
             if str(exc) != 'stage_requires_api_provider':
                 raise
@@ -179,13 +186,15 @@ def polish(calls, route, draft):
         dict(id=f['id'],after_paragraph=len(paragraphs(markdown))-1) for f in figures]
     if not success:
         markdown += '\n\n' + '\n\n'.join('{{fig:' + f['id'] + '}}' for f in figures)
-    from ara.runtime.publication_references import bibliography_records, render_references
-    records = bibliography_records(calls.log,evidence)
+    reading, citation_receipt = reading_copy(markdown,evidence,records,currency)
+    references = render_references(chosen,evidence,records,currency,citation_receipt)
     result = dict(route_id=route.id,route_sha256=digest(route.to_json()),polished=success,audit=audit,polish_failure=failure,
         local_citations=local_citations,native_citations=native_citations,
-        words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
+        words=len(NODE.sub('',FIGURE.sub('',reading)).split()),
+        audit_words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
+        reading_markdown=reading+references,citation_receipt=citation_receipt,literature_currency=currency,
         original_sha256=digest(canonical(draft)),draft=chosen,
-        markdown=markdown+render_references(chosen,evidence,records),bibliographic_records=records,
+        markdown=markdown+references,bibliographic_records=records,
         figure_placements=placements,placement_origin='model' if success else 'deterministic_fallback',
         change_log=candidate['change_log'] if success else [],section_changes=accepted)
     return publish(calls.log, result)
@@ -194,7 +203,7 @@ def polish(calls, route, draft):
 def publish(log, result):
     """Persist a validated audit artifact and its marker-free reading copy."""
     result = {**result, 'audit_markdown': result['markdown'],
-              'markdown': NODE.sub('', result['markdown'])}
+              'markdown': NODE.sub('', result.get('reading_markdown',result['markdown']))}
     directory = log.path.parent/'publication'
     directory.mkdir(exist_ok=True)
     name = digest(canonical(result))[:16]
@@ -202,6 +211,7 @@ def publish(log, result):
     target.mkdir(exist_ok=True)
     (target/'paper.md').write_text(result['markdown'])
     (target/'publication.json').write_text(canonical(result))
+    (target/'citation-receipt.json').write_text(canonical(result.get('citation_receipt',{})))
     log.record('publication_completed',path=str(target.relative_to(log.path.parent)),
         markdown_sha256=digest(result['markdown']),polished=result['polished'],audit=result['audit'],
         local_citations=result['local_citations'],native_citations=result['native_citations'],words=result['words'],
@@ -251,17 +261,20 @@ def publication_command(args, log, root, calls_factory):
         config.update(provider='claude_code',model=MODEL,stages={},fallbacks=[],validation_attempts=1,
                       essay_min_words=4500,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
+        config.setdefault('claude_code', {}).setdefault('timeout_seconds', 900)
         if args.unknown_usage_policy:
             config['unknown_usage_policy'] = args.unknown_usage_policy
         log.record('publication_configuration',config=config,draft_path=str(draft_path),draft_sha256=digest(canonical(draft)))
+        from ara.runtime.publication_currency import load_currency
+        currency = load_currency(args.literature_currency, log)
         calls = calls_factory(config,log,run['topic'])
-        result,directory = polish(calls,route,draft)
+        result,directory = polish(calls,route,draft,currency=currency)
         print(str(directory/'paper.md'))
         print('audit=' + ('pass' if result['polished'] else 'fail') + '; native_citations=' + result['native_citations']['status'])
         return 0 if result['polished'] and result['native_citations']['status']=='pass' else 2
     if args.command == 'figures':
         from ara.runtime.publication_figures import generate_figures
-        manifest = generate_figures(RunSources(log,root),route,directory/'figures')
+        manifest = generate_figures(RunSources(log,root),route,directory/'figures',result.get('citation_receipt'))
         log.record('publication_figures',route_id=route_id,manifest=manifest)
         print(str(directory/'figures/manifest.json'))
     else:

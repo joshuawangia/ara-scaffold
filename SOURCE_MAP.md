@@ -32,7 +32,7 @@ All paths below are under `ara/runtime/` unless stated otherwise.
 | OCR | `ocr.py`, `ocr_spans.py`, `ocr_vl.py`; packaged model manifests | `test_ocr.py`, `test_ocr_spans.py`; installed-weight cases are opt-in |
 | Integrity/accounting | `logging.py`, `provenance.py`, `verification.py`, `budget.py`, `export.py` | `test_incomplete.py`, `test_verification_receipts.py`, `test_verification_export.py`, budget/provider/extraction tests |
 | Writing/verification | `orchestration.py:compose`; `writing.py` section planning/context/assembly; writer/audit/verification methods in `calls.py`; `export.py` | `test_writer_validation.py`, `test_sectioned_writer.py`, `test_audit_labels.py`, `test_essay_outline.py`, `test_known_verification.py` |
-| Publication | `publication.py`, `publication_figures.py`, `publication_pdf.py`, `publication_references.py`; `polish`, `figures`, `render-pdf` CLI commands | `test_publication.py` |
+| Publication | `publication.py`, `publication_figures.py`, `publication_pdf.py`, `publication_references.py`, `publication_currency.py`; `polish`, `figures`, `render-pdf` CLI commands | `test_publication.py` |
 | Reports | `report.py:generate_report`; `report_files.py`, `report_render.py`, `report_traces.py` | `test_report.py`, `test_report_size.py`, `test_report_contribution.py` |
 
 ## Fixtures, tools and generated data

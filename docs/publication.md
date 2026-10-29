@@ -29,7 +29,7 @@ Remaining failure retains the original draft and explicitly records fallback.
 The structured response contains Markdown, figure placements and a paragraph
 change log. The whole paper requires a 150–200-word abstract, consecutive numbered
 sections and 4,500–6,000 words excluding references and internal node markers.
-Paragraph order, exact citation sequences and node-marker sequences are checked.
+Distinct citation and route-node inventories are checked; the publication audit checks substantive preservation after editorial restructuring.
 The reading Markdown removes internal node markers; the annotated Markdown
 and native audit draft remain in publication.json. References retain exact T citations and
 join bibliographic records from logged extraction inputs only when source IDs
@@ -68,3 +68,58 @@ HTML from Markdown is escaped, SVG is restricted to static elements, and browser
 network requests are blocked. Print checks record page count, embedded fonts,
 figure inventory/captions, HTML horizontal overflow and PDF glyph bounds. These
 checks complement visual inspection; they cannot establish research quality.
+
+## Literature positioning and editorial quality
+
+Repeat `--literature-currency PATH` to import the initial literature-currency JSON
+record and its focused followup. Each input is retained verbatim as a HUMAN event
+with its SHA-256 and verification receipt. Page/section-linked read evidence,
+route-specific assessments, search scope and access gaps are passed to the
+polisher. Metadata-only records are excluded from substantive evidence. These
+inputs do not alter frozen T, route licensing or figure support.
+
+The optional numbered “Related work and scope of the novelty claim” section uses
+separate `[lit:ID]` citations. All such citations must resolve to the logged record
+and stay in that section; the section cannot acquire route-node markers. The
+publication audit uses the native sentence-label and coverage checks with a
+publication-specific prompt. It receives the original draft and exactly the same
+currency evidence. Unsupported attribution, general novelty claims, loss of
+substantive limits and misuse of another proposal's search result are adverse
+labels. Only bounded absence within the stated 2018–2026 search and recorded
+partial anticipation are permitted. Input verification is an imported receipt,
+not a new independent literature search.
+
+Polishing can merge or remove redundant paragraphs while retaining the distinct
+citation and route-node inventories. The change log follows output paragraphs;
+claim-level preservation is checked by the audit, not inferred from marker
+counts. Prompts call for a clear thesis, signposted argument, CQ-grounded
+objections, concise limits and removal of repetitive hedging. Word bounds apply
+to the rendered reading text before acceptance, excluding references and internal
+markers. The shorter raw citation IDs in the audit copy do not impose a second
+minimum. Both counts remain in the receipt.
+
+Reading Markdown, PDF and figures use deterministic author–year citations with
+physical PDF pages from provenance. Printed-page offsets are never guessed.
+Bibliographic records come from hash-bound extraction inputs or the explicitly
+logged currency record; missing metadata is labelled as unavailable. Raw citation
+IDs and exact locators remain in `publication.json` and `citation-receipt.json`,
+not the reading bibliography. The audit runs on annotated text before this
+mechanical display conversion.
+
+Whole-paper publication defaults to a 900-second isolated CLI timeout because
+long structured editing output can exceed the provider's ordinary 300-second
+default. An explicitly configured timeout still wins; pilot defaults and bounded
+transport retries are unchanged. Exhausted timeouts retain their unknown-usage
+receipts and cannot become an audited publication success.
+
+Adjacent citations to the same work and physical page display once while retaining
+each evidence ID in the receipt. Citation groups move before sentence-ending
+punctuation. Equal display labels for distinct works are not collapsed.
+
+Reading conversion removes internal node markers before citation deduplication
+and punctuation placement. A retained original fallback lists only references it
+actually cites; an imported currency record stays in logs when unused.
+
+Free-form import/version notes remain in the citation receipt, not the reading
+bibliography. The related-work prose and audit still receive these notes so that
+substantive version and access limits are preserved.

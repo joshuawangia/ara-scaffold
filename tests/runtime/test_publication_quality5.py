@@ -214,3 +214,32 @@ def test_publication_web_absence_preserves_frozen_citations(rig,monkeypatch):
     assert sum(kind=='audit_publication' for kind,_ in seen)==6
     assert any(e['stage']=='local_citation_verification' for e in calls.log.read())
     assert (directory/'citation-receipt.json').exists()
+
+
+def test_fresh_schema_retry_preserves_valid_adverse_label(rig,monkeypatch):
+    from ara.runtime.essay_audit import audit_consensus
+    from ara.runtime.publication import as_draft
+    calls,route,_=install_publication(rig,monkeypatch)
+    calls.config['validation_attempts']=2
+    current=as_draft(polished(paper())['markdown'],paper()['bibliography'])
+    context=dict(original_draft=paper(),literature_currency=None)
+    original=calls.provider.complete;audits=0
+    def complete(kind,prompt,schema,maximum):
+        nonlocal audits
+        value=original(kind,prompt,schema,maximum)
+        if kind=='audit_publication':
+            audits+=1
+            if audits==1:
+                out=json.loads(value.text())
+                out['labels'][-1]['publication_issue']='unsupported_elaboration'
+                out['labels'][0]['role']='invalid'
+                return Response(response(out))
+        return value
+    monkeypatch.setattr(calls.provider,'complete',complete)
+    with pytest.raises(EssayAuditFailed) as failure:
+        audit_consensus(calls,route,current,publication_context=context)
+    assert audits==4
+    assert any(f['reason']=='unsupported_elaboration' for f in failure.value.result['flags'])
+    assert len(failure.value.result['samples']) == 3
+    assert all(s['faithful'] for s in failure.value.result['samples'])
+    assert any(h.get('partial_adverse_only') for h in failure.value.result['historical_adverse'])

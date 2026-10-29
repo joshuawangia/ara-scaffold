@@ -352,3 +352,28 @@ def test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit
     assert not any(e['stage'] == 'essay_audit_revision' for e in log.read())
     assert not (log.path.parent / 'draft.json').exists()
     assert not (log.path.parent / 'export/essay.txt').exists()
+
+
+@pytest.mark.parametrize('adverse', [True, False])
+@pytest.mark.parametrize('position', [1, 3])
+def test_schema_retry_within_fresh_gate_retains_adverse_labels(rig, monkeypatch, adverse, position):
+    from ara.runtime.essay_audit import audit_consensus
+    calls, provider, log = rig
+    calls.config['validation_attempts'] = 2
+    invalid = invalid_adverse_sample('invalid_label') if adverse else sample()
+    invalid['labels'][0]['role'] = 'P'
+    seen = responder(provider, monkeypatch, [sample()] * (position - 1) + [invalid] + [sample()] * (4 - position))
+    if adverse:
+        with pytest.raises(EssayAuditFailed) as failure:
+            audit_consensus(calls, graph(), draft())
+        result = failure.value.result
+        assert result['extra_steps'] == [2]
+        assert result['sentences'][1]['historical_flags'] == ['unsupported_claim']
+        assert failure.value.labels[0]['sentence'] == 2
+    else:
+        result = audit_consensus(calls, graph(), draft())
+        assert result['faithful'] and not result['historical_adverse']
+    assert len(seen) == 4
+    assert len(result['samples']) == 3 and all(s['faithful'] for s in result['samples'])
+    assert len(result['unusable_history']) == 1
+    assert not list(calls.cache.path.glob('*.json'))

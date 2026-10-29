@@ -202,6 +202,8 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
     if draft is None:
         draft = calls.write_essay(route)
     else:
+        if hasattr(calls.provider, 'scan_output'):
+            calls.provider.scan_output(draft)
         calls.validate_essay(route, draft)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
     # Save the unverified draft as a clearly named partial artifact, never export it.

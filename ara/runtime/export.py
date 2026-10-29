@@ -119,6 +119,11 @@ def methodology(log_path: Path) -> str:
                          'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan', 'served_model_policy',
                          'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note', 'visible_tool_policy', 'schema_transform')}
                        for _,p in cli_calls if p.get('provider') == 'codex_cli'][:1],
+        'evidence_retrieval': [dict(provider='codex_cli', method='Codex web search',
+                                    status=p.get('status'), cache_hit=p.get('cache_hit'),
+                                    **p['cli']['web_search'])
+                               for e,p in cli_calls if e['stage']=='search_evidence'
+                               and p.get('cli', {}).get('web_search')],
         'token_cap_policies': sorted({p.get('token_cap_policy', 'legacy_history_inclusive') for _, p in cli_calls}),
         'estimate_observations': [json.loads(e['payload_json']) for e in events if e['stage']=='provider_estimate_observation'],
         'isolation_preflights': [p.get('isolation') for e, p in cli_calls if e['stage'] == 'isolation_canary'],

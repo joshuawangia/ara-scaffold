@@ -3918,3 +3918,52 @@ stage routing and the standard logging/cache/budget/isolation boundary. Codex
 schema proof now includes 18 cases. No API fallback or provider-switching change
 is made. Live outcomes and the unexecuted API alternative's estimate belong in
 the external nu4 report, with remaining claims and the exact tested revision.
+
+## nu4 round 3 — default Codex web evidence retrieval (2026-10-28)
+
+For a Codex main provider, `search_evidence` uses live Codex web search by
+default. There is no API fallback. Extraction and Claude Code's retrieval refusal
+remain unchanged. Only the evidence stage enables web search; the event parser
+accepts its search/open-page/find-in-page events and rejects every other tool or
+unknown event. The existing content-free isolation canary and filesystem,
+credential and identity boundaries remain active. No completed web event means
+no accepted evidence, even if the model returns a plausible summary.
+
+The transport retains queries, web actions, result URLs and quoted snippets.
+This adapter converts the structured final answer rather than raw search-result
+bodies. URLs and passages are therefore explicitly model-reported,
+locally schema-validated evidence, not independently authenticated source text.
+The native citation/originality verifier receives those URL-bound excerpts;
+exact quotation checks, unsupported-item removal and post-verification audit
+remain authoritative. Methodology derives the Codex retrieval disclosure from
+actual receipts. A rejected or absent search is not reported as successful.
+
+Admission separates the initial prompt from reserved search replay. Configured
+search/output limits are reservation assumptions, not hard CLI execution caps;
+measured aggregate tokens and completed web events are retained. Offline tests
+and production-wire mutations cover accepted web events, non-web rejection,
+query/URL receipts, excerpt verification, methodology and initial-context sizing.
+Live execution, remaining limitations and exact tested revision are recorded in
+the external nu4 report; schema-valid text alone does not prove web retrieval.
+
+An isolated live diagnostic exposed two transport requirements: the vendor's
+`codex-code-mode-host` companion must remain reachable in the mount namespace,
+and searches start with a pending `other` action before resolving. The evidence
+stage mounts only that sibling executable read-only under `/run`; a missing
+helper refuses explicitly. The parser allows the exact pending placeholder but
+still requires a recognized completed action. Unknown completed actions and
+non-web tools continue to reject. Fake subprocess regressions execute the
+mounted helper and prove it is not writable. Live search-result payloads were
+observed in diagnostics; they are not used as authenticated source text by this
+adapter, and the model-reported provenance limitation remains explicit.
+
+Kappa4 W1 identified that imported drafts could reach the resume event, artifact
+and first audit without the generated-output scan. `compose(draft=...)` now calls
+the effective provider's identity/credential scanner before even schema
+validation, so malformed imports cannot expose sensitive content in validation
+diagnostics. Identity violations retain `operator_identity_in_output`; credentials
+retain the existing sanitized `credential_in_cli_output`. Clean imports keep the
+native audit and verification lifecycle. The review's content-sensitive fake CLI
+reproduction covers body, title, bibliography and invalid encoded content, with
+unchanged log/anchor/artifact and no audit dispatch on refusal. Its production
+scan-removal control must fail and restore green.

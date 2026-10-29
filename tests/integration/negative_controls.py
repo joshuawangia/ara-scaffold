@@ -1731,6 +1731,53 @@ CASES += [
 ]
 
 
+CASES += [
+    ('codex_web_only_stage', 'ara/runtime/codex_cli.py',
+     "flag.replace('web_search=\"disabled\"', 'web_search=\"live\"')", 'flag',
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
+    ('codex_web_event_required', 'ara/runtime/codex_cli.py',
+     "if not web_items: reject('cli_web_search_missing')", 'pass',
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_no_event-cli_web_search_missing]'),
+    ('codex_web_action_gate', 'ara/runtime/codex_web.py',
+     "action.get('type') not in ('search', 'open_page', 'find_in_page')", 'False',
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_unknown_action-cli_tool_event]'),
+    ('codex_web_pending_action', 'ara/runtime/codex_cli.py',
+     "pending=kind != 'item.completed'", 'pending=False',
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology[web_pending]'),
+    ('codex_web_tool_host_mount', 'ara/runtime/codex_cli.py',
+     "wrapper += ['--ro-bind', str(tool_host), '/run/codex-code-mode-host']", 'pass',
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology[web]'),
+    ('codex_web_url_gate', 'ara/runtime/codex_web.py',
+     "url.scheme not in ('http', 'https')", 'False',
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_bad_url-cli_invalid_web_evidence]'),
+    ('codex_web_query_receipt', 'ara/runtime/codex_web.py',
+     "'queries': sorted(queries)", "'queries': []",
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
+    ('codex_web_url_receipt', 'ara/runtime/codex_web.py',
+     "sorted({s['url'] for s in value['sources']})", '[]',
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
+    ('codex_web_evidence_excerpt', 'ara/runtime/codex_web.py',
+     "'cited_text': snippet", "'cited_text': 'R'",
+     'tests/runtime/test_codex_cli.py::test_web_evidence_reaches_native_verifier[P Q-True]'),
+    ('codex_web_nonweb_rejected', 'ara/runtime/codex_cli.py',
+     "if rejection: reject(rejection)", "if rejection and not web: reject(rejection)",
+     'tests/runtime/test_codex_cli.py::test_web_search_fails_closed[web_tool:command_execution-cli_tool_event]'),
+    ('codex_web_methodology', 'ara/runtime/export.py',
+     "method='Codex web search'", "method='P'",
+     'tests/runtime/test_codex_cli.py::test_web_search_evidence_receipt_and_methodology'),
+    ('codex_web_initial_context', 'ara/runtime/codex_cli.py',
+     "estimate.input_tokens - replay - estimate.output_tokens", "estimate.input_tokens - estimate.output_tokens",
+     'tests/runtime/test_codex_cli.py::test_web_admission_separates_initial_context_from_replay'),
+]
+
+
+CASES += [
+    ('kappa4_W1_resumed_draft_scan', 'ara/runtime/orchestration.py',
+     '            calls.provider.scan_output(draft)', '            pass',
+     'tests/runtime/test_resumed_draft_scan.py::test_resumed_draft_scan_before_any_effect'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

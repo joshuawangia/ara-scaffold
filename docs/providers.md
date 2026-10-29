@@ -251,3 +251,43 @@ rejection. It never becomes an accepted response. The time limit runs in a
 killable child interpreter and works inside parallel search jobs. Larger valid
 objects may need explicitly larger limits; the limits do not change native schema
 meaning. Existing catalogue-reference checks and solver budgets still apply.
+
+## Explicit Codex context window
+
+With pinned `codex-cli 0.163.0` and `gpt-6-luna`, the operator may set
+`model_context_window` in run configuration, or pass `--model-context-window`
+to `run`, `fork-from-freeze`, or `plan-target-request`. The adapter passes this
+integer through `-c model_context_window=...` in every fresh isolated invocation,
+including canaries. It retains all isolation flags and tool-event rejection.
+The setting is documented in the [official configuration reference](https://developers.openai.com/codex/config-reference).
+
+The pinned binary catalogue has a 272,000 default and an 872,000 maximum.
+Overrides above that maximum, invalid types, and models without a pinned window
+entry refuse. This is a client configuration contract, not proof of the serving
+model's capacity. No override retains legacy behaviour.
+
+ARA derives `model_context_token_bound = model_context_window - 2 *
+propose_targets_max_output_tokens - model_context_margin_tokens`, with the global
+`max_output_tokens` as the output default and a 16,384-token margin by default.
+The margin can be set in config or with `--context-margin-tokens` (positive
+integer). At an 8,192 output setting, 272,000 yields 239,232 and 872,000 yields
+839,232. Native admission still counts each request's output inside this bound,
+so the target output reserve is conservative. Setting an ARA bound alone does
+not enlarge the provider window.
+
+`operator_context_window` records the operator's resolved configuration. Provider
+metadata, native CLI receipts, cache inputs and methodology carry the same
+window, maximum, margin and derived bound. Fork configuration records it before
+provider creation. Schema preflight requirements remain; runtime isolation
+canaries run with the actual window. Offline fake transport tests prove argument
+forwarding and canary preservation; a free count does not prove live admission.
+
+
+Construction stage overrides (including correction stages) are normalized before
+provider-cache lookup and request admission. Each lookup derives the bound from
+that effective stage's window, output reserve and margin; cached providers and
+scoped calls therefore use the same configuration. A stage may explicitly choose
+a smaller or larger supported window. Clearing an inherited override with
+`model_context_window: null` refuses, including after a provider is cached; it
+never falls back to the provider's default while keeping the larger run bound.
+The parent run configuration remains unchanged by stage normalization.

@@ -4147,6 +4147,31 @@ judgments establish plumbing only, not semantic alignment quality or originality
   future model acceptance, consistency, budgets or useful synthesis. Canonical
   operating instructions are in docs/construction.md.
 
+## Round 13 — complete target index and coordinated provider window
+
+Target generation now projects only prompt context. All gap IDs/support groups,
+configured whole formal-symbol hops, and mandatory alignment source evidence
+retain exact text/provenance; all remaining frozen IDs retain complete formulas,
+stances and page citations. Reuse the bounded-closure depth traversal rather
+than add a second traversal. Validation closures keep full T and full metadata.
+Do not shrink required hops, trim formulas, infer endorsement from legacy
+absence, or treat omitted alignment disclosure as semantic unrelatedness.
+Exact assembled admission includes correction feedback and schema overhead.
+Commitments-only construction capacity receipts explicitly disclaim target
+readiness. A free recorded-request replay verifies freeze artifacts and receipts,
+restores calibration, and uses the same projection/admission path without
+re-running discovery or generating output.
+
+An operator-authorized Codex context override is distinct from native admission.
+For CLI 0.163.0, the pinned model window metadata bounds explicit overrides;
+unsupported models or above-maximum windows refuse. Pass the setting to each
+isolated invocation, including unchanged canaries. Derive native admission from
+the chosen window minus the doubled target output reserve and positive margin;
+record the operator decision in config, receipts, cache identity and methodology.
+Unconfigured historical runs retain their existing behaviour. Neither a local
+estimate nor an offline fake transport establishes real serving capacity or
+semantic success.
+
 
 ### Round 29 integration — Sigma round 12 and S12-F1
 
@@ -4169,3 +4194,21 @@ finalization regression failed on that implementation. As with entailment, a
 private helper now owns and releases every Z3 object before its locked caller
 returns. A control removes the lock boundary; native alignment search is rerun.
 The interrupted gate evidence is retained, and final gates use the repaired head.
+
+
+## Round 14 — normalize stage admission before provider reuse
+
+Resolve and normalize each effective construction/correction configuration before
+forming its provider-cache key. Constructor-side normalization is insufficient:
+a subsequent lookup can pair a fresh inherited bound with the already-normalized
+provider. The scoped request and provider must agree on the effective window and
+bound on first use, provider reuse and response-cache replay. Smaller/larger
+supported stage windows are explicit choices; clearing an inherited override
+refuses rather than silently falling back to the transport default. Preserve the
+parent run configuration and all isolation canaries.
+
+Integrate the settled consistent-support search and solver-lifetime fix. Preserve
+its target_bases argument when mutating the full frozen commitment argument in
+the target-context negative control. Anchor uniqueness remains mandatory; both
+mutation and restoration must execute on the combined source. Regenerate only
+combined target prompt keys, retaining all recorded response values.

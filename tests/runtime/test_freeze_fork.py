@@ -13,10 +13,11 @@ from ara.types import RunEvent, TokenUsage
 from test_search_alignment import T, ROOT
 
 
-def source(tmp_path):
+def source(tmp_path, overrides=None):
     directory=tmp_path/'source';log=EventLog(directory/'events.jsonl')
     config=yaml.safe_load((ROOT/'config.yaml').read_text())
     config.update(provider='mock',cache_dir=str(tmp_path/'cache'),target_candidates=1)
+    config.update(overrides or {})
     bank=load_bank(ROOT/'bank')
     log.record('run_started',config=config,topic='P',audience='P',literature='P',bank_version=bank.bank_version)
     log.emit(RunEvent('2026-10-01T00:00:00Z','build_t','MODEL',usage=TokenUsage(input_tokens=7),cost_usd=0.01))
@@ -100,3 +101,28 @@ def test_native_fork_cli_starts_at_targets(tmp_path):
     events=EventLog(dst/'events.jsonl').read()
     assert any(e['stage']=='awaiting_selection' for e in events)
     assert sum(e['stage']=='commitments_frozen' for e in events)==1
+
+
+def test_fork_cli_applies_operator_window_before_provider(tmp_path, monkeypatch):
+    from ara.runtime.cli import main
+    from ara.runtime.export import methodology
+    from types import SimpleNamespace
+    src, config, bank, _ = source(tmp_path, dict(provider='codex_cli', model='gpt-6-luna', stages={}))
+    # Exercise the native CLI and freeze copy; provider creation is captured offline.
+    monkeypatch.setattr('ara.runtime.codex_preflight.require_codex_preflight', lambda *args: None)
+    seen = []
+    def calls_factory(settings, log, topic):
+        seen.append(settings)
+        from ara.runtime.codex_window import apply_context_window
+        log.record('operator_context_window', **apply_context_window(settings))
+        return SimpleNamespace(config=settings, log=log, propose_targets=lambda *args: ())
+    monkeypatch.setattr('ara.runtime.cli.search_all', lambda *args: ())
+    destination=tmp_path/'raised'
+    assert main(['fork-from-freeze','--source-run',str(src),'--run-dir',str(destination),
+        '--model-context-window','872000'], calls_factory=calls_factory)==0
+    assert seen[0]['model_context_window']==872000
+    assert seen[0]['model_context_token_bound']==839232
+    events=EventLog(destination/'events.jsonl').read()
+    saved=[json.loads(e['payload_json'])['config'] for e in events if e['stage']=='freeze_fork_configuration'][-1]
+    assert saved['model_context_token_bound']==839232
+    assert '872000' in methodology(destination/'events.jsonl')

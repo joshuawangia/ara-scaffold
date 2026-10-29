@@ -23,7 +23,7 @@ from ara.runtime.claude_estimation import CalibrationState
 from ara.runtime.providers import Response, stage_settings
 
 # These controls are verified for this CLI version. Fail closed after upgrades.
-CLI_VERSION = 'codex-cli 0.163.0'
+from ara.runtime.codex_window import CLI_VERSION, apply_context_window, context_window_decision
 MODEL_INSTRUCTIONS = 'Process the supplied request and return only JSON matching the response schema. Use only context actually supplied in this session. Do not use tools for any purpose, including commands, file reads, web access or delegation.'
 DISABLED_FEATURES = ('shell_tool', 'unified_exec', 'shell_snapshot', 'apps', 'plugins',
     'hooks', 'memories', 'goals', 'multi_agent', 'multi_agent_v2', 'browser_use', 'computer_use',
@@ -54,6 +54,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
     estimate_method = 'API-receipt UTF-8 calibration seed; different Codex tokenizer; upward-only like-for-like correction; no free counter'
 
     def __init__(self, config):
+        apply_context_window(config)
         self.config, self.model = config, config['model']
         options = config.get('codex_cli', {})
         self.binary = self._binary(options.get('binary'))
@@ -129,6 +130,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
         from ara.runtime.codex_schema import VERSION
         metadata = super().metadata(kind)
         metadata.update(isolation_flags=ISOLATION_FLAGS, max_cli_turns=1,
+            context_window_decision=context_window_decision(self.config, self.model_for(kind)),
             schema_transform=VERSION,
             schema_transport='Versioned OpenAI-strict projection passed to --output-schema; optional nulls normalized before authoritative local Draft202012Validator.',
             effective_prompt_note='Minimal task-only model instructions replace coding-agent defaults; stage developer instructions and native stage prompt retained; not API byte-identical.',
@@ -246,6 +248,8 @@ class CodexCLIProvider(ClaudeCodeProvider):
         if kind in ('extract_paper','search_evidence'): raise CodexCLIError('stage_requires_api_provider')
         if schema is None: raise CodexCLIError('response_schema_required')
         model = self.model_for(kind)
+        window = context_window_decision(self.config, model)
+        window_args = ['-c', 'model_context_window=' + str(window['model_context_window'])] if window else []
         with self._slots, tempfile.TemporaryDirectory(prefix='ara-codex-', dir='/tmp') as directory, self._auth_source() as credential:
             base = Path(directory)
             cwd, home, config = base/'cwd', base/'home', base/'config'
@@ -275,11 +279,11 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 if version.returncode or version.stdout.strip()!=CLI_VERSION:
                     raise CodexCLIError('cli_version_unsupported')
                 self.version=CLI_VERSION
-            command = [*wrapper,'exec',*ISOLATION_FLAGS,'-C',str(cwd),'-m',model,
+            command = [*wrapper,'exec',*ISOLATION_FLAGS,*window_args,'-C',str(cwd),'-m',model,
                 '--output-schema',str(schema_path),'-c','model_instructions_file='+canonical(str(instructions_path)),
                 '-c','developer_instructions='+canonical(self.system_for(kind)),
                 '-c','model_reasoning_effort='+canonical(stage_settings(self.config,kind)['effort']),'-']
-            receipt = {'schema_transform':VERSION, 'native_schema_hash':digest(canonical(schema)),
+            receipt = {'context_window_decision':window, 'schema_transform':VERSION, 'native_schema_hash':digest(canonical(schema)),
                        'wire_schema_hash':digest(canonical(wire)), 'version':self.version, 'exit_status':None, 'requested_model':model, 'served_model':None}
             started=time.monotonic()
             try:

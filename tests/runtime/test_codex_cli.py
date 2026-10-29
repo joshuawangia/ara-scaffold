@@ -492,3 +492,118 @@ def test_codex_resume_can_supply_new_proof_without_editing_history(codex):
     assert reached==[str(proof.path)]
     stored=json.loads(history.read()[0]['payload_json'])['config']
     assert stored['codex_cli'].get('schema_preflight_log') is None
+
+
+def test_context_window_override_reaches_isolated_canary_and_calls(codex, monkeypatch):
+    from ara.runtime.export import methodology
+    from ara.runtime.codex_window import apply_context_window
+    config, auth, write, tmp = codex
+    config.update(model='gpt-6-luna', model_context_window=872000)
+    decision = apply_context_window(config)
+    assert config['model_context_token_bound'] == 839232
+    binary = Path(config['codex_cli']['binary'])
+    binary.write_text(binary.read_text().replace("assert args[0]=='exec'",
+        "assert args[0]=='exec'\nassert 'model_context_window=872000' in args"))
+    log = EventLog(tmp/'events.jsonl')
+    calls = make_calls(config, log, 'P')
+    calls.formalise(Proposition('p','P'))
+    events = log.read()
+    receipts = [json.loads(e['payload_json']) for e in events if e['label']=='MODEL']
+    assert len(receipts) == 2 and receipts[0]['isolation']['status']=='proven'
+    assert all(r['cli']['context_window_decision'] == decision for r in receipts)
+    assert all(r['context_window_decision'] == decision for r in receipts)
+    assert any(e['stage']=='operator_context_window' for e in events)
+    assert '872000' in methodology(log.path) and 'operator_context_window' in methodology(log.path)
+
+
+@pytest.mark.parametrize('window', [872001, 0, -1, True, 872000.5, '872000', 16384])
+def test_context_window_refuses_invalid_or_above_pinned_max_before_provider(codex, window):
+    from ara.runtime.codex_cli import CodexCLIProvider
+    config, _, _, _ = codex
+    config.update(model='gpt-6-luna', model_context_window=window)
+    with pytest.raises(ValueError, match='context'):
+        CodexCLIProvider(config)
+
+
+def test_context_window_default_and_unpinned_model(codex):
+    from ara.runtime.codex_window import apply_context_window
+    config, _, _, _ = codex
+    old = config['model_context_token_bound']
+    assert apply_context_window(config) is None
+    assert config['model_context_token_bound'] == old
+    config['model_context_window'] = 872000
+    with pytest.raises(ValueError, match='pinned'):
+        apply_context_window(config)
+    config['model'] = 'gpt-6-luna'
+    config['model_context_window'] = 272000
+    assert apply_context_window(config)['model_context_token_bound'] == 239232
+
+
+@pytest.mark.parametrize('parent,child,bound', [(872000,272000,239232),(272000,872000,839232)])
+@pytest.mark.parametrize('stage', ['select_t_roots','construction_correction'])
+def test_effective_stage_window_matches_admission_wire_and_cached_receipts(codex, monkeypatch, parent, child, bound, stage):
+    from ara.runtime.budget import BudgetStop
+    import subprocess
+    config, _, _, tmp = codex
+    config.update(model='gpt-6-luna', model_context_window=parent, token_cap=100000000,
+                  stages={stage:dict(model_context_window=child)})
+    binary=Path(config['codex_cli']['binary'])
+    binary.write_text(binary.read_text().replace("if canary: value['system_prompt']='ARA isolation preflight.'",
+        "if canary: value['system_prompt']='ARA isolation preflight.'\nelse: value={'roots':[], 'relevance':'P', 'omissions':[]}"))
+    actual_run=subprocess.run
+    wire=[]
+    def capture(command, *args, **kwargs):
+        if 'input' in kwargs:
+            wire.append(dict(canary='ARA_ISOLATION_CANARY' in kwargs['input'],
+                windows=[v for v in command if v.startswith('model_context_window=')]))
+        return actual_run(command,*args,**kwargs)
+    monkeypatch.setattr(subprocess,'run',capture)
+    log=EventLog(tmp/'stage-events.jsonl');calls=make_calls(config,log,'P')
+    inputs={'text':'P', **({'mode':'targeted_correction'} if stage=='construction_correction' else {})}
+    for sequence in (0,1,1):
+        assert calls.call('select_t_roots',{**inputs,'sequence':sequence})['roots']==[]
+    receipts=[json.loads(e['payload_json']) for e in log.read() if e['label']=='MODEL' and e['stage']=='select_t_roots']
+    assert [r['cache_hit'] for r in receipts]==[False,False,True]
+    assert len(calls._stage_providers)==1
+    for r in receipts:
+        assert r['context_window_decision']['model_context_token_bound']==bound
+        assert r['cli']['context_window_decision']==r['context_window_decision']
+        assert r['context_window_decision']['model_context_window']==child
+    admissions=[json.loads(e['payload_json']) for e in log.read() if e['stage']=='context_admission'
+                and json.loads(e['payload_json'])['kind']=='select_t_roots']
+    assert [a['limit'] for a in admissions]==[bound]*3
+    assert [w['windows'] for w in wire if not w['canary']]==[[f'model_context_window={child}']]*2
+    assert [w['windows'] for w in wire if w['canary']]==[[f'model_context_window={parent}'],[f'model_context_window={child}']]
+    before=len(wire)
+    for _ in range(2):
+        if child==272000:
+            with pytest.raises(BudgetStop,match='no truncation'):
+                calls.call('select_t_roots',{**inputs,'text':'P'*1000000})
+        else:
+            assert calls.call('select_t_roots',{**inputs,'text':'P'*1000000})['roots']==[]
+    assert len(wire)==before+(child==872000)
+    large=[json.loads(e['payload_json']) for e in log.read() if e['stage']=='context_admission'
+           and json.loads(e['payload_json'])['kind']=='select_t_roots'][-2:]
+    assert all(a['limit']==bound and 239232 < a['input_tokens']+a['output_tokens'] < 839232 for a in large)
+    assert [a['decision'] for a in large]==(['refused']*2 if child==272000 else ['fits']*2)
+    assert config['model_context_token_bound']==(839232 if parent==872000 else 239232)
+
+
+def test_stage_cannot_clear_inherited_window_before_startup_or_after_provider_cache(codex):
+    config, _, _, tmp=codex
+    config.update(model='gpt-6-luna',model_context_window=872000,
+                  stages={'select_t_roots':{'model_context_window':None}})
+    with pytest.raises(ValueError,match='clear.*inherited'):
+        make_calls(config,EventLog(tmp/'invalid.jsonl'),'P')
+    assert not any(e['label']=='MODEL' for e in EventLog(tmp/'invalid.jsonl').read())
+    config['stages']['select_t_roots']['model_context_window']=272000
+    calls=make_calls(config,EventLog(tmp/'cached.jsonl'),'P')
+    calls.count_request('select_t_roots',{'text':'P'})
+    assert len(calls._stage_providers)==1
+    before=calls.log.path.read_bytes()
+    config['stages']['select_t_roots']['model_context_window']=None
+    for _ in range(2):
+        with pytest.raises(ValueError,match='clear.*inherited'):
+            calls.call('select_t_roots',{'text':'P'})
+    assert calls.log.path.read_bytes()==before
+    assert len(calls._stage_providers)==1

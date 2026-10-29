@@ -4121,3 +4121,23 @@ configuration stays unchanged so full source context remains available. Imported
 resumes carry used repair rounds from this route's latest composition; a stopped
 attempt cannot silently obtain another three rounds. Existing pre-policy history
 has no such marker and starts with zero used rounds.
+
+
+## Publication quality 5: bounded structural correction and conservative audit reuse
+
+The publication repair loop now permits two structural attempts inside each of at
+most three audit-driven rounds. It reuses the native validation-feedback transport,
+with a per-call attempt bound rather than changing the global retry policy. A
+rejected candidate never becomes the next baseline or reaches semantic audit.
+Exact validator failure, rendered counts and shrinking sections guide the retry.
+The existing occurrence binding is tightened to preserve unflagged sentence spans
+inside flagged paragraphs. The editor must preserve length and supported content.
+
+Publication uses the same conservative consensus gate introduced by nu4 round 6,
+parameterized by publication context and its effective provider. At least three
+fresh samples are required; flags are unioned with adverse history for the same
+input. Favourable cached results cannot approve publication. Titles, headings,
+source evidence and logged currency evidence remain in the audited input. The
+post-verification audit uses the same gate. This reuses one semantic gate rather
+than creating a separate publication voting rule. Offline checks establish the
+enforcement mechanics; live publication is explicitly deferred by the operator.

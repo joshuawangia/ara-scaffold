@@ -307,8 +307,8 @@ class ModelCalls:
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
-    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False) -> Any:
-        attempts = self.config.get('validation_attempts', 1)
+    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False, validation_attempts: int | None = None) -> Any:
+        attempts = self.config.get('validation_attempts', 1) if validation_attempts is None else validation_attempts
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
         whole_essay = kind == 'write_essay' and 'mode' not in inputs

@@ -1934,9 +1934,11 @@ CASES += [
     ('publication_codex_audit_dispatch', 'ara/runtime/construction_stages.py',
      "if kind not in (*KINDS, 'audit_publication'):", 'if kind not in KINDS:',
      'tests/runtime/test_publication_boundaries.py::test_publication_audit_dispatch_uses_effective_provider'),
+]
+
 CASES += [
     ('audit_consensus_fresh', 'ara/runtime/essay_audit.py',
-     'calls.audit_essay(route, draft, fresh=True)', 'calls.audit_essay(route, draft)',
+     'calls.audit_essay(route, draft, fresh=True, **context)', 'calls.audit_essay(route, draft, **context)',
      'tests/runtime/test_audit_consensus.py::test_adverse_history_and_favourable_cache_cannot_approve'),
     ('audit_consensus_history', 'ara/runtime/essay_audit.py',
      'all_results = historical + samples', 'all_results = samples',
@@ -1987,6 +1989,37 @@ CASES += [
     ('audit_consensus_final_repair_floor', 'ara/runtime/essay_audit.py',
      'minimum_words=0 if final else None', 'minimum_words=None',
      'tests/runtime/test_audit_consensus.py::test_final_repair_can_remain_below_writer_target'),
+]
+
+
+CASES += [
+    ('publication_repair_validation_retry', 'ara/runtime/publication.py',
+     'REPAIR_VALIDATION_ATTEMPTS = 2', 'REPAIR_VALIDATION_ATTEMPTS = 1',
+     'tests/runtime/test_publication_quality5.py::test_invalid_repair_retries_same_round_with_exact_length_feedback'),
+    ('publication_repair_validation_bound', 'ara/runtime/publication.py',
+     'REPAIR_VALIDATION_ATTEMPTS = 2', 'REPAIR_VALIDATION_ATTEMPTS = 3',
+     'tests/runtime/test_publication_quality5.py::test_invalid_repair_retry_is_bounded_and_never_audits_invalid_draft'),
+    ('publication_repair_length_feedback', 'ara/runtime/publication_audit.py',
+     'words=words(after)', 'words=words(before)',
+     'tests/runtime/test_publication_quality5.py::test_invalid_repair_retries_same_round_with_exact_length_feedback'),
+    ('publication_repair_sentence_scope', 'ara/runtime/publication.py',
+     "validate_sentence_repair(candidate['markdown'], value['markdown'], flagged)", 'pass',
+     'tests/runtime/test_publication_quality5.py::test_repair_cannot_rewrite_unflagged_sentence_in_flagged_paragraph'),
+    ('publication_consensus_dispatch', 'ara/runtime/publication.py',
+     'audit = audit_consensus(calls,route,current,publication_context=publication_context)',
+     'audit = calls.audit_essay(route,current,publication_context=publication_context)',
+     'tests/runtime/test_publication_quality5.py::test_publication_second_sample_dissent_reaches_repair'),
+    ('publication_consensus_history', 'ara/runtime/essay_audit.py',
+     "if event['stage'] != kind or", "if event['stage'] != 'audit_essay' or",
+     'tests/runtime/test_publication_quality5.py::test_publication_gate_keeps_adverse_history_despite_clean_cache'),
+]
+
+
+CASES += [
+    ('publication_post_verification_consensus', 'ara/runtime/publication.py',
+     'audit_consensus(calls,route,chosen,publication_context=publication_context)',
+     'calls.audit_essay(route,chosen,publication_context=publication_context)',
+     'tests/runtime/test_publication_quality5.py::test_post_verification_gate_also_requires_fresh_unanimous_samples'),
 ]
 
 

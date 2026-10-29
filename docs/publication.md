@@ -24,9 +24,19 @@ cache, schema validation, budget and append-only receipts apply. It opens one
 logical call per section and one whole-paper call. Transport retries retain their
 native bounded policy; publication validation does not silently regenerate a
 section. A complete adverse typed audit permits up to three targeted repair rounds,
-each followed by a full audit of the current title, headings and body. Every round receives exact flagged sentence numbers,
+each followed by the shared conservative audit gate on the current title, headings and body. Every round receives exact flagged sentence numbers,
 text, typed roles and reason categories; only their owning blocks may change. Title/heading edits require a flag on that specific block; duplicate sentence text elsewhere grants no permission. Field offsets identify the flagged occurrence and its paragraph/block index. Unflagged blocks and separators are compared byte-for-byte.
-Attempted and accepted repair counts are recorded separately.
+Each numbered repair round permits two structural-validation attempts: the initial
+proposal and one bounded retry. Invalid output receives the exact validator failure,
+rendered before/after word counts, floor/ceiling and the sections that shrank. The
+retry uses the same pre-repair candidate, flagged occurrences and round number.
+Only flagged sentence spans may change, including within an allowed paragraph;
+all intervening spans remain byte-identical. The editor must preserve length and
+support without padding. A second invalid response ends the attempt honestly.
+These retries never reset or increase the three-round semantic repair limit
+(at most six repair proposals). Transport retries keep their existing policy.
+Attempted and accepted repair counts and the structural-attempt bound are recorded
+separately; rejected responses and validation retries remain in the event log.
 Remaining failure retains the original draft and explicitly records fallback.
 
 The structured response contains Markdown, figure placements and a paragraph
@@ -94,7 +104,14 @@ The optional numbered “Related work and scope of the novelty claim” section 
 separate `[lit:ID]` citations. All such citations must resolve to the logged record
 and stay in that section; the section cannot acquire route-node markers. Heading
 capitalization is stylistic and is compared case-insensitively by both scope checks. The
-publication audit uses the native sentence-label and coverage checks with a
+publication audit uses nu4's shared conservative gate: at least three fresh
+samples (`essay_audit_samples`, minimum/default 3), the union of all flags and
+unresolved adverse history for the exact audit input, and unanimous acceptance.
+Favourable cached samples cannot replace a fresh call. A changed candidate receives
+another full gate; an unchanged repair cannot erase prior dissent. Each receipt
+identifies `audit_publication`, each sample, history and the derived verdict.
+Incomplete samples fail closed. This decision rule does not guarantee semantic
+truth or stable classifications. It uses native sentence-label and coverage checks with a
 publication-specific prompt. Source claims, argument steps, presentation, objections
 and replies have distinct roles; framing alone does not fail or satisfy route
 coverage. Unsupported substance, miscitation and unmapped argument steps still

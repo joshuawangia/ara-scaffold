@@ -109,9 +109,9 @@ def test_flagged_structure_can_be_repaired_and_reaudited(rig,monkeypatch,mode):
     result,_=polish(calls,route,paper())
     assert result['polished'] and result['repair_rounds']==1
     audits=[v for k,v in requests if k=='audit_publication']
-    assert len(audits)==2
+    assert len(audits)==6
     assert any(re.search(r'\bR\b',s['text']) for s in audits[0]['sentences'])
-    assert not any(re.search(r'\bR\b',s['text']) for s in audits[1]['sentences'])
+    assert not any(re.search(r'\bR\b',s['text']) for s in audits[-1]['sentences'])
 
 
 def test_current_title_still_unsupported_after_repairs_fails(rig,monkeypatch):

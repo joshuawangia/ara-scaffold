@@ -92,3 +92,40 @@ def validate_repair_scope(before, after, allowed_blocks):
                     'publication repair changed an unflagged block')
         old_end, new_end = a['end'], b['end']
     require(before[old_end:] == after[new_end:], 'publication repair changed an unflagged separator')
+
+
+def validate_sentence_repair(before, after, flagged):
+    """Keep the literal spans between flagged occurrences unchanged, even within a block."""
+    from ara.runtime.calls import require
+    old, new = document_blocks(before), document_blocks(after)
+    for index in sorted({s['location']['block_index'] for s in flagged}):
+        a, b = old[index], new[index]
+        original = before[a['start']:a['end']]
+        ranges = sorted((s['location']['start'], s['location']['end']) for s in flagged
+                        if s['location']['block_index'] == index)
+        parts, end = [], 0
+        for start, stop in ranges:
+            require(start >= end, 'publication repair sentence ranges overlap')
+            parts.extend((re.escape(original[end:start]), r'[\s\S]*?'))
+            end = stop
+        parts.append(re.escape(original[end:]))
+        require(re.fullmatch(''.join(parts), after[b['start']:b['end']]) is not None,
+                'publication repair changed an unflagged sentence span')
+
+
+def repair_length_feedback(before, after):
+    """Use the same rendered reading-word basis as the publication length gate."""
+    from ara.runtime.publication import NODE, FIGURE
+    def words(text):
+        return len(NODE.sub('', FIGURE.sub('', text)).split())
+    def sections(text):
+        headers = list(re.finditer(r'^## (.+)$', text, re.M))
+        return [(m[1], words(text[m.start():headers[i+1].start() if i+1 < len(headers) else len(text)]))
+                for i, m in enumerate(headers)]
+    old, new = sections(before), sections(after)
+    shrunken = []
+    for i, (heading, count) in enumerate(old):
+        current = new[i][1] if i < len(new) else 0
+        if current < count:
+            shrunken.append(dict(section=heading, before=count, after=current, delta=current-count))
+    return dict(previous_words=words(before), words=words(after), shrunken_sections=shrunken)

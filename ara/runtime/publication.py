@@ -13,6 +13,7 @@ from ara.runtime.freeze_fork import effective_run
 from ara.runtime.writing import source_context
 from ara.types import RouteGraph
 
+REPAIR_VALIDATION_ATTEMPTS = 2
 MODEL = 'claude-opus-5-5'
 FIGURE = re.compile(r'\{\{fig:([^}]+)\}\}')
 CITATION = re.compile(r'\[cite:([^\]]+)\]')
@@ -109,6 +110,7 @@ def as_draft(markdown, bibliography):
 
 
 def polish(calls, route, draft, *, currency=None):
+    from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
@@ -156,7 +158,7 @@ def polish(calls, route, draft, *, currency=None):
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
             try:
-                audit = calls.audit_essay(route,current,publication_context=publication_context)
+                audit = audit_consensus(calls,route,current,publication_context=publication_context)
                 break
             except EssayAuditFailed as rejection:
                 audit = rejection.result
@@ -167,7 +169,7 @@ def polish(calls, route, draft, *, currency=None):
                     role=next(f['role'] for f in audit['flags'] if f['sentence']==sentence['sentence']),
                     reasons=[f['reason'] for f in audit['flags'] if f['sentence']==sentence['sentence']])
                     for sentence in inputs['sentences'] if sentence['sentence'] in audit['extra_steps']]
-                from ara.runtime.publication_audit import repair_locations, validate_repair_scope
+                from ara.runtime.publication_audit import repair_locations, validate_repair_scope, validate_sentence_repair, repair_length_feedback
                 prior = paragraphs(candidate['markdown'])
                 flagged = repair_locations(candidate['markdown'], flagged)
                 allowed_blocks = sorted({s['location']['block_index'] for s in flagged})
@@ -175,13 +177,25 @@ def polish(calls, route, draft, *, currency=None):
                                   if s['location']['paragraph_index'] is not None})
                 require(bool(allowed_blocks), 'publication audit repair could not locate flagged spans')
                 def validate_repair(value):
-                    check_whole(value)
-                    validate_repair_scope(candidate['markdown'], value['markdown'], allowed_blocks)
+                    try:
+                        check_whole(value)
+                        validate_repair_scope(candidate['markdown'], value['markdown'], allowed_blocks)
+                        validate_sentence_repair(candidate['markdown'], value['markdown'], flagged)
+                    except Rejected as exc:
+                        feedback = dict(validator_failure=str(exc), minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'])
+                        try:
+                            before = reading_copy(candidate['markdown'],evidence,records,currency)[0]
+                            after = reading_copy(value['markdown'],evidence,records,currency)[0]
+                            feedback.update(repair_length_feedback(before, after))
+                        except Rejected as length_error:
+                            feedback['length_diagnostics_unavailable'] = str(length_error)
+                        raise Rejected(canonical(feedback)) from exc
                     return value
                 repair_rounds = attempt + 1
                 candidate = calls.call('polish_essay',dict(**base,mode='repair',repair_round=repair_rounds,markdown=candidate['markdown'],
                     original_markdown=original,paragraphs=prior,allowed_paragraphs=allowed,allowed_blocks=allowed_blocks,
-                    flagged_sentences=flagged,audit_failures=audit['flags'],audit=audit),validate_repair)
+                    flagged_sentences=flagged,audit_failures=audit['flags'],audit=audit),validate_repair,
+                    validation_attempts=REPAIR_VALIDATION_ATTEMPTS)
                 accepted_repair_rounds += 1
                 calls.log.record('publication_repair',round=repair_rounds,flagged_sentences=flagged,
                                  audit_failures=audit['flags'],allowed_paragraphs=allowed,allowed_blocks=allowed_blocks,**candidate)
@@ -197,7 +211,7 @@ def polish(calls, route, draft, *, currency=None):
             cleaned, verification = calls.verify_originality_citations(chosen)
             native_citations = dict(status='pass' if cleaned == chosen and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
             if native_citations['status'] == 'pass':
-                calls.audit_essay(route,chosen,publication_context=publication_context)
+                audit_consensus(calls,route,chosen,publication_context=publication_context)
         except (ClaudeCodeError, Rejected) as exc:
             if str(exc) != 'stage_requires_api_provider':
                 raise
@@ -213,6 +227,7 @@ def polish(calls, route, draft, *, currency=None):
     result = dict(route_id=route.id,route_sha256=digest(route.to_json()),polished=success,audit=audit,polish_failure=failure,
         local_citations=local_citations,native_citations=native_citations,word_limits=policy,
         repair_rounds=repair_rounds,accepted_repair_rounds=accepted_repair_rounds,
+        repair_validation_attempts=REPAIR_VALIDATION_ATTEMPTS,
         words=len(NODE.sub('',FIGURE.sub('',reading)).split()),
         audit_words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
         reading_markdown=reading+references,citation_receipt=citation_receipt,literature_currency=currency,
@@ -239,7 +254,8 @@ def publish(log, result):
         markdown_sha256=digest(result['markdown']),polished=result['polished'],audit=result['audit'],
         local_citations=result['local_citations'],native_citations=result['native_citations'],words=result['words'],
         bibliographic_records=result['bibliographic_records'],repair_rounds=result['repair_rounds'],
-        accepted_repair_rounds=result['accepted_repair_rounds'],word_limits=result['word_limits'])
+        accepted_repair_rounds=result['accepted_repair_rounds'],word_limits=result['word_limits'],
+        repair_validation_attempts=result['repair_validation_attempts'])
     (directory/'latest.json').write_text(canonical(dict(path=name,sha256=digest(canonical(result)))))
     return result,target
 

@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 
 import pytest
 
@@ -86,13 +87,20 @@ def install_publication(rig, monkeypatch, adverse=0, repair_bad=False):
                 out=polished(paper())
             else:
                 md=data['markdown']
+                from ara.runtime.publication_audit import document_blocks
+                blocks=document_blocks(md)
+                spans=[(blocks[s['location']['block_index']]['start']+s['location']['start'],
+                        blocks[s['location']['block_index']]['start']+s['location']['end'])
+                       for s in data['flagged_sentences']]
+                for start,end in sorted(spans,reverse=True):
+                    md=md[:start]+re.sub(r'\bP\b',('Q '*data['repair_round']).strip(),md[start:end],count=1)+md[end:]
                 if repair_bad: md=md.replace('P '*175,'Q '*175,1)
                 out=dict(markdown=md,figure_placements=[dict(id=x,after_paragraph=5) for x in ['argument-map','source-support']],
                          change_log=[dict(paragraph=i,improvement='P') for i in range(len(paragraphs(md)))])
         elif kind in ('audit_essay', 'audit_publication'):
             audit_count+=1
             out={'labels':[dict(sentence=s['sentence'],node_ids=['n0','n1'],
-                role='unsupported_claim' if audit_count<=adverse and '[cite:p]' in s['text'] else 'argument_step',
+                role='unsupported_claim' if audit_count<=adverse*3 and '[cite:p]' in s['text'] else 'argument_step',
                 citation_supported=True,publication_issue='none') for s in data['sentences']]}
         elif kind=='search_evidence':
             raise ClaudeCodeError('stage_requires_api_provider')
@@ -134,7 +142,7 @@ def test_three_targeted_repairs_then_audit_or_exact_fallback(rig,monkeypatch,adv
     result,_=polish(calls,route,paper())
     assert result['polished'] is expected
     rounds=min(adverse,3)
-    assert sum(k=='audit_publication' for k,_ in seen)==rounds+1
+    assert sum(k=='audit_publication' for k,_ in seen)==3*(rounds+1)
     repairs=[d for k,d in seen if k=='polish_essay' and d['mode']=='repair']
     assert len(repairs)==result['repair_rounds']==rounds
     assert [d['repair_round'] for d in repairs]==list(range(1,rounds+1))
@@ -437,7 +445,7 @@ def test_publication_typed_framing_is_not_a_false_positive(rig,monkeypatch,role)
     monkeypatch.setattr(calls.provider,'complete',classify)
     result,_=polish(calls,route,paper())
     assert result['polished'] and result['repair_rounds']==0
-    assert result['audit']['role_counts'][role]==1
+    assert all(sample['role_counts'][role]==1 for sample in result['audit']['samples'])
 
 
 def test_publication_issue_reaches_targeted_repair(rig,monkeypatch):

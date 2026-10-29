@@ -18,7 +18,7 @@ from ara.types import CommitmentSet
 if TYPE_CHECKING:
     from ara.runtime.calls import ModelCalls
 
-PLAN_VERSION = 'rich-working-t-v12'
+PLAN_VERSION = 'rich-working-t-v14'
 CLOSURE_VERSION = 'bounded-directional-prerequisites-v2'
 
 
@@ -196,6 +196,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     corrections = calls.config.get('construction_targeted_corrections', 2)
     if type(corrections) is not int or corrections < 0:
         raise ValueError('construction_targeted_corrections must be a nonnegative integer')
+    alignment_limit = calls.config.get('construction_alignment_candidates', 150)
+    if type(alignment_limit) is not int or alignment_limit < 0:
+        raise ValueError('construction_alignment_candidates must be a nonnegative integer')
+    from ara.runtime.symbol_alignment import POLICY_VERSION, retrieval_settings
+    alignment_settings = retrieval_settings(calls.config)
     resumption = resume_state
     if getattr(calls, 'construction_resume', False):
         from ara.runtime.construction_resume import load_construction_resume
@@ -214,6 +219,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     metadata = {'version': PLAN_VERSION, 'closure_version': CLOSURE_VERSION, 'sources': [
         {'source_id': p['source_id'], 'content_hash': digest(canonical(p))} for p in papers],
         'topic': calls.topic, 'audience': audience,
+        'alignment_policy': {'version': POLICY_VERSION, **alignment_settings,
+                             'candidate_limit': alignment_limit},
         'correction_policy': {'scope': 'window_call_type', 'limit': corrections},
         'construction_stages': construction_stage_manifest(calls.config),
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],

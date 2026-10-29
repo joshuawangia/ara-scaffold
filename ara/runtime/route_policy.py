@@ -94,7 +94,7 @@ def stance_crossings(route, provenance):
         roles += [(tid, 'cq_evidence') for a in node.cq_answers for tid in a.supporting_t_ids]
         for tid,role in roles:
             stance = provenance['commitments'].get(tid, {}).get('stance', 'unavailable')
-            if stance != 'endorsed':
+            if stance != 'endorsed' and not (stance == 'model_alignment' and role == 'global_premise'):
                 crossings.add((tid,stance,role))
         pending.extend(node.children)
     return [dict(commitment_id=tid,stance=stance,role=role) for tid,stance,role in sorted(crossings)]
@@ -141,6 +141,11 @@ def route_contribution(route, commitments=None, provenance=None):
         receipt['gap_resolution'] = resolution
         if receipt['classification'] == 'CLOSED-derived' and not resolution['supported']:
             receipt.update(classification='CLOSED-gap-unresolved', reason='gap_side_support_missing')
+    rows = provenance['commitments'] if provenance else {}
+    alignment_ids = [tid for tid in receipt.get('support_ids', []) if rows.get(tid, {}).get('stance') == 'model_alignment']
+    endorsed_ids = [tid for tid in receipt.get('support_ids', []) if rows.get(tid, {}).get('stance') == 'endorsed']
+    if alignment_ids and len(endorsed_ids) < 2 and route.status == 'CLOSED':
+        receipt.update(classification='CLOSED-single-support', reason='fewer_than_two_endorsed_source_supports')
     crossings = stance_crossings(route, provenance)
     if crossings:
         receipt.update(classification='CLOSED-stance-crossing' if route.status == 'CLOSED' else route.status,
@@ -150,7 +155,9 @@ def route_contribution(route, commitments=None, provenance=None):
               for n in route.nodes if n.kind == 'assumption'
               for c in (commitments.commitments if commitments is not None and provenance else ())
               if formula_hash(n.proposition.formula) == formula_hash(c.formula)]
-    return dict(**receipt, paper_support=papers, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
+    from ara.runtime.symbol_alignment import alignment_disclosure
+    return dict(**receipt, alignment_support_ids=alignment_ids, endorsed_support_ids=endorsed_ids,
+                alignment_disclosure=alignment_disclosure(provenance), paper_support=papers, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
                 provenance_sha256=provenance['sha256'] if provenance else None,
                 stance_crossings=crossings)
 

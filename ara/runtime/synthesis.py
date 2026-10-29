@@ -41,6 +41,8 @@ def _rank_result(commitments, eligible, provenance, result, origin):
             continue
         candidates.append(dict(formula=consequence.formula.to_dict(),support_ids=sorted(ids),
             paper_ids=papers['paper_ids'],bank_ids=sorted(bank_ids),depth=consequence.depth,
+            alignment_support_ids=sorted(tid for tid in ids if provenance['commitments'][tid]['stance']=='model_alignment'),
+            endorsed_support_ids=sorted(tid for tid in ids if provenance['commitments'][tid]['stance']=='endorsed'),
             candidate_id='forward:'+digest(key),origin=origin))
     return candidates
 
@@ -49,7 +51,7 @@ def forward_candidates(commitments, provenance, bank, sink, *, depth=2, node_cap
     if provenance is None:
         return dict(status='unavailable_legacy', candidates=[], licensed_consequences=0, truncated=False)
     rows = provenance['commitments']
-    eligible = CommitmentSet(tuple(c for c in commitments.commitments if rows[c.id]['stance']=='endorsed'))
+    eligible = CommitmentSet(tuple(c for c in commitments.commitments if rows[c.id]['stance'] in ('endorsed','model_alignment')))
     # The forward engine uses its canonical AST adapter; no model port is invoked.
     result = forward_pass(tuple(c.formula for c in eligible.commitments), eligible,
                           Licenser(bank, None, sink), depth, node_cap)

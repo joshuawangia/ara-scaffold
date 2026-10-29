@@ -411,3 +411,30 @@ bridge by placing its exact T IDs in named premise slots. Runtime logs the match
 bridge IDs and each slot's verified paper as proposal_bridge; open or scoped
 hypotheses do not supply paper support. The schema stays unchanged. Guidance does
 not force irrelevant premises, license a step, or promise three successful routes.
+
+## External gap hypotheses
+
+Set `gap_file` in the run configuration to an external JSON file, or pass
+`--gap-file /path/to/gaps.json` to `run` or `fork-from-freeze`. Its envelope
+is `{"schema_version":"external-gaps-v1","gaps":[...]}`. Each record requires
+`id`, `origin` (exactly `AI-found`), nonnegative integer `priority` (lower first),
+`finding`, `paper_ids`, `commitment_ids`, `support_groups`, `evidence`,
+`currency_verdict`, `search_scope`, and `claim_framing`. Evidence is a nonempty
+array of `{source_id, location, finding}` objects. Paper IDs and commitment IDs
+must bind to the current verified freeze; each support group must contain
+endorsed commitments from its corresponding paper. Alignment bridges cannot
+supply source support. Evidence may discuss external literature, but this does
+not admit that literature as frozen premises.
+
+External gaps precede native gaps. The complete input and its SHA-256 are logged
+as `external_gaps_loaded`; its evidence and file hash accompany the target,
+classifier, route and writer/auditor outline. A changed file generates a new
+receipt and proposal cache identity. Invalid or missing configured files refuse
+explicitly; `gap_file: null` retains native-only discovery. On resume the configured
+file is read again, so retain it at the recorded path for reproducibility.
+
+For placeholder data, a record can bind papers `a` and `b` to commitments `p` and
+`q`, use support groups `[["p"],["q"]]`, and describe a proposed link from P to Q.
+The currency verdict and claim framing are supplied research qualifications,
+not proof of an open problem. Normal target novelty, stance, licensing and
+both-side support gates remain authoritative.

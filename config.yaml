@@ -1,3 +1,7 @@
+construction_alignment_candidates: 150
+construction_alignment_min_score: 0.10
+construction_alignment_paper_diversity: true
+judge_symbol_alignment_max_output_tokens: 2048
 construction_targeted_corrections: 2
 provider: anthropic
 model: claude-opus-5
@@ -168,3 +172,6 @@ codex_cli:
 local_validation_max_depth: 64
 local_validation_max_nodes: 100000
 local_validation_timeout_seconds: 2.0
+
+# Optional external-gaps-v1 JSON file; logged AI findings are proposed before native gaps.
+gap_file: null

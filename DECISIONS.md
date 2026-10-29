@@ -4014,3 +4014,66 @@ plumbing evidence, not an exhaustive count or a semantic novelty claim. Sigma's
 separate symbol-alignment changes are not included in this revision. Reproduction
 uses tools/offline_forward_synthesis.py; exact receipts, gates and limitations
 are recorded in /home/dev/ara-work/reports/xi-round27.md. No paid calls or push.
+## Construction cross-source alignment before freeze
+
+Round 11 adds a bounded model-judged pass after rich working T and before its sole
+freeze. Definition-token overlap selects at most 150 compatible cross-paper pairs
+by default; it never licenses semantic alignment. Each independent judgment uses
+the same construction formalization provider and logged/cache-validated runtime
+boundary. No search goal is included. Same-content judgments rewrite formulas to
+a shared canonical symbol and preserve originals; directional entailment and
+contrary judgments produce explicit universally closed bridges where needed.
+
+Bridge provenance has kind alignment, stance model_alignment and source_id null,
+with both source definitions and citations retained. A v2 provenance receipt binds
+original and final T/catalogue identities, judgments and mapping; validation
+replays the transformation. Existing strict CommitmentSet and frozen catalogue
+codecs remain unchanged, as do legacy v1 readers for v1 records. New v2 records
+require the updated validator. Source attribution, text and stance are immutable.
+
+The complete set must satisfy signature, uniqueness and bounded Z3 consistency
+checks. An inconsistent or unresolved set is refused as a whole, logged and
+replaced by the original T without automatic partial salvage. Changed alignment
+policy is included in construction plan v13. Search treats bridges as alignment
+premises only, discloses both bridges and canonical rewrites, excludes bridge IDs
+from paper ownership and requires two endorsed source supports for CLOSED-derived.
+CQ source evidence cannot be supplied by an alignment bridge. Other solver,
+bank, novelty and cross-paper gates are unchanged. Placeholder native lifecycle,
+mutation controls and external offline fake-judge evidence establish plumbing;
+no live semantic acceptance or paid generation is claimed.
+
+## Xi integrate-sigma — Round 27 alignment and external gap follow-through
+
+Merge Sigma round 11 onto Xi's per-paper synthesis policy. Alignment bridges
+remain usable disclosed premises but have no paper ownership: per-paper closure
+contains only endorsed source commitments, and bridge IDs never satisfy the
+cross-paper formula matching or two-endorsed-support requirements. Forward mining
+now admits alignment premises and reports their IDs separately. Semantic source
+conflict pairing excludes bridges, whose metadata has no source attribution.
+Both the CQ downgrade and alignment-evidence exclusion survive the merge.
+
+An optional `external-gaps-v1` file supplies logged AI-found gap hypotheses before
+native gaps. Its exact evidence, currency verdict, search scope and qualified
+claim framing persist in the target/route and writer/auditor outline; every
+support group binds to endorsed current frozen evidence. It does not rewrite T
+or certify novelty. `docs/search.md` defines the input. Real research content and
+fake-aligner judgments remain outside committed code and placeholder tests.
+
+Offline census uses a copied real freeze and explicitly fake, separately logged
+alignment judgments through native prepare/freeze/validation. Source artifacts
+remain byte-identical. A bounded candidate count is plumbing evidence, not
+semantic equivalence, exhaustive coverage or a useful derived argument.
+
+
+### Integrated S11 review blockers
+
+S11-F1: source conflict comparisons exclude model-alignment rows; native frozen
+v2 discovery is covered. S11-F2: policy-v2 retrieval uses a configurable 0.10
+preferred cosine threshold, deterministic shared-term top-N backfill and a
+paper-coverage pass that never loses already covered papers. Log and persist all
+pre-filter counts, settings and final coverage; no lexical score licenses a
+semantic relation. Replay policy-v1 receipts with their original 0.15 cutoff.
+Construction plan v14 binds the changed policy. S11-F3: explicitly set the judge
+request topic to the empty string and test the actual rendered request. The
+model sees the pair's definitions/source evidence and freeze hashes, not the
+task topic. Frozen catalogue and CommitmentSet formats remain unchanged.

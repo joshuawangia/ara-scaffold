@@ -41,10 +41,12 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--literature', type=Path)
     run.add_argument('--audience', default='runtime audience')
     run.add_argument('--named-position')
+    run.add_argument('--gap-file', type=Path)
     run.add_argument('--route')
     fork = sub.add_parser('fork-from-freeze', help='verify and fork a frozen prefix; continue with current target proposal')
     fork.add_argument('--source-run', type=Path, required=True)
     fork.add_argument('--run-dir', type=Path, required=True)
+    fork.add_argument('--gap-file', type=Path)
     fork.add_argument('--provider', choices=('anthropic','mock','claude_code','codex_cli'))
     fork.add_argument('--codex-schema-preflight-log', type=Path)
     fork.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
@@ -187,6 +189,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             bank = load_bank(ROOT / 'bank')
             log, run, commitments = fork_from_freeze(args.source_run, args.run_dir, bank)
             config = {**run['config'], 'cache_dir': str(args.run_dir.resolve() / 'cache')}
+            if args.gap_file is not None:
+                config['gap_file'] = str(args.gap_file.resolve())
             if args.provider is not None:
                 config['provider'] = args.provider
             if args.unknown_usage_policy is not None:
@@ -410,6 +414,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 if args.topic is None or args.literature is None:
                     raise ValueError('run requires --topic and --literature, or --smoke')
                 topic, literature = args.topic, args.literature.read_text()
+            if args.gap_file is not None:
+                config['gap_file'] = str(args.gap_file.resolve())
             if args.provider is not None:
                 config['provider'] = args.provider
             from ara.runtime.codex_preflight import require_codex_preflight

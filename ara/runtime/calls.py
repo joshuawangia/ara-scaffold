@@ -937,8 +937,10 @@ class ModelCalls:
         from ara.runtime.gaps import detect_gaps
         from ara.runtime.semantic_conflicts import classify_pairs
         vocabulary = self.search_vocabulary(commitments)
+        from ara.runtime.external_gaps import load_external_gaps
+        external = load_external_gaps(self, commitments, vocabulary)
         detection = detect_gaps(commitments, vocabulary['symbol_catalogue'], vocabulary['commitment_provenance'])
-        return {**detection, 'gaps': detection['gaps'] + classify_pairs(self, commitments, vocabulary)}
+        return {**detection, 'gaps': external + detection['gaps'] + classify_pairs(self, commitments, vocabulary)}
 
     def propose_targets(self, commitments: CommitmentSet, count: int = 30,
                         named_position: str | None = None) -> tuple[Proposition, ...]:
@@ -997,7 +999,7 @@ class ModelCalls:
         inputs['forward_candidates'] = proposal_forward_candidates(self, commitments, vocabulary)
         if resolution_gap is not None:
             inputs.update(resolution_gap=resolution_gap.to_dict(),
-                resolution_instruction='Propose a new resolving thesis: a distinction, restriction or bridge addressing this gap. Support it by bank schemes using endorsed T from every support group. Empty groups mean no admissible evidence. All novelty and stance gates still apply.')
+                resolution_instruction='Propose a new resolving thesis: a distinction, restriction or bridge addressing this gap. Support it by bank schemes using endorsed T from every support group. Empty groups mean no admissible evidence. All novelty and stance gates still apply. External AI findings are hypotheses, not source endorsements. Preserve their search scope, currency verdict, evidence qualifications and exact claim_framing; never claim exhaustive absence.')
         frozen = set().union(*(set(symbols(c.formula)) for c in commitments.commitments))
         kept, kept_ids, kept_formulas = [], set(), set()
         for attempt in range(3):
@@ -1127,6 +1129,8 @@ class ModelCalls:
 
     def answer_cq(self, question: CriticalQuestion, proposal: Proposal,
                   commitments: CommitmentSet) -> CQAnswer:
+        vocabulary = self.search_vocabulary(commitments)
+        provenance = vocabulary['commitment_provenance']
         def check(data):
             answer = CQAnswer.from_dict(data)
             require(answer.cq_id == question.id, 'wrong CQ id')
@@ -1136,9 +1140,11 @@ class ModelCalls:
                 self.log.record('cq_answer_downgraded', bank_id=proposal.bank_id,
                                 original=answer.to_dict(), reason='partial_answer_is_not_yes')
                 answer = replace(answer, answered=False)
+            require(provenance is None or all(provenance['commitments'][t]['stance'] != 'model_alignment'
+                    for t in answer.supporting_t_ids), 'alignment premises cannot substitute for source CQ evidence')
             return answer
         return self.call('answer_cq', dict(question=question.to_dict(), proposal=proposal.to_dict(),
-                                      commitments=commitments.to_dict(), **self.search_vocabulary(commitments)), check)
+                                      commitments=commitments.to_dict(), **vocabulary), check)
 
     def repair_tier1(self, premises: tuple[PremiseFill, ...], conclusions: tuple[Proposition, ...],
                      commitments: CommitmentSet) -> Tier1Repair:
@@ -1175,6 +1181,9 @@ class ModelCalls:
             links.append(link)
         outline = {'nodes': [{'id': n.id, 'text': n.proposition.text} for n in route.nodes],
                    'links': links}
+        root_gap = next(n.proposition.gap for n in route.nodes if n.id == route.root_id)
+        if root_gap is not None:
+            outline['gap_resolution'] = root_gap.to_dict()
         from ara.runtime.route_policy import frozen_from_events
         frozen = frozen_from_events(self.log.read())
         provenance = self.search_vocabulary(frozen)['commitment_provenance'] if frozen is not None else None
@@ -1189,10 +1198,14 @@ class ModelCalls:
                 for tid, role in sorted(set(uses)):
                     source = provenance['commitments'].get(tid)
                     require(source is not None, 'outline source role missing frozen commitment')
-                    roles.append(dict(node_id=node.id, evidence_id=tid, role=role,
-                                      stance=source['stance'], attributed_to=source['attributed_to'],
+                    roles.append(dict(node_id=node.id, evidence_id=tid,
+                                      role='alignment_premise' if source['stance']=='model_alignment' and role=='global_premise' else role,
+                                      stance=source['stance'], attributed_to=source.get('attributed_to'),
                                       source_id=source['source_id']))
             outline['source_roles'] = roles
+            if 'alignment' in provenance:
+                from ara.runtime.symbol_alignment import alignment_disclosure
+                outline['alignment_disclosure'] = alignment_disclosure(provenance)
         return outline
 
     def essay_inputs(self, route: RouteGraph) -> dict:

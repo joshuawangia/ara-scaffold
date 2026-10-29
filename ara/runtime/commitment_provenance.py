@@ -100,8 +100,11 @@ def _validate_source(id, row):
 
 def validate_commitment_provenance(value: dict, commitments: CommitmentSet, catalogue: dict) -> dict:
     """Verify the full sidecar; absence is handled only by the loader."""
-    if (not isinstance(value, dict) or set(value) != FIELDS or
-            value['schema_version'] != 'commitment-provenance-v1' or value['definition_semantics'] != 'content'):
+    if (not isinstance(value, dict) or
+            (value.get('schema_version'), frozenset(value)) not in (
+                ('commitment-provenance-v1', frozenset(FIELDS)),
+                ('commitment-provenance-v2', frozenset(FIELDS | {'alignment'}))) or
+            value['definition_semantics'] != 'content'):
         raise ValueError('invalid commitment provenance schema')
     if (not isinstance(catalogue, dict) or not isinstance(catalogue.get('symbols'), list) or
             catalogue != make_catalogue(commitments, catalogue['symbols'])):
@@ -114,22 +117,32 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         raise ValueError('commitment provenance hash mismatch')
     if not isinstance(value['commitments'], dict) or set(value['commitments']) != {c.id for c in commitments.commitments}:
         raise ValueError('commitment provenance inventory mismatch')
-    for id, row in value['commitments'].items():
+    source_commitments, source_symbols = commitments, catalogue['symbols']
+    if value['schema_version'] == 'commitment-provenance-v2':
+        from ara.runtime.symbol_alignment import validate_alignment
+        source_commitments, source_symbols = validate_alignment(value['alignment'], commitments,
+                                                               catalogue['symbols'], value['commitments'])
+    for source in source_commitments.commitments:
+        id, row = source.id, value['commitments'][source.id]
         _validate_source(id, row)
         for change in row.get('definition_unframes', []):
             if change['kind'] == 'symbol' and not any(
-                    s['name'] == change['name'] and id in s['evidence_ids'] for s in catalogue['symbols']):
+                    s['name'] == change['name'] and id in s['evidence_ids'] for s in source_symbols):
                 raise ValueError('unframed symbol lacks evidence binding')
-    if (not all(content_definition(c.text) for c in commitments.commitments) or
+    if (not all(content_definition(c.text) for c in source_commitments.commitments) or
+            not all(content_definition(s['definition']) for s in source_symbols) or
+            not all(content_definition(c.text) for c in commitments.commitments) or
             not all(content_definition(s['definition']) for s in catalogue['symbols'])):
         raise ValueError('attribution in content definition')
     return value
 
 
-def make_commitment_provenance(commitments: CommitmentSet, catalogue: dict, provenance: dict) -> dict:
+def make_commitment_provenance(commitments: CommitmentSet, catalogue: dict, provenance: dict, *, alignment: dict | None = None) -> dict:
     payload = dict(schema_version='commitment-provenance-v1', definition_semantics='content',
                    commitments_sha256=digest(canonical(commitments.to_dict())),
                    catalogue_sha256=catalogue['sha256'], commitments=provenance)
+    if alignment is not None:
+        payload.update(schema_version='commitment-provenance-v2', alignment=alignment)
     return validate_commitment_provenance({**payload, 'sha256': digest(canonical(payload))}, commitments, catalogue)
 
 

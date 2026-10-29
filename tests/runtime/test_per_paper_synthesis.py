@@ -189,3 +189,30 @@ def test_quantified_cross_paper_closure():
     assert novelty_check(pred('Q',a),t,provenance)['status']=='candidate'
     _,provenance=frozen_metadata(t,('a','a'))
     assert novelty_check(pred('Q',a),t,provenance)['reason']=='single_paper_closure'
+
+
+def test_alignment_forward_uses_bridges_without_paper_ownership(tmp_path):
+    from ara.runtime.synthesis import forward_candidates
+    from ara.runtime.logging import EventLog
+    from ara.runtime.novelty import endorsed_papers
+    from ara.runtime.semantic_conflicts import rank_pairs
+    from ara.runtime.symbol_alignment import apply_judgments
+    t=CommitmentSet((Commitment('a','P','a:1',P),Commitment('b','Q -> R','b:1',Formula('implies',(Q,R)))))
+    artifact,meta=frozen_metadata(t,('a','b'),{'P':'P Q','Q':'P Q'})
+    aligned,symbols,rows,_=apply_judgments(t,artifact['symbol_catalogue']['symbols'],meta['commitments'],
+        [dict(left='P',right='Q',relation='entails_left_right',reason='P Q')])
+    # The complete v2 persistence path is covered by the native freeze tests.
+    provenance={**meta,'commitments':rows}
+    bridge=aligned.commitments[-1]
+    assert endorsed_papers(aligned,provenance)==endorsed_papers(t,meta)
+    assert novelty_check(R,aligned,provenance)['status']=='candidate'
+    assert all(bridge.id not in c['commitment_ids'] for c in rank_pairs(aligned,symbols,provenance,60)['pairs'])
+    result=forward_candidates(aligned,provenance,load_bank(ROOT/'bank'),EventLog(tmp_path/'events.jsonl'),depth=2,node_cap=500)
+    candidate=next(c for c in result['candidates'] if c['formula']==R.to_dict())
+    assert candidate['paper_ids']==['a','b'] and candidate['support_ids']==sorted(['a','b',bridge.id])
+    assert candidate['alignment_support_ids']==[bridge.id]
+    assert candidate['endorsed_support_ids']==['a','b']
+    assert not any(c['formula']==Q.to_dict() for c in result['candidates'])
+    # An alignment premise is not a paper even if its payload falsely supplies one.
+    rows[bridge.id]['source_id']='c'
+    assert set(endorsed_papers(aligned,provenance))=={'a','b'}

@@ -26,14 +26,15 @@ INSTRUCTIONS = (
 PROVENANCE = 'model-reported from Codex web search; not raw tool results'
 
 
-def web_event(item, *, pending=False):
+def web_event(item):
     """Allow only the pinned CLI's web actions; callers reject all other tools."""
     if item.get('type') != 'web_search' or not isinstance(item.get('id'), str):
         raise ValueError('invalid web event')
     action = item.get('action')
-    # The pinned CLI starts searches with this placeholder, before resolving an
-    # action. It is never accepted as a completed retrieval.
-    if action is not None and not (pending and action == {'type': 'other'}) and (not isinstance(action, dict) or
+    # The pinned CLI emits its named Other web-search variant both while pending
+    # and on completion. Keep it opaque in receipts; never treat arbitrary action
+    # names or payloads as Other. The caller still enforces web-only stage access.
+    if action is not None and action != {'type': 'other'} and (not isinstance(action, dict) or
                                action.get('type') not in ('search', 'open_page', 'find_in_page')):
         raise ValueError('invalid web action')
     query = item.get('query')

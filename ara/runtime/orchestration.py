@@ -11,7 +11,7 @@ from ara.engine.conflicts import analyse_searches
 from ara.runtime.logging import SerializedEventLog
 from ara.runtime.search_jobs import job_failure, run_search_jobs
 from ara.engine.search import SearchResult
-from ara.runtime.cache import canonical
+from ara.runtime.cache import canonical, digest
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.extraction import save_immutable
@@ -40,11 +40,11 @@ class NativeEngine:
         vocabulary = calls.search_vocabulary(commitments)
         provenance = vocabulary['commitment_provenance']
         premises = CommitmentSet(tuple(c for c in commitments.commitments
-            if provenance is None or provenance['commitments'][c.id]['stance'] == 'endorsed'))
+            if provenance is None or provenance['commitments'][c.id]['stance'] in ('endorsed', 'model_alignment')))
         calls.log.record('search_stance_policy', provenance_status=vocabulary['provenance_status'],
                          provenance_sha256=vocabulary['provenance_sha256'],
                          eligible_commitment_ids=[c.id for c in premises.commitments],
-                         note='Legacy stance is unavailable. Verified reported/attacked content is usable only as a scoped hypothesis, never a global premise.')
+                         note='Legacy stance is unavailable. Model alignments are disclosed premises, never source endorsements. Verified reported/attacked content is usable only as a scoped hypothesis, never a global premise.')
         return Engine(bank=self.bank, commitments=commitments, proposer=calls,
                         formaliser=calls, leaf_mapper=calls, cq_answerer=calls,
                         repairer=calls, sink=calls.log,
@@ -106,7 +106,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     """One construction lifecycle, one freeze. Search cannot observe provisional batches."""
     if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
-    commitments = calls.build_t(literature, audience)
+    state = getattr(calls, 'alignment_resume', None)
+    commitments = state['commitments'] if state is not None else calls.build_t(literature, audience)
     # Rich construction exposes semantic metadata without changing the strict
     # CommitmentSet codec or the legacy commitments.json artifact.
     from ara.runtime.frozen_catalogue import frozen_artifact
@@ -116,11 +117,17 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         latest = merged[-1]
         if latest['commitments'] != commitments.to_dict():
             raise ValueError('frozen catalogue construction mismatch')
-        artifact = frozen_artifact(commitments, latest['symbols'])
+        from ara.runtime.symbol_alignment import align_symbols
+        commitments, symbols, rows, alignment = align_symbols(calls, commitments, latest['symbols'], latest['provenance'])
+        measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(),
+            'count': calls.config['target_candidates'], 'named_position': None}, admission=True)
+        if measured.initial_input_tokens > calls.config['working_t_token_budget']:
+            calls.budget.stop('aligned T downstream token budget exceeded before freeze', 'judge_symbol_alignment')
+        artifact = frozen_artifact(commitments, symbols)
         save_immutable(calls.log.path.parent / 'frozen-t.json', canonical(artifact))
         calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
         from ara.runtime.commitment_provenance import make_commitment_provenance
-        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], latest['provenance'])
+        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment)
         save_immutable(calls.log.path.parent / 'commitment-provenance.json', canonical(provenance))
         calls.log.record('commitment_provenance_frozen', **provenance)
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())
@@ -165,6 +172,7 @@ def _save_analyses(calls, targets, results, commitments=None):
     graphs_by_id = {}
     analyses = []
     paired = []
+    support_gaps = {}
     for target, analysis in zip(targets, results, strict=True):
         if isinstance(analysis, AnalysisResult):
             analyses.append(analysis.to_dict())
@@ -180,6 +188,10 @@ def _save_analyses(calls, targets, results, commitments=None):
                 # Retain each search in the log, but persist/select a graph once.
                 from ara.runtime.route_policy import route_contribution
                 contribution = route_contribution(route, commitments, provenance)
+                if (contribution.get('support_consistency') or {}).get('status') == 'conflict':
+                    from ara.runtime.conflict_feedback import route_support_gap
+                    gap = route_support_gap(route.id, contribution['support_ids'], provenance)
+                    support_gaps[gap.id] = gap
                 calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict(),
                                  contribution=contribution,
                                  classification=contribution['classification'])
@@ -195,6 +207,11 @@ def _save_analyses(calls, targets, results, commitments=None):
                              closed=[r.id for r in result.routes if r.status == 'CLOSED'],
                              truncated=result.truncated, nodes_created=result.nodes_created,
                              independent_closed_routes=result.independent_closed_routes)
+    if commitments is not None:
+        calls.log.record('route_support_conflicts', gaps=[support_gaps[k].to_dict() for k in sorted(support_gaps)],
+            commitments_sha256=digest(canonical(commitments.to_dict())),
+            provenance_sha256=provenance['sha256'] if provenance else None,
+            note='Inconsistent support is a conflict, never ex-falso evidence for selection.')
     calls.log.record('conflicts_and_robustness', findings={'analyses': analyses})
     if commitments is not None:
         from ara.runtime.conflict_feedback import propose_tier2_resolutions
@@ -203,6 +220,15 @@ def _save_analyses(calls, targets, results, commitments=None):
 
 
 def compose(calls: ModelCalls, route: RouteGraph) -> dict:
+    from ara.runtime.route_policy import frozen_from_events, provenance_from_events, route_contribution
+    events = calls.log.read()
+    commitments = frozen_from_events(events)
+    if commitments is not None and route.status == 'CLOSED':
+        receipt = route_contribution(route, commitments, provenance_from_events(events, commitments))
+        consistency = receipt['support_consistency']
+        if consistency['status'] != 'consistent':
+            calls.log.record('composition_refused', route_id=route.id, support_consistency=consistency)
+            raise ValueError('inconsistent or unresolved route supports cannot supply an essay')
     draft = calls.write_essay(route)
     # Save the unverified draft as a clearly named partial artifact, never export it.
     (calls.log.path.parent / 'draft.unverified.json').write_text(canonical(draft))

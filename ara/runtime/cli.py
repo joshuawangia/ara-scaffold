@@ -41,10 +41,12 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--literature', type=Path)
     run.add_argument('--audience', default='runtime audience')
     run.add_argument('--named-position')
+    run.add_argument('--gap-file', type=Path)
     run.add_argument('--route')
     fork = sub.add_parser('fork-from-freeze', help='verify and fork a frozen prefix; continue with current target proposal')
     fork.add_argument('--source-run', type=Path, required=True)
     fork.add_argument('--run-dir', type=Path, required=True)
+    fork.add_argument('--gap-file', type=Path)
     fork.add_argument('--provider', choices=('anthropic','mock','claude_code','codex_cli'))
     fork.add_argument('--codex-schema-preflight-log', type=Path)
     fork.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
@@ -54,6 +56,12 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument('--unknown-usage-policy', choices=('count-at-reservation',), required=True)
     resume.add_argument('--plan-only', action='store_true', help='free counts and verified restoration only; no generation')
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
+    alignment = sub.add_parser('resume-alignment', help='continue unfinished alignment from verified completed construction')
+    alignment.add_argument('--run-dir', type=Path, required=True)
+    alignment.add_argument('--plan-only', action='store_true', help='verify restoration only; no provider or counter')
+    alignment.add_argument('--output-dir', type=Path, help='separate empty directory for free resume receipts')
+    alignment.add_argument('--codex-schema-preflight-log', type=Path)
+    alignment.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
     search_resume = sub.add_parser('resume-search', help='publish verified search journals and continue unfinished jobs')
     search_resume.add_argument('--run-dir', type=Path, required=True)
     search_resume.add_argument('--stop-before-dispatch', action='store_true',
@@ -187,6 +195,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             bank = load_bank(ROOT / 'bank')
             log, run, commitments = fork_from_freeze(args.source_run, args.run_dir, bank)
             config = {**run['config'], 'cache_dir': str(args.run_dir.resolve() / 'cache')}
+            if args.gap_file is not None:
+                config['gap_file'] = str(args.gap_file.resolve())
             if args.provider is not None:
                 config['provider'] = args.provider
             if args.unknown_usage_policy is not None:
@@ -239,6 +249,54 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 routes = search_all(calls, engine, state.commitments, state.targets, restored=state.restored)
                 log.record('awaiting_selection', route_ids=[r.id for r in routes], search=disclose_search(log))
                 log.record('run_finished', state='awaiting_selection')
+                print(str(args.run_dir))
+                return 0
+        if args.command == 'resume-alignment':
+            from ara.runtime.alignment_resume import load_alignment_resume, resume_summary
+            from ara.runtime.construction_resume import construction_resume_lock
+            from ara.runtime.extraction import save_immutable
+            from ara.runtime.cache import canonical
+            if not (args.run_dir / 'events.jsonl').is_file():
+                raise ValueError('alignment run log does not exist')
+            if args.plan_only:
+                if (args.output_dir is None or args.output_dir.resolve().is_relative_to(args.run_dir.resolve()) or
+                        args.run_dir.resolve().is_relative_to(args.output_dir.resolve())):
+                    raise ValueError('plan-only alignment resume requires a separate --output-dir')
+                if args.output_dir.exists() and any(args.output_dir.iterdir()):
+                    raise ValueError('plan-only output directory must be empty')
+            elif args.output_dir is not None:
+                raise ValueError('--output-dir requires --plan-only')
+            with construction_resume_lock(args.run_dir):
+                source_log=EventLog(args.run_dir / 'events.jsonl')
+                bank=load_bank(ROOT / 'bank')
+                state=load_alignment_resume(source_log,bank)
+                summary=resume_summary(state)
+                if args.plan_only:
+                    log=EventLog(args.output_dir / 'events.jsonl')
+                    log.human('resume-alignment-plan',json.dumps(raw_args),reported_minutes=args.human_minutes)
+                    log.record('alignment_resume_plan',**summary)
+                    save_immutable(args.output_dir / 'alignment-resume-plan.json',canonical(summary))
+                    print(json.dumps(summary))
+                    return 0
+                run=state['run']
+                config=dict(run['config'])
+                if args.unknown_usage_policy is not None:
+                    config['unknown_usage_policy']=args.unknown_usage_policy
+                if args.codex_schema_preflight_log is not None:
+                    config['codex_cli']={**config.get('codex_cli',{}),
+                        'schema_preflight_log':str(args.codex_schema_preflight_log)}
+                from ara.runtime.codex_preflight import require_codex_preflight
+                require_codex_preflight(config,ROOT)
+                log=source_log
+                log.human('resume-alignment',json.dumps(raw_args),reported_minutes=args.human_minutes)
+                log.record('alignment_resumed',**summary,config=config)
+                calls=calls_factory(config,log,run['topic'])
+                calls.alignment_resume=state
+                human=next((json.loads(e['payload_json']) for e in log.read() if e['stage']=='run' and e['label']=='HUMAN'),{})
+                commitments,targets=prepare(calls,bank,run['literature'],run['audience'],human.get('named_position'))
+                routes=search_all(calls,engine_factory(bank,calls),commitments,targets)
+                log.record('awaiting_selection',route_ids=[r.id for r in routes],search=disclose_search(log))
+                log.record('run_finished',state='awaiting_selection')
                 print(str(args.run_dir))
                 return 0
         if args.command == 'resume-construction':
@@ -410,6 +468,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 if args.topic is None or args.literature is None:
                     raise ValueError('run requires --topic and --literature, or --smoke')
                 topic, literature = args.topic, args.literature.read_text()
+            if args.gap_file is not None:
+                config['gap_file'] = str(args.gap_file.resolve())
             if args.provider is not None:
                 config['provider'] = args.provider
             from ara.runtime.codex_preflight import require_codex_preflight

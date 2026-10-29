@@ -1309,9 +1309,7 @@ CASES += [
     ('closure_minimality', 'ara/runtime/route_policy.py',
      "'trivial':'CLOSED-single-support'", "'trivial':'CLOSED-derived'",
      'tests/runtime/test_contribution_gate.py::test_two_supports_do_not_override_single_support_entailment'),
-    ('closure_unknown', 'ara/runtime/route_policy.py',
-     "'unresolved':'CLOSED-contribution-unresolved'", "'unresolved':'CLOSED-derived'",
-     'tests/runtime/test_contribution_gate.py::test_cq_dependencies_are_support_and_unknown_fails_closed'),
+    ('closure_unknown', 'ara/runtime/contribution.py', 'result = entails(premises, conclusion, timeout_ms)', "result = entails(premises, conclusion, timeout_ms)\n        if result not in ('SOLVER_UNSAT', 'SOLVER_COUNTEREXAMPLE'):\n            result = 'SOLVER_COUNTEREXAMPLE'", 'tests/runtime/test_contribution_gate.py::test_cq_dependencies_are_support_and_unknown_fails_closed'),
     ('closure_cq_support', 'ara/runtime/route_policy.py',
      'ids += [tid for answer in node.cq_answers for tid in answer.supporting_t_ids]', 'ids += []',
      'tests/runtime/test_contribution_gate.py::test_cq_dependencies_are_support_and_unknown_fails_closed'),
@@ -1362,14 +1360,14 @@ CASES += [
      "rendered_content=render(target.formula)", "rendered_content=None",
      'tests/runtime/test_stance_search.py::test_classifier_assertion_uses_content_not_source_voice'),
     ('stance_native_admission', 'ara/runtime/orchestration.py',
-     "provenance is None or provenance['commitments'][c.id]['stance'] == 'endorsed'", 'True',
+     "provenance is None or provenance['commitments'][c.id]['stance'] in ('endorsed', 'model_alignment')", 'True',
      'tests/runtime/test_stance_search.py::test_restricted_support_cannot_close_native_route'),
     ('stance_cq_admission', 'ara/engine/search.py',
      'supported = cq_supported(answer, q.id, self.commitments)',
      'supported = cq_supported(answer, q.id, self.frozen_commitments)',
      'tests/runtime/test_stance_search.py::test_restricted_cq_evidence_keeps_native_route_open'),
     ('stance_route_disclosure', 'ara/runtime/route_policy.py',
-     "if stance != 'endorsed':", 'if False:',
+     "if stance != 'endorsed' and not (stance == 'model_alignment' and role == 'global_premise'):", 'if False:',
      'tests/runtime/test_stance_search.py::test_report_and_selection_disclose_historical_crossing'),
     ('stance_fork_receipt', 'ara/runtime/freeze_fork.py',
      "if receipts != ([provenance] if provenance is not None else []):", 'if False:',
@@ -1547,12 +1545,8 @@ CASES += [
 
 
 CASES += [
-    ('nonlogical_padded_conclusion', 'ara/runtime/route_policy.py',
-     "b.kind == 'defeasible'", "b.kind == 'defeasible' or b.id == 'conditional_proof'",
-     'tests/runtime/test_nonlogical_contribution.py::test_native_only_new_scheme_conclusion_qualifies[padded]'),
-    ('nonlogical_syllogism_conclusion', 'ara/runtime/route_policy.py',
-     "b.kind == 'defeasible'", "b.kind == 'defeasible' or b.id == 'hypothetical_syllogism'",
-     'tests/runtime/test_nonlogical_contribution.py::test_native_only_new_scheme_conclusion_qualifies[syllogism]'),
+    ('nonlogical_padded_conclusion', 'ara/runtime/novelty.py', "if verdict == 'SOLVER_UNSAT':\n            return result('rejected','single_paper_closure'", "if False:\n            return result('rejected','single_paper_closure'", 'tests/runtime/test_nonlogical_contribution.py::test_native_only_new_scheme_conclusion_qualifies[padded]'),
+    ('nonlogical_syllogism_conclusion', 'ara/runtime/novelty.py', "if verdict == 'SOLVER_UNSAT':\n            return result('rejected','single_paper_closure'", "if False:\n            return result('rejected','single_paper_closure'", 'tests/runtime/test_nonlogical_contribution.py::test_native_only_new_scheme_conclusion_qualifies[syllogism]'),
     ('nonlogical_bank_kinds', 'ara/runtime/route_policy.py',
      "b.kind == 'defeasible'", 'True',
      'tests/runtime/test_novelty_policy.py::test_only_known_nonstructural_scheme_counts'),
@@ -1685,6 +1679,63 @@ CASES += [
     ('gap_side_support', 'ara/runtime/gaps.py', 'supported=bool(witnesses) and all(witnesses)', 'supported=True', 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
     ('gap_target_binding', 'ara/types.py', 'if self.gap is None:', 'if True:', 'tests/runtime/test_gaps.py::test_gap_targets_first_persist_and_require_both_sides'),
     ('gap_resolving_thesis', 'ara/runtime/calls.py', "if target.gap is not None and classification.get('resolves_gap') is not True:", 'if False:', 'tests/runtime/test_gaps.py::test_unrelated_thesis_is_not_retained_as_resolution'),
+    ('alignment_candidate_limit', 'ara/runtime/symbol_alignment.py',
+     'selected=nsmallest(max(1,limit),scored(),key=_rank)[:limit]', 'selected=nsmallest(1000000,scored(),key=_rank)',
+     'tests/runtime/test_symbol_alignment.py::test_candidates_are_bounded_cross_source_content_pairs'),
+    ('alignment_cross_source', 'ara/runtime/symbol_alignment.py',
+     ' or papers[a] & papers[b]', '',
+     'tests/runtime/test_symbol_alignment.py::test_candidates_are_bounded_cross_source_content_pairs'),
+    ('alignment_signature', 'ara/runtime/symbol_alignment.py',
+     "(left['kind'],left['arity']) != (right['kind'],right['arity'])):", 'False):',
+     'tests/runtime/test_symbol_alignment.py::test_predicate_arity_and_symbol_type_are_not_interchangeable'),
+    ('alignment_canonical_rewrite', 'ara/runtime/symbol_alignment.py',
+     'formula=_rewrite(c.formula,mapping)', 'formula=c.formula',
+     'tests/runtime/test_symbol_alignment.py::test_same_content_rewrites_transitively_and_keeps_originals'),
+    ('alignment_no_invention', 'ara/runtime/symbol_alignment.py',
+     "if j['relation']=='same_content':", 'if True:',
+     'tests/runtime/test_symbol_alignment.py::test_unrelated_and_zero_limit_never_invent_alignment'),
+    ('alignment_consistency', 'ara/runtime/symbol_alignment.py',
+     "if any(j['relation']!='unrelated' for j in judgments) and not _consistent(result):", 'if False:',
+     'tests/runtime/test_symbol_alignment.py::test_refused_alignment_is_logged_and_preserves_original_T'),
+    ('alignment_unknown', 'ara/runtime/symbol_alignment.py',
+     "=='SOLVER_COUNTEREXAMPLE'", "!='SOLVER_UNSAT'",
+     'tests/runtime/test_symbol_alignment.py::test_solver_unknown_refuses_alignment'),
+    ('alignment_stance', 'ara/runtime/symbol_alignment.py',
+     "kind='alignment',stance='model_alignment'", "kind='alignment',stance='endorsed'",
+     'tests/runtime/test_symbol_alignment.py::test_bridges_are_explicit_quantified_model_alignment'),
+    ('alignment_quantifier', 'ara/runtime/symbol_alignment.py',
+     'for variable in reversed(variables):', 'for variable in []:',
+     'tests/runtime/test_symbol_alignment.py::test_bridges_are_explicit_quantified_model_alignment'),
+    ('alignment_replay_mapping', 'ara/runtime/symbol_alignment.py',
+     " or receipt['mapping']!=mapping", '',
+     'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
+    ('alignment_native_pipeline', 'ara/runtime/orchestration.py',
+     "align_symbols(calls, commitments, latest['symbols'], latest['provenance'])", "(commitments, latest['symbols'], latest['provenance'], None)",
+     'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
+    ('alignment_stage_identity', 'ara/runtime/construction_stages.py',
+     "return dispatch_settings(config, 'build_t_batch', correction=False)", "return dispatch_settings(config, 'build_t_batch', correction=correction)",
+     'tests/runtime/test_symbol_alignment.py::test_alignment_uses_construction_provider_even_on_retry'),
+    ('alignment_native_admission', 'ara/runtime/orchestration.py',
+     "in ('endorsed', 'model_alignment')", "in ('endorsed',)",
+     'tests/runtime/test_symbol_alignment.py::test_native_search_alignment_is_disclosed_and_needs_two_endorsed_sources'),
+    ('alignment_endorsed_supports', 'ara/runtime/route_policy.py',
+     "if alignment_ids and len(endorsed_ids) < 2 and route.status == 'CLOSED':", 'if False:',
+     'tests/runtime/test_symbol_alignment.py::test_native_search_alignment_is_disclosed_and_needs_two_endorsed_sources'),
+    ('alignment_no_paper', 'ara/runtime/bridges.py',
+     "if rows.get(tid, {}).get('stance') != 'model_alignment'", 'if True',
+     'tests/runtime/test_symbol_alignment.py::test_native_search_alignment_is_disclosed_and_needs_two_endorsed_sources'),
+    ('alignment_leaf_leads', 'ara/runtime/search_context.py',
+     "selected.update(c.id for c in [c for c in ranked if roles.get(c.id, {}).get('stance') == 'model_alignment'][:bridge_limit])", 'selected.update([])',
+     'tests/runtime/test_symbol_alignment.py::test_native_search_alignment_is_disclosed_and_needs_two_endorsed_sources'),
+    ('alignment_cq_evidence', 'ara/runtime/calls.py',
+     "require(provenance is None or all(provenance['commitments'][t]['stance'] != 'model_alignment'", 'require(provenance is None or all(True',
+     'tests/runtime/test_symbol_alignment.py::test_alignment_bridge_cannot_be_source_cq_evidence'),
+    ('alignment_final_catalogue', 'ara/runtime/report.py',
+     "catalogues[-1]['symbols'] if catalogues else merged[-1].get('symbols') if merged else None", "merged[-1].get('symbols') if merged else None",
+     'tests/runtime/test_symbol_alignment.py::test_canonical_freeze_report_uses_final_catalogue_and_retains_unframe_history'),
+    ('alignment_outline_disclosure', 'ara/runtime/calls.py',
+     "outline['alignment_disclosure'] = alignment_disclosure(provenance)", "outline['alignment_disclosure'] = {}",
+     'tests/runtime/test_symbol_alignment.py::test_native_search_alignment_is_disclosed_and_needs_two_endorsed_sources'),
 ]
 
 
@@ -1704,7 +1755,7 @@ CASES += [
     ('semantic_labels', 'ara/runtime/semantic_conflicts.py', "if result['classification'] not in ('contradicts', 'in_tension'):", 'if False:', 'tests/runtime/test_semantic_conflicts.py::test_isolated_classification_cache_gap_and_immutable_freeze'),
     ('semantic_resolution_stance', 'ara/runtime/semantic_conflicts.py', "and rows[c.id]['stance'] == 'endorsed'", 'and True', 'tests/runtime/test_semantic_conflicts.py::test_isolated_classification_cache_gap_and_immutable_freeze'),
     ('semantic_isolated_topic', 'ara/runtime/semantic_conflicts.py', "inputs = dict(topic='', pair=pair,", 'inputs = dict(pair=pair,', 'tests/runtime/test_semantic_conflicts.py::test_isolated_classification_cache_gap_and_immutable_freeze'),
-    ('semantic_target_wiring', 'ara/runtime/calls.py', "detection['gaps'] + classify_pairs(self, commitments, vocabulary)", "detection['gaps']", 'tests/runtime/test_semantic_conflicts.py::test_semantic_gap_drives_resolution_proposal'),
+    ('semantic_target_wiring', 'ara/runtime/calls.py', "detection['gaps'] + support_gaps + classify_pairs(self, commitments, vocabulary)", "detection['gaps']", 'tests/runtime/test_semantic_conflicts.py::test_semantic_gap_drives_resolution_proposal'),
     ('semantic_context_local', 'ara/runtime/search_context.py', ", 'classify_conflict'", '', 'tests/runtime/test_semantic_conflicts.py::test_pair_limit_and_context_refusal_are_disclosed'),
     ('tier2_resolution_wiring', 'ara/runtime/orchestration.py', '        propose_tier2_resolutions(calls, paired, commitments, provenance)', '        pass', 'tests/runtime/test_semantic_conflicts.py::test_native_tiers_report_and_resolution_proposal'),
     ('tier2_route_evidence', 'ara/runtime/conflict_feedback.py', 'route_ids=route_ids, finding=', 'route_ids=(), finding=', 'tests/runtime/test_semantic_conflicts.py::test_native_tiers_report_and_resolution_proposal'),
@@ -1724,6 +1775,162 @@ CASES += [('tier2_distinct_support_groups', 'ara/runtime/conflict_feedback.py', 
 
 
 CASES += [('cq_formatted_hedge_native', 'ara/engine/routes.py', "words = ' '.join(re.findall(r'[^\\W_]+', unicodedata.normalize('NFKC', text).casefold()))", 'words = text', 'tests/runtime/test_cq_retrieval.py::test_formatted_hedge_cannot_close_native_route'), ('gap_frozen_content_identity', 'ara/runtime/gaps.py', 'and content[a.id]==content[b.id]', 'and False', 'tests/runtime/test_gaps.py::test_frozen_definition_stance_conflict_reaches_native_proposal'), ('gap_content_structure', 'ara/runtime/gaps.py', "value['args'] = [frozen_content_key(child, definitions) for child in formula.args]", 'value = frozen_content_key(formula.args[0], definitions)', 'tests/runtime/test_gaps.py::test_definition_conflict_preserves_structure_arguments_and_polarity')]
+
+
+CASES += [('per_paper_target_wiring', 'ara/runtime/target_policy.py', 'novelty_check(target.formula, commitments, provenance, basis_ids=required)', 'novelty_check(target.formula, commitments)', 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'), ('per_paper_closure', 'ara/runtime/novelty.py', "if verdict == 'SOLVER_UNSAT':\n            return result('rejected','single_paper_closure'", "if False:\n            return result('rejected','single_paper_closure'", 'tests/runtime/test_per_paper_synthesis.py::test_per_paper_closure_groups_and_padding'), ('per_paper_stance', 'ara/runtime/novelty.py', "if row.get('stance') == 'endorsed' and row.get('source_id'):", "if row.get('source_id'):", 'tests/runtime/test_per_paper_synthesis.py::test_reported_opposition_does_not_remove_forward_synthesis'), ('per_paper_essential', 'ara/runtime/novelty.py', '        if known:\n            continue', '        if False:\n            continue', 'tests/runtime/test_per_paper_synthesis.py::test_per_paper_closure_groups_and_padding'), ('per_paper_unknown', 'ara/runtime/novelty.py', "if verdict != 'SOLVER_COUNTEREXAMPLE':\n            return result('unresolved'", "if False:\n            return result('unresolved'", 'tests/runtime/test_per_paper_synthesis.py::test_per_paper_unknown_is_not_novel'), ('synthesis_deductive_upgrade', 'ara/runtime/route_policy.py', "classification='CLOSED-derived', contribution_kind=(", "classification='CLOSED-structural', contribution_kind=(", 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'), ('synthesis_reachable_license', 'ara/runtime/route_policy.py', "and papers['cross_paper_supported'] and license_receipt['licensed']", "and papers['cross_paper_supported'] and True", 'tests/runtime/test_per_paper_synthesis.py::test_unlicensed_or_unreachable_step_cannot_supply_synthesis'), ('forward_target_wiring', 'ara/runtime/calls.py', "inputs['forward_candidates'] = proposal_forward_candidates(self, commitments, vocabulary)", "inputs['forward_candidates'] = []", 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report'), ('forward_endorsed_evidence', 'ara/runtime/synthesis.py', "if rows[c.id]['stance'] in ('endorsed','model_alignment')", 'if True', 'tests/runtime/test_per_paper_synthesis.py::test_forward_uses_native_licenses_and_endorsed_dependencies'), ('forward_endorsed_opposition', 'ara/runtime/synthesis.py', 'tuple(c.formula for c in eligible.commitments), eligible,', 'tuple(c.formula for c in eligible.commitments), commitments,', 'tests/runtime/test_per_paper_synthesis.py::test_reported_opposition_does_not_remove_forward_synthesis'), ('forward_dependency_provenance', 'ara/runtime/synthesis.py', 'ids = set().union(*(dependencies.get(p,set()) for p in premise_keys))', 'ids = set(dependencies.get(premise_keys[0],set()))', 'tests/runtime/test_per_paper_synthesis.py::test_native_deductive_synthesis_proposal_selection_and_report')]
+
+
+CASES += [('per_paper_compound_package', 'ara/runtime/novelty_basis.py', 'return boolean_combination_equivalence(basis, target, 1000)', "return 'SOLVER_COUNTEREXAMPLE'", 'tests/runtime/test_per_paper_synthesis.py::test_conditional_premise_package_is_not_a_synthesis'), ('synthesis_mixed_inference', 'ara/runtime/route_policy.py', "if (novelty['status'] == 'candidate'\n                and papers", "if (novelty['status'] == 'candidate' and union == 'SOLVER_UNSAT'\n                and papers", 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_results', 'ara/runtime/synthesis.py', "candidates.extend(recorded)", 'pass', 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_generation', 'ara/runtime/synthesis.py', "if i > boundary and e['stage']=='conflicts_and_robustness'", "if e['stage']=='conflicts_and_robustness'", 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_source', 'ara/runtime/synthesis.py', "or freezes[-1][1]['commitments']!=commitments.to_dict()", '', 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates'), ('forward_recorded_cache', 'ara/runtime/synthesis.py', '[p.to_dict() for p in observed]', '[]', 'tests/runtime/test_per_paper_synthesis.py::test_mixed_native_inference_and_recorded_forward_candidates')]
+
+
+CASES += [
+    ('alignment_durable_refusal', 'ara/runtime/symbol_alignment.py',
+     "if receipt['status']=='refused' and receipt['refusal_reason']==CONSISTENCY_REFUSAL:", 'if False:',
+     'tests/runtime/test_symbol_alignment.py::test_recorded_solver_refusal_remains_loadable_when_solver_later_resolves'),
+]
+
+
+
+CASES += [
+    ('alignment_forward_premises', 'ara/runtime/synthesis.py',
+     "if rows[c.id]['stance'] in ('endorsed','model_alignment')", "if rows[c.id]['stance']=='endorsed'",
+     'tests/runtime/test_per_paper_synthesis.py::test_alignment_forward_uses_bridges_without_paper_ownership'),
+    ('alignment_not_source_conflict', 'ara/runtime/semantic_conflicts.py',
+     "if rows[c.id]['stance'] != 'model_alignment'", 'if True',
+     'tests/runtime/test_per_paper_synthesis.py::test_alignment_forward_uses_bridges_without_paper_ownership'),
+    ('external_gap_priority', 'ara/runtime/calls.py',
+     "external + detection['gaps']", "detection['gaps'] + external",
+     'tests/runtime/test_external_gaps.py::test_external_gap_is_logged_first_bound_and_roundtrips'),
+    ('external_gap_endorsed_binding', 'ara/runtime/external_gaps.py',
+     "if not group or any(tid not in rows or rows[tid]['stance'] != 'endorsed'\n                                or rows[tid]['source_id'] != paper for tid in group):", "if False:",
+     'tests/runtime/test_external_gaps.py::test_external_gap_refuses_invalid_evidence'),
+]
+
+CASES += [
+    ('external_gap_outline', 'ara/runtime/calls.py',
+     "outline['gap_resolution'] = root_gap.to_dict()", "outline['gap_resolution'] = {}",
+     'tests/runtime/test_external_gaps.py::test_external_gap_is_logged_first_bound_and_roundtrips'),
+    ('external_gap_cli_fork', 'ara/runtime/cli.py',
+     "            if args.gap_file is not None:\n                config['gap_file'] = str(args.gap_file.resolve())\n            if args.provider is not None:\n                config['provider'] = args.provider\n            if args.unknown_usage_policy",
+     "            if args.provider is not None:\n                config['provider'] = args.provider\n            if args.unknown_usage_policy",
+     'tests/runtime/test_external_gaps.py::test_fork_cli_uses_external_gap_file_without_editing_freeze'),
+]
+
+
+CASES += [
+    ('s11_source_pair_eligibility', 'ara/runtime/semantic_conflicts.py',
+     "if rows[c.id]['stance'] != 'model_alignment'", 'if True',
+     'tests/runtime/test_alignment_retrieval.py::test_native_discovery_never_dispatches_alignment_as_source'),
+    ('s11_retrieval_backfill', 'ara/runtime/symbol_alignment.py',
+     '            yield pair\n', '            if score>=minimum_score: yield pair\n',
+     'tests/runtime/test_alignment_retrieval.py::test_retrieval_backfills_reports_prefilters_and_covers_papers'),
+    ('s11_paper_diversity', 'ara/runtime/symbol_alignment.py',
+     '    if paper_diversity:', '    if False:',
+     'tests/runtime/test_alignment_retrieval.py::test_retrieval_backfills_reports_prefilters_and_covers_papers'),
+    ('s11_threshold_counts', 'ara/runtime/symbol_alignment.py',
+     "stats['above_threshold_pairs'] += int(score>=minimum_score)", "stats['above_threshold_pairs'] += 0",
+     'tests/runtime/test_alignment_retrieval.py::test_retrieval_backfills_reports_prefilters_and_covers_papers'),
+    ('s11_retrieval_receipt', 'ara/runtime/symbol_alignment.py',
+     '        if retrieval!=inventory:', '        if False:',
+     'tests/runtime/test_alignment_retrieval.py::test_native_judge_neutral_topic_and_retrieval_replay'),
+    ('s11_neutral_alignment_topic', 'ara/runtime/symbol_alignment.py',
+     "dict(topic='',policy_version=POLICY_VERSION", 'dict(policy_version=POLICY_VERSION',
+     'tests/runtime/test_alignment_retrieval.py::test_native_judge_neutral_topic_and_retrieval_replay'),
+]
+
+
+CASES += [
+    ('s11_legacy_replay_policy', 'ara/runtime/symbol_alignment.py',
+     "candidates=legacy_candidate_pairs(original_symbols,source_rows,receipt['candidate_limit'])",
+     "candidates=candidate_pairs(original_symbols,source_rows,receipt['candidate_limit'])",
+     'tests/runtime/test_alignment_retrieval.py::test_legacy_alignment_receipt_replays_original_policy'),
+]
+
+
+CASES += [
+    ('union_essentiality_basis', 'ara/runtime/novelty.py',
+     "check(union_premises, Formula('iff'", "check((), Formula('iff'",
+     'tests/runtime/test_union_essentiality.py::test_native_union_essentiality_proposal_selection_and_gap_file'),
+    ('union_essentiality_unknown', 'ara/runtime/novelty.py',
+     "if verdict not in ('SOLVER_UNSAT','SOLVER_COUNTEREXAMPLE'):\n                return result('unresolved','novelty_unresolved','A union essential-atom check was unresolved.')",
+     'if False:\n                pass',
+     'tests/runtime/test_union_essentiality.py::test_union_essentiality_unknown_refuses'),
+    ('union_essentiality_forward', 'ara/runtime/synthesis.py',
+     "if novelty['status'] != 'candidate':", 'if False:',
+     'tests/runtime/test_union_essentiality.py::test_forward_union_essentiality_removes_padded_packages'),
+    ('union_essentiality_gap_targets', 'ara/runtime/target_policy.py',
+     "if reason is None and novelty['status'] != 'candidate':", 'if False:',
+     'tests/runtime/test_union_essentiality.py::test_native_union_essentiality_proposal_selection_and_gap_file[padded_or-True]'),
+    ('union_essentiality_both_polarities', 'ara/runtime/novelty.py',
+     "for truth in (True, False):\n            verdict = check(union_premises", "for truth in (True,):\n            verdict = check(union_premises",
+     'tests/runtime/test_union_essentiality.py::test_union_entailment_preserves_both_polarities'),
+]
+
+
+CASES += [
+    ('r29_independent_interpretations', 'ara/formal.py',
+     "Compiler('left:'), Compiler('right:')", "Compiler('left:'), Compiler('left:')",
+     'tests/test_boolean_package.py::test_equivalent_connective_package_and_cross_paper_deduction_differ'),
+    ('r29_equivalent_package', 'ara/runtime/novelty.py',
+     'package_check = boolean_package(formula, union)', "package_check = dict(boolean_package(formula, union), solver_result='SOLVER_COUNTEREXAMPLE')",
+     'tests/runtime/test_consistent_novelty.py::test_native_quantified_package_is_not_selectable'),
+    ('r29_required_basis', 'ara/runtime/novelty_basis.py',
+     'required = sorted(set(required_ids))', 'required = []',
+     'tests/runtime/test_consistent_novelty.py::test_maximal_consistent_basis_preserves_required_ids_deterministically'),
+    ('r29_basis_unknown', 'ara/runtime/novelty_basis.py',
+     ".get(verdict, 'unresolved')", ".get(verdict, 'consistent')",
+     'tests/runtime/test_consistent_novelty.py::test_solver_uncertainty_never_certifies_a_consistent_basis_or_package'),
+    ('r29_route_exact_basis', 'ara/runtime/route_policy.py',
+     "support_ids=receipt.get('support_ids', ())", 'support_ids=tuple(c.id for c in commitments.commitments)',
+     'tests/runtime/test_consistent_novelty.py::test_native_unused_contradiction_preserves_modus_ponens'),
+    ('r29_conflict_classification', 'ara/runtime/route_policy.py',
+     "if consistency is not None and consistency['status'] != 'consistent':", 'if False:',
+     'tests/runtime/test_consistent_novelty.py::test_native_inconsistent_cq_support_is_a_conflict'),
+    ('r29_conflict_report', 'ara/runtime/conflict_feedback.py',
+     "support_conflicts=support_conflicts['gaps'] if support_conflicts else []", 'support_conflicts=[]',
+     'tests/runtime/test_consistent_novelty.py::test_native_inconsistent_cq_support_is_a_conflict'),
+    ('r29_conflict_gap', 'ara/runtime/calls.py',
+     "external + detection['gaps'] + support_gaps + classify_pairs", "external + detection['gaps'] + classify_pairs",
+     'tests/runtime/test_consistent_novelty.py::test_native_inconsistent_cq_support_is_a_conflict'),
+    ('r29_compose_consistency', 'ara/runtime/orchestration.py',
+     "if consistency['status'] != 'consistent':", 'if False:',
+     'tests/runtime/test_consistent_novelty.py::test_native_inconsistent_cq_support_is_a_conflict'),
+    ('r29_forward_basis', 'ara/runtime/synthesis.py',
+     'support_ids=tuple(sorted(ids))', 'support_ids=tuple(c.id for c in commitments.commitments)',
+     'tests/runtime/test_consistent_novelty.py::test_native_unused_contradiction_preserves_modus_ponens'),
+    ('r29_forward_conflict_disclosure', 'ara/runtime/synthesis.py',
+     "if consistency['status'] != 'consistent':", 'if False:',
+     'tests/runtime/test_consistent_novelty.py::test_recorded_forward_conflicting_supports_are_disclosed'),
+    ('r29_missing_support_inventory', 'ara/runtime/route_policy.py',
+     "if consistency is not None and 'support_ids' not in receipt:", 'if False:',
+     'tests/runtime/test_consistent_novelty.py::test_missing_route_support_inventory_remains_unresolved'),
+    ('alignment_bound_candidate_identity', 'ara/runtime/symbol_alignment.py',
+     "return dict(left=candidate['left'],right=candidate['right'],**value)",
+     "return dict(left=candidate['left'],right='R',**value)",
+     'tests/runtime/test_alignment_resume.py::test_binding_rejects_even_an_echoed_mutated_identity'),
+    ('alignment_unresolved_threshold', 'ara/runtime/symbol_alignment.py',
+     'if len(unresolved)>max_unresolved:', 'if False:',
+     'tests/runtime/test_alignment_resume.py::test_unresolved_threshold_refuses_before_freeze'),
+    ('alignment_resume_working_binding', 'ara/runtime/alignment_resume.py',
+     "require(json.loads((directory/f\"working-t-{state['plan_id']}.json\").read_text())==expected,",
+     'require(True,',
+     'tests/runtime/test_alignment_resume.py::test_resume_refuses_damaged_or_incomplete_state_before_provider[working]'),
+    ('alignment_resume_rejection_receipts', 'ara/runtime/alignment_resume.py',
+     "require(data['attempts']==config.get('validation_attempts',1) and\n                [r.get('attempt') for r in rejected]==list(range(1,data['attempts']+1)) and\n                rejected[-1].get('reason')==data['reason'],",
+     'require(True,',
+     'tests/runtime/test_alignment_resume.py::test_unresolved_receipt_without_rejected_attempts_cannot_resume'),
+    ('alignment_unresolved_report', 'ara/runtime/report.py',
+     'unresolved_count=len(unresolved),unresolved=unresolved,', 'unresolved_count=0,unresolved=unresolved,',
+     'tests/runtime/test_alignment_resume.py::test_mutated_id_is_unresolved_and_never_changes_candidate'),
+]
+
+
+CASES += [
+    ('boolean_solver_lifetime_lock', 'ara/formal.py',
+     'with _SOLVER_LOCK:\n        return _boolean_combination_equivalence(basis, target, timeout_ms)',
+     'with _SOLVER_LOCK:\n        pass\n    return _boolean_combination_equivalence(basis, target, timeout_ms)',
+     'tests/test_boolean_package.py::test_boolean_z3_objects_are_released_under_the_solver_lock'),
+]
 
 
 def main():

@@ -117,6 +117,9 @@ def test_two_rich_catalogues_share_global_capacity(rig, monkeypatch):
         return original(kind, prompt, schema, maximum)
     def complete(kind, prompt, schema, maximum):
         data = json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind == 'judge_symbol_alignment':
+            pair = data['candidate']
+            return Response(response(dict(relation='unrelated', reason='P')))
         if kind == 'select_t_roots': allowances.append(data['working_token_allowance'])
         result = batch_response(data)
         if kind == 'build_t_batch':

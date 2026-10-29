@@ -19,9 +19,11 @@ WRAPPERS=[I,WRAPPED,F('implies',(F('or',(R,S)),AND)),
 
 @pytest.mark.parametrize('formula',WRAPPERS)
 def test_deductive_closure_rejects_every_wrapper(formula):
-    result=novelty_check(formula,T)
+    from test_cross_paper import frozen_metadata
+    _,provenance=frozen_metadata(T,('a','a'))
+    result=novelty_check(formula,T,provenance)
     assert result['status']=='rejected'
-    assert result['reason']=='deductive_closure'
+    assert result['reason']=='single_paper_closure'
 
 
 def test_deduction_stays_valid_but_is_not_novel():
@@ -44,7 +46,8 @@ def test_new_atom_must_change_truth_under_t():
 
 
 def test_native_unused_assumptions_are_not_substantive(tmp_path):
-    calls,bank,_,_,provenance=setup(tmp_path)
+    # Padding a consequence already available within one paper stays single-paper.
+    calls,bank,_,_,provenance=setup(tmp_path, ('a','a'))
     calls.config['forward_pass_depth']=0
     texts={'P':P,'Q':Q,'R':R,'S':S,'P and Q':AND,'R -> (P and Q)':I,'S -> (P and Q)':J}
     goal=Proposition('wrapped','(R -> (P and Q)) and (S -> (P and Q))',WRAPPED)
@@ -64,7 +67,7 @@ def test_native_unused_assumptions_are_not_substantive(tmp_path):
     routes=search_all(calls,NativeEngine(bank,calls),T,(goal,))
     closed=[r for r in routes if r.status=='CLOSED']
     assert closed
-    assert all(route_contribution(r,T,provenance)['classification']=='CLOSED-structural' for r in closed)
+    assert all(route_contribution(r,T,provenance)['classification']=='CLOSED-single-paper' for r in closed)
     assert not selectable_routes(routes,T,provenance)
 
 

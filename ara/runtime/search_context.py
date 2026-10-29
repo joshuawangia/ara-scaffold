@@ -27,6 +27,7 @@ def leaf_slice(inputs, bridge_limit):
     selected = {c.id for c in ranked[:seed_limit]}
     selected.update(tid for b in bridges for tid in b['commitment_ids'])
     selected.update(exact_ids)
+    selected.update(c.id for c in [c for c in ranked if roles.get(c.id, {}).get('stance') == 'model_alignment'][:bridge_limit])
     referenced = leaf_symbols | set().union(*(signatures[tid] for tid in selected))
     catalogue = inputs.get('symbol_catalogue')
     data = {k: v for k, v in inputs.items() if k != 'commitment_provenance'}
@@ -39,7 +40,7 @@ def leaf_slice(inputs, bridge_limit):
                            if tid in selected},
         commitment_roles={tid: {key: row[key] for key in (
             'source_id', 'source_authors', 'attributed_to', 'attribution', 'stance',
-            'source_kind', 'omitted_support_ids') if key in row}
+            'source_kind', 'omitted_support_ids', 'kind', 'source_ids', 'evidence_ids', 'definitions', 'judgment') if key in row}
             for tid, row in sorted(provenance['commitments'].items()) if tid in selected} if provenance else None,
         provenance_scope='projected_roles_bound_to_full_provenance_sha256',
         symbol_catalogue=[s for s in catalogue if (s['name'], s['kind'], s['arity']) in referenced]

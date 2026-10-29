@@ -257,3 +257,121 @@ requires this validator version; older strict readers cannot consume it. Fork,
 resume, search and reports preserve the full validated sidecar through their
 existing interface. Rejected normalization events remain in the log even when no
 commitment is eventually accepted.
+
+## Cross-source symbol alignment
+
+Before the single freeze, rich construction ranks compatible atom/predicate pairs
+from disjoint source-paper sets by TF-IDF-weighted definition-token overlap
+(preferred cosine score defaults to 0.10, configured by
+`construction_alignment_min_score`). Deterministic backfill from lower-scoring
+shared-term pairs uses the available allowance; zero-overlap pairs are not
+invented. `construction_alignment_paper_diversity` (default true) replaces a
+lowest-ranked candidate when this adds an uncovered paper without losing any
+covered paper. The counts at signature, lexical and threshold filtering and final
+paper coverage are recorded. These are retrieval heuristics, not semantic
+judgments. `construction_alignment_candidates` bounds the top
+pairs, default 150; zero explicitly disables judgments. Each pair is a two-symbol
+cluster. This lexical ranking is a lead, not a semantic equivalence assertion.
+Constants are never merged. The plan version and candidate limit bind resume.
+
+`judge_symbol_alignment` uses the construction formalization provider/model and
+its isolation, cache, logging and budget path, including retries. It sees only
+the pair, original definitions, source provenance and frozen-input hashes, never
+search goals. It returns one of `same_content`, `entails_left_right`,
+`entails_right_left`, `contrary`, `unrelated`, with a short reason. The default
+output allowance is 2048 tokens. Changed definitions and prompt/schema identities
+partition the cache. Live schema preflight includes this call; the identity-free
+response schema invalidates earlier preflight receipts. Replies contain only
+`relation` and `reason`. Exact left/right identities come from the candidate
+record; any returned identifier is rejected, never normalized or silently repaired.
+
+After `validation_attempts` (1–3), an invalid reply becomes a typed
+`alignment_unresolved` outcome with its exact pair, reason and attempt count.
+It grants no bridge or rewrite and is never counted as `unrelated`. Construction
+continues unless the absolute count exceeds `construction_alignment_max_unresolved`
+(default 5; 0 requires every candidate to resolve). Exceeding the limit stops before
+freeze with `symbol_alignment_incomplete`. Provider, accounting and budget stops
+remain operational failures, not unresolved judgments. Report `data.json` exposes
+`construction.alignment.unresolved`, its count and the declared limit.
+
+Same-content components use their lexicographically first symbol; formulas are
+rewritten and evidence IDs merged without changing original source text,
+citations or stance. Other nontrivial relations create explicit commitments
+with `kind: alignment`, `stance: model_alignment` in provenance. Predicate bridges
+are universally quantified over the same ordered argument tuple. Each bridge
+cites both original definitions and evidence citations. Neither equivalence nor
+a bridge is inferred from lexical similarity alone.
+
+The entire alignment set is checked for signature/arity, uniqueness and Z3
+consistency. Solver-unsatisfiable or solver-unknown sets are refused together and logged;
+original T is retained. In particular, an already inconsistent source T cannot
+receive an accepted nontrivial alignment. This does not suppress or repair source
+contradictions. Operational and budget failures still stop before freeze.
+The final working-T input allowance is checked again after alignment.
+
+Existing CommitmentSet, commitments.json and frozen-t-v1 formats stay unchanged.
+`commitment-provenance-v2` adds an `alignment` receipt containing original T and
+symbols, bounded candidates, all judgments, canonical mapping, status and refusal
+reason. The sidecar hash binds the complete receipt and final T/catalogue hashes.
+Its validator replays the judgments; old v1 metadata and legacy absence retain
+their existing behavior. New readers are required for v2. Fork/resume preserve
+and validate the full sidecar and `commitment_provenance_frozen` event.
+
+Search may use bridges as disclosed alignment premises. They are not source CQ
+evidence, belong to no single paper, and cannot replace the requirement for at
+least two endorsed source supports. Existing distinct-formula, cross-paper and
+novelty gates still apply. Route receipts, rendered routes, writer/auditor outlines
+and methodology retain alignment disclosure, including canonical rewrites.
+Offline fake judgments establish only persistence and search plumbing, never
+faithfulness, semantic equivalence or improved real argument quality.
+
+### Continue unfinished alignment
+
+`resume-construction` still owns terminal window-provider refusals.
+`resume-alignment` owns runs with all window outcomes recorded and one verified
+merged working artifact, where alignment has not finished and no freeze artifact
+or receipt exists. It checks the log chain/tail, bank, plan artifact, all accepted
+and skipped windows, merged commitments/symbols/provenance, candidate inventory,
+and the full input bindings of accepted judgments. It restores valid legacy
+judgments without changing their replies; rejected legacy replies stay rejected
+and those pairs are judged anew under the identity-free schema. Explicit unresolved
+outcomes are retained only with their exhausted rejected-attempt receipts.
+
+```sh
+uv run ara resume-alignment --run-dir runs/previous --plan-only --output-dir runs/alignment-plan
+uv run ara resume-alignment --run-dir runs/previous --codex-schema-preflight-log runs/current-preflight/events.jsonl
+```
+
+The free plan creates no provider or counter and appends no source-run events;
+only lock files may be created in that directory. It reports completed windows,
+restored commitments and accepted/unresolved/remaining candidate counts in
+`alignment-resume-plan.json`. It does not certify live context, spend or semantic
+acceptance. A live continuation uses the original run configuration and accounting,
+with optional current preflight and unknown-usage-policy overrides. It records
+HUMAN/resumption receipts, continues alignment, freezes exactly once, then uses
+native target proposal (including bounded forward synthesis) and search.
+Construction model calls are not replayed. Concurrent resume, incomplete or corrupt
+construction, interrupted dispatches without terminal receipts, a completed alignment
+and partial/already-completed freezes are refused. Existing search recovery owns
+runs that have already reached search.
+
+Persisted consistency refusals remain refusals if a later solver run would resolve
+the query: their final T must still equal original T with an identity mapping and
+no bridge rows. Accepted alignments are rechecked on load. A refused receipt is
+never silently promoted into an accepted alignment during fork or resume.
+
+
+Alignment policy v2 records the effective preferred threshold, diversity setting,
+pre-filter counts, selected/backfilled counts and covered papers under `retrieval`
+in the alignment receipt. The reader recomputes these fields. Previously frozen
+policy-v1 receipts keep their original hard 0.15 cutoff on replay; they are not
+silently expanded on resume. Policy v3 retains that retrieval and adds separate
+`unresolved` and `unresolved_limit` receipt fields. The validator requires judgments
+and unresolved outcomes to partition the exact candidate inventory. Legacy v1/v2
+alignment receipts still load; new v3 receipts need this reader. Construction plan
+v15 binds the retrieval, judgment policy and unresolved limit. Alignment recovery
+verifies the original completed plan rather than rebuilding it with v15.
+Alignment judgment requests explicitly set `topic=''`: the task topic and any
+desired thesis do not enter the pair judgment prompt. Every selected pair still
+requires the model's relation judgment; broader retrieval never asserts an
+alignment by itself.

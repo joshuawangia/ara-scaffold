@@ -158,12 +158,13 @@ class SymbolDefinition(Record):
 @dataclass(frozen=True)
 class Gap(Record):
     id: str
-    kind: Literal['contradiction', 'stance_conflict', 'open_problem', 'semantic_conflict', 'tier2_conflict']
+    kind: Literal['contradiction', 'stance_conflict', 'open_problem', 'semantic_conflict', 'tier2_conflict', 'external_gap']
     commitment_ids: tuple[str, ...]
     paper_ids: tuple[str, ...]
     support_groups: tuple[tuple[str, ...], ...]
     finding: str | None = None
     route_ids: tuple[str, ...] = ()
+    external_evidence_json: str | None = None
 
     def to_dict(self):
         value = super().to_dict()
@@ -171,6 +172,8 @@ class Gap(Record):
             del value['finding']
         if not self.route_ids:
             del value['route_ids']
+        if self.external_evidence_json is None:
+            del value['external_evidence_json']
         return value
 
 
@@ -181,6 +184,7 @@ class Proposition(Record):
     formula: Formula | None = None
     new_symbols: tuple[SymbolDefinition, ...] = ()
     gap: Gap | None = None
+    basis_commitment_ids: tuple[str, ...] = ()
 
     def to_dict(self):
         value = super().to_dict()
@@ -188,6 +192,8 @@ class Proposition(Record):
             del value['gap']
         if not self.new_symbols:
             del value['new_symbols']
+        if not self.basis_commitment_ids:
+            del value['basis_commitment_ids']
         return value
 
 
@@ -196,7 +202,8 @@ def negate_proposition(proposition: Proposition) -> Proposition:
     if proposition.formula is None:
         raise ValueError('negation requires a formula')
     formula = proposition.formula.negated()
-    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols, proposition.gap)
+    return Proposition(f'not:{proposition.id}', formula.canonical(), formula, proposition.new_symbols, proposition.gap,
+                       proposition.basis_commitment_ids)
 
 
 @dataclass(frozen=True)

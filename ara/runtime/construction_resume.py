@@ -10,7 +10,7 @@ from ara.runtime.calls import require
 from ara.types import CommitmentSet
 
 
-def load_construction_resume(calls):
+def load_construction_resume(calls, *, completed_only=False):
     events = calls.log.read()  # Verifies the append-only chain and tail anchor.
     require(not any(e['stage'] in ('commitments_frozen', 'search_started', 'run_finished') for e in events),
             'construction resume requires an unfrozen stopped run')
@@ -66,6 +66,9 @@ def load_construction_resume(calls):
     require(pending is None, 'construction resume refuses interrupted dispatch without terminal receipt')
     require(sorted(completed) == list(range(len(completed))), 'construction resume has missing batch outcomes')
     index = len(completed)
+    if completed_only:
+        require(index == len(plan['batches']), 'alignment resume requires terminal-complete construction')
+        return dict(plan_id=plan_id, plan=plan, completed=completed)
     require(index < len(plan['batches']) and terminal is not None, 'construction resume requires a terminal window refusal')
     start, receipt, diagnostic = terminal['start'], terminal['receipt'], terminal['diagnostic'] or {}
     inputs = json.loads(start['prompt'].split('\nINPUT_JSON\n')[1])

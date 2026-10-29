@@ -161,7 +161,7 @@ def test_named_position_preserved(rig):
     formula = Formula('atom', name='R')
     from ara.bank import load_bank
     from ara.runtime.target_policy import target_context, classifier_inputs
-    inputs = {'commitments': commitments.to_dict(), 'count': 1, 'keep_count': 1, 'attempt': 1, 'attempt_budget': 3, 'named_position': 'R',
+    inputs = {'commitments': commitments.to_dict(), 'count': 1, 'keep_count': 1, 'attempt': 1, 'attempt_budget': 3, 'named_position': 'R', 'forward_candidates': [],
               **calls.search_vocabulary(commitments), **target_context(commitments, load_bank(calls.root / 'bank'))}
     register(calls, provider, 'propose_targets', inputs, {'targets': [{'id': 'p', 'text': 'R', 'formula': None}]})
     register(calls, provider, 'formalise', {'proposition': Proposition('p', 'R').to_dict(),

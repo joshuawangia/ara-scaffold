@@ -1,5 +1,5 @@
 """Contribution display/selection policy; historical CLOSED and licenses are unchanged."""
-from ara.runtime.contribution import contribution_check, formula_hash
+from ara.runtime.contribution import contribution_check, formula_hash, cached_entails
 from ara.runtime.target_policy import leading_report_frame
 from ara.runtime.novelty import novelty_check
 from ara.types import Commitment, CommitmentSet
@@ -94,7 +94,7 @@ def stance_crossings(route, provenance):
         roles += [(tid, 'cq_evidence') for a in node.cq_answers for tid in a.supporting_t_ids]
         for tid,role in roles:
             stance = provenance['commitments'].get(tid, {}).get('stance', 'unavailable')
-            if stance != 'endorsed':
+            if stance != 'endorsed' and not (stance == 'model_alignment' and role == 'global_premise'):
                 crossings.add((tid,stance,role))
         pending.extend(node.children)
     return [dict(commitment_id=tid,stance=stance,role=role) for tid,stance,role in sorted(crossings)]
@@ -102,8 +102,40 @@ def stance_crossings(route, provenance):
 
 def route_contribution(route, commitments=None, provenance=None):
     receipt = _logical_contribution(route, commitments)
+    from ara.runtime.novelty_basis import support_consistency
+    consistency = (support_consistency(commitments, receipt.get('support_ids', ()))
+        if route.status == 'CLOSED' and commitments is not None else None)
+    if consistency is not None and 'support_ids' not in receipt:
+        consistency = dict(status='unresolved', reason='missing_support_inventory', solver_result='NOT_CHECKED')
+    receipt['support_consistency'] = consistency
     from ara.runtime.bridges import paper_support
     papers = paper_support(receipt.get('formula_supports', []), provenance)
+    if route.status == 'CLOSED' and commitments is not None and provenance is not None:
+        root = next(n for n in route.nodes if n.id == route.root_id)
+        novelty = novelty_check(root.proposition.formula, commitments, provenance,
+                                support_ids=receipt.get('support_ids', ()))
+        receipt['per_paper_novelty'] = novelty
+        supports = tuple(commitments.get(tid).formula for tid in receipt.get('support_ids', ()))
+        union = cached_entails(supports, root.proposition.formula, 1000)
+        receipt['support_union_entailment'] = union
+        # CLOSED routes are engine-licensed. Deduction can supply the qualifying
+        # inference when the contribution lies in combining distinct papers.
+        from ara.runtime.synthesis import route_inference_licenses
+        license_receipt = (route_inference_licenses(route)
+            if novelty['status'] == 'candidate' and papers['cross_paper_supported']
+            else dict(licensed=False,checks=[]))
+        receipt['synthesis_inference_licenses'] = license_receipt
+        if (novelty['status'] == 'candidate'
+                and papers['cross_paper_supported'] and license_receipt['licensed']
+                and receipt['classification'] in ('CLOSED-structural','CLOSED-contribution-unresolved')):
+            receipt.update(classification='CLOSED-derived', contribution_kind=(
+                'cross_paper_deduction' if union == 'SOLVER_UNSAT' else 'cross_paper_inference'))
+        if novelty['reason'] == 'single_paper_closure':
+            receipt.update(classification='CLOSED-single-paper', reason='single_paper_closure')
+        elif novelty['status'] == 'unresolved' and receipt['classification'] == 'CLOSED-derived':
+            receipt.update(classification='CLOSED-contribution-unresolved', reason='novelty_unresolved')
+        elif novelty['status'] == 'rejected' and receipt['classification'] == 'CLOSED-derived':
+            receipt.update(classification='CLOSED-structural', reason=novelty['reason'])
     if receipt['classification'] == 'CLOSED-derived':
         if papers['status'] != 'verified':
             receipt.update(classification='CLOSED-contribution-unresolved', reason='paper_identity_unavailable')
@@ -116,16 +148,26 @@ def route_contribution(route, commitments=None, provenance=None):
         receipt['gap_resolution'] = resolution
         if receipt['classification'] == 'CLOSED-derived' and not resolution['supported']:
             receipt.update(classification='CLOSED-gap-unresolved', reason='gap_side_support_missing')
+    rows = provenance['commitments'] if provenance else {}
+    alignment_ids = [tid for tid in receipt.get('support_ids', []) if rows.get(tid, {}).get('stance') == 'model_alignment']
+    endorsed_ids = [tid for tid in receipt.get('support_ids', []) if rows.get(tid, {}).get('stance') == 'endorsed']
+    if alignment_ids and len(endorsed_ids) < 2 and route.status == 'CLOSED':
+        receipt.update(classification='CLOSED-single-support', reason='fewer_than_two_endorsed_source_supports')
     crossings = stance_crossings(route, provenance)
     if crossings:
         receipt.update(classification='CLOSED-stance-crossing' if route.status == 'CLOSED' else route.status,
                        reason='restricted_source_used_as_global_support')
+    if consistency is not None and consistency['status'] != 'consistent':
+        receipt.update(classification='CLOSED-conflict' if consistency['status'] == 'conflict' else 'CLOSED-contribution-unresolved',
+                       reason='inconsistent_supports' if consistency['status'] == 'conflict' else 'support_consistency_unresolved')
     scoped = [dict(node_id=n.id, commitment_id=c.id, stance=provenance['commitments'][c.id]['stance'],
                    role='scoped_hypothesis')
               for n in route.nodes if n.kind == 'assumption'
               for c in (commitments.commitments if commitments is not None and provenance else ())
               if formula_hash(n.proposition.formula) == formula_hash(c.formula)]
-    return dict(**receipt, paper_support=papers, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
+    from ara.runtime.symbol_alignment import alignment_disclosure
+    return dict(**receipt, alignment_support_ids=alignment_ids, endorsed_support_ids=endorsed_ids,
+                alignment_disclosure=alignment_disclosure(provenance), paper_support=papers, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
                 provenance_sha256=provenance['sha256'] if provenance else None,
                 stance_crossings=crossings)
 

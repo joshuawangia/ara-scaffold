@@ -154,3 +154,11 @@ is disclosed and not offered by default. Missing paper provenance is unresolved.
 Each route contribution contains paper_support with IDs, counts, per-commitment
 source mapping and missing identities; paper counts do not establish semantic
 independence. See [cross-paper contribution](search.md#cross-paper-contribution-and-bridges).
+
+Round 27 supersedes the whole-T deductive novelty exclusion above. Verified
+per-paper closure allows cross-paper deductions as CLOSED-derived when no single
+paper entails the root, an essential assertion remains, and source-support and
+license checks pass. Receipts contain per_paper_novelty, support_union_entailment
+and synthesis_inference_licenses; single-paper padding remains unselectable.
+Native defeasible licensing, supported CQs and legacy-unavailable disclosure remain. See the current
+[search policy](search.md#route-classification-and-selection).

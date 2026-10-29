@@ -56,11 +56,12 @@ def test_native_report_preserves_route_polarity_and_nested_contribution(tmp_path
     assert graph.status == 'CLOSED'
     assert any(e['decision'] and e['decision']['reason_code'] == 'BANK_LICENSED' for e in calls.log.read())
     receipt = route_contribution(graph, t, provenance)
-    expected = 'CLOSED-derived' if case == 'positive' else 'CLOSED-single-support'
+    expected = 'CLOSED-derived' if case == 'positive' else 'CLOSED-single-paper'
     assert receipt['classification'] == expected and receipt['support_ids'] == ['t1', 't2']
     assert bool(selectable_routes(routes, t, provenance)) == (case == 'positive')
     if case != 'positive':
-        assert receipt['polarity'] == 'target' and receipt['reason'] == 'single_commitment_entailment'
+        assert receipt['polarity'] == 'target' and receipt['reason'] == 'single_paper_closure'
+        assert receipt['status'] == 'trivial' and receipt['commitment_id'] in ('t1', 't2')
     calls.log.record('route', target=goal.id, polarity='negation', graph=graph.to_dict())
 
     def snapshot():

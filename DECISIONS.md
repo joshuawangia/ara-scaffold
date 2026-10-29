@@ -3968,3 +3968,204 @@ retains every connective, predicate argument, binder and polarity in the AST;
 shared words or an overlapping subformula do not establish content identity.
 Native tests carry the resulting gap through proposal with both-side endorsed
 support obligations, without altering any frozen artifact.
+
+
+## Round 27 — per-paper closure and forward synthesis
+
+This supersedes the whole-T novelty gate and non-logical-only contribution rule
+for verified source provenance. A target must escape every individual paper's
+endorsed closure and be non-tautological. Entailment by the union is allowed:
+P from paper a and P -> Q from paper b can yield the new Q. The same premises
+from one paper remain single-paper. Every paper check uses bounded Z3, and an
+unknown verdict stays unresolved. Missing provenance retains the conservative
+legacy policy; no paper ownership or endorsement is invented.
+
+The essential-assertion check is relative to per-paper closure, rather than fresh
+symbol spelling. At least one essential atom must escape both polarities of every
+individual paper's closure. Boolean packages of existing assertions, including
+compound frozen premises, are rejected. Single-paper consequences remain rejected
+through decorative logical detours and unused antecedents. Own-thesis, source
+stance, frozen-definition restatement, faithful rendering and gap-support checks
+remain independent requirements.
+
+A native CLOSED route can be CLOSED-derived through deduction or mixed licensed
+scheme/deduction steps when its verified supports match at least two distinct
+formulas to two distinct papers and no single endorsed paper entails its target.
+Reachable inference bindings are rechecked against the versioned bank; an
+unreachable or unknown step cannot qualify the route. Native CQ and scoped-proof
+checks remain engine responsibilities. Historical engine CLOSED status is not
+rewritten by contribution display or default selection.
+
+Target proposal now includes ranked forward leads carrying exact source support
+IDs, paper IDs, licensed bank IDs and depth. A fresh native pass uses configured
+forward depth and node bounds without a model. Current-generation recorded
+forward results from the exact frozen T are also scanned under a separate bound
+of the same size. Cache inputs include those recorded results; a newer analysis
+boundary invalidates the older findings. Full bounded receipts are logged, and
+up to 30 candidates enter proposal alongside gap candidates. The model still
+renders the thesis, and every ordinary target gate applies. A forward lead is
+neither an accepted target nor an already searched route.
+
+The offline pilot-5 census at depth 2 and 500 consequences found zero qualifying
+forward leads and reached the cap. An earlier six-lead result admitted compound
+premise packages; the final package guard rejects all six. It used 169 frozen commitments from 22
+endorsed papers, without changing any source artifact. This is bounded formal
+plumbing evidence, not an exhaustive count or a semantic novelty claim. Sigma's
+separate symbol-alignment changes are not included in this revision. Reproduction
+uses tools/offline_forward_synthesis.py; exact receipts, gates and limitations
+are recorded in /home/dev/ara-work/reports/xi-round27.md. No paid calls or push.
+## Construction cross-source alignment before freeze
+
+Round 11 adds a bounded model-judged pass after rich working T and before its sole
+freeze. Definition-token overlap selects at most 150 compatible cross-paper pairs
+by default; it never licenses semantic alignment. Each independent judgment uses
+the same construction formalization provider and logged/cache-validated runtime
+boundary. No search goal is included. Same-content judgments rewrite formulas to
+a shared canonical symbol and preserve originals; directional entailment and
+contrary judgments produce explicit universally closed bridges where needed.
+
+Bridge provenance has kind alignment, stance model_alignment and source_id null,
+with both source definitions and citations retained. A v2 provenance receipt binds
+original and final T/catalogue identities, judgments and mapping; validation
+replays the transformation. Existing strict CommitmentSet and frozen catalogue
+codecs remain unchanged, as do legacy v1 readers for v1 records. New v2 records
+require the updated validator. Source attribution, text and stance are immutable.
+
+The complete set must satisfy signature, uniqueness and bounded Z3 consistency
+checks. An inconsistent or unresolved set is refused as a whole, logged and
+replaced by the original T without automatic partial salvage. Changed alignment
+policy is included in construction plan v13. Search treats bridges as alignment
+premises only, discloses both bridges and canonical rewrites, excludes bridge IDs
+from paper ownership and requires two endorsed source supports for CLOSED-derived.
+CQ source evidence cannot be supplied by an alignment bridge. Other solver,
+bank, novelty and cross-paper gates are unchanged. Placeholder native lifecycle,
+mutation controls and external offline fake-judge evidence establish plumbing;
+no live semantic acceptance or paid generation is claimed.
+
+## Xi integrate-sigma — Round 27 alignment and external gap follow-through
+
+Merge Sigma round 11 onto Xi's per-paper synthesis policy. Alignment bridges
+remain usable disclosed premises but have no paper ownership: per-paper closure
+contains only endorsed source commitments, and bridge IDs never satisfy the
+cross-paper formula matching or two-endorsed-support requirements. Forward mining
+now admits alignment premises and reports their IDs separately. Semantic source
+conflict pairing excludes bridges, whose metadata has no source attribution.
+Both the CQ downgrade and alignment-evidence exclusion survive the merge.
+
+An optional `external-gaps-v1` file supplies logged AI-found gap hypotheses before
+native gaps. Its exact evidence, currency verdict, search scope and qualified
+claim framing persist in the target/route and writer/auditor outline; every
+support group binds to endorsed current frozen evidence. It does not rewrite T
+or certify novelty. `docs/search.md` defines the input. Real research content and
+fake-aligner judgments remain outside committed code and placeholder tests.
+
+Offline census uses a copied real freeze and explicitly fake, separately logged
+alignment judgments through native prepare/freeze/validation. Source artifacts
+remain byte-identical. A bounded candidate count is plumbing evidence, not
+semantic equivalence, exhaustive coverage or a useful derived argument.
+
+
+### Integrated S11 review blockers
+
+S11-F1: source conflict comparisons exclude model-alignment rows; native frozen
+v2 discovery is covered. S11-F2: policy-v2 retrieval uses a configurable 0.10
+preferred cosine threshold, deterministic shared-term top-N backfill and a
+paper-coverage pass that never loses already covered papers. Log and persist all
+pre-filter counts, settings and final coverage; no lexical score licenses a
+semantic relation. Replay policy-v1 receipts with their original 0.15 cutoff.
+Construction plan v14 binds the changed policy. S11-F3: explicitly set the judge
+request topic to the empty string and test the actual rendered request. The
+model sees the pair's definitions/source evidence and freeze hashes, not the
+task topic. Frozen catalogue and CommitmentSet formats remain unchanged.
+
+## Round 28 — Union-relative essentiality (INTEG-F1)
+
+Per-paper target and atomic non-entailment remain required, but essentiality is
+checked under the full admissible frozen union. Checking each paper separately
+let an irrelevant R upgrade `(P and Q) or R` and `R -> (P and Q)` when P and Q
+came from different papers. Substituting true and false for an atomic application
+must change target truth in a model of the union. This implies essentiality under
+each individual paper, so it replaces the weaker per-paper substitution loop.
+Record the union commitment IDs and both solver checks; uncertainty refuses.
+
+The union includes endorsed commitments and model-alignment premises, without
+granting alignment bridges paper ownership or assuming reported/attacked content.
+Union entailment itself is permitted: P from a and P -> Q from b still license
+Q, which changes when Q is replaced by false. The shared novelty gate applies to
+native proposal, route selection, forward mining and external gap-file targets.
+Native regressions retain CLOSED engine proofs while classifying padded packages
+as structural, and preserve genuine scheme and cross-paper deduction positives.
+
+## Round 29 — Consistent support and equivalent-package novelty
+
+Supersedes Round 28's whole-T union essentiality: an unrelated contradiction
+must not disable a consistent route. Route and forward novelty use their exact
+support IDs and require satisfiability. Jointly inconsistent route support is
+`CLOSED-conflict`, remains engine CLOSED, is excluded from selection/composition,
+and is published as a hash-bound conflict/gap receipt. Solver uncertainty refuses.
+Before search, optional `basis_commitment_ids` (or an exact matching forward
+lead's dependencies) seed an ID-ordered greedy maximal consistent subset.
+Required IDs cannot be dropped. Every attempted set, omission and solver result
+is logged. This subset is deterministic, not unique or maximum; frozen T is
+unchanged. Internally inconsistent papers receive disclosed consistent projections
+preserving the target's required supports; no ex-falso paper closure is accepted.
+
+Vacuous quantifiers are normalized only for novelty checking. A bounded Z3 check
+uses two independent interpretations, including separate individual domains,
+agreeing on basis formula truth values but disagreeing on target truth. UNSAT
+means the target is a Boolean combination of those assertions and is rejected.
+Basis assertions are not assumed true in this check: ordinary cross-paper modus
+ponens remains eligible. The gate covers proposal, selection, forward and external
+gap targets. Unknown/timeout is unresolved. The proposal schema adds optional
+basis IDs; existing CommitmentSet and frozen metadata codecs are unchanged.
+Applicable schema preflight receipts must be refreshed before live use.
+
+Placeholder regressions cover the native quantified package, unused R/negated R,
+inconsistent CQ support through reporting and composition, equivalent connective
+forms, and native alignment freeze through the actual proposer request. Fake
+judgments establish plumbing only, not semantic alignment quality or originality.
+
+## Alignment recovery and unresolved outcomes (Sigma round 12)
+
+- New alignment replies contain only relation/reason. Candidate identities are
+  bound by runtime code; extra or changed identifiers are refused without repair.
+- Exhausted output validation retries emit `alignment_unresolved` with pair,
+  reason and attempts. Default absolute maximum is 5, configurable with
+  `construction_alignment_max_unresolved`; excess refuses freeze. Operational
+  and accounting failures remain stops. Unresolved is not unrelated or aligned.
+- Alignment policy v3 persists the unresolved inventory/limit, with complete
+  candidate partition validation. Existing v1/v2 receipts remain readable;
+  new policy/schema and plan v15 intentionally invalidate old call/preflight
+  identities. CommitmentSet and outer frozen catalogue codecs stay unchanged.
+- Native `resume-alignment` verifies completed construction and accepted judgment
+  receipts before provider creation, preserves prior accounted calls, performs no
+  construction replay, and continues the existing freeze/targets/search path.
+  Its plan-only form performs neither provider creation nor token counting and
+  writes to a separate output directory. A single advisory resume lock is shared
+  with construction recovery. Partial/already-frozen or incomplete states refuse.
+- Successful free planning proves reusable artifacts and call inventory, not
+  future model acceptance, consistency, budgets or useful synthesis. Canonical
+  operating instructions are in docs/construction.md.
+
+
+### Round 29 integration — Sigma round 12 and S12-F1
+
+Integrated the exact Sigma round-12 construction/alignment recovery head with
+consistent-support novelty. Shared decision, source-map and control additions
+are retained from both branches. The native forward regression uses the new
+relation/reason-only alignment response, requires no unresolved pairs and an
+accepted P/Q entailment, and retains the rendered R lead and frozen-byte checks.
+Runtime supplies candidate identities; the schema must not accept echoed IDs.
+Combined-tree full gates supersede the interrupted pre-integration controls.
+
+
+### Round 29 verification repair — Z3 object lifetime
+
+The combined full mutation run exposed a native abort in a restored parallel
+search test. Boolean equivalence serialized Z3 calls but retained compiler/solver
+locals until after releasing the shared lock. Their destructors could race with
+another search thread using Z3's default context. A deterministic real-object
+finalization regression failed on that implementation. As with entailment, a
+private helper now owns and releases every Z3 object before its locked caller
+returns. A control removes the lock boundary; native alignment search is rerun.
+The interrupted gate evidence is retained, and final gates use the repaired head.

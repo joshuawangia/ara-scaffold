@@ -190,10 +190,10 @@ Unverified legacy catalogue definitions remain unavailable.
 
 The proposer receives the actual versioned bank, premise slots, CQs and
 placeholder support examples. A new main proposition must not be in T or follow
-from a single commitment. In particular, if R is in T, `(P and Q) -> R` is already
+from one paper's endorsed commitments. In particular, if R is in T, `(P and Q) -> R` is already
 entailed by R alone. Correction feedback includes each rejected target, reason,
 checked polarity, the full entailing commitment when present, and an explanation
-of this conditional trap. Existing solver gates remain unchanged.
+of this conditional trap. Feedback identifies the entailing paper when a multi-commitment paper closure supplies the witness.
 
 A new thesis may introduce new vocabulary; disconnection is disclosed as an
 advisory, not a gate or a reason to replace an otherwise passing candidate.
@@ -205,32 +205,61 @@ native mechanical reachability, not the truth of CQ answers or semantic fitness
 of arbitrary material to a scheme. Neither model classification nor solver
 checks prove originality or faithful text/formula translation.
 
-The classifier schema is part of Codex preflight. Historical 15-case receipts
-must be refreshed for the current 16-case contract before live use; a changed
+The classifier schema is part of Codex preflight. Historical preflight receipts
+must match the current schema manifest before live use; a changed
 manifest or model/configuration can also invalidate proof. See
 [provider preflight](providers.md#codex-cli).
 
 ## Route classification and selection
 
 Contribution labels supplement the engine's unchanged `CLOSED`/`OPEN` status,
-bank licenses and graph format. `CLOSED-derived` requires a reachable licensed
-non-logical bank scheme whose own conclusion contains an essential new proposition of the root, at least two distinct frozen supports and solver checks that rule out
-validity without support and entailment of the root by any one support. The
-route check tests the root polarity; target preflight tests both polarities.
+bank licenses and graph format. With verified provenance, novelty is checked
+against each paper's endorsed commitments. No individual paper may entail the
+root, and the root must not be a tautology. Entailment by the union is allowed.
+For P from paper a and P -> Q from paper b, Q can be a cross-paper deductive
+synthesis; both premises from paper a make Q single-paper. Paper identity is never
+inferred from citation strings when provenance is missing.
 
-All propositional and first-order logic rules are structural for novelty,
-including conjunction/disjunction introduction and elimination, double negation,
-modus ponens/tollens, conditional proof, hypothetical syllogism and quantifier
-rules. The bank identifies these as `kind=deductive`; only `kind=defeasible`
-schemes can supply a qualifying step. Its own conclusion must contain an essential
-new proposition of the target. Reachable logical wrappers and decorative
-introduction/elimination detours cannot supply that step; unreachable schemes
-cannot qualify either. The root and qualifying scheme conclusion still pass
-semantic novelty against the whole freeze, including uncited commitments.
-A genuine new scheme result can qualify beneath a logical wrapper.
-The proposer receives the actual bank with these two groups identified, frozen
-catalogue definitions, and placeholder examples contrasting bare packaging
-with a new thesis supported by a non-logical scheme.
+An essential atomic assertion must lie outside every individual paper's closure
+and affect target truth under the route's jointly satisfiable supports. Replacing
+it in the target with true or false must change the target in at least one model
+of that support set. Supports include endorsed commitments and disclosed alignment
+premises; reported and attacked content remains excluded. Both substitutions and
+the union's commitment IDs are logged, and solver uncertainty stays unresolved.
+It can occur inside a frozen conditional already; it
+need not have a fresh symbol name. Bare Boolean packages of separately established
+facts and irrelevant wrappers around cross-paper packages still fail. Vacuous
+quantifiers are removed for this check. A bounded Z3 query rejects targets
+equivalent to Boolean combinations of basis formulas, comparing two independent
+interpretations without assuming the basis assertions true. This same
+check governs native, forward-mined and external-gap targets. Own-thesis, content
+fidelity, definition-restatement, source stance and CQ checks remain required.
+
+Before search, optional target `basis_commitment_ids`, or dependencies of an
+exactly matching forward lead, seed a deterministic maximal consistent subset.
+Runtime adds admissible commitments in ID order when consistency is preserved,
+logging selected/omitted IDs and every solver outcome. This is not a maximum
+or unique subset. Required IDs are never discarded; invalid, inconsistent or
+unresolved required bases refuse. An internally inconsistent paper receives a
+logged consistent projection preserving required supports. Frozen T stays intact.
+
+A deductive synthesis needs distinct endorsed support formulas assignable to at
+least two distinct papers and a reachable licensed inference. Native bank
+rechecks of reachable inference bindings accompany its contribution receipt;
+unknown rules or disconnected inferences cannot upgrade it. Deductive rules
+count when combination supplies the contribution. Defeasible and mixed scheme/deduction routes retain native licensing and CQ
+requirements. Logical detours do not repair a target already entailed by one paper. Solver uncertainty remains unresolved.
+
+Target proposal also receives up to 30 ranked native forward candidates, with
+exact source dependency IDs, paper IDs, bank IDs and depth. The fresh pass uses the configured forward depth/node bounds. Recorded forward
+results from the current search generation and exact freeze are also mined,
+with a separate scan bound equal to the node cap. Both disclose truncation and
+never call a model. Proposal cache inputs include the recorded result payloads;
+a newly started generation cannot reuse old findings.
+The proposer renders these candidates as theses alongside gap targets; all
+admission gates still apply. A candidate is not a searched route or a substantive
+novelty claim. Legacy freezes without source metadata have no forward synthesis
+census and retain conservative legacy novelty checks.
 
 CQ evidence counts as support. Assumptions and repeated or alpha-equivalent
 support formulas do not inflate the count. The check traverses reachable nodes;
@@ -239,6 +268,7 @@ papers or semantic novelty.
 
 | Display label | Meaning for selection |
 | --- | --- |
+| `CLOSED-conflict` | Jointly inconsistent supports; excluded from selection and composition, disclosed in conflict/gap records |
 | `CLOSED-derived` | Passes the contribution policy; offered by default |
 | `CLOSED-structural` | Otherwise passes contribution checks but has no qualifying step concluding an essential new proposition; explicit `--route` required |
 | `CLOSED-single-support` | Lacks the required inference/distinct supports, is valid without support, or follows from one support; explicit `--route` required |
@@ -247,7 +277,8 @@ papers or semantic novelty.
 | `CLOSED-attributed-report` | Reporting language is detected during the closed-route contribution check; explicit `--route` required |
 | `OPEN` or another non-closed status | Retains its engine status and disclosed frontier; explicit `--route` required |
 
-An explicit route argument chooses a displayed route but does not bypass budgets,
+An explicit route argument cannot compose inconsistent or unresolved supports.
+It chooses a displayed route but does not bypass budgets,
 provider gates, audits or verification. Graph-only legacy rendering can recover
 leaf formulas; missing CQ evidence remains unresolved. Native publication,
 selection and reports use frozen T when available. Reports keep the full
@@ -399,3 +430,30 @@ bridge by placing its exact T IDs in named premise slots. Runtime logs the match
 bridge IDs and each slot's verified paper as proposal_bridge; open or scoped
 hypotheses do not supply paper support. The schema stays unchanged. Guidance does
 not force irrelevant premises, license a step, or promise three successful routes.
+
+## External gap hypotheses
+
+Set `gap_file` in the run configuration to an external JSON file, or pass
+`--gap-file /path/to/gaps.json` to `run` or `fork-from-freeze`. Its envelope
+is `{"schema_version":"external-gaps-v1","gaps":[...]}`. Each record requires
+`id`, `origin` (exactly `AI-found`), nonnegative integer `priority` (lower first),
+`finding`, `paper_ids`, `commitment_ids`, `support_groups`, `evidence`,
+`currency_verdict`, `search_scope`, and `claim_framing`. Evidence is a nonempty
+array of `{source_id, location, finding}` objects. Paper IDs and commitment IDs
+must bind to the current verified freeze; each support group must contain
+endorsed commitments from its corresponding paper. Alignment bridges cannot
+supply source support. Evidence may discuss external literature, but this does
+not admit that literature as frozen premises.
+
+External gaps precede native gaps. The complete input and its SHA-256 are logged
+as `external_gaps_loaded`; its evidence and file hash accompany the target,
+classifier, route and writer/auditor outline. A changed file generates a new
+receipt and proposal cache identity. Invalid or missing configured files refuse
+explicitly; `gap_file: null` retains native-only discovery. On resume the configured
+file is read again, so retain it at the recorded path for reproducibility.
+
+For placeholder data, a record can bind papers `a` and `b` to commitments `p` and
+`q`, use support groups `[["p"],["q"]]`, and describe a proposed link from P to Q.
+The currency verdict and claim framing are supplied research qualifications,
+not proof of an open problem. Normal target novelty, stance, licensing and
+both-side support gates remain authoritative.

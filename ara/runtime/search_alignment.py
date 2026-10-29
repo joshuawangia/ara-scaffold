@@ -20,6 +20,7 @@ def symbols(formula):
 def catalogue_inputs(directory, commitments):
     from ara.runtime.commitment_provenance import load_commitment_provenance
     from ara.runtime.bridges import bridge_context
+    from ara.runtime.symbol_alignment import alignment_disclosure
     path = directory / 'frozen-t.json'
     catalogue = validate_frozen_artifact(json.loads(path.read_text()), commitments) if path.exists() else None
     provenance = load_commitment_provenance(directory, commitments, catalogue)
@@ -30,6 +31,7 @@ def catalogue_inputs(directory, commitments):
                 commitment_provenance=provenance,
                 provenance_sha256=provenance['sha256'] if provenance else None,
                 provenance_status='verified' if provenance else 'unavailable_legacy',
+                alignment_disclosure=alignment_disclosure(provenance),
                 definition_semantics='content' if provenance else 'unavailable_legacy',
                 **bridge_context(commitments,catalogue['symbols'] if catalogue else None,provenance))
 
@@ -85,10 +87,10 @@ def metavariable_bindings(entry, goal, bindings):
                  terms={k: v.to_dict() for k, v in ts.items()}) for fs, ts in envs]
 
 
-def search_guidance(goal, commitments, bank):
+def search_guidance(goal, commitments, bank, provenance=None):
     """Expose actual non-logical signatures alongside the frozen search vocabulary."""
     from ara.runtime.novelty import novelty_check
-    return dict(goal_novelty=novelty_check(goal.formula, commitments) if goal.formula is not None
+    return dict(goal_novelty=novelty_check(goal.formula, commitments, provenance) if goal.formula is not None
                 else dict(status='unresolved', reason='unformalised_goal'),
                 scheme_signatures=[dict(bank_id=b.id, premise_slots=[s.to_dict() for s in b.premise_slots],
                     conclusion_slot=b.conclusion_slot.to_dict(),

@@ -293,48 +293,6 @@
       "output_tokens": 3
     }
   },
-  "write_essay:613c5d89c7e01ef3b063b30848061336a6a5943e718d720e6bffc048406dca10": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]][[node:n1]][[node:n2]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "audit_essay:5f882116cd012cfe11f0457541cc0b97feddf83b840f65583c6132d3f175803b": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n0\",\"n1\",\"n2\"],\"sentence\":1}]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "write_essay:7ef9f90232b490803be048fd51070c06f815c995295d63c8d531a8a66e0ad130": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]][[node:n1]][[node:n2]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
   "propose_targets:c2fd70d3d7cb0e9cad4ba79bfbb3a74e155e5376ede4fec9b9db717266092c24": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
@@ -342,6 +300,48 @@
       {
         "type": "text",
         "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "write_essay:e4943fa6675e04bb5862cc696c9e85690da97cf1a3426dcaecd578a3be11e1b5": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]][[node:n1]][[node:n2]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "audit_essay:52ab513255094d2feb6df84bf5c4c9e9e084bf0222d0e7f5e3312fc937140ec4": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"labels\":[{\"citation_supported\":true,\"node_ids\":[\"n0\",\"n1\",\"n2\"],\"role\":\"argument_step\",\"sentence\":1}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "write_essay:f1d8668d3bf49b076de15490f2649068828c41510f3d251a01926c018b6b74b5": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"bibliography\":[],\"body\":\"[[node:n0]][[node:n1]][[node:n2]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}"
       }
     ],
     "usage": {

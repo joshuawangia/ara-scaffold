@@ -123,6 +123,7 @@ def parser() -> argparse.ArgumentParser:
         cmd.add_argument('--run-dir', type=Path, required=True)
         if command == 'select':
             cmd.add_argument('--route')
+            cmd.add_argument('--draft', type=Path, help='audit an existing unverified draft without generating a new essay')
             cmd.add_argument('--codex-schema-preflight-log', type=Path)
             cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
         if command == 'feedback':
@@ -566,7 +567,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         from ara.runtime.codex_preflight import require_codex_preflight
         require_codex_preflight(selection_config, ROOT)
         calls = calls_factory(selection_config, log, run['topic'])
-        compose(calls, chosen)
+        draft = json.loads(args.draft.read_text()) if args.draft is not None else None
+        compose(calls, chosen, draft)
         return 0
     except Exception as exc:
         from anthropic import APIError

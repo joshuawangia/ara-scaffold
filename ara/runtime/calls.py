@@ -38,6 +38,13 @@ class Rejected(ValueError):
     pass
 
 
+class EssayAuditFailed(Rejected):
+    """A complete adverse audit, with the exact evidence and labels retained."""
+    def __init__(self, result, inputs, labels):
+        super().__init__('essay audit failed')
+        self.result, self.inputs, self.labels = result, inputs, labels
+
+
 class RejectedCutBatch(Rejected, InvalidProposalBatch):
     pass
 
@@ -291,33 +298,34 @@ class ModelCalls:
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
-    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
+    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False) -> Any:
         attempts = self.config.get('validation_attempts', 1)
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
-        if kind == 'write_essay':
+        whole_essay = kind == 'write_essay' and 'mode' not in inputs
+        if whole_essay:
             attempts = 4
         request_inputs = inputs
         for attempt in range(attempts):
             try:
-                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1)
+                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1, fresh=fresh)
             except InvalidOutput as exc:
                 if attempt + 1 == attempts:
                     raise
                 self.log.record('validation_retry', kind=kind, next_attempt=attempt + 2,
                                 reason=str(exc))
-                if kind != 'write_essay':
+                if not whole_essay:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
-    def _transport_call(self, kind, inputs, check, *, attempt):
+    def _transport_call(self, kind, inputs, check, *, attempt, fresh=False):
         from ara.runtime.claude_code import ClaudeCodeError
         provider = self._for_construction_stage(kind, inputs, attempt=attempt).provider
         unclassified_retries = 0
         auth_retries = 0
         for retry in range(getattr(provider, 'retries', 0) + 1):
             try:
-                return self._call_once(kind, inputs, check, attempt=attempt)
+                return self._call_once(kind, inputs, check, attempt=attempt, fresh=fresh)
             except ClaudeCodeError as exc:
                 unclassified = exc.code == 'cli_exit_error' and exc.receipt.get('exit_status') == 1
                 auth = exc.code == 'cli_auth_error'
@@ -335,10 +343,10 @@ class ModelCalls:
                 time.sleep(delay)
         raise AssertionError('unreachable')
 
-    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
+    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, fresh: bool = False) -> Any:
         scoped = self._for_construction_stage(kind, inputs, attempt=attempt)
         if scoped is not self:
-            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
         if kind != 'isolation_canary':
             self._ensure_provider_ready()
         if not schema_smoke and kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs:
@@ -352,16 +360,16 @@ class ModelCalls:
         with self._key_lock:
             lock = self._key_locks.setdefault(key, RLock())
         with lock:
-            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
 
-    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke):
+    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke, fresh=False):
         state = {}
         started = time.monotonic()
         previous_call_id = getattr(self._reservations, 'call_id', None)
         self._reservations.call_id = str(uuid.uuid4())
         try:
             return self._execute_once(kind, inputs, check, attempt=attempt,
-                                      schema_smoke=schema_smoke, state=state)
+                                      schema_smoke=schema_smoke, state=state, fresh=fresh)
         except Exception as exc:
             admission = state.get('admission')
             if admission is None or state.get('completed'):
@@ -387,7 +395,7 @@ class ModelCalls:
             self.budget.release(state.get('reservation'))
             self._reservations.call_id = previous_call_id
 
-    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict) -> Any:
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict, fresh: bool = False) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
@@ -415,7 +423,7 @@ class ModelCalls:
                 maximum = 4096
         key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
         saved = None
-        if not schema_smoke and kind != 'isolation_canary':
+        if not fresh and not schema_smoke and kind != 'isolation_canary':
             saved = self.cache.get(key)
         start = time.monotonic()
         raw = None
@@ -556,11 +564,13 @@ class ModelCalls:
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             if not isinstance(exc, Rejected):
                 raise
+            if isinstance(exc, EssayAuditFailed):
+                raise
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         state['completed'] = True
         self._after(kind)
-        if not cached and not schema_smoke and kind != 'isolation_canary':
+        if not fresh and not cached and not schema_smoke and kind != 'isolation_canary':
             self.cache.put(key, {'raw': raw})
         return result
 
@@ -1218,52 +1228,52 @@ class ModelCalls:
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
+    def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
+        validate_local(self.response_schema('write_essay', {}), data, self.config)
+        require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
+        require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
+        markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
+        require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
+        body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
+        text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
+        require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
+        minimum = self.config['essay_min_words'] if minimum_words is None else minimum_words
+        require(word_count(data) >= minimum,
+                'essay writer: minimum words not reached')
+        return data
+
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
-            require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
-            require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
-            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
-            require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
-            body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
-            text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
-            require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
-            require(word_count(data) >= self.config['essay_min_words'],
-                    'essay writer: minimum words not reached')
-            return data
+            return self.validate_essay(route, data)
+        if self.config['essay_min_words'] >= 4500:
+            from ara.runtime.writing import sectioned_essay
+            return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
 
     def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
-        body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
-        parts = [part.strip() for part in re.split(r'(?<=[.!?])\s+|\n+', body) if part.strip()]
-        return {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
-                'outline': self.essay_outline(route)}
+        from ara.runtime.essay_audit import sentence_spans, NODE
+        parts = [NODE.sub('', draft['body'][start:end]).strip()
+                 for start, end in sentence_spans(draft['body'])]
+        inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
+                  'outline': self.essay_outline(route),
+                  'root_conclusion': {'node_id': route.root_id,
+                                      'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
+        if self.config['essay_min_words'] >= 4500:
+            from ara.runtime.writing import source_context
+            inputs['source_evidence'] = source_context(self, route)
+        return inputs
 
-    def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
+    def audit_essay(self, route: RouteGraph, draft: dict, *, fresh=False) -> dict:
+        from ara.runtime.essay_audit import audit_result
         inputs = self.audit_inputs(route, draft)
         def check(data):
-            ids = {n.id for n in route.nodes}
-            expected = {s['sentence'] for s in inputs['sentences']}
-            labels = data['labels']
-            numbers = [item['sentence'] for item in labels]
-            if len(numbers) != len(set(numbers)) or set(numbers) != expected:
-                require(not any(item['asserts_premise_or_inference_not_in_outline'] for item in labels),
-                        'essay audit failed')
-                # An incomplete non-adverse inventory supplies no audit verdict.
-                # Correct its shape through the normal bounded validation policy;
-                # a complete adverse audit remains final below.
-                raise ValidationError('essay audit: sentence inventory mismatch')
-            covered = {node for item in labels for node in item['node_ids']}
-            require(covered <= ids, 'essay audit: unknown node id')
-            missing = ids - covered
-            extra = [item['sentence'] for item in labels if item['asserts_premise_or_inference_not_in_outline']]
-            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
-            result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
-                      'extra_steps': extra,
-                      'faithful': not missing and not extra and markers == ids}
-            self.log.record('essay_audit', **result)
-            require(result['faithful'], 'essay audit failed')
+            result = audit_result(route, draft, inputs, data)
+            self.log.record('essay_audit', route_id=route.id,
+                            prompt_sha256=digest(self.render('audit_essay', inputs)[1]), **result)
+            if not result['faithful']:
+                raise EssayAuditFailed(result, inputs, data['labels'])
             return result
-        return self.call('audit_essay', inputs, check)
+        return self.call('audit_essay', inputs, check, fresh=fresh)
 
     def search_evidence(self, draft: dict, items: list[dict]) -> dict:
         return self.call('search_evidence', {'draft': draft, 'items': items})

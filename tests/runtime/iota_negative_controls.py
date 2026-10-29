@@ -23,7 +23,7 @@ CASES = [('pilot_audit_override',
   'tests/runtime/test_audit_labels.py::test_malformed_audit_inventory_corrects_before_verdict'),
  ('partial_adverse_final',
   'ara/runtime/calls.py',
-  "require(not any(item['asserts_premise_or_inference_not_in_outline'] for item in labels),",
+  "require(not flags,",
   'require(True,',
   'tests/runtime/test_audit_labels.py::test_incomplete_audit_with_extra_inference_is_still_final')]
 

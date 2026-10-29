@@ -52,11 +52,14 @@ def test_smoke_cli_runs_both_polarities_and_exports(cli_setup, tmp_path):
     assert human_data['argv'] == argv
     assert human_data['literature'] is None and human_data['topic'] is None
     assert json.loads(next(e['payload_json'] for e in events if e['stage'] == 'run_started'))['literature_source'] == 'smoke_fixture'
-    assert provider.calls == 16  # second audit is a cache hit
+    assert provider.calls == 19  # Three fresh final audit samples.
+    audit_models = [e for e in events if e['stage'] == 'audit_essay' and e['label'] == 'MODEL']
+    assert len(audit_models) == 4
+    assert all(not json.loads(e['payload_json'])['cache_hit'] for e in audit_models[-3:])
     second = tmp_path / 'second'
     argv[-1] = str(second)
     assert main(argv, engine_factory=engine_factory, calls_factory=factory) == 0
-    assert provider.calls == 16
+    assert provider.calls == 19
     assert [p.read_bytes() for p in graphs] == [p.read_bytes() for p in sorted((second / 'routes').glob('*.json'))]
 
 

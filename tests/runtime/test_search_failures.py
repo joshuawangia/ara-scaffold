@@ -124,7 +124,7 @@ def test_cli_partial_search_reaches_selection_and_composes(tmp_path, capsys):
             value = {'title': 'P', 'body': '[[node:n0]] P Q', 'bibliography': []}
         elif kind == 'audit_essay':
             value = {'labels': [{'sentence': 1, 'node_ids': ['n0'],
-                                'asserts_premise_or_inference_not_in_outline': False}]}
+                                'role': 'argument_step', 'citation_supported': True}]}
         elif kind == 'search_evidence':
             return Response(response(None, content=[{'type': 'text', 'text': 'P'}]))
         elif kind == 'verify_originality_citations':

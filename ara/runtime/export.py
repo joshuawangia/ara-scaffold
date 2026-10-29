@@ -120,6 +120,11 @@ def methodology(log_path: Path) -> str:
                          'auth_mode', 'auth_transport', 'auth_threat_model', 'credential_output_scan', 'served_model_policy',
                          'tokenizer_note', 'subscription_cost_note', 'host_context_isolation', 'output_bound_note', 'visible_tool_policy', 'schema_transform')}
                        for _,p in cli_calls if p.get('provider') == 'codex_cli'][:1],
+        'evidence_retrieval': [dict(provider='codex_cli', method='Codex web search',
+                                    status=p.get('status'), cache_hit=p.get('cache_hit'),
+                                    **p['cli']['web_search'])
+                               for e,p in cli_calls if e['stage']=='search_evidence'
+                               and p.get('cli', {}).get('web_search')],
         'token_cap_policies': sorted({p.get('token_cap_policy', 'legacy_history_inclusive') for _, p in cli_calls}),
         'estimate_observations': [json.loads(e['payload_json']) for e in events if e['stage']=='provider_estimate_observation'],
         'isolation_preflights': [p.get('isolation') for e, p in cli_calls if e['stage'] == 'isolation_canary'],
@@ -133,6 +138,8 @@ def methodology(log_path: Path) -> str:
     }
     commitments = frozen_from_events(events)
     summary = {
+        'essay_audit_consensus': [json.loads(e['payload_json']) for e in events
+                                  if e['stage'] == 'essay_audit_consensus'],
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
@@ -213,7 +220,8 @@ def methodology(log_path: Path) -> str:
 
 def export_run(log_path: Path, output: Path, redactions: tuple[str, ...] = ()) -> tuple[Path, Path | None]:
     events = [r['event'] for r in read_log(log_path)]
-    drafts = [json.loads(e['payload_json'])['draft'] for e in events if e['stage'] == 'final_draft']
+    start = max((i for i, e in enumerate(events) if e['stage'] == 'essay_composition_started'), default=0)
+    drafts = [json.loads(e['payload_json'])['draft'] for e in events[start:] if e['stage'] == 'final_draft']
     output.mkdir(parents=True, exist_ok=True)
     report = output / 'methodology.md'
     report.write_text(methodology(log_path))

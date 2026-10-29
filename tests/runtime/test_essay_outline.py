@@ -34,7 +34,7 @@ def test_writer_and_auditor_receive_same_content_only_outline(rig, monkeypatch):
     register(calls, provider, 'write_essay', calls.essay_inputs(route), draft)
     register(calls, provider, 'audit_essay', calls.audit_inputs(route, draft),
         {'labels': [{'sentence': 1, 'node_ids': ['n0', 'n1', 'n2', 'n3'],
-                     'asserts_premise_or_inference_not_in_outline': False}]})
+                     'role': 'argument_step', 'citation_supported': True}]})
     requests = []
     complete = provider.complete
     def capture(kind, prompt, schema, maximum):
@@ -46,7 +46,7 @@ def test_writer_and_auditor_receive_same_content_only_outline(rig, monkeypatch):
     assert requests[0] == ('write_essay', {'topic': 'P', 'outline': expected,
         'word_limit': calls.config['essay_word_limit'], 'minimum_words': 0, 'feedback': []})
     assert requests[1][0] == 'audit_essay' and requests[1][1]['outline'] == expected
-    assert set(requests[1][1]) == {'topic', 'outline', 'sentences'}
+    assert set(requests[1][1]) == {'topic', 'outline', 'sentences', 'root_conclusion'}
     model_events = [e for e in log.read() if e['label'] == 'MODEL']
     assert [json.loads(e['prompt'].split('\nINPUT_JSON\n')[1]) for e in model_events] == [r[1] for r in requests]
 
@@ -81,10 +81,10 @@ def test_transition_without_new_premise_is_not_extra(rig):
     calls, provider, _ = rig
     draft = {'title': 'P', 'body': '[[node:n1]] P. Next.', 'bibliography': []}
     register(calls, provider, 'audit_essay', calls.audit_inputs(graph(), draft), {'labels': [
-        {'sentence': 1, 'node_ids': ['n1'], 'asserts_premise_or_inference_not_in_outline': False},
-        {'sentence': 2, 'node_ids': [], 'asserts_premise_or_inference_not_in_outline': False}]})
+        {'sentence': 1, 'node_ids': ['n1'], 'role': 'argument_step', 'citation_supported': True},
+        {'sentence': 2, 'node_ids': [], 'role': 'signpost', 'citation_supported': True}]})
     assert calls.audit_essay(graph(), draft) == {'covered_node_ids': ['n1'], 'missing_node_ids': [],
-                                               'extra_steps': [], 'faithful': True}
+                                               'extra_steps': [], 'flags': [], 'role_counts': {'argument_step': 1, 'signpost': 1}, 'faithful': True}
 
 
 def test_unknown_scheme_name_is_not_invented(rig):

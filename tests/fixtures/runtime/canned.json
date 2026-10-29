@@ -181,7 +181,21 @@
       "output_tokens": 3
     }
   },
-  "write_essay:0df1fe5e3bbe092d647fbbc4d22703c10681efc7365c0f77fa588203db3c64a1": {
+  "propose_targets:c2fd70d3d7cb0e9cad4ba79bfbb3a74e155e5376ede4fec9b9db717266092c24": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "write_essay:96f34577e45ee86a5e5f724f57386080ce1635d63c087d1636441603d0cb9548": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -195,27 +209,13 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:fef6f162593ce0f33d8b944fb2ab9e236a799b88b9330d38ce3fe39d731725ba": {
+  "audit_essay:1dd8432639314f9a5877a79a3191e7587ed352974be7586099b9e8c183c4bf8c": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
       {
         "type": "text",
-        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n:p\",\"n:p:c\",\"n:p:a\"],\"sentence\":1}]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "propose_targets:c2fd70d3d7cb0e9cad4ba79bfbb3a74e155e5376ede4fec9b9db717266092c24": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
+        "text": "{\"labels\":[{\"citation_supported\":true,\"node_ids\":[\"n:p\",\"n:p:c\",\"n:p:a\"],\"role\":\"argument_step\",\"sentence\":1}]}"
       }
     ],
     "usage": {

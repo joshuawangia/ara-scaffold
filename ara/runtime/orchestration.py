@@ -11,7 +11,7 @@ from ara.engine.conflicts import analyse_searches
 from ara.runtime.logging import SerializedEventLog
 from ara.runtime.search_jobs import job_failure, run_search_jobs
 from ara.engine.search import SearchResult
-from ara.runtime.cache import canonical
+from ara.runtime.cache import canonical, digest
 from ara.runtime.calls import ModelCalls
 from ara.runtime.export import export_run
 from ara.runtime.extraction import save_immutable
@@ -173,6 +173,7 @@ def _save_analyses(calls, targets, results, commitments=None):
     graphs_by_id = {}
     analyses = []
     paired = []
+    support_gaps = {}
     for target, analysis in zip(targets, results, strict=True):
         if isinstance(analysis, AnalysisResult):
             analyses.append(analysis.to_dict())
@@ -188,6 +189,10 @@ def _save_analyses(calls, targets, results, commitments=None):
                 # Retain each search in the log, but persist/select a graph once.
                 from ara.runtime.route_policy import route_contribution
                 contribution = route_contribution(route, commitments, provenance)
+                if (contribution.get('support_consistency') or {}).get('status') == 'conflict':
+                    from ara.runtime.conflict_feedback import route_support_gap
+                    gap = route_support_gap(route.id, contribution['support_ids'], provenance)
+                    support_gaps[gap.id] = gap
                 calls.log.record('route', target=target.id, polarity=polarity, graph=route.to_dict(),
                                  contribution=contribution,
                                  classification=contribution['classification'])
@@ -203,6 +208,11 @@ def _save_analyses(calls, targets, results, commitments=None):
                              closed=[r.id for r in result.routes if r.status == 'CLOSED'],
                              truncated=result.truncated, nodes_created=result.nodes_created,
                              independent_closed_routes=result.independent_closed_routes)
+    if commitments is not None:
+        calls.log.record('route_support_conflicts', gaps=[support_gaps[k].to_dict() for k in sorted(support_gaps)],
+            commitments_sha256=digest(canonical(commitments.to_dict())),
+            provenance_sha256=provenance['sha256'] if provenance else None,
+            note='Inconsistent support is a conflict, never ex-falso evidence for selection.')
     calls.log.record('conflicts_and_robustness', findings={'analyses': analyses})
     if commitments is not None:
         from ara.runtime.conflict_feedback import propose_tier2_resolutions
@@ -211,6 +221,15 @@ def _save_analyses(calls, targets, results, commitments=None):
 
 
 def compose(calls: ModelCalls, route: RouteGraph) -> dict:
+    from ara.runtime.route_policy import frozen_from_events, provenance_from_events, route_contribution
+    events = calls.log.read()
+    commitments = frozen_from_events(events)
+    if commitments is not None and route.status == 'CLOSED':
+        receipt = route_contribution(route, commitments, provenance_from_events(events, commitments))
+        consistency = receipt['support_consistency']
+        if consistency['status'] != 'consistent':
+            calls.log.record('composition_refused', route_id=route.id, support_consistency=consistency)
+            raise ValueError('inconsistent or unresolved route supports cannot supply an essay')
     draft = calls.write_essay(route)
     # Save the unverified draft as a clearly named partial artifact, never export it.
     (calls.log.path.parent / 'draft.unverified.json').write_text(canonical(draft))

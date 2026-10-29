@@ -4096,6 +4096,34 @@ native proposal, route selection, forward mining and external gap-file targets.
 Native regressions retain CLOSED engine proofs while classifying padded packages
 as structural, and preserve genuine scheme and cross-paper deduction positives.
 
+## Round 29 — Consistent support and equivalent-package novelty
+
+Supersedes Round 28's whole-T union essentiality: an unrelated contradiction
+must not disable a consistent route. Route and forward novelty use their exact
+support IDs and require satisfiability. Jointly inconsistent route support is
+`CLOSED-conflict`, remains engine CLOSED, is excluded from selection/composition,
+and is published as a hash-bound conflict/gap receipt. Solver uncertainty refuses.
+Before search, optional `basis_commitment_ids` (or an exact matching forward
+lead's dependencies) seed an ID-ordered greedy maximal consistent subset.
+Required IDs cannot be dropped. Every attempted set, omission and solver result
+is logged. This subset is deterministic, not unique or maximum; frozen T is
+unchanged. Internally inconsistent papers receive disclosed consistent projections
+preserving the target's required supports; no ex-falso paper closure is accepted.
+
+Vacuous quantifiers are normalized only for novelty checking. A bounded Z3 check
+uses two independent interpretations, including separate individual domains,
+agreeing on basis formula truth values but disagreeing on target truth. UNSAT
+means the target is a Boolean combination of those assertions and is rejected.
+Basis assertions are not assumed true in this check: ordinary cross-paper modus
+ponens remains eligible. The gate covers proposal, selection, forward and external
+gap targets. Unknown/timeout is unresolved. The proposal schema adds optional
+basis IDs; existing CommitmentSet and frozen metadata codecs are unchanged.
+Applicable schema preflight receipts must be refreshed before live use.
+
+Placeholder regressions cover the native quantified package, unused R/negated R,
+inconsistent CQ support through reporting and composition, equivalent connective
+forms, and native alignment freeze through the actual proposer request. Fake
+judgments establish plumbing only, not semantic alignment quality or originality.
 
 ## Alignment recovery and unresolved outcomes (Sigma round 12)
 
@@ -4143,3 +4171,44 @@ record the operator decision in config, receipts, cache identity and methodology
 Unconfigured historical runs retain their existing behaviour. Neither a local
 estimate nor an offline fake transport establishes real serving capacity or
 semantic success.
+
+
+### Round 29 integration — Sigma round 12 and S12-F1
+
+Integrated the exact Sigma round-12 construction/alignment recovery head with
+consistent-support novelty. Shared decision, source-map and control additions
+are retained from both branches. The native forward regression uses the new
+relation/reason-only alignment response, requires no unresolved pairs and an
+accepted P/Q entailment, and retains the rendered R lead and frozen-byte checks.
+Runtime supplies candidate identities; the schema must not accept echoed IDs.
+Combined-tree full gates supersede the interrupted pre-integration controls.
+
+
+### Round 29 verification repair — Z3 object lifetime
+
+The combined full mutation run exposed a native abort in a restored parallel
+search test. Boolean equivalence serialized Z3 calls but retained compiler/solver
+locals until after releasing the shared lock. Their destructors could race with
+another search thread using Z3's default context. A deterministic real-object
+finalization regression failed on that implementation. As with entailment, a
+private helper now owns and releases every Z3 object before its locked caller
+returns. A control removes the lock boundary; native alignment search is rerun.
+The interrupted gate evidence is retained, and final gates use the repaired head.
+
+
+## Round 14 — normalize stage admission before provider reuse
+
+Resolve and normalize each effective construction/correction configuration before
+forming its provider-cache key. Constructor-side normalization is insufficient:
+a subsequent lookup can pair a fresh inherited bound with the already-normalized
+provider. The scoped request and provider must agree on the effective window and
+bound on first use, provider reuse and response-cache replay. Smaller/larger
+supported stage windows are explicit choices; clearing an inherited override
+refuses rather than silently falling back to the transport default. Preserve the
+parent run configuration and all isolation canaries.
+
+Integrate the settled consistent-support search and solver-lifetime fix. Preserve
+its target_bases argument when mutating the full frozen commitment argument in
+the target-context negative control. Anchor uniqueness remains mandatory; both
+mutation and restoration must execute on the combined source. Regenerate only
+combined target prompt keys, retaining all recorded response values.

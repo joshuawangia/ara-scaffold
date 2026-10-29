@@ -102,11 +102,18 @@ def stance_crossings(route, provenance):
 
 def route_contribution(route, commitments=None, provenance=None):
     receipt = _logical_contribution(route, commitments)
+    from ara.runtime.novelty_basis import support_consistency
+    consistency = (support_consistency(commitments, receipt.get('support_ids', ()))
+        if route.status == 'CLOSED' and commitments is not None else None)
+    if consistency is not None and 'support_ids' not in receipt:
+        consistency = dict(status='unresolved', reason='missing_support_inventory', solver_result='NOT_CHECKED')
+    receipt['support_consistency'] = consistency
     from ara.runtime.bridges import paper_support
     papers = paper_support(receipt.get('formula_supports', []), provenance)
     if route.status == 'CLOSED' and commitments is not None and provenance is not None:
         root = next(n for n in route.nodes if n.id == route.root_id)
-        novelty = novelty_check(root.proposition.formula, commitments, provenance)
+        novelty = novelty_check(root.proposition.formula, commitments, provenance,
+                                support_ids=receipt.get('support_ids', ()))
         receipt['per_paper_novelty'] = novelty
         supports = tuple(commitments.get(tid).formula for tid in receipt.get('support_ids', ()))
         union = cached_entails(supports, root.proposition.formula, 1000)
@@ -150,6 +157,9 @@ def route_contribution(route, commitments=None, provenance=None):
     if crossings:
         receipt.update(classification='CLOSED-stance-crossing' if route.status == 'CLOSED' else route.status,
                        reason='restricted_source_used_as_global_support')
+    if consistency is not None and consistency['status'] != 'consistent':
+        receipt.update(classification='CLOSED-conflict' if consistency['status'] == 'conflict' else 'CLOSED-contribution-unresolved',
+                       reason='inconsistent_supports' if consistency['status'] == 'conflict' else 'support_consistency_unresolved')
     scoped = [dict(node_id=n.id, commitment_id=c.id, stance=provenance['commitments'][c.id]['stance'],
                    role='scoped_hypothesis')
               for n in route.nodes if n.kind == 'assumption'

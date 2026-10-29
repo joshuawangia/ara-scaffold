@@ -221,16 +221,27 @@ synthesis; both premises from paper a make Q single-paper. Paper identity is nev
 inferred from citation strings when provenance is missing.
 
 An essential atomic assertion must lie outside every individual paper's closure
-and affect target truth under the union of admissible frozen premises. Replacing
+and affect target truth under the route's jointly satisfiable supports. Replacing
 it in the target with true or false must change the target in at least one model
-of that union. The union includes endorsed commitments and disclosed alignment
+of that support set. Supports include endorsed commitments and disclosed alignment
 premises; reported and attacked content remains excluded. Both substitutions and
 the union's commitment IDs are logged, and solver uncertainty stays unresolved.
 It can occur inside a frozen conditional already; it
 need not have a fresh symbol name. Bare Boolean packages of separately established
-facts and irrelevant wrappers around cross-paper packages still fail. This same
+facts and irrelevant wrappers around cross-paper packages still fail. Vacuous
+quantifiers are removed for this check. A bounded Z3 query rejects targets
+equivalent to Boolean combinations of basis formulas, comparing two independent
+interpretations without assuming the basis assertions true. This same
 check governs native, forward-mined and external-gap targets. Own-thesis, content
 fidelity, definition-restatement, source stance and CQ checks remain required.
+
+Before search, optional target `basis_commitment_ids`, or dependencies of an
+exactly matching forward lead, seed a deterministic maximal consistent subset.
+Runtime adds admissible commitments in ID order when consistency is preserved,
+logging selected/omitted IDs and every solver outcome. This is not a maximum
+or unique subset. Required IDs are never discarded; invalid, inconsistent or
+unresolved required bases refuse. An internally inconsistent paper receives a
+logged consistent projection preserving required supports. Frozen T stays intact.
 
 A deductive synthesis needs distinct endorsed support formulas assignable to at
 least two distinct papers and a reachable licensed inference. Native bank
@@ -257,6 +268,7 @@ papers or semantic novelty.
 
 | Display label | Meaning for selection |
 | --- | --- |
+| `CLOSED-conflict` | Jointly inconsistent supports; excluded from selection and composition, disclosed in conflict/gap records |
 | `CLOSED-derived` | Passes the contribution policy; offered by default |
 | `CLOSED-structural` | Otherwise passes contribution checks but has no qualifying step concluding an essential new proposition; explicit `--route` required |
 | `CLOSED-single-support` | Lacks the required inference/distinct supports, is valid without support, or follows from one support; explicit `--route` required |
@@ -265,7 +277,8 @@ papers or semantic novelty.
 | `CLOSED-attributed-report` | Reporting language is detected during the closed-route contribution check; explicit `--route` required |
 | `OPEN` or another non-closed status | Retains its engine status and disclosed frontier; explicit `--route` required |
 
-An explicit route argument chooses a displayed route but does not bypass budgets,
+An explicit route argument cannot compose inconsistent or unresolved supports.
+It chooses a displayed route but does not bypass budgets,
 provider gates, audits or verification. Graph-only legacy rendering can recover
 leaf formulas; missing CQ evidence remains unresolved. Native publication,
 selection and reports use frozen T when available. Reports keep the full

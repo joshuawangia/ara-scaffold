@@ -83,3 +83,14 @@ def test_native_construction_routes_selection_formalization_and_correction(rig, 
     dispatches = summary['construction']['stage_dispatches']
     assert any(d['stage']=='construction_correction' and d['requested_model']=='S' and d['provider']=='anthropic'
                for d in dispatches)
+
+
+@pytest.mark.parametrize('clearing_stage', ['select_t_roots','construction_correction'])
+def test_stage_cannot_clear_window_inherited_from_construction_group(clearing_stage):
+    from ara.runtime.construction_stages import dispatch_settings
+    config=yaml.safe_load((ROOT/'config.yaml').read_text())
+    config.update(provider='codex_cli',model='gpt-6-luna',stages={
+        'construction':{'model_context_window':872000}, clearing_stage:{'model_context_window':None}})
+    for _ in range(2):
+        with pytest.raises(ValueError,match='clear.*inherited'):
+            dispatch_settings(config,'select_t_roots',correction=clearing_stage=='construction_correction')

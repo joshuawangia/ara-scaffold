@@ -281,3 +281,13 @@ window, maximum, margin and derived bound. Fork configuration records it before
 provider creation. Schema preflight requirements remain; runtime isolation
 canaries run with the actual window. Offline fake transport tests prove argument
 forwarding and canary preservation; a free count does not prove live admission.
+
+
+Construction stage overrides (including correction stages) are normalized before
+provider-cache lookup and request admission. Each lookup derives the bound from
+that effective stage's window, output reserve and margin; cached providers and
+scoped calls therefore use the same configuration. A stage may explicitly choose
+a smaller or larger supported window. Clearing an inherited override with
+`model_context_window: null` refuses, including after a provider is cached; it
+never falls back to the provider's default while keeping the larger run bound.
+The parent run configuration remains unchanged by stage normalization.

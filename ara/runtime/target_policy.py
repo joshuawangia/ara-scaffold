@@ -64,7 +64,7 @@ def target_context(commitments, bank):
                                 for (n,k,a),count in sorted(signatures.items()) if count>=2])
 
 
-def trivial_targets(targets, commitments, catalogue=None, receipts=None, provenance=None):
+def trivial_targets(targets, commitments, catalogue=None, receipts=None, provenance=None, target_bases=None):
     from ara.runtime.contribution import contribution_check
     from ara.runtime.novelty import novelty_check
     from ara.types import CommitmentSet
@@ -72,8 +72,14 @@ def trivial_targets(targets, commitments, catalogue=None, receipts=None, provena
         if provenance is None or provenance['commitments'][c.id]['stance'] == 'endorsed'))
     rejected = []
     for target in targets:
-        receipt = contribution_check(target.formula, basis)
-        novelty = novelty_check(target.formula, commitments, provenance)
+        required = target.basis_commitment_ids or (target_bases or {}).get(target.formula.canonical(), ())
+        novelty = novelty_check(target.formula, commitments, provenance, basis_ids=required)
+        selected = novelty.get('consistent_basis')
+        target_basis = (CommitmentSet(tuple(c for c in basis.commitments if c.id in selected['selected_commitment_ids']))
+                        if selected else basis)
+        receipt = (contribution_check(target.formula, target_basis)
+            if selected is None or selected['status'] == 'consistent'
+            else dict(status='unresolved', reason=novelty['reason'], checks=[]))
         if receipts is not None:
             receipts.append(dict(target_id=target.id, novelty=novelty, **receipt))
         reason = receipt['reason'] if receipt['status'] != 'candidate' else None

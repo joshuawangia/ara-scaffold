@@ -97,7 +97,7 @@ def test_per_paper_unknown_is_not_novel(monkeypatch):
     assert novelty_check(Q,T,metadata)['status']=='unresolved'
 
 
-def test_forward_uses_native_licenses_and_endorsed_dependencies(tmp_path):
+def test_forward_uses_native_licenses_and_endorsed_dependencies(tmp_path, monkeypatch):
     from ara.runtime.synthesis import forward_candidates
     calls,_=rig(tmp_path,lambda *args:pytest.fail('forward mining dispatched a model call'))
     provenance=freeze(calls,T,('a','b'))
@@ -107,7 +107,16 @@ def test_forward_uses_native_licenses_and_endorsed_dependencies(tmp_path):
     assert 'modus_ponens' in q['bank_ids']
     assert result['licensed_consequences']>0
     provenance['commitments']['t2']['stance']='reported'
+    import ara.runtime.synthesis as synthesis
+    native_forward = synthesis.forward_pass
+    dispatched = []
+    def trace_forward(formulas, admitted, *args):
+        dispatched.append((formulas, admitted))
+        return native_forward(formulas, admitted, *args)
+    monkeypatch.setattr(synthesis, 'forward_pass', trace_forward)
     assert not forward_candidates(T,provenance,load_bank(ROOT/'bank'),calls.log,depth=2,node_cap=30)['candidates']
+    assert dispatched and all('t2' not in {c.id for c in admitted.commitments}
+                              and PQ not in formulas for formulas, admitted in dispatched)
     assert not forward_candidates(T,None,load_bank(ROOT/'bank'),calls.log,depth=2,node_cap=30)['candidates']
 
 

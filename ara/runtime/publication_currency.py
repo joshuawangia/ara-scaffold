@@ -61,7 +61,7 @@ def load_currency(paths, log):
 
 
 def related_text(markdown):
-    found = re.findall(r'^## \d+\. '+re.escape(HEADING)+r'\s*\n(.*?)(?=^## |\Z)', markdown, re.M|re.S)
+    found = re.findall(r'^## \d+\. '+re.escape(HEADING)+r'\s*\n(.*?)(?=^## |\Z)', markdown, re.M|re.S|re.I)
     require(len(found) == 1, 'publication needs one related-work section')
     return found[0]
 

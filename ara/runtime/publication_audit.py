@@ -20,7 +20,7 @@ def publication_flags(labels, inputs, native_flags):
         cited = LIT.findall(sentence.get('text', ''))
         reasons = []
         if cited:
-            if sentence.get('section') != HEADING:
+            if sentence.get('section', '').casefold() != HEADING.casefold():
                 reasons.append('literature_scope')
             if not label['citation_supported'] or any(id not in evidence for id in cited):
                 reasons.append('miscited_literature_claim')

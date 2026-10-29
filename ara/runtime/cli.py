@@ -116,6 +116,7 @@ def parser() -> argparse.ArgumentParser:
         if command == 'polish':
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--min-words', type=int, help='ARA publication floor; defaults to publication_min_words in the run config or 3000')
             cmd.add_argument('--literature-currency', type=Path, action='append', default=[])
             cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
     for command in ('select', 'feedback', 'export'):

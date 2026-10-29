@@ -31,7 +31,16 @@ Remaining failure retains the original draft and explicitly records fallback.
 
 The structured response contains Markdown, figure placements and a paragraph
 change log. The whole paper requires a 150–200-word abstract, consecutive numbered
-sections and 4,500–6,000 words excluding references and internal node markers.
+sections and, by default, 3,000–6,000 reading words excluding references and internal
+node markers. The minimum is an ARA publication profile setting, not a competition
+rule. Prefer a tight complete paper over padding. The 6,000-word ceiling is fixed.
+Set `publication_min_words` in the run configuration or use `ara polish --min-words N`
+to override it for a publication attempt (integer 1–6,000). The CLI override wins;
+older runs without this setting default to 3,000. This does not change the writer's
+separate `essay_min_words` profile. All sections and repairs receive the effective
+bounds; `publication_length_policy` records the minimum, maximum, counting basis
+and editorial preference in the event-derived methodology and publication receipt.
+Source evidence remains mandatory for publication audits at any word minimum.
 Distinct citation and route-node inventories are checked; the publication audit checks substantive preservation after editorial restructuring.
 The reading Markdown removes internal node markers; the annotated Markdown
 and native audit draft remain in publication.json. References retain exact T citations and
@@ -83,7 +92,8 @@ inputs do not alter frozen T, route licensing or figure support.
 
 The optional numbered “Related work and scope of the novelty claim” section uses
 separate `[lit:ID]` citations. All such citations must resolve to the logged record
-and stay in that section; the section cannot acquire route-node markers. The
+and stay in that section; the section cannot acquire route-node markers. Heading
+capitalization is stylistic and is compared case-insensitively by both scope checks. The
 publication audit uses the native sentence-label and coverage checks with a
 publication-specific prompt. Source claims, argument steps, presentation, objections
 and replies have distinct roles; framing alone does not fail or satisfy route

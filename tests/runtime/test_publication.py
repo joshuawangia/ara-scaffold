@@ -166,11 +166,13 @@ def test_pdf_native_browser_offline(tmp_path):
     assert result['horizontal_overflow']==[]
 
 
-def test_publication_cli_pins_provider_and_runs_offline_followups(rig,monkeypatch):
+@pytest.mark.parametrize('configured,override,expected',[(None,None,3000),(3600,None,3600),(3600,3200,3200)])
+def test_publication_cli_pins_provider_and_runs_offline_followups(rig,monkeypatch,configured,override,expected):
     from ara.runtime.cli import main
     from ara.runtime.publication import MODEL
     calls,route,seen=install_publication(rig,monkeypatch)
     log=calls.log
+    if configured is not None: calls.config['publication_min_words']=configured
     # Seed the ordinary run metadata through its existing event format.
     original_read=log.read
     def metadata():
@@ -195,15 +197,27 @@ def test_publication_cli_pins_provider_and_runs_offline_followups(rig,monkeypatc
     def factory(config,newlog,topic):
         settings.append(config)
         calls.log=newlog
+        calls.config=config
         return calls
     args=['--run-dir',str(replacement.path.parent)]
-    assert main(['polish',*args,'--route',route.id],calls_factory=factory)==2
+    extra=[] if override is None else ['--min-words',str(override)]
+    assert main(['polish',*args,'--route',route.id,*extra],calls_factory=factory)==2
+    assert settings[0]['publication_min_words']==settings[0]['essay_min_words']==expected
+    inputs=[d for k,d in seen if k=='polish_essay']
+    assert all(d['minimum_words']==expected and d['maximum_words']==6000 for d in inputs)
+    assert all(d['source_evidence']['allowed_bibliography'] for k,d in seen if k=='audit_publication')
     assert settings[0]['provider']=='claude_code' and settings[0]['model']==MODEL and settings[0]['stages']=={}
     assert main(['figures',*args],calls_factory=lambda *a: pytest.fail('offline command opened provider'))==0
     assert main(['render-pdf',*args],calls_factory=lambda *a: pytest.fail('offline command opened provider'))==0
     completed=[json.loads(e['payload_json']) for e in replacement.read() if e['stage']=='publication_pdf']
     assert completed[-1]['figures']==2 and completed[-1]['native_citations']=='blocked'
-    assert 'polish_essay' in (replacement.path.parent/'export/methodology.md').read_text()
+    methodology=(replacement.path.parent/'export/methodology.md').read_text()
+    assert 'polish_essay' in methodology
+    policy=[json.loads(e['payload_json']) for e in replacement.read() if e['stage']=='publication_length_policy'][-1]
+    assert policy['minimum_words']==expected and policy['maximum_words']==6000
+    assert 'not a competition minimum' in policy['minimum_basis']
+    summary=json.loads(methodology.split('```json\n',1)[1].split('\n```',1)[0])
+    assert summary['publication']['publication_length_policy'][-1]==policy
 
 
 def test_gap_figure_uses_route_frontier_not_source_extraction_gaps(rig, tmp_path):
@@ -349,6 +363,7 @@ def test_literature_claims_cannot_escape_the_related_work_section():
     currency=dict(evidence={'p:e':dict(kind='read_fulltext',work='p'),'p:search':dict(kind='bounded_search_record',work=None)})
     good='## 1. Related work and scope of the novelty claim\n\nP [lit:p:e] [lit:p:search]\n\n## 2. Conclusion\n\nQ'
     check_currency(good,currency)
+    check_currency(good.replace('Related work and scope of the novelty claim','Related Work and Scope of the Novelty Claim'),currency)
     for bad in [good+' [lit:p:e]',good.replace('[lit:p:e]','[lit:q:e]'),good.replace('P [lit:p:e]','[[node:n0]] P [lit:p:e]')]:
         with pytest.raises(Rejected):check_currency(bad,currency)
 
@@ -363,7 +378,7 @@ def test_reading_copy_deduplicates_same_page_but_retains_both_ids():
     assert receipt['t']['raw_citation']!=receipt['u']['raw_citation']
 
 
-@pytest.mark.parametrize('words,expected', [(4490,True),(4400,False),(5990,False)])
+@pytest.mark.parametrize('words,expected', [(2990,True),(2900,False),(5990,False)])
 def test_publication_word_bounds_use_rendered_citations(rig,monkeypatch,words,expected):
     from ara.runtime.publication import polish, NODE, FIGURE
     calls,route,_=install_publication(rig,monkeypatch)
@@ -372,15 +387,16 @@ def test_publication_word_bounds_use_rendered_citations(rig,monkeypatch,words,ex
         data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
         if kind=='polish_essay' and data['mode']=='whole':
             out=polished(paper())
+            out['markdown']=out['markdown'].replace('P '*900,'P '*570)
             count=len(NODE.sub('',FIGURE.sub('',out['markdown'])).split())
-            out['markdown']=out['markdown'].replace('P '*900,'P '*(900+words-count),1)
+            out['markdown']=out['markdown'].replace('P '*570,'P '*(570+words-count),1)
             return Response(response(out))
         return old(kind,prompt,schema,maximum)
     monkeypatch.setattr(provider,'complete',complete)
     result,_=polish(calls,route,paper())
     assert result['polished'] is expected
     if expected:
-        assert result['audit_words']==words < 4500 <= result['words'] <= 6000
+        assert result['audit_words']==words < 3000 <= result['words'] <= 6000
     else:
         assert 'word count' in result['polish_failure']
 
@@ -428,6 +444,7 @@ def test_publication_literature_sentence_scope_and_typed_support(rig,monkeypatch
     from ara.runtime.calls import EssayAuditFailed
     calls,route,_=install_publication(rig,monkeypatch)
     currency={'evidence':{'p:e':{'kind':'read_fulltext','work':'p'}}}
+    calls.config['essay_min_words']=3000
     context=dict(original_draft=paper(),literature_currency=currency)
     draft=dict(title='P',body='## 1. Related work and scope of the novelty claim\n\nP. [lit:p:e]\n\n## 2. Argument\n\n[[node:n0]] [[node:n1]] Q.',bibliography=[])
     def complete(kind,prompt,schema,maximum):
@@ -436,10 +453,37 @@ def test_publication_literature_sentence_scope_and_typed_support(rig,monkeypatch
             node_ids=[] if '[lit:' in s['text'] else ['n0','n1'],citation_supported=True,publication_issue='none') for s in data['sentences']])))
     monkeypatch.setattr(calls.provider,'complete',complete)
     inputs=calls.audit_inputs(route,draft,publication_context=context)
+    assert inputs['source_evidence']['allowed_bibliography']
     sentence=next(s for s in inputs['sentences'] if '[lit:' in s['text'])
     assert sentence['text']=='P. [lit:p:e]'
     assert sentence['section']=='Related work and scope of the novelty claim'
     assert calls.audit_essay(route,draft,publication_context=context)['faithful']
+    titled={**draft,'body':draft['body'].replace('Related work and scope of the novelty claim','Related Work and Scope of the Novelty Claim')}
+    assert calls.audit_essay(route,titled,publication_context=context)['faithful']
     for changed,reason in [(draft['body'].replace('Related work and scope of the novelty claim','Introduction'),'literature_scope'),(draft['body'].replace('[lit:p:e]','[lit:p:z]'),'miscited_literature_claim')]:
         with pytest.raises(EssayAuditFailed) as exc:calls.audit_essay(route,{**draft,'body':changed},publication_context=context)
         assert reason in [f['reason'] for f in exc.value.result['flags']]
+
+
+@pytest.mark.parametrize('minimum,words,passed',[(3000,3000,True),(3000,2999,False),(3500,3200,False),(3200,3200,True),(3000,6000,True),(3000,6001,False)])
+def test_configurable_publication_minimum_and_fixed_maximum(minimum,words,passed):
+    from ara.runtime.publication import validate_polish,NODE,FIGURE
+    draft=paper();value=polished(draft)
+    value['markdown']=value['markdown'].replace('P '*900,'P '*570)
+    current=len(NODE.sub('',FIGURE.sub('',value['markdown'])).split())
+    value['markdown']=value['markdown'].replace('P '*570,'P '*(570+words-current),1)
+    if passed:
+        assert validate_polish(value,draft['body'],{'argument-map','source-support'},whole=True,minimum_words=minimum)==value
+    else:
+        with pytest.raises(Rejected,match='word count'):
+            validate_polish(value,draft['body'],{'argument-map','source-support'},whole=True,minimum_words=minimum)
+
+
+@pytest.mark.parametrize('minimum',[0,6001,True,3000.5])
+def test_invalid_publication_floor_refuses_before_calls(rig,monkeypatch,minimum):
+    from ara.runtime.publication import polish
+    calls,route,seen=install_publication(rig,monkeypatch)
+    calls.config['publication_min_words']=minimum
+    with pytest.raises(Rejected,match='publication minimum'):
+        polish(calls,route,paper())
+    assert seen==[]

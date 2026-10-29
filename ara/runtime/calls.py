@@ -1180,7 +1180,7 @@ class ModelCalls:
                   'outline': self.essay_outline(route),
                   'root_conclusion': {'node_id': route.root_id,
                                       'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
-        if self.config['essay_min_words'] >= 4500:
+        if publication_context is not None or self.config['essay_min_words'] >= 4500:
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
         if publication_context is not None:

@@ -141,7 +141,7 @@ def methodology(log_path: Path) -> str:
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
         'publication': {stage: [json.loads(e['payload_json']) for e in events if e['stage']==stage]
-                        for stage in ('publication_completed', 'publication_figures', 'publication_pdf',
+                        for stage in ('publication_length_policy', 'publication_completed', 'publication_figures', 'publication_pdf',
                                       'publication_verification_blocked', 'publication_currency_input')},
         'search': {**search_status(events),
                    'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],

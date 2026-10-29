@@ -4039,3 +4039,16 @@ into up to three targeted rounds, auditing after each and retaining original
 fallback after exhaustion. Each round keeps unflagged paragraphs unchanged.
 Attempted and accepted round counts remain distinct in artifacts and events.
 This supersedes the original publication stage's single-repair limit.
+
+
+## Publication length profile (2026-10-29)
+
+The publication minimum is an ARA profile choice, separate from the writer's
+minimum. It now defaults to 3,000 reading words and can be configured in the run
+or overridden by the publication CLI. The 6,000-word maximum stays fixed.
+Prompts prefer concise supported writing over padding. The effective bounds,
+counting basis and profile status are logged and included in methodology.
+Publication audit evidence is independent of the writer's length threshold.
+Related-work section matching ignores capitalization while retaining scope,
+citation and route-isolation checks. This supersedes the publication-only
+4,500-word minimum in earlier decisions; the writer profile is unchanged.

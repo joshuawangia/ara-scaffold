@@ -37,12 +37,23 @@ def strip_figures(markdown):
     return FIGURE.sub('', markdown)
 
 
-def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None):
+def length_policy(minimum_words=3000):
+    require(type(minimum_words) is int and 1 <= minimum_words <= 6000,
+            'publication minimum must be an integer from 1 to 6000')
+    return dict(minimum_words=minimum_words, maximum_words=6000,
+                minimum_basis='ARA publication profile; not a competition minimum',
+                maximum_basis='operator-specified full-draft ceiling',
+                count_basis='reading text including title, abstract and inline citations; excluding references, node markers and figure placeholders',
+                editorial_preference='prefer a tight supported paper over padding')
+
+
+def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None, minimum_words=3000):
     markdown = value['markdown']
     body = paragraphs(strip_figures(markdown))
     if whole:
+        length_policy(minimum_words)
         words = len(NODE.sub('', FIGURE.sub('', reading_markdown if reading_markdown is not None else markdown)).split())
-        require(4500 <= words <= 6000, 'publication word count outside 4500–6000')
+        require(minimum_words <= words <= 6000, f'publication word count outside {minimum_words}–6000')
         abstract = re.search(r'^## Abstract\s*\n(.*?)(?=^## \d+\.)',markdown,re.M|re.S)
         require(abstract is not None and 150 <= len(abstract[1].split()) <= 200, 'publication abstract must contain 150–200 words')
         require(re.match(r'^# [^\n]+\n',markdown) is not None, 'publication title missing')
@@ -98,6 +109,8 @@ def as_draft(markdown, bibliography):
 
 
 def polish(calls, route, draft, *, currency=None):
+    policy = length_policy(calls.config.get('publication_min_words', 3000))
+    calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
     evidence = source_context(calls, route)
     citation_check(draft,evidence)
@@ -111,7 +124,7 @@ def polish(calls, route, draft, *, currency=None):
             records.setdefault(id,dict(record=record,verification='logged_currency_record'))
     def check_whole(value):
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
-        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading)
+        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'])
         return value
     figure_ids = {f['id'] for f in figures}
     chunks = sections(draft,calls.log.read())
@@ -119,6 +132,7 @@ def polish(calls, route, draft, *, currency=None):
     calls.log.record('publication_started', route_id=route.id, original_draft=draft,
                      original_sha256=digest(canonical(draft)), requested_model=MODEL)
     base = dict(outline=calls.essay_outline(route), source_evidence=evidence,
+                minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'],
                 figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'], literature_currency=currency)
     accepted = []
     candidate = None
@@ -195,7 +209,7 @@ def polish(calls, route, draft, *, currency=None):
     reading, citation_receipt = reading_copy(markdown,evidence,records,currency)
     references = render_references(chosen,evidence,records,currency,citation_receipt)
     result = dict(route_id=route.id,route_sha256=digest(route.to_json()),polished=success,audit=audit,polish_failure=failure,
-        local_citations=local_citations,native_citations=native_citations,
+        local_citations=local_citations,native_citations=native_citations,word_limits=policy,
         repair_rounds=repair_rounds,accepted_repair_rounds=accepted_repair_rounds,
         words=len(NODE.sub('',FIGURE.sub('',reading)).split()),
         audit_words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
@@ -223,7 +237,7 @@ def publish(log, result):
         markdown_sha256=digest(result['markdown']),polished=result['polished'],audit=result['audit'],
         local_citations=result['local_citations'],native_citations=result['native_citations'],words=result['words'],
         bibliographic_records=result['bibliographic_records'],repair_rounds=result['repair_rounds'],
-        accepted_repair_rounds=result['accepted_repair_rounds'])
+        accepted_repair_rounds=result['accepted_repair_rounds'],word_limits=result['word_limits'])
     (directory/'latest.json').write_text(canonical(dict(path=name,sha256=digest(canonical(result)))))
     return result,target
 
@@ -266,8 +280,10 @@ def publication_command(args, log, root, calls_factory):
         from ara.runtime.validation import validate_local
         validate_local(json.loads((root/'schemas/write_essay.json').read_text()),draft,run['config'])
         config = deepcopy(run['config'])
+        minimum = args.min_words if args.min_words is not None else config.get('publication_min_words', 3000)
+        length_policy(minimum)
         config.update(provider='claude_code',model=MODEL,stages={},fallbacks=[],validation_attempts=1,
-                      essay_min_words=4500,essay_word_limit=6000,max_output_tokens=24576,
+                      publication_min_words=minimum,essay_min_words=minimum,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
         config.setdefault('claude_code', {}).setdefault('timeout_seconds', 900)
         if args.unknown_usage_policy:

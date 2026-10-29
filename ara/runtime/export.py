@@ -137,6 +137,8 @@ def methodology(log_path: Path) -> str:
     }
     commitments = frozen_from_events(events)
     summary = {
+        'essay_audit_consensus': [json.loads(e['payload_json']) for e in events
+                                  if e['stage'] == 'essay_audit_consensus'],
         **split_totals(events),
         'provider_methodology': provider_methods,
         'extraction': extraction_summary,
@@ -213,7 +215,8 @@ def methodology(log_path: Path) -> str:
 
 def export_run(log_path: Path, output: Path, redactions: tuple[str, ...] = ()) -> tuple[Path, Path | None]:
     events = [r['event'] for r in read_log(log_path)]
-    drafts = [json.loads(e['payload_json'])['draft'] for e in events if e['stage'] == 'final_draft']
+    start = max((i for i, e in enumerate(events) if e['stage'] == 'essay_composition_started'), default=0)
+    drafts = [json.loads(e['payload_json'])['draft'] for e in events[start:] if e['stage'] == 'final_draft']
     output.mkdir(parents=True, exist_ok=True)
     report = output / 'methodology.md'
     report.write_text(methodology(log_path))

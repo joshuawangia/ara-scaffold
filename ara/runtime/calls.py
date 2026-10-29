@@ -298,7 +298,7 @@ class ModelCalls:
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
-    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
+    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False) -> Any:
         attempts = self.config.get('validation_attempts', 1)
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
@@ -308,7 +308,7 @@ class ModelCalls:
         request_inputs = inputs
         for attempt in range(attempts):
             try:
-                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1)
+                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1, fresh=fresh)
             except InvalidOutput as exc:
                 if attempt + 1 == attempts:
                     raise
@@ -318,14 +318,14 @@ class ModelCalls:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
-    def _transport_call(self, kind, inputs, check, *, attempt):
+    def _transport_call(self, kind, inputs, check, *, attempt, fresh=False):
         from ara.runtime.claude_code import ClaudeCodeError
         provider = self._for_construction_stage(kind, inputs, attempt=attempt).provider
         unclassified_retries = 0
         auth_retries = 0
         for retry in range(getattr(provider, 'retries', 0) + 1):
             try:
-                return self._call_once(kind, inputs, check, attempt=attempt)
+                return self._call_once(kind, inputs, check, attempt=attempt, fresh=fresh)
             except ClaudeCodeError as exc:
                 unclassified = exc.code == 'cli_exit_error' and exc.receipt.get('exit_status') == 1
                 auth = exc.code == 'cli_auth_error'
@@ -343,10 +343,10 @@ class ModelCalls:
                 time.sleep(delay)
         raise AssertionError('unreachable')
 
-    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
+    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, fresh: bool = False) -> Any:
         scoped = self._for_construction_stage(kind, inputs, attempt=attempt)
         if scoped is not self:
-            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
         if kind != 'isolation_canary':
             self._ensure_provider_ready()
         if not schema_smoke and kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs:
@@ -357,16 +357,16 @@ class ModelCalls:
         with self._key_lock:
             lock = self._key_locks.setdefault(key, RLock())
         with lock:
-            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
 
-    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke):
+    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke, fresh=False):
         state = {}
         started = time.monotonic()
         previous_call_id = getattr(self._reservations, 'call_id', None)
         self._reservations.call_id = str(uuid.uuid4())
         try:
             return self._execute_once(kind, inputs, check, attempt=attempt,
-                                      schema_smoke=schema_smoke, state=state)
+                                      schema_smoke=schema_smoke, state=state, fresh=fresh)
         except Exception as exc:
             admission = state.get('admission')
             if admission is None or state.get('completed'):
@@ -392,7 +392,7 @@ class ModelCalls:
             self.budget.release(state.get('reservation'))
             self._reservations.call_id = previous_call_id
 
-    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict) -> Any:
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict, fresh: bool = False) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
@@ -420,7 +420,7 @@ class ModelCalls:
                 maximum = 4096
         key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
         saved = None
-        if not schema_smoke and kind != 'isolation_canary':
+        if not fresh and not schema_smoke and kind != 'isolation_canary':
             saved = self.cache.get(key)
         start = time.monotonic()
         raw = None
@@ -567,7 +567,7 @@ class ModelCalls:
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         state['completed'] = True
         self._after(kind)
-        if not cached and not schema_smoke and kind != 'isolation_canary':
+        if not fresh and not cached and not schema_smoke and kind != 'isolation_canary':
             self.cache.put(key, {'raw': raw})
         return result
 
@@ -1151,7 +1151,7 @@ class ModelCalls:
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
-    def validate_essay(self, route: RouteGraph, data: dict) -> dict:
+    def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
         validate_local(self.response_schema('write_essay', {}), data, self.config)
         require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
         require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
@@ -1160,7 +1160,8 @@ class ModelCalls:
         body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
         text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
         require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
-        require(word_count(data) >= self.config['essay_min_words'],
+        minimum = self.config['essay_min_words'] if minimum_words is None else minimum_words
+        require(word_count(data) >= minimum,
                 'essay writer: minimum words not reached')
         return data
 
@@ -1185,39 +1186,17 @@ class ModelCalls:
             inputs['source_evidence'] = source_context(self, route)
         return inputs
 
-    def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
-        from collections import Counter
-        from ara.runtime.essay_audit import audit_flags
+    def audit_essay(self, route: RouteGraph, draft: dict, *, fresh=False) -> dict:
+        from ara.runtime.essay_audit import audit_result
         inputs = self.audit_inputs(route, draft)
         def check(data):
-            ids = {n.id for n in route.nodes}
-            expected = {s['sentence'] for s in inputs['sentences']}
-            labels = data['labels']
-            flags = audit_flags(labels, inputs, draft)
-            numbers = [item['sentence'] for item in labels]
-            if len(numbers) != len(set(numbers)) or set(numbers) != expected:
-                require(not flags,
-                        'essay audit failed')
-                # An incomplete non-adverse inventory supplies no audit verdict.
-                # Correct its shape through the normal bounded validation policy;
-                # a complete adverse audit remains final below.
-                raise ValidationError('essay audit: sentence inventory mismatch')
-            referenced = {node for item in labels for node in item['node_ids']}
-            require(referenced <= ids, 'essay audit: unknown node id')
-            covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
-                       for node in item['node_ids']}
-            missing = ids - covered
-            extra = [item['sentence'] for item in flags]
-            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
-            result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
-                      'extra_steps': extra, 'flags': flags,
-                      'role_counts': dict(Counter(item['role'] for item in labels)),
-                      'faithful': not missing and not extra and markers == ids}
-            self.log.record('essay_audit', **result)
+            result = audit_result(route, draft, inputs, data)
+            self.log.record('essay_audit', route_id=route.id,
+                            prompt_sha256=digest(self.render('audit_essay', inputs)[1]), **result)
             if not result['faithful']:
-                raise EssayAuditFailed(result, inputs, labels)
+                raise EssayAuditFailed(result, inputs, data['labels'])
             return result
-        return self.call('audit_essay', inputs, check)
+        return self.call('audit_essay', inputs, check, fresh=fresh)
 
     def search_evidence(self, draft: dict, items: list[dict]) -> dict:
         return self.call('search_evidence', {'draft': draft, 'items': items})

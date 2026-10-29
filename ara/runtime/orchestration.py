@@ -198,20 +198,24 @@ def _save_analyses(calls, targets, results, commitments=None):
 
 
 def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> dict:
-    from ara.runtime.essay_audit import audit_and_revise
+    from ara.runtime.essay_audit import audit_and_revise, repair_rounds
     if draft is None:
         draft = calls.write_essay(route)
+        prior_rounds = 0
     else:
         if hasattr(calls.provider, 'scan_output'):
             calls.provider.scan_output(draft)
         calls.validate_essay(route, draft)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
+        prior_rounds = repair_rounds(calls, route)
+    calls.log.record('essay_composition_started', route_id=route.id,
+                     policy='fresh-unanimous-with-adverse-history', repair_rounds=prior_rounds)
+    for path in (calls.log.path.parent / 'draft.json', calls.log.path.parent / 'export/essay.txt'):
+        path.unlink(missing_ok=True)
     # Save the unverified draft as a clearly named partial artifact, never export it.
     (calls.log.path.parent / 'draft.unverified.json').write_text(canonical(draft))
     draft = audit_and_revise(calls, route, draft)
-    cleaned, verification = calls.verify_originality_citations(draft)
-    # Removing unsupported items can change the route's coverage; audit again.
-    calls.audit_essay(route, cleaned)
+    cleaned, verification = audit_and_revise(calls, route, draft, final=True)
     calls.log.record('final_draft', draft=cleaned, route_id=route.id, verification=verification)
     (calls.log.path.parent / 'draft.json').write_text(canonical(cleaned))
     export_run(calls.log.path, calls.log.path.parent / 'export')

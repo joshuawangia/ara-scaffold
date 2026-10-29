@@ -1,5 +1,8 @@
 """Citation-aware sentence spans and bounded repair of complete adverse audits."""
+import json
 import re
+
+from jsonschema import ValidationError
 
 from ara.runtime.cache import canonical, digest
 from ara.runtime.calls import EssayAuditFailed, require, word_count
@@ -52,12 +55,139 @@ def audit_flags(labels, inputs, draft):
     return flags
 
 
-def audit_and_revise(calls, route, draft):
-    for round_number in range(4):
+def audit_result(route, draft, inputs, data):
+    from collections import Counter
+    ids = {n.id for n in route.nodes}
+    expected = {s['sentence'] for s in inputs['sentences']}
+    labels = data['labels']
+    flags = audit_flags(labels, inputs, draft)
+    numbers = [item['sentence'] for item in labels]
+    if len(numbers) != len(set(numbers)) or set(numbers) != expected:
+        require(not flags,
+                'essay audit failed')
+        # An incomplete non-adverse inventory supplies no audit verdict.
+        # Correct its shape through the normal bounded validation policy;
+        # a complete adverse audit remains final below.
+        raise ValidationError('essay audit: sentence inventory mismatch')
+    referenced = {node for item in labels for node in item['node_ids']}
+    require(referenced <= ids, 'essay audit: unknown node id')
+    covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
+               for node in item['node_ids']}
+    missing = ids - covered
+    extra = [item['sentence'] for item in flags]
+    markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
+    result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
+              'extra_steps': extra, 'flags': flags,
+              'role_counts': dict(Counter(item['role'] for item in labels)),
+              'faithful': not missing and not extra and markers == ids}
+    return result
+
+
+def audit_consensus(calls, route, draft):
+    """Fresh samples plus unresolved adverse history; a dissent never votes away."""
+    from ara.runtime.providers import Response
+    from ara.runtime.validation import decode_response, validate_local
+    k = calls.config.get('essay_audit_samples', 3)
+    require(type(k) is int and k >= 3, 'essay_audit_samples must be an integer >= 3')
+    inputs = calls.audit_inputs(route, draft)
+    prompt = calls.render('audit_essay', inputs)[1]
+    prompt_hash = digest(prompt)
+    historical, failures, ignored = [], [], []
+    events = calls.log.read()
+    for index, event in enumerate(events, 1):
+        if event['stage'] != 'audit_essay' or event['label'] != 'MODEL':
+            continue
+        previous = events[index - 2] if index > 1 else {}
+        recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
+        if event['prompt'] != prompt and (recorded or {}).get('prompt_sha256') != prompt_hash:
+            continue
         try:
+            data = decode_response(Response(json.loads(event['response'])).text())
+            schema = calls.response_schema('audit_essay', inputs)
+            if hasattr(calls.provider, 'normalize_output'):
+                data = calls.provider.normalize_output(schema, data)
+            validate_local(schema, data, calls.config)
+            result = audit_result(route, draft, inputs, data)
+            if recorded is not None:
+                result = {key: recorded[key] for key in result}
+        except (ValueError, TypeError, KeyError, ValidationError) as exc:
+            ignored.append(dict(event=index, reason=type(exc).__name__))
+            continue
+        if not result['faithful']:
+            historical.append(dict(event=index, **result))
+            failures.append(EssayAuditFailed(result, inputs, data['labels']))
+    samples = []
+    for number in range(1, k + 1):
+        try:
+            result = calls.audit_essay(route, draft, fresh=True)
+        except EssayAuditFailed as failure:
+            failures.append(failure)
+            result = failure.result
+        except Exception as exc:
+            calls.log.record('essay_audit_consensus', route_id=route.id, prompt_sha256=prompt_hash,
+                draft_sha256=digest(canonical(draft)), k=k, policy='fresh-unanimous-with-adverse-history',
+                status='incomplete', failed_sample=number, reason=type(exc).__name__,
+                samples=samples, historical_adverse=historical, unusable_history=ignored, faithful=False)
+            raise
+        samples.append(dict(sample=number, **result))
+    all_results = historical + samples
+    flags = { (flag['sentence'], flag['reason']): flag
+              for result in all_results for flag in result['flags'] }
+    flags = [flags[key] for key in sorted(flags)]
+    sentences = []
+    for item in inputs['sentences']:
+        n = item['sentence']
+        flagged = [s['sample'] for s in samples if n in s['extra_steps']]
+        clean = [s['sample'] for s in samples if n not in s['extra_steps']]
+        sentences.append(dict(sentence=n, flagged_samples=flagged, clean_samples=clean,
+            historical_flags=sorted({f['reason'] for s in historical for f in s['flags'] if f['sentence']==n}),
+            agreement=max(len(flagged), len(clean)) / k))
+    result = dict(route_id=route.id, prompt_sha256=prompt_hash, draft_sha256=digest(canonical(draft)),
+        k=k, policy='fresh-unanimous-with-adverse-history', status='complete', samples=samples,
+        historical_adverse=historical, unusable_history=ignored, sentences=sentences,
+        unanimous_sentences=sum(s['agreement']==1 for s in sentences), sentence_count=len(sentences),
+        covered_node_ids=sorted(set.intersection(*(set(s['covered_node_ids']) for s in all_results))),
+        missing_node_ids=sorted({n for s in all_results for n in s['missing_node_ids']}),
+        extra_steps=sorted({f['sentence'] for f in flags}), flags=flags,
+        faithful=all(s['faithful'] for s in all_results))
+    calls.log.record('essay_audit_consensus', **result)
+    if not result['faithful']:
+        labels = {}
+        for failure in failures:
+            for label in failure.labels:
+                if label['sentence'] in failure.result['extra_steps']:
+                    labels.setdefault(label['sentence'], label)
+        raise EssayAuditFailed(result, inputs, list(labels.values()))
+    return result
+
+
+def repair_rounds(calls, route):
+    current, used = None, 0
+    for event in calls.log.read():
+        if event['stage'] == 'essay_composition_started':
+            data = json.loads(event['payload_json'])
+            current = data['route_id']
+            if current == route.id:
+                used = data.get('repair_rounds', 0)
+        elif event['stage'] == 'essay_audit_revision' and current == route.id:
+            used = max(used, json.loads(event['payload_json'])['round'])
+    return used
+
+
+def audit_and_revise(calls, route, draft, *, final=False):
+    used = repair_rounds(calls, route)
+    for round_number in range(used, 4):
+        try:
+            if final:
+                cleaned, verification = calls.verify_originality_citations(draft)
+                calls.validate_essay(route, cleaned, minimum_words=0)
+                audit_consensus(calls, route, cleaned)
+                return cleaned, verification
             calls.audit_essay(route, draft)
             return draft
         except EssayAuditFailed as failure:
+            if final:
+                draft = cleaned
             flags = [label for label in failure.labels
                      if label['sentence'] in failure.result['extra_steps']]
             if round_number == 3 or not flags:
@@ -72,7 +202,7 @@ def audit_and_revise(calls, route, draft):
                               citation_markers=CITE.findall(text), node_markers=NODE.findall(text))
                               for n, text in originals.items()],
                           bibliography=draft['bibliography'], round=round_number + 1,
-                          minimum_words=calls.config['essay_min_words'],
+                          minimum_words=0 if final else calls.config['essay_min_words'],
                           word_limit=min(6000, calls.config['essay_word_limit']),
                           current_words=word_count(draft))
 
@@ -84,6 +214,7 @@ def audit_and_revise(calls, route, draft):
                 body = draft['body']
                 for item in sorted(replacements, key=lambda r: r['sentence'], reverse=True):
                     old, text = originals[item['sentence']], item['text']
+                    require(not final or text != old, 'revision left flagged sentence unchanged')
                     require(len(text) <= max(1000, 2 * len(old)), 'revision sentence size exceeded')
                     if text:
                         for pattern, name in ((CITE, 'citations'), (NODE, 'node markers')):
@@ -94,7 +225,7 @@ def audit_and_revise(calls, route, draft):
                     start, end = spans[item['sentence'] - 1]
                     body = body[:start] + text + body[end:]
                 revised = {**draft, 'body': body}
-                return calls.validate_essay(route, revised)
+                return calls.validate_essay(route, revised, minimum_words=0 if final else None)
 
             revised = calls.call('revise_essay', inputs, check)
             calls.log.record('essay_audit_revision', round=round_number + 1,

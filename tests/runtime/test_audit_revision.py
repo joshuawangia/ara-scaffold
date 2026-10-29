@@ -144,7 +144,7 @@ def test_native_compose_resumes_and_preserves_later_verification(rig, monkeypatc
     monkeypatch.setattr(provider, 'complete', verify)
     result = compose(calls, graph(), draft())
     assert later == ['search_evidence', 'verify_originality_citations']
-    assert [k for k, _ in seen] == ['audit_essay', 'revise_essay', 'audit_essay', 'audit_essay']
+    assert [k for k, _ in seen] == ['audit_essay', 'revise_essay'] + ['audit_essay'] * 4
     assert 'Q.' not in result['body'] and result['bibliography'] == []
     assert json.loads((log.path.parent / 'draft.json').read_text()) == result
 

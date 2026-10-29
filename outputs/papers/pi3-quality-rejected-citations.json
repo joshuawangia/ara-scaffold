@@ -1,0 +1,452 @@
+{
+  "gsv1996:r18-35:n_seq_conj": {
+    "source_id": "gsv1996",
+    "display": "Groenendijk, Stokhof & Veltman 1996, PDF p. 18",
+    "locator": "PDF p. 18",
+    "raw_citation": "gsv1996:pdf:18#gsv1996:r18-35:n_seq_conj",
+    "pdf_sha256": "09e9934ff48944b8f8912be662b2538294d19d1f04b56d2f2ba5d8e8c1a78f23",
+    "bibliography": {
+      "authors": "Groenendijk, Jeroen; Stokhof, Martin; Veltman, Frank",
+      "id": "gsv1996",
+      "pages": "179-213",
+      "title": "Coreference and Modality",
+      "venue": "In S. Lappin (ed.), The Handbook of Contemporary Semantic Theory, Blackwell",
+      "year": 1996
+    },
+    "basis": "frozen T physical PDF pages"
+  },
+  "gsv1996:r18-35:n_order": {
+    "source_id": "gsv1996",
+    "display": "Groenendijk, Stokhof & Veltman 1996, PDF p. 18",
+    "locator": "PDF p. 18",
+    "raw_citation": "gsv1996:pdf:18#gsv1996:r18-35:n_order",
+    "pdf_sha256": "09e9934ff48944b8f8912be662b2538294d19d1f04b56d2f2ba5d8e8c1a78f23",
+    "bibliography": {
+      "authors": "Groenendijk, Jeroen; Stokhof, Martin; Veltman, Frank",
+      "id": "gsv1996",
+      "pages": "179-213",
+      "title": "Coreference and Modality",
+      "venue": "In S. Lappin (ed.), The Handbook of Contemporary Semantic Theory, Blackwell",
+      "year": 1996
+    },
+    "basis": "frozen T physical PDF pages"
+  },
+  "lit:eps2:search": {
+    "source_id": null,
+    "display": "Literature-currency search 2026, 2018\u20132026 search",
+    "locator": "2018\u20132026 search",
+    "raw_citation": "[lit:eps2:search]",
+    "bibliography": {},
+    "basis": "logged literature-currency record",
+    "evidence": {
+      "claim": {
+        "coverage": "The original bibliography contains 53 works from 1967\u20132024, only four from 2020 onward and none after 2024. The prior 26 available PDFs cover 1996\u20132024, with most dated 1996\u20132021; three are from 2020 onward. The October 28, 2026 sweep searched 2018\u20132026 literature on contextualism, relativism, expressivism, dynamic semantics, epistemic contradictions, probability operators, retraction and assessment sensitivity. It selected 25 recent works and obtained 17 exact full texts, plus three previously missing originals; 46 PDFs are now local in total. Coverage includes recent surveys, formal models, empirical tests and responses, but eight selected recent works and 24 originals remain unavailable to this client. Older foundational chapters, complete books, the strongest 2024 safety/expressivism comparisons and recent empirical reviews remain material access gaps. This is a ranked, bounded search of indexes and public sources, not an exhaustive review. A failed search or inaccessible paper does not establish an open problem or novelty. The old lack-of-model/test claim is addressed; the other two flagged problems are partially addressed. Acquired files have not been extracted into the frozen ARA evidence: existing route verdicts and generated arguments therefore retain their original evidential limits.",
+        "queries": [
+          {
+            "id": "G1",
+            "query": "epistemic modal disagreement relativism contextualism"
+          },
+          {
+            "id": "G1b",
+            "query": "epistemic modality content force expressivism assessment"
+          },
+          {
+            "id": "G2",
+            "query": "probability operators nested epistemic modals questions"
+          },
+          {
+            "id": "G2b",
+            "query": "probabilistic semantics higher order uncertainty"
+          },
+          {
+            "id": "G3",
+            "query": "epistemic modals retraction assessment sensitivity experimental"
+          },
+          {
+            "id": "G3b",
+            "query": "epistemic modal disagreement experimental contextualism"
+          },
+          {
+            "id": "B1",
+            "query": "epistemic modal knowledge safety expressivism"
+          },
+          {
+            "id": "B2",
+            "query": "probabilistic knowledge retraction relativism"
+          },
+          {
+            "id": "B3",
+            "query": "epistemic modals question sensitivity assertability"
+          },
+          {
+            "id": "B4",
+            "query": "epistemic modality dynamic semantics assessment"
+          },
+          {
+            "id": "B5",
+            "query": "epistemic contradiction static dynamic semantics order"
+          },
+          {
+            "id": "M1",
+            "query": "epistemic modals contextualism"
+          },
+          {
+            "id": "M2",
+            "query": "epistemic modals relativism"
+          },
+          {
+            "id": "M3",
+            "query": "epistemic modals expressivism"
+          },
+          {
+            "id": "M4",
+            "query": "epistemic modals dynamic semantics"
+          },
+          {
+            "id": "M5",
+            "query": "epistemic contradictions"
+          },
+          {
+            "id": "M6",
+            "query": "probability operators semantics"
+          },
+          {
+            "id": "M7",
+            "query": "epistemic retraction assessment sensitivity"
+          },
+          {
+            "id": "M8",
+            "query": "epistemic modality survey"
+          },
+          {
+            "id": "M9",
+            "query": "epistemic modality review"
+          },
+          {
+            "id": "M10",
+            "query": "epistemic modals"
+          },
+          {
+            "id": "M11",
+            "query": "epistemic uncertainty inquisitive semantics probability"
+          },
+          {
+            "id": "B6",
+            "query": "epistemic modals information sensitivity static semantics"
+          },
+          {
+            "id": "B7",
+            "query": "probabilistic knowledge relevant alternatives safety"
+          }
+        ]
+      },
+      "kind": "bounded_search_record",
+      "location": "2018\u20132026 search",
+      "work": null,
+      "year": 2026
+    },
+    "record_hashes": [
+      {
+        "id": "eps2",
+        "sha256": "07bd0c5f4521107e2b6f880571d332226294b8dfe1419e52b29c420cb3703b4f",
+        "verification": {
+          "added_pdf_count": 20,
+          "checks": "PDF magic, isolated pypdf parsing, normalized title and all author surnames, physical pages, text per page, SHA256; no OCR required; substantive passages read as listed in evidence register.",
+          "existing_26_pdfs_unchanged": true,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "tracked_files_unchanged": true
+        }
+      },
+      {
+        "id": "eps2-L3",
+        "sha256": "a0f1be18975560fe11a0611ec09dd600c9473c06efc460ebdecb45672682b27b",
+        "verification": {
+          "acquired_pdf_hashes_and_page_counts_checked": 28,
+          "all_acquisitions_and_overlay_gitignored": true,
+          "checked_ids": [
+            "beddoregan2018",
+            "herbstrittfranke2019",
+            "hawke2023acceptance",
+            "zhou2026might",
+            "mandelkern2025dynamic",
+            "incurvatischloder2020",
+            "aloniincurvatischloder2022",
+            "yalcin2024paradox",
+            "macfarlane2019probabilistic",
+            "ball2020relativism",
+            "yalcin2018force",
+            "yalcin2025counterepistemic",
+            "mocnik2019embedded",
+            "bussierecaraesetal2024",
+            "willer2023propositionalism",
+            "vonfintelgillies2021",
+            "crnictrinh2021",
+            "mandelkern2019a",
+            "mandelkern2019b",
+            "vonfintelgillies2010",
+            "dinges2021loss",
+            "beddor2019relativism",
+            "schulz2021reliance",
+            "carter2024conversation",
+            "beddor2023inquiry",
+            "beddor2025promises",
+            "pavesebeddor2022skills",
+            "beddor2023justification"
+          ],
+          "errors": [],
+          "prior_pdf_hashes_checked": 46,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "total_local_pdfs": 54,
+          "tracked_hashes_checked": 231,
+          "verified_at": "2026-10-28T23:04:03.532993+00:00"
+        }
+      }
+    ]
+  },
+  "lit:eps2:survey2025": {
+    "source_id": "mandelkern2025dynamic",
+    "display": "Mandelkern 2025, PDF pp. 1, 2, 4, 12, 16, 17; \u00a72\u20136, especially6.2 Order",
+    "locator": "PDF pp. 1, 2, 4, 12, 16, 17; \u00a72\u20136, especially6.2 Order",
+    "raw_citation": "[lit:eps2:survey2025]",
+    "bibliography": {
+      "authors": [
+        "Matthew Mandelkern"
+      ],
+      "doi": null,
+      "id": "mandelkern2025dynamic",
+      "title": "Dynamic semantics for epistemic modality",
+      "version_details": "Author chapter manuscript dated January 24, 2025; excerpts from Bounded Meaning (2024), chapters2/4. NOT the full book and does not fill mandelkern2024.",
+      "year": 2025
+    },
+    "basis": "logged literature-currency record",
+    "evidence": {
+      "claim": "Surveys dynamic versus static options; discourse-order effects do not by themselves establish within-sentence semantic order effects; Boolean-fragment claims are restricted.",
+      "kind": "read_fulltext_passages",
+      "location": "PDF pp. 1, 2, 4, 12, 16, 17; \u00a72\u20136, especially6.2 Order",
+      "version_note": null,
+      "work": "mandelkern2025dynamic",
+      "year": 2025
+    },
+    "record_hashes": [
+      {
+        "id": "eps2",
+        "sha256": "07bd0c5f4521107e2b6f880571d332226294b8dfe1419e52b29c420cb3703b4f",
+        "verification": {
+          "added_pdf_count": 20,
+          "checks": "PDF magic, isolated pypdf parsing, normalized title and all author surnames, physical pages, text per page, SHA256; no OCR required; substantive passages read as listed in evidence register.",
+          "existing_26_pdfs_unchanged": true,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "tracked_files_unchanged": true
+        }
+      },
+      {
+        "id": "eps2-L3",
+        "sha256": "a0f1be18975560fe11a0611ec09dd600c9473c06efc460ebdecb45672682b27b",
+        "verification": {
+          "acquired_pdf_hashes_and_page_counts_checked": 28,
+          "all_acquisitions_and_overlay_gitignored": true,
+          "checked_ids": [
+            "beddoregan2018",
+            "herbstrittfranke2019",
+            "hawke2023acceptance",
+            "zhou2026might",
+            "mandelkern2025dynamic",
+            "incurvatischloder2020",
+            "aloniincurvatischloder2022",
+            "yalcin2024paradox",
+            "macfarlane2019probabilistic",
+            "ball2020relativism",
+            "yalcin2018force",
+            "yalcin2025counterepistemic",
+            "mocnik2019embedded",
+            "bussierecaraesetal2024",
+            "willer2023propositionalism",
+            "vonfintelgillies2021",
+            "crnictrinh2021",
+            "mandelkern2019a",
+            "mandelkern2019b",
+            "vonfintelgillies2010",
+            "dinges2021loss",
+            "beddor2019relativism",
+            "schulz2021reliance",
+            "carter2024conversation",
+            "beddor2023inquiry",
+            "beddor2025promises",
+            "pavesebeddor2022skills",
+            "beddor2023justification"
+          ],
+          "errors": [],
+          "prior_pdf_hashes_checked": 46,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "total_local_pdfs": 54,
+          "tracked_hashes_checked": 231,
+          "verified_at": "2026-10-28T23:04:03.532993+00:00"
+        }
+      }
+    ]
+  },
+  "lit:eps2:mocnik2019": {
+    "source_id": "mocnik2019embedded",
+    "display": "Mo\u010dnik 2019, PDF pp. 1, 2; \u00a7abstract and introduction",
+    "locator": "PDF pp. 1, 2; \u00a7abstract and introduction",
+    "raw_citation": "[lit:eps2:mocnik2019]",
+    "bibliography": {
+      "authors": [
+        "Ma\u0161a Mo\u010dnik"
+      ],
+      "doi": "https://doi.org/10.18148/sub/2019.v23i2.606",
+      "id": "mocnik2019embedded",
+      "title": "Embedded Epistemic Modals Pragmatically",
+      "version_details": "Publisher proceedings version, Sinn und Bedeutung23, 2019, 10 pages. A separate Ninan2016 manuscript was downloaded through a wrong link and rejected for this ID.",
+      "year": 2019
+    },
+    "basis": "logged literature-currency record",
+    "evidence": {
+      "claim": "Gives a pragmatic competition account of modal embedding contrasts; modal embedding is not automatically evidence uniquely favoring one semantic family.",
+      "kind": "read_fulltext_passages",
+      "location": "PDF pp. 1, 2; \u00a7abstract and introduction",
+      "version_note": null,
+      "work": "mocnik2019embedded",
+      "year": 2019
+    },
+    "record_hashes": [
+      {
+        "id": "eps2",
+        "sha256": "07bd0c5f4521107e2b6f880571d332226294b8dfe1419e52b29c420cb3703b4f",
+        "verification": {
+          "added_pdf_count": 20,
+          "checks": "PDF magic, isolated pypdf parsing, normalized title and all author surnames, physical pages, text per page, SHA256; no OCR required; substantive passages read as listed in evidence register.",
+          "existing_26_pdfs_unchanged": true,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "tracked_files_unchanged": true
+        }
+      },
+      {
+        "id": "eps2-L3",
+        "sha256": "a0f1be18975560fe11a0611ec09dd600c9473c06efc460ebdecb45672682b27b",
+        "verification": {
+          "acquired_pdf_hashes_and_page_counts_checked": 28,
+          "all_acquisitions_and_overlay_gitignored": true,
+          "checked_ids": [
+            "beddoregan2018",
+            "herbstrittfranke2019",
+            "hawke2023acceptance",
+            "zhou2026might",
+            "mandelkern2025dynamic",
+            "incurvatischloder2020",
+            "aloniincurvatischloder2022",
+            "yalcin2024paradox",
+            "macfarlane2019probabilistic",
+            "ball2020relativism",
+            "yalcin2018force",
+            "yalcin2025counterepistemic",
+            "mocnik2019embedded",
+            "bussierecaraesetal2024",
+            "willer2023propositionalism",
+            "vonfintelgillies2021",
+            "crnictrinh2021",
+            "mandelkern2019a",
+            "mandelkern2019b",
+            "vonfintelgillies2010",
+            "dinges2021loss",
+            "beddor2019relativism",
+            "schulz2021reliance",
+            "carter2024conversation",
+            "beddor2023inquiry",
+            "beddor2025promises",
+            "pavesebeddor2022skills",
+            "beddor2023justification"
+          ],
+          "errors": [],
+          "prior_pdf_hashes_checked": 46,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "total_local_pdfs": 54,
+          "tracked_hashes_checked": 231,
+          "verified_at": "2026-10-28T23:04:03.532993+00:00"
+        }
+      }
+    ]
+  },
+  "lit:eps2:willer2023": {
+    "source_id": "willer2023propositionalism",
+    "display": "Willer 2023, PDF pp. 1, 2; \u00a7The Plot; critical notice of Stojni\u0107",
+    "locator": "PDF pp. 1, 2; \u00a7The Plot; critical notice of Stojni\u0107",
+    "raw_citation": "[lit:eps2:willer2023]",
+    "bibliography": {
+      "authors": [
+        "Malte Willer"
+      ],
+      "doi": "https://doi.org/10.1080/0020174x.2023.2174735",
+      "id": "willer2023propositionalism",
+      "title": "Dynamic semantics versus dynamic propositionalism",
+      "version_details": "Author manuscript of a critical notice; indexed online2023, issue2026. File is 14 pages.",
+      "year": 2023
+    },
+    "basis": "logged literature-currency record",
+    "evidence": {
+      "claim": "Directly compares dynamic semantics with dynamic propositionalism; no neutral resolution of that debate is inferred.",
+      "kind": "read_fulltext_passages",
+      "location": "PDF pp. 1, 2; \u00a7The Plot; critical notice of Stojni\u0107",
+      "version_note": null,
+      "work": "willer2023propositionalism",
+      "year": 2023
+    },
+    "record_hashes": [
+      {
+        "id": "eps2",
+        "sha256": "07bd0c5f4521107e2b6f880571d332226294b8dfe1419e52b29c420cb3703b4f",
+        "verification": {
+          "added_pdf_count": 20,
+          "checks": "PDF magic, isolated pypdf parsing, normalized title and all author surnames, physical pages, text per page, SHA256; no OCR required; substantive passages read as listed in evidence register.",
+          "existing_26_pdfs_unchanged": true,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "tracked_files_unchanged": true
+        }
+      },
+      {
+        "id": "eps2-L3",
+        "sha256": "a0f1be18975560fe11a0611ec09dd600c9473c06efc460ebdecb45672682b27b",
+        "verification": {
+          "acquired_pdf_hashes_and_page_counts_checked": 28,
+          "all_acquisitions_and_overlay_gitignored": true,
+          "checked_ids": [
+            "beddoregan2018",
+            "herbstrittfranke2019",
+            "hawke2023acceptance",
+            "zhou2026might",
+            "mandelkern2025dynamic",
+            "incurvatischloder2020",
+            "aloniincurvatischloder2022",
+            "yalcin2024paradox",
+            "macfarlane2019probabilistic",
+            "ball2020relativism",
+            "yalcin2018force",
+            "yalcin2025counterepistemic",
+            "mocnik2019embedded",
+            "bussierecaraesetal2024",
+            "willer2023propositionalism",
+            "vonfintelgillies2021",
+            "crnictrinh2021",
+            "mandelkern2019a",
+            "mandelkern2019b",
+            "vonfintelgillies2010",
+            "dinges2021loss",
+            "beddor2019relativism",
+            "schulz2021reliance",
+            "carter2024conversation",
+            "beddor2023inquiry",
+            "beddor2025promises",
+            "pavesebeddor2022skills",
+            "beddor2023justification"
+          ],
+          "errors": [],
+          "prior_pdf_hashes_checked": 46,
+          "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+          "total_local_pdfs": 54,
+          "tracked_hashes_checked": 231,
+          "verified_at": "2026-10-28T23:04:03.532993+00:00"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,2144 @@
+{
+  "task": "eps2-L3",
+  "completed_at": "2026-10-28T23:02:33.269628+00:00",
+  "verdict": "partial",
+  "exact_link_found": false,
+  "confidence_scope": "Partial engagement is established in read texts; no accessible source located that derives assessment-sensitive retrospective retraction from worldly-information safety. Access gaps and incomplete reference indexing prevent a literature-wide absence or novelty claim.",
+  "addressed_criterion": "A read account explicitly relates worldly-information safety for modal knowledge to the truth of the same earlier utterance under a changed assessment context and its retraction obligation.",
+  "partial_basis": "Mighty Knowledge itself combines a retraction motivation, assessor-based rejection, a worldly-information safety semantics, and an optional assessor-credence interpretation. Dinges2021 directly links safety-type estimates with retraction behavior while rejecting the need for relativism. Neither supplies the exact requested integration.",
+  "search_window": "2018-01-01 through 2026-10-28",
+  "search_scope": {
+    "broad_queries": 16,
+    "OpenAlex_broad_successes": 16,
+    "Crossref_broad_successes": 14,
+    "Crossref_rate_limited": 2,
+    "additional_boolean_style_queries": 7,
+    "philosophy_filtered_queries": 4,
+    "title_filtered_queries": 4,
+    "all_indexed_citers_Mighty_Knowledge": 11,
+    "all_indexed_citers_Macfarlane2011_in_window": 116,
+    "all_indexed_citers_Macfarlane2014_in_window": 449,
+    "both_anchor_index_matches": [
+      "https://openalex.org/W4399179262",
+      "https://openalex.org/W4399437593"
+    ],
+    "both_anchor_book_index_matches": 0,
+    "CORE_searches": 7,
+    "arxiv_searches": 3,
+    "notes": "Bounded ranked search pages: broad OpenAlex75 and Crossref40 per query; supplementary queries100 each. One book-cursor request refused401; nine legitimate publication-year filters recovered all449 indexed citing records. API matches were screened for relevance; biomedical retractions/safety and title collisions excluded. Metadata screening is not full-text reading of every cited work."
+  },
+  "added": 8,
+  "new_records": 19,
+  "previous_strong_modern_recovered": 0,
+  "new_fulltext_ids": [
+    "dinges2021loss",
+    "beddor2019relativism",
+    "schulz2021reliance",
+    "carter2024conversation",
+    "beddor2023inquiry",
+    "beddor2025promises",
+    "pavesebeddor2022skills",
+    "beddor2023justification"
+  ],
+  "priority_access_ids": [
+    "hawke2024expressivists",
+    "hawke2024stable",
+    "skovgaardolsencantwell2023",
+    "dinges2022retraction",
+    "xu2020safety"
+  ],
+  "source_revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+  "query_receipts": [
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S01-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=epistemic+modal+knowledge+safety+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S01-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=epistemic+modal+knowledge+safety+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 159
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S02-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=worldly+information+safety+assessment+sensitivity&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S02-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=worldly+information+safety+assessment+sensitivity&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 1251
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S03-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=Beddor+Goldstein+MacFarlane+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S03-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=Beddor+Goldstein+MacFarlane+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 11
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S04-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=knowledge+safety+relativism+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S04-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=knowledge+safety+relativism+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 94
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S05-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=epistemic+modals+safety&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S05-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=epistemic+modals+safety&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 14313
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S06-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=probabilistic+knowledge+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S06-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=probabilistic+knowledge+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 2522
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S07-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=safe+belief+assessment+sensitivity&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S07-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=safe+belief+assessment+sensitivity&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 104472
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S08-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=mighty+knowledge+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S08-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=mighty+knowledge+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 235
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S09-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=modal+knowledge+contextualism+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S09-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=modal+knowledge+contextualism+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 1680
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S10-cr.json",
+      "status": 429,
+      "url": "https://api.crossref.org/works?query.bibliographic=epistemic+safety+relativism&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S10-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=epistemic+safety+relativism&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 2125
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S11-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=stable+acceptance+knowledge+retraction&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S11-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=stable+acceptance+knowledge+retraction&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 2675
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S12-cr.json",
+      "status": 429,
+      "url": "https://api.crossref.org/works?query.bibliographic=retraction+loss+knowledge+epistemic+modals&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S12-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=retraction+loss+knowledge+epistemic+modals&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 260
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S13-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=assessment+sensitive+knowledge+safety&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S13-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=assessment+sensitive+knowledge+safety&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 515478
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S14-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=epistemic+modals+update+safety&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S14-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=epistemic+modals+update+safety&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 7052
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S15-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=retraction+knowledge+norms&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S15-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=retraction+knowledge+norms&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 8820
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S16-cr.json",
+      "status": 200,
+      "url": "https://api.crossref.org/works?query.bibliographic=epistemic+modals+safety+truth+assessment&filter=from-pub-date%3A2018-01-01%2Cuntil-pub-date%3A2026-10-28&rows=40",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/S16-oa.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=epistemic+modals+safety+truth+assessment&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=75",
+      "query": null,
+      "result_count": 4181
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/arxiv-0.json",
+      "status": 200,
+      "url": "https://export.arxiv.org/api/query?search_query=all%3A%22retraction%22+AND+all%3A%22epistemic%22&max_results=30",
+      "query": "all:\"retraction\" AND all:\"epistemic\"",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/arxiv-1.json",
+      "status": 200,
+      "url": "https://export.arxiv.org/api/query?search_query=all%3A%22worldly+information%22&max_results=30",
+      "query": "all:\"worldly information\"",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/arxiv-2.json",
+      "status": 200,
+      "url": "https://export.arxiv.org/api/query?search_query=au%3AHawke+AND+all%3A%22knowledge%22&max_results=30",
+      "query": "au:Hawke AND all:\"knowledge\"",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-0.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22epistemic+modals%22+AND+safety&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"epistemic modals\" AND safety",
+      "result_count": 600
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-1.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22retraction%22+AND+%22knowledge%22&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"retraction\" AND \"knowledge\"",
+      "result_count": 56991
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-2.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22retraction%22+AND+%22safety%22&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"retraction\" AND \"safety\"",
+      "result_count": 40143
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-3.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22Beddor%22+AND+%22MacFarlane%22&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"Beddor\" AND \"MacFarlane\"",
+      "result_count": 7110
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-4.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22worldly+information%22&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"worldly information\"",
+      "result_count": 81
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-5.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22safety%22+AND+%22assessment+sensitivity%22&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"safety\" AND \"assessment sensitivity\"",
+      "result_count": 684
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/boolean-6.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=%22knowledge%22+AND+%22retraction%22+AND+%22relativism%22&filter=from_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": "\"knowledge\" AND \"retraction\" AND \"relativism\"",
+      "result_count": 325
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/citing-beddor.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW4249907466%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=200&cursor=%2A",
+      "query": null,
+      "result_count": 11
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/citing-hawke2024.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW4399434337%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=200&cursor=%2A",
+      "query": null,
+      "result_count": 2
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/citing-hawke2024stable.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW4399437593%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=200&cursor=%2A",
+      "query": null,
+      "result_count": 2
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/citing-mac2011.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW2477451699%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=200&cursor=%2A",
+      "query": null,
+      "result_count": 116
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/citing-mac2014-page2.json",
+      "status": 401,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=200&cursor=Ils5My4wLCAxLCAnaHR0cHM6Ly9vcGVuYWxleC5vcmcvVzMxNjE5NTAwODgnXSI%3D",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/citing-mac2014.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=200&cursor=%2A",
+      "query": null,
+      "result_count": 449
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-dinges.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=doi:10.4324/9781003184225-13&limit=5",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-output-154425460.json",
+      "status": 429,
+      "url": "https://api.core.ac.uk/v3/outputs/154425460",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-title-dinges.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=title%3A%22Non-Indexical+Contextualism%2C+Relativism%2C+and+Retraction%22&limit=5",
+      "query": "Non-Indexical Contextualism, Relativism, and Retraction",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-title-hawke1.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=title%3A%22Modal+Knowledge+for+Expressivists%22&limit=5",
+      "query": "Modal Knowledge for Expressivists",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-title-hawke2.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=title%3A%22Stable+acceptance+for+mighty+knowledge%22&limit=5",
+      "query": "Stable acceptance for mighty knowledge",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-title-norms.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=title%3A%22Norm+conflicts+and+epistemic+modals%22&limit=5",
+      "query": "Norm conflicts and epistemic modals",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-title-xu.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=title%3A%22A+Probabilistic+Approach+to+Epistemic+Safety+from+the+Perspective+of+Ascribers%22&limit=5",
+      "query": "A Probabilistic Approach to Epistemic Safety from the Perspective of Ascribers",
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/core-xu.json",
+      "status": 200,
+      "url": "https://api.core.ac.uk/v3/search/works/?q=doi:10.1017/epi.2020.7&limit=5",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/konte.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/https://doi.org/10.2298/THEO2304015K",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2018.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2018%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 63
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2019.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2019%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 68
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2020.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2020%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 80
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2021.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2021%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 80
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2022.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2022%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 44
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2023.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2023%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 64
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2024.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2024%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 42
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2025.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2025%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 8
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/mac2014-year-2026.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=cites%3AW640438717%2Cpublication_year%3A2026%2Cto_publication_date%3A2026-10-28&per-page=200",
+      "query": null,
+      "result_count": 0
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/philosophy-0.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=retraction+safety+knowledge&filter=primary_topic.subfield.id%3A1211%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 79
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/philosophy-1.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=epistemic+modal+safety&filter=primary_topic.subfield.id%3A1211%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 787
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/philosophy-2.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=worldly+information+retraction&filter=primary_topic.subfield.id%3A1211%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 31
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/philosophy-3.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=assessment+sensitivity+safety&filter=primary_topic.subfield.id%3A1211%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 748
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W2819639215.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W2819639215",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W3205257949.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W3205257949",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W4210897461.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W4210897461",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W4393241351.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W4393241351",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W4399434337.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W4399434337",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W4399437593.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W4399437593",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W4402253561.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W4402253561",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/retry-W4405245870.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works/W4405245870",
+      "query": null,
+      "result_count": null
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-Assessment.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=title.search%3AAssessment+Sensitivity+Relative+Truth+Applications&per-page=100",
+      "query": null,
+      "result_count": 6
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-Epistemic.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=title.search%3AEpistemic+Modals+Are+Assessment+Sensitive&per-page=100",
+      "query": null,
+      "result_count": 1
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-Mighty.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?filter=title.search%3AMighty+Knowledge&per-page=100",
+      "query": null,
+      "result_count": 9
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-focused-0.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=knowledge+retraction+safety+epistemic&filter=title.search%3Aretraction%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 5
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-focused-1.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=knowledge+retraction+safety+epistemic&filter=title.search%3Aepistemic+modals%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 0
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-focused-2.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=knowledge+retraction+safety+epistemic&filter=title.search%3Amodal+knowledge%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 0
+    },
+    {
+      "receipt": "/home/dev/ara-work/eps2-l3/metadata/title-focused-3.json",
+      "status": 200,
+      "url": "https://api.openalex.org/works?search=knowledge+retraction+safety+epistemic&filter=title.search%3Asafety%2Cfrom_publication_date%3A2018-01-01%2Cto_publication_date%3A2026-10-28&per-page=100",
+      "query": null,
+      "result_count": 5
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "work": "beddorgoldstein2021",
+      "location": "PDF2, §1/introductory motivations",
+      "claim": "Retraction is explained as no longer standing by the update associated with an earlier modal assertion; this is a motivational story, not the formal fixed-use assessment rule.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E2",
+      "work": "beddorgoldstein2021",
+      "location": "PDF9, §3.3, footnote12",
+      "claim": "A modal-knowledge ascription is rejected using assessor information; explicitly cites MacFarlane2014. The OpenAlex reference list missed that citation.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E3",
+      "work": "beddorgoldstein2021",
+      "location": "PDF17,23–24, §§5.2–5.4, (30),(39)–(41)",
+      "claim": "Knowledge combines truth, belief and worldly-information safety across nearby worlds. The safety condition is separately stated from truth at an information index.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E4",
+      "work": "beddorgoldstein2021",
+      "location": "PDF27–30, §§6.2–6.3, especially28–29",
+      "claim": "Worldly information may be contextually selected; contextual probability may model a conversational participant’s or assessor’s provisionally revised credences. Utterance-context selection and assessment-sensitive retraction are not identified or derived here.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E5",
+      "work": "macfarlane2014",
+      "location": "PDF122–125 (=printed108–111), §§5.4–5.5; macfarlane2011 PDF22, §5.3",
+      "claim": "Retraction evaluates an earlier assertion with its use context fixed and its assessment context changed. The2011 chapter applies this to epistemic modals. Rejection permission is not identical to retraction obligation.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E6",
+      "work": "dinges2021loss",
+      "location": "PDF3–6 and10–11, §4.3.1 and footnote10",
+      "claim": "Explains retraction of knowledge ascriptions through stakes-dependent estimates of epistemic qualities, extendable to safety/reliability; offered consistently with denying relativism. It is a rival behavioral bridge, not the requested worldly-information semantics.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E7",
+      "work": "hollidaymandelkern2024",
+      "location": "PDF55 and58, concluding discussion",
+      "claim": "Cites Beddor–Goldstein on modal knowledge but leaves truth/correctness/agreement/retraction pragmatics to further development, compatible with multiple approaches.",
+      "kind": "read_fulltext"
+    },
+    {
+      "id": "E8",
+      "work": "hawke2024expressivists",
+      "location": "OpenAlex abstract; Lingnan publication record",
+      "claim": "Abstract explicitly advertises safety-semantics comparison in appendices; full text not retrieved, so no conclusion about its treatment of retraction.",
+      "kind": "metadata_abstract_only"
+    },
+    {
+      "id": "E9",
+      "work": "hawke2024stable",
+      "location": "OpenAlex abstract and reference list",
+      "claim": "Co-cites Mighty Knowledge and MacFarlane2011; gives stable acceptance semantics. Neither the abstract nor its citation link verifies the specific L3 relation.",
+      "kind": "metadata_abstract_only"
+    },
+    {
+      "id": "E10",
+      "work": "skovgaardolsencantwell2023",
+      "location": "OpenAlex indexed abstract",
+      "claim": "Reports support for some truth-value shifts but weak average support for the retraction norm. Full text unavailable; a live empirical qualification, not a settled refutation.",
+      "kind": "metadata_abstract_only"
+    },
+    {
+      "id": "E11",
+      "work": "xu2020safety",
+      "location": "Publisher abstract",
+      "claim": "Ascriber-relative probabilistic safety is explicitly proposed. Ascriber-relative evaluation is not automatically assessment-relative truth for an earlier utterance; full-text retraction treatment unverified.",
+      "kind": "metadata_abstract_only"
+    }
+  ],
+  "added_records": [
+    {
+      "id": "dinges2021loss",
+      "openalex_id": "https://openalex.org/W3214348875",
+      "title": "Knowledge and Asymmetric Loss",
+      "authors": [
+        "Alexander Dinges"
+      ],
+      "year": 2021,
+      "doi": "https://doi.org/10.1007/s13164-021-00596-9",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Direct neighboring connection: safety/reliability estimates and retraction of knowledge ascriptions, explicitly offered as an alternative to relativism.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S06-oa",
+        "S01-oa",
+        "citing-mac2014",
+        "S04-oa",
+        "S10-oa",
+        "S12-oa",
+        "S09-oa",
+        "boolean-5",
+        "boolean-6",
+        "philosophy-0",
+        "mac2014-year-2021",
+        "philosophy-3"
+      ],
+      "source_url": "https://open.fau.de/server/api/core/bitstreams/bfeba4a0-75e5-4e18-8d56-7e1745905ad4/content",
+      "version": "published",
+      "fulltext": "fulltext/dinges2021loss.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Alexander Dinges",
+            "surname_present": true
+          }
+        ],
+        "page_count": 22,
+        "text_pages": 22,
+        "text_layer": "yes",
+        "sha256": "5a96fa88d554d62f68e296bd31fccfea21d5e3c9c72bde164c60a16524fa1073",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/f9e5680684148b4b026b.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W3214348875",
+          "url": "https://opus4.kobv.de/opus4-fau/frontdoor/index/index/docId/22265",
+          "source": "Institutional repository indexed by OpenAlex",
+          "status": 301,
+          "redirect": "https://open.fau.de/handle/openfau/22265",
+          "at": "2026-10-28T22:53:31.970085+00:00"
+        },
+        {
+          "work": "W3214348875",
+          "url": "https://open.fau.de/handle/openfau/22265",
+          "source": "Institutional repository indexed by OpenAlex",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/5e24f66062a261e3e829.html",
+          "pdf": false,
+          "bytes": 483694,
+          "content_type": "text/html; charset=utf-8",
+          "at": "2026-10-28T22:53:35.476559+00:00"
+        },
+        {
+          "work": "W3214348875",
+          "url": "https://open.fau.de/bitstreams/bfeba4a0-75e5-4e18-8d56-7e1745905ad4/download",
+          "source": "FAU institutional repository citation_pdf_url",
+          "status": 302,
+          "redirect": "https://open.fau.de/server/api/core/bitstreams/bfeba4a0-75e5-4e18-8d56-7e1745905ad4/content",
+          "at": "2026-10-28T22:54:27.002137+00:00"
+        },
+        {
+          "work": "W3214348875",
+          "url": "https://open.fau.de/server/api/core/bitstreams/bfeba4a0-75e5-4e18-8d56-7e1745905ad4/content",
+          "source": "FAU institutional repository citation_pdf_url",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/f9e5680684148b4b026b.pdf",
+          "pdf": true,
+          "bytes": 737594,
+          "content_type": "application/pdf;charset=UTF-8",
+          "at": "2026-10-28T22:54:28.402480+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "macfarlane2014"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/s13164-021-00596-9",
+      "version_details": "Publisher PDF ©2021;22physical pages; institutional FAU repository.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF3–6 and10–11; §4.3.1",
+        "assessment": "Strong countermodel to inferring assessment-relativist truth from retraction behavior. Not Beddor–Goldstein worldly-information safety.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "beddor2019relativism",
+      "openalex_id": "https://openalex.org/W2995130325",
+      "title": "Relativism and expressivism",
+      "authors": [
+        "Bob Beddor"
+      ],
+      "year": 2019,
+      "doi": "https://doi.org/10.4324/9781351052306-56",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Strong modern survey by a safety-anchor author; clarifies fixed-use assessment sensitivity and expressivism.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-mac2014",
+        "citing-mac2011",
+        "mac2014-year-2019"
+      ],
+      "source_url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/relativism_and_expressivism_article_2019.pdf",
+      "version": "accepted",
+      "fulltext": "fulltext/beddor2019relativism.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Bob Beddor",
+            "surname_present": true
+          }
+        ],
+        "page_count": 16,
+        "text_pages": 16,
+        "text_layer": "yes",
+        "sha256": "cacd9c795377f2d4e207bd26ebeb27d8c629e9b37e257d85203b480d65447877",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/54d781c7b5013419abfc.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W2995130325",
+          "url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/relativism_and_expressivism_article_2019.pdf",
+          "source": "Explicit author research-page PDF link; forward citation / direct conceptual followup",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/54d781c7b5013419abfc.pdf",
+          "pdf": true,
+          "bytes": 426845,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:50:35.557076+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "macfarlane2011",
+        "macfarlane2014"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.4324/9781351052306-56",
+      "version_details": "Author chapter manuscript, to appear in Routledge Handbook of Relativism;16pages.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF4–5,13–14",
+        "assessment": "Defines the semantic alternative and compares it with expressivism; no safety–retraction derivation.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "schulz2021reliance",
+      "openalex_id": "https://openalex.org/W4255718912",
+      "title": "Partial Reliance",
+      "authors": [
+        "Moritz Schulz"
+      ],
+      "year": 2021,
+      "doi": "https://doi.org/10.1017/can.2022.2",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Forward citation of Mighty Knowledge; develops safety for partial belief/reliance.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/3B0BDA56A00EE4DDAB7AE26D6B01E7B5/S0045509122000029a.pdf/div-class-title-partial-reliance-div.pdf",
+      "version": "published",
+      "fulltext": "fulltext/schulz2021reliance.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Moritz Schulz",
+            "surname_present": true
+          }
+        ],
+        "page_count": 16,
+        "text_pages": 16,
+        "text_layer": "yes",
+        "sha256": "bbbdce4483b14d1322e4a8549bb9ade27d146d6e1bec498397960b89d014588b",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/b4356d7a53baf7696cc3.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4255718912",
+          "url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/3B0BDA56A00EE4DDAB7AE26D6B01E7B5/S0045509122000029a.pdf/div-class-title-partial-reliance-div.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/b4356d7a53baf7696cc3.pdf",
+          "pdf": true,
+          "bytes": 195444,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:49:06.025036+00:00"
+        },
+        {
+          "work": "W4255718912",
+          "url": "https://tud.qucosa.de/id/qucosa%3A90847",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 302,
+          "redirect": "https://tud.qucosa.de/landing-page/?tx_dlf[id]=https%3A%2F%2Ftud.qucosa.de%2Fapi%2Fqucosa%253A90847%2Fmets",
+          "at": "2026-10-28T22:49:07.461222+00:00"
+        },
+        {
+          "work": "W4255718912",
+          "url": "https://tud.qucosa.de/landing-page/?tx_dlf[id]=https%3A%2F%2Ftud.qucosa.de%2Fapi%2Fqucosa%253A90847%2Fmets",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/e195bba86d6e71511988.html",
+          "pdf": false,
+          "bytes": 13524,
+          "content_type": "text/html; charset=utf-8",
+          "at": "2026-10-28T22:49:10.295332+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1017/can.2022.2",
+      "version_details": "Issue citation2021, publisher copyright/online2022, CC BY;16pages.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF11–12, §4",
+        "assessment": "Explicitly extends the discussion of safe credences; no treatment of assessment-sensitive retraction identified.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "carter2024conversation",
+      "openalex_id": "https://openalex.org/W4404142056",
+      "title": "Knowledge Norms and Conversation",
+      "authors": [
+        "J. Adam Carter"
+      ],
+      "year": 2024,
+      "doi": "https://doi.org/10.1007/978-3-031-74069-5_8",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Knowledge norms for conversations; retraction listed among evidence for individual norms.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S15-oa"
+      ],
+      "source_url": "https://eprints.gla.ac.uk/322053/3/322053.pdf",
+      "version": "accepted",
+      "fulltext": "fulltext/carter2024conversation.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "J. Adam Carter",
+            "surname_present": true
+          }
+        ],
+        "page_count": 24,
+        "text_pages": 24,
+        "text_layer": "yes",
+        "sha256": "0ad32324123353950dceffd35c1c5318876d7373400f74ce4780b28fb89b232d",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/5a65e190847aebfc7895.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4404142056",
+          "url": "https://philpapers.org/archive/CARKAC-18.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:04.865794+00:00"
+        },
+        {
+          "work": "W4404142056",
+          "url": "https://eprints.gla.ac.uk/322053/3/322053.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/5a65e190847aebfc7895.pdf",
+          "pdf": true,
+          "bytes": 551195,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:49:06.281978+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/978-3-031-74069-5_8",
+      "version_details": "Repository author manuscript forthcoming in Epistemology of Conversation;24pages; indexed2024.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF1–2, especially footnote3",
+        "assessment": "Participatory know-how is not the requested bridge from worldly safety to retrospective assessment.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "beddor2023inquiry",
+      "openalex_id": "https://openalex.org/W4389497866",
+      "title": "Inquiry beyond knowledge",
+      "authors": [
+        "Bob Beddor"
+      ],
+      "year": 2023,
+      "doi": "https://doi.org/10.1111/phpr.13042",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Forward citation of Mighty Knowledge; explicitly develops modal conditions on credences.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/inquiry_beyond_knowledge_final_dec_4.pdf",
+      "version": "accepted",
+      "fulltext": "fulltext/beddor2023inquiry.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": false,
+        "title_verification": "rendered title page inspected: Inquiry beyond knowledge; extraction drops u; rendering saved /home/dev/ara-work/eps2-l3/inquiry-title.png",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Bob Beddor",
+            "surname_present": true
+          }
+        ],
+        "page_count": 32,
+        "text_pages": 32,
+        "text_layer": "yes",
+        "sha256": "d07d40b72b9e49736b5998cd1936d69ee8b7218e79efd7b849303b879fe6c640",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/c35740507867e7c153f6.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4389497866",
+          "url": "https://philpapers.org/archive/BEDIBK.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:05.356454+00:00"
+        },
+        {
+          "work": "W4389497866",
+          "url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/inquiry_beyond_knowledge_final_dec_4.pdf",
+          "source": "Explicit author research-page PDF link; forward citation / direct conceptual followup",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/c35740507867e7c153f6.pdf",
+          "pdf": true,
+          "bytes": 513327,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:50:35.310811+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1111/phpr.13042",
+      "version_details": "Author forthcoming manuscript, PDF creation2023-12-04;32pages. Title renders correctly but extraction drops the u in Inquiry; title visually verified.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF20–21, §6.1",
+        "assessment": "Safety as credal value, not an assessment-sensitive retraction norm.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "beddor2025promises",
+      "openalex_id": "https://openalex.org/W4408538001",
+      "title": "Moorean Promises",
+      "authors": [
+        "Bob Beddor"
+      ],
+      "year": 2025,
+      "doi": "https://doi.org/10.1086/733902",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "2025 forward citation of Mighty Knowledge; tests knowledge norms on a speech act.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/moorean_promises_penultimate__2_.pdf",
+      "version": "accepted",
+      "fulltext": "fulltext/beddor2025promises.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Bob Beddor",
+            "surname_present": true
+          }
+        ],
+        "page_count": 29,
+        "text_pages": 29,
+        "text_layer": "yes",
+        "sha256": "448556b946eb52df91cfc94b5af414dc0fd62a8df7c317d2febde41262212d59",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/3cf91632168f5e6baf25.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4408538001",
+          "url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/moorean_promises_penultimate__2_.pdf",
+          "source": "Explicit author research-page PDF link; forward citation / direct conceptual followup",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/3cf91632168f5e6baf25.pdf",
+          "pdf": true,
+          "bytes": 316704,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:50:35.331861+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1086/733902",
+      "version_details": "Penultimate author manuscript forthcoming in Ethics,29pages.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF14; bibliography27",
+        "assessment": "Safety and promising are discussed, but no retraction bridge was identified. Peripheral screening result.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "pavesebeddor2022skills",
+      "openalex_id": "https://openalex.org/W4280571132",
+      "title": "Skills as Knowledge",
+      "authors": [
+        "Carlotta Pavese",
+        "Bob Beddor"
+      ],
+      "year": 2022,
+      "doi": "https://doi.org/10.1080/00048402.2022.2056753",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Forward citation of Mighty Knowledge; checks whether safety/action integration extends to the target.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/skills_as_knowledge_penultimate_ajp_pavese_beddor.pdf",
+      "version": "accepted",
+      "fulltext": "fulltext/pavesebeddor2022skills.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Carlotta Pavese",
+            "surname_present": true
+          },
+          {
+            "author": "Bob Beddor",
+            "surname_present": true
+          }
+        ],
+        "page_count": 20,
+        "text_pages": 20,
+        "text_layer": "yes",
+        "sha256": "ea3ac8fc90d67efec7064ec772e7847f12f415f3eeda0c0cbb084d4a785b67d3",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/a04675610aba44b82b40.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4280571132",
+          "url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/skills_as_knowledge_penultimate_ajp_pavese_beddor.pdf",
+          "source": "Explicit author research-page PDF link; forward citation / direct conceptual followup",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/a04675610aba44b82b40.pdf",
+          "pdf": true,
+          "bytes": 225520,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:50:35.274578+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1080/00048402.2022.2056753",
+      "version_details": "Author manuscript forthcoming in Australasian Journal of Philosophy; indexed first-online2022,20pages.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF10; full document keyword review",
+        "assessment": "Safety enters an account of control and skill, not assessment-sensitive retraction. Peripheral screening result.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    },
+    {
+      "id": "beddor2023justification",
+      "openalex_id": "https://openalex.org/W4388924955",
+      "title": "Justification, Evidence and Truth",
+      "authors": [
+        "Bob Beddor"
+      ],
+      "year": 2023,
+      "doi": "https://doi.org/10.1093/analys/anac077",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Forward citation of Mighty Knowledge; critical notice on evidence and update.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/justification_evidence_and_truth_beddor_published.pdf",
+      "version": "published",
+      "fulltext": "fulltext/beddor2023justification.pdf",
+      "verification": {
+        "pdf_signature": true,
+        "title_in_pdf": true,
+        "title_exact_in_extracted_text": true,
+        "title_verification": "normalized title in first three pages",
+        "authors_in_text": true,
+        "author_checks": [
+          {
+            "author": "Bob Beddor",
+            "surname_present": true
+          }
+        ],
+        "page_count": 11,
+        "text_pages": 11,
+        "text_layer": "yes",
+        "sha256": "fcfb50325cad2852e1db0b0ca0365313fe76e7d9d55b385ab814602dc23ed340",
+        "text_evidence": "/home/dev/ara-work/eps2-l3/text/f8d4d316fc499401c484.json"
+      },
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4388924955",
+          "url": "https://www.bobbeddor.com/uploads/3/2/0/3/32037343/justification_evidence_and_truth_beddor_published.pdf",
+          "source": "Explicit author research-page PDF link; forward citation / direct conceptual followup",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/f8d4d316fc499401c484.pdf",
+          "pdf": true,
+          "bytes": 123917,
+          "content_type": "application/pdf",
+          "at": "2026-10-28T22:50:35.321255+00:00"
+        }
+      ],
+      "status": "placed",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1093/analys/anac077",
+      "version_details": "Author-hosted published Analysis83(3),616–626,2023;11pages, including preceding reference tail on first page; complete critical notice.",
+      "new_file_added": true,
+      "l3_evidence": {
+        "location": "PDF1 and11; full document keyword review",
+        "assessment": "A critique of evidence and credal updating, not the specified safety–retraction connection. Peripheral screening result.",
+        "kind": "read_fulltext_passages"
+      },
+      "oa_basis": "Public author manuscript/publication page or publisher/institutional OA repository; exact provenance logged"
+    }
+  ],
+  "new_unavailable_records": [
+    {
+      "id": "hawke2025fragmentation",
+      "openalex_id": "https://openalex.org/W4410601109",
+      "title": "Fragmentation and expression",
+      "authors": [
+        "Peter Hawke"
+      ],
+      "year": 2025,
+      "doi": "https://doi.org/10.1007/s11229-025-04915-w",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Cites both Hawke2024 successors; fragmentation/expressivism followup. Full text unavailable; no retraction conclusion inferred.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-hawke2024stable",
+        "citing-hawke2024"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4410601109",
+          "url": "https://philpapers.org/archive/HAWFAE.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:04.357543+00:00"
+        },
+        {
+          "work": "W4410601109",
+          "url": "https://link.springer.com/content/pdf/10.1007/s11229-025-04915-w.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "error": "robots disallow",
+          "at": "2026-10-28T22:49:04.515156+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/s11229-025-04915-w",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Cites both Hawke2024 successors; fragmentation/expressivism followup. Full text unavailable; no retraction conclusion inferred."
+      },
+      "unavailable_reason": "Cites both Hawke2024 successors; fragmentation/expressivism followup. Full text unavailable; no retraction conclusion inferred.",
+      "manual_public_links": [
+        "https://link.springer.com/content/pdf/10.1007/s11229-025-04915-w.pdf",
+        "https://philpapers.org/archive/HAWFAE.pdf"
+      ]
+    },
+    {
+      "id": "xu2020safety",
+      "openalex_id": "https://openalex.org/W3014327504",
+      "title": "A Probabilistic Approach to Epistemic Safety from the Perspective of Ascribers",
+      "authors": [
+        "Yingjin Xu"
+      ],
+      "year": 2020,
+      "doi": "https://doi.org/10.1017/epi.2020.7",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Abstract explicitly defines safety using an ascriber’s background knowledge and probabilistic threshold; full text unavailable. This is not yet evidence of retrospective assessment relativism.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S05-oa",
+        "philosophy-1"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W3014327504",
+          "url": "https://doi.org/10.1017/epi.2020.7",
+          "source": "Publisher record for probabilistic safety-ascriber candidate",
+          "status": 302,
+          "redirect": "https://www.cambridge.org/core/product/identifier/S1742360020000076/type/journal_article",
+          "at": "2026-10-28T22:50:35.570218+00:00"
+        },
+        {
+          "work": "W3014327504",
+          "url": "https://www.cambridge.org/core/product/identifier/S1742360020000076/type/journal_article",
+          "source": "Publisher record for probabilistic safety-ascriber candidate",
+          "status": 301,
+          "redirect": "https://www.cambridge.org/core/journals/episteme/article/probabilistic-approach-to-epistemic-safety-from-the-perspective-of-ascribers/30ED117D43177832E3C279B57D7C68FE",
+          "at": "2026-10-28T22:50:36.127768+00:00"
+        },
+        {
+          "work": "W3014327504",
+          "url": "https://www.cambridge.org/core/journals/episteme/article/probabilistic-approach-to-epistemic-safety-from-the-perspective-of-ascribers/30ED117D43177832E3C279B57D7C68FE",
+          "source": "Publisher record for probabilistic safety-ascriber candidate",
+          "status": 302,
+          "redirect": "https://www.cambridge.org/core/journals/episteme/article/abs/probabilistic-approach-to-epistemic-safety-from-the-perspective-of-ascribers/30ED117D43177832E3C279B57D7C68FE",
+          "at": "2026-10-28T22:50:36.520263+00:00"
+        },
+        {
+          "work": "W3014327504",
+          "url": "https://www.cambridge.org/core/journals/episteme/article/abs/probabilistic-approach-to-epistemic-safety-from-the-perspective-of-ascribers/30ED117D43177832E3C279B57D7C68FE",
+          "source": "Publisher record for probabilistic safety-ascriber candidate",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/f1fe4204719eaee5a272.html",
+          "pdf": false,
+          "bytes": 774262,
+          "content_type": "text/html; charset=utf-8",
+          "at": "2026-10-28T22:50:37.228052+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1017/epi.2020.7",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Abstract explicitly defines safety using an ascriber’s background knowledge and probabilistic threshold; full text unavailable. This is not yet evidence of retrospective assessment relativism."
+      },
+      "unavailable_reason": "Abstract explicitly defines safety using an ascriber’s background knowledge and probabilistic threshold; full text unavailable. This is not yet evidence of retrospective assessment relativism.",
+      "manual_public_links": []
+    },
+    {
+      "id": "dinges2022retraction",
+      "openalex_id": "https://openalex.org/W4214926655",
+      "title": "Non-Indexical Contextualism, Relativism, and Retraction",
+      "authors": [
+        "Alexander Dinges"
+      ],
+      "year": 2022,
+      "doi": "https://doi.org/10.4324/9781003184225-13",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Abstract directly disputes the inferential advantage of assessment relativism over non-indexical contextualism from retraction data. Full text unavailable.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-mac2014",
+        "mac2014-year-2022"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4214926655",
+          "url": "https://api.taylorfrancis.com/content/chapters/edit/download?identifierName=doi&identifierValue=10.4324/9781003184225-13&type=chapterpdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "error": "robots retrieval HTTP 403",
+          "at": "2026-10-28T22:49:04.578945+00:00"
+        },
+        {
+          "work": "W4214926655",
+          "url": "https://www.alexanderdinges.com/",
+          "source": "Author homepage discovery",
+          "error": "HTTPSConnectionPool(host='www.alexanderdinges.com', port=443): Max retries exceeded with url: /robots.txt (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x7fc821812870>: Failed to resolve 'www.alexanderdinges.com' ([Errno -2] Name or service not known)\"))",
+          "at": "2026-10-28T22:50:35.389496+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "macfarlane2014"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.4324/9781003184225-13",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Abstract directly disputes the inferential advantage of assessment relativism over non-indexical contextualism from retraction data. Full text unavailable."
+      },
+      "unavailable_reason": "Abstract directly disputes the inferential advantage of assessment relativism over non-indexical contextualism from retraction data. Full text unavailable.",
+      "manual_public_links": [
+        "https://api.taylorfrancis.com/content/chapters/edit/download?identifierName=doi&identifierValue=10.4324/9781003184225-13&type=chapterpdf"
+      ]
+    },
+    {
+      "id": "skovgaardolsencantwell2023",
+      "openalex_id": "https://openalex.org/W4385824703",
+      "title": "Norm conflicts and epistemic modals",
+      "authors": [
+        "Niels Skovgaard‐Olsen",
+        "John Cantwell"
+      ],
+      "year": 2023,
+      "doi": "https://doi.org/10.1016/j.cogpsych.2023.101591",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Abstract reports truth-value-shift evidence but weak support for the retraction norm; full text unavailable. Critical empirical qualification.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S15-oa",
+        "citing-mac2014",
+        "citing-mac2011",
+        "S09-oa",
+        "boolean-6",
+        "boolean-3",
+        "mac2014-year-2023"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4385824703",
+          "url": "https://doi.org/10.1016/j.cogpsych.2023.101591",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 302,
+          "redirect": "https://linkinghub.elsevier.com/retrieve/pii/S001002852300049X",
+          "at": "2026-10-28T22:49:04.604531+00:00"
+        },
+        {
+          "work": "W4385824703",
+          "url": "https://philpapers.org/archive/SKONCA-3.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:04.646044+00:00"
+        },
+        {
+          "work": "W4385824703",
+          "url": "https://linkinghub.elsevier.com/retrieve/pii/S001002852300049X",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 200,
+          "path": "/home/dev/ara-work/eps2-l3/downloads/fc5932356eeb3f2cc81d.html",
+          "pdf": false,
+          "bytes": 2649,
+          "content_type": "text/html;charset=UTF-8",
+          "at": "2026-10-28T22:49:05.075427+00:00"
+        },
+        {
+          "work": "W4385824703",
+          "url": "https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=4352540",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "error": "HTTPSConnectionPool(host='papers.ssrn.com', port=443): Read timed out. (read timeout=20)",
+          "at": "2026-10-28T22:49:24.622819+00:00"
+        },
+        {
+          "work": "W4385824703",
+          "url": "https://www.sciencedirect.com/science/article/pii/S001002852300049X",
+          "source": "Indexed publisher OA article",
+          "error": "robots retrieval HTTP 403",
+          "at": "2026-10-28T22:50:35.527468+00:00"
+        },
+        {
+          "work": "W4385824703",
+          "url": "https://api.osf.io/v2/nodes/g6vym/files/",
+          "source": "Public OSF project file listing indexed by OpenAlex",
+          "error": "robots disallow",
+          "at": "2026-10-28T22:50:35.591492+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "macfarlane2011",
+        "macfarlane2014"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1016/j.cogpsych.2023.101591",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Abstract reports truth-value-shift evidence but weak support for the retraction norm; full text unavailable. Critical empirical qualification."
+      },
+      "unavailable_reason": "Abstract reports truth-value-shift evidence but weak support for the retraction norm; full text unavailable. Critical empirical qualification.",
+      "manual_public_links": [
+        "https://papers.ssrn.com/sol3/Delivery.cfm?abstractid=4352540",
+        "https://philpapers.org/archive/SKONCA-3.pdf"
+      ]
+    },
+    {
+      "id": "vermaire2020retraction",
+      "openalex_id": "https://openalex.org/W3001661867",
+      "title": "Retraction and testimonial justification: a new problem for the assurance view",
+      "authors": [
+        "Matthew Vermaire"
+      ],
+      "year": 2020,
+      "doi": "https://doi.org/10.1007/s11098-020-01417-y",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Retraction and testimonial justification: nearby normative bridge candidate; no accessible full text.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S15-oa"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W3001661867",
+          "url": "https://philpapers.org/archive/VERRAT-5.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:04.701784+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/s11098-020-01417-y",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Retraction and testimonial justification: nearby normative bridge candidate; no accessible full text."
+      },
+      "unavailable_reason": "Retraction and testimonial justification: nearby normative bridge candidate; no accessible full text.",
+      "manual_public_links": [
+        "https://philpapers.org/archive/VERRAT-5.pdf"
+      ]
+    },
+    {
+      "id": "henning2021reasoning",
+      "openalex_id": "https://openalex.org/W3135484419",
+      "title": "An epistemic modal norm of practical reasoning",
+      "authors": [
+        "Tim Henning"
+      ],
+      "year": 2021,
+      "doi": "https://doi.org/10.1007/s11229-021-03086-8",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Epistemic-modal norm of practical reasoning: neighboring semantics/norm candidate; no accessible full text.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S14-oa",
+        "S05-oa",
+        "citing-mac2014",
+        "S16-oa",
+        "boolean-0",
+        "philosophy-1",
+        "mac2014-year-2021"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W3135484419",
+          "url": "https://philpapers.org/archive/HENAEM-2.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:04.930860+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "macfarlane2014"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/s11229-021-03086-8",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Epistemic-modal norm of practical reasoning: neighboring semantics/norm candidate; no accessible full text."
+      },
+      "unavailable_reason": "Epistemic-modal norm of practical reasoning: neighboring semantics/norm candidate; no accessible full text.",
+      "manual_public_links": [
+        "https://philpapers.org/archive/HENAEM-2.pdf"
+      ]
+    },
+    {
+      "id": "gariazzo2019assertion",
+      "openalex_id": "https://openalex.org/W2969521058",
+      "title": "ASSERTION AND ASSESSMENT SENSITIVITY",
+      "authors": [
+        "Matías Gariazzo"
+      ],
+      "year": 2019,
+      "doi": "https://doi.org/10.1590/0100-512x2019n14307mg",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Abstract connects assertion with assessment sensitivity; no accessible full text.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-mac2014",
+        "boolean-6",
+        "mac2014-year-2019"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W2969521058",
+          "url": "http://www.scielo.br/pdf/kr/v60n143/0100-512X-kr-60-143-0355.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:04.972083+00:00"
+        },
+        {
+          "work": "W2969521058",
+          "url": "http://old.scielo.br/scielo.php?script=sci_arttext&amp;pid=S0100-512X2019000200355",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "error": "robots retrieval HTTP 403",
+          "at": "2026-10-28T22:49:04.995583+00:00"
+        },
+        {
+          "work": "W2969521058",
+          "url": "https://doaj.org/article/c253cd08b12e444b90e17d75b8d25191",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:05.275336+00:00"
+        },
+        {
+          "work": "W2969521058",
+          "url": "http://americanae.aecid.es/americanae/es/registros/registro.do?tipoRegistro=MTD&idBib=2413285",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "error": "HTTPConnectionPool(host='americanae.aecid.es', port=80): Max retries exceeded with url: /robots.txt (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x7fb2ec3e8410>, 'Connection to americanae.aecid.es timed out. (connect timeout=20)'))",
+          "at": "2026-10-28T22:49:25.032991+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "macfarlane2014"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1590/0100-512x2019n14307mg",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Abstract connects assertion with assessment sensitivity; no accessible full text."
+      },
+      "unavailable_reason": "Abstract connects assertion with assessment sensitivity; no accessible full text.",
+      "manual_public_links": [
+        "http://www.scielo.br/pdf/kr/v60n143/0100-512X-kr-60-143-0355.pdf"
+      ]
+    },
+    {
+      "id": "zeman2024retraction",
+      "openalex_id": "https://openalex.org/W4402230468",
+      "title": "Relativism and Retraction: The Case Is Not Yet Lost",
+      "authors": [
+        "Dan Zeman"
+      ],
+      "year": 2024,
+      "doi": "https://doi.org/10.1007/978-3-031-66081-8_4",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Recent defense of relativist retraction: full-text access needed; no substantive claim inferred from title.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "S15-oa",
+        "citing-mac2011",
+        "S09-oa",
+        "boolean-6"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4402230468",
+          "url": "https://philpapers.org/archive/ZEMRAR.pdf",
+          "source": "Indexed publisher OA or repository full-text location; L3 followup retry",
+          "status": 403,
+          "at": "2026-10-28T22:49:06.365094+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "macfarlane2011"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/978-3-031-66081-8_4",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Recent defense of relativist retraction: full-text access needed; no substantive claim inferred from title."
+      },
+      "unavailable_reason": "Recent defense of relativist retraction: full-text access needed; no substantive claim inferred from title.",
+      "manual_public_links": [
+        "https://philpapers.org/archive/ZEMRAR.pdf"
+      ]
+    },
+    {
+      "id": "konte2023contextualism",
+      "openalex_id": "https://openalex.org/W4389939222",
+      "title": "Epistemic contextualism: Problems of disagreement and retraction",
+      "authors": [
+        "Stefan Kuzmanovic"
+      ],
+      "year": 2023,
+      "doi": "https://doi.org/10.2298/theo2304015k",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Publisher-OA article on disagreement/retraction; publisher host timed out, no PDF verified.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "Crossref S09; exact DOI lookup"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/metadata/konte.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [
+        {
+          "work": "W4389939222",
+          "url": "https://www.doiserbia.nb.rs/ft.aspx?id=0351-22742304015K",
+          "source": "Publisher OA PDF indexed by OpenAlex",
+          "error": "HTTPSConnectionPool(host='www.doiserbia.nb.rs', port=443): Max retries exceeded with url: /robots.txt (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x7f8c0a2a7fb0>, 'Connection to www.doiserbia.nb.rs timed out. (connect timeout=20)'))",
+          "at": "2026-10-28T22:53:50.956019+00:00"
+        },
+        {
+          "work": "W4389939222",
+          "url": "https://doiserbia.nb.rs/ft.aspx?id=0351-22742304015K",
+          "source": "Publisher OA canonical domain, www host timed out",
+          "error": "HTTPSConnectionPool(host='doiserbia.nb.rs', port=443): Max retries exceeded with url: /robots.txt (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x7faf5a72b620>, 'Connection to doiserbia.nb.rs timed out. (connect timeout=20)'))",
+          "at": "2026-10-28T22:54:45.046884+00:00"
+        }
+      ],
+      "status": "unavailable",
+      "cites_corpus_works": [],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.2298/theo2304015k",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Publisher-OA article on disagreement/retraction; publisher host timed out, no PDF verified."
+      },
+      "unavailable_reason": "Publisher-OA article on disagreement/retraction; publisher host timed out, no PDF verified.",
+      "manual_public_links": [
+        "http://www.doiserbia.nb.rs/ft.aspx?id=0351-22742304015K"
+      ]
+    },
+    {
+      "id": "hetherington2022defining",
+      "openalex_id": "https://openalex.org/W4306726255",
+      "title": "Defining Knowledge",
+      "authors": [
+        "Stephen Hetherington"
+      ],
+      "year": 2022,
+      "doi": "https://doi.org/10.1017/9781009092203",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Forward citation of Mighty Knowledge; abstract criticizes modal definitions of knowledge. No indexed OA full text; peripheral.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1017/9781009092203",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Forward citation of Mighty Knowledge; abstract criticizes modal definitions of knowledge. No indexed OA full text; peripheral."
+      },
+      "unavailable_reason": "Forward citation of Mighty Knowledge; abstract criticizes modal definitions of knowledge. No indexed OA full text; peripheral.",
+      "manual_public_links": []
+    },
+    {
+      "id": "zhan2022unknowable",
+      "openalex_id": "https://openalex.org/W4214906452",
+      "title": "The ¬K¬K rule and the structurally unknowable",
+      "authors": [
+        "Yiwen Zhan"
+      ],
+      "year": 2022,
+      "doi": "https://doi.org/10.1007/s44204-021-00006-y",
+      "era": "modern",
+      "fills_original_id": null,
+      "selected_as": "l3_followup",
+      "why_chosen": "Forward citation of Mighty Knowledge; epistemic-logic candidate. No indexed OA full text; no substantive retraction finding.",
+      "targets": [
+        "L3"
+      ],
+      "discovery_queries": [
+        "citing-beddor"
+      ],
+      "source_url": null,
+      "version": null,
+      "fulltext": null,
+      "verification": null,
+      "metadata_evidence": "/home/dev/ara-work/eps2-l3/works.json",
+      "acquisition_log": "/home/dev/ara-work/eps2-l3/acquisition.jsonl",
+      "download_attempts": [],
+      "status": "unavailable",
+      "cites_corpus_works": [
+        "beddorgoldstein2021"
+      ],
+      "l3_followup_id": "eps2-L3",
+      "operator_link": "https://doi.org/10.1007/s44204-021-00006-y",
+      "l3_evidence": {
+        "kind": "metadata_only",
+        "assessment": "Forward citation of Mighty Knowledge; epistemic-logic candidate. No indexed OA full text; no substantive retraction finding."
+      },
+      "unavailable_reason": "Forward citation of Mighty Knowledge; epistemic-logic candidate. No indexed OA full text; no substantive retraction finding.",
+      "manual_public_links": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "finding": "L3 is partially engaged; the exact safety-to-retraction derivation was not located.",
+      "section": "Verdict"
+    },
+    {
+      "id": "F2",
+      "finding": "The existing safety anchor already discusses retraction and assessor-dependent information.",
+      "section": "What the full texts establish"
+    },
+    {
+      "id": "F3",
+      "finding": "OpenAlex omitted an actual MacFarlane2014 citation; citation absence is unreliable.",
+      "section": "Citation audit"
+    },
+    {
+      "id": "F4",
+      "finding": "Dinges connects safety-type estimates to retraction while denying relativism.",
+      "section": "A strong rival explanation"
+    },
+    {
+      "id": "F5",
+      "finding": "Holliday–Mandelkern leaves the relevant retraction pragmatics underdeveloped.",
+      "section": "What the full texts establish"
+    },
+    {
+      "id": "F6",
+      "finding": "Hawke2024 comparisons and current empirical work remain inaccessible; no novelty certification.",
+      "section": "Access gaps"
+    },
+    {
+      "id": "F7",
+      "finding": "Eight new full texts have varying relevance; none closes a native CQ or ARA route.",
+      "section": "Acquired full texts"
+    },
+    {
+      "id": "F8",
+      "finding": "None of the former eight unavailable modern shortlist entries was recovered.",
+      "section": "Access gaps"
+    },
+    {
+      "id": "F9",
+      "finding": "Inquiry title has an extraction defect; visual title verification passed.",
+      "section": "Verification and versions"
+    },
+    {
+      "id": "F10",
+      "finding": "Version dates, manuscript status and physical pages must be retained.",
+      "section": "Verification and versions"
+    },
+    {
+      "id": "F11",
+      "finding": "Search is bounded despite complete indexed first-generation citation sets.",
+      "section": "Search scope"
+    },
+    {
+      "id": "F12",
+      "finding": "All46 previous PDFs and tracked files preserved; manifest is a local overlay.",
+      "section": "Verification and versions"
+    },
+    {
+      "id": "F13",
+      "finding": "Cumulative totals and partial L3 qualification propagated to methodology and both annotated paper copies.",
+      "placed_in": "Verification and versions"
+    }
+  ],
+  "cumulative_counts": {
+    "candidates": 44,
+    "downloaded": 28,
+    "modern": 25,
+    "modern_selected": 44,
+    "gaps_covered": 3,
+    "gaps_total": 3,
+    "gaps_checked": 3,
+    "still_open": 0,
+    "addressed": 1,
+    "partially_addressed": 2,
+    "unknown": 0,
+    "theses_checked": 31,
+    "thesis_status_counts": {
+      "partially_addressed": 15,
+      "addressed_by": 13,
+      "unknown_no_access": 3
+    },
+    "fulltext_added": 28,
+    "originals_filled": 3,
+    "originals_total": 27,
+    "operator_list": 43,
+    "pdf_pages_added": 751,
+    "l3_followup_added": 8
+  },
+  "handoff_verification": {
+    "verified_at": "2026-10-28T23:04:03.532993+00:00",
+    "revision": "9b9999730c32b4dd0f06ef80a075920633d1acc9",
+    "tracked_hashes_checked": 231,
+    "prior_pdf_hashes_checked": 46,
+    "acquired_pdf_hashes_and_page_counts_checked": 28,
+    "total_local_pdfs": 54,
+    "all_acquisitions_and_overlay_gitignored": true,
+    "errors": [],
+    "checked_ids": [
+      "beddoregan2018",
+      "herbstrittfranke2019",
+      "hawke2023acceptance",
+      "zhou2026might",
+      "mandelkern2025dynamic",
+      "incurvatischloder2020",
+      "aloniincurvatischloder2022",
+      "yalcin2024paradox",
+      "macfarlane2019probabilistic",
+      "ball2020relativism",
+      "yalcin2018force",
+      "yalcin2025counterepistemic",
+      "mocnik2019embedded",
+      "bussierecaraesetal2024",
+      "willer2023propositionalism",
+      "vonfintelgillies2021",
+      "crnictrinh2021",
+      "mandelkern2019a",
+      "mandelkern2019b",
+      "vonfintelgillies2010",
+      "dinges2021loss",
+      "beddor2019relativism",
+      "schulz2021reliance",
+      "carter2024conversation",
+      "beddor2023inquiry",
+      "beddor2025promises",
+      "pavesebeddor2022skills",
+      "beddor2023justification"
+    ]
+  },
+  "coverage": "The original bibliography contains 53 works from 1967–2024, only four from 2020 onward and none after 2024. The prior 26 available PDFs cover 1996–2024, with most dated 1996–2021; three are from 2020 onward. The October 28, 2026 sweep searched 2018–2026 literature on contextualism, relativism, expressivism, dynamic semantics, epistemic contradictions, probability operators, retraction and assessment sensitivity. Across the initial sweep and focused L3 followup, 44 modern candidates were recorded and 25 exact full texts obtained, plus three previously missing originals; 54 PDFs are now local in total (26 pre-existing and 28 additions). Coverage includes recent surveys, formal models, empirical tests and responses, but 19 selected modern works and 24 originals remain unavailable to this client (43 operator requests). Older foundational chapters, complete books, the strongest 2024 safety/expressivism comparisons and recent empirical reviews remain material access gaps. This is a ranked, bounded search of indexes and public sources, not an exhaustive review. A failed search or inaccessible paper does not establish an open problem or novelty. The old lack-of-model/test claim is addressed; the other two flagged problems are partially addressed. Acquired files have not been extracted into the frozen ARA evidence: existing route verdicts and generated arguments therefore retain their original evidential limits. The focused L3 verdict is partial: Beddor–Goldstein already engages retraction and assessor information, and Dinges (2021) explains retraction through estimates of epistemic qualities, including safety. The accessible texts do not establish a derivation of MacFarlane’s assessment-sensitive retraction obligation from worldly-information safety. The two strongest Hawke (2024) comparisons remain inaccessible; no novelty claim follows."
+}

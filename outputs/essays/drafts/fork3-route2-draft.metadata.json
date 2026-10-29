@@ -1,0 +1,71 @@
+{
+  "revision": "89be37a1074e87b34fc2b79dca0e2208020c8cda",
+  "route_id": "edd5e3e69fbe:r0",
+  "words": 4638,
+  "audit": "fail",
+  "blocked_at": "revise_essay",
+  "essay": "/home/dev/ara-work/reports/essays/fork3-route2-draft.md",
+  "native_draft": "/home/dev/ara-scaffold/runs/codex-writing-route2/draft.unverified.json",
+  "draft_sha256": "0b9ec226e540d18a3df080c9cac0169ef79df3d6adf996b0a335346b2cad7789",
+  "source_unchanged": true,
+  "total_accounting": {
+    "calls": 39,
+    "stage_counts": {
+      "isolation_canary": 3,
+      "answer_cq": 1,
+      "audit_essay": 2,
+      "build_t": 1,
+      "build_t_batch": 2,
+      "classify_target": 1,
+      "formalise": 1,
+      "formalise_slots": 1,
+      "map_leaf": 1,
+      "outline_essay": 2,
+      "propose_cuts": 1,
+      "propose_targets": 1,
+      "revise_essay": 4,
+      "select_t_roots": 2,
+      "tier1_repair": 1,
+      "verify_originality_citations": 1,
+      "write_essay": 14
+    },
+    "tokens": {
+      "input_tokens": 397450,
+      "output_tokens": 44697,
+      "cache_read_tokens": 2944,
+      "cache_write_tokens": 0,
+      "server_tool_uses": 0
+    },
+    "total_tokens": 445091,
+    "api_usd": "0.0",
+    "unknown_usage_calls": 0,
+    "cache_hits": 0,
+    "summed_call_wall_seconds": 899.4361717768479
+  },
+  "writing_accounting": {
+    "calls": 19,
+    "stage_counts": {
+      "isolation_canary": 1,
+      "outline_essay": 1,
+      "write_essay": 13,
+      "audit_essay": 1,
+      "revise_essay": 3
+    },
+    "tokens": {
+      "input_tokens": 306956,
+      "output_tokens": 40931,
+      "cache_read_tokens": 2944,
+      "cache_write_tokens": 0,
+      "server_tool_uses": 0
+    },
+    "total_tokens": 350831,
+    "api_usd": "0.0",
+    "unknown_usage_calls": 0,
+    "cache_hits": 0,
+    "summed_call_wall_seconds": 818.0716078298865
+  },
+  "findings": 10,
+  "placed": 10,
+  "verified_final_essay": false,
+  "completed_at": "2026-10-28T21:36:22.752482+00:00"
+}

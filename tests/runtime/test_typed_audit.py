@@ -51,10 +51,11 @@ def test_source_claim_requires_correct_frozen_citation(rig, variant):
     route = seed_sources(calls, log)
     calls.config.update(essay_min_words=4500, token_cap=10_000_000)
     marker = '' if variant == 'missing' else '[cite:x]' if variant == 'unknown' else '[cite:p]'
-    draft = dict(title='P', body='[[node:n0]] [[node:n1]] P. Q. '+marker,
-                 bibliography=[dict(id='p', text='Q' if variant == 'bibliography' else 'p:pdf:1#p', url=None)])
+    draft = dict(title='P', body='[[node:n0]] [[node:n1]] Q. [cite:q] P. '+marker,
+                 bibliography=[dict(id=tid, text='Q' if tid == 'p' and variant == 'bibliography'
+                                    else 'p:pdf:1#'+tid, url=None) for tid in ('p', 'q')])
     register(calls, provider, 'audit_essay', calls.audit_inputs(route, draft), {'labels': [
-        label(1, nodes=('n0', 'n1')), label(2, 'source_claim', (), variant != 'miscited')]})
+        label(1, nodes=('n1',)), label(2, 'source_claim', ('n0',), variant != 'miscited')]})
     if variant == 'correct':
         assert calls.audit_essay(route, draft)['faithful']
     else:

@@ -41,12 +41,16 @@ def audit_flags(labels, inputs, draft):
     flags = []
     for item in labels:
         role, reason = item['role'], None
+        cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
+        premises = {r['evidence_id'] for r in inputs['outline'].get('source_roles', [])
+                    if r['role'] == 'global_premise' and r['node_id'] in item['node_ids']}
         if role == 'unsupported_claim':
             reason = 'unsupported_claim'
         elif role == 'argument_step' and not item['node_ids']:
             reason = 'unmapped_argument_step'
-        elif role == 'source_claim':
-            cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
+        elif role == 'argument_step' and premises and not premises <= set(cited):
+            reason = 'miscited_source_claim'
+        elif role == 'source_claim' or (cited and 'source_evidence' in inputs):
             if (not item['citation_supported'] or not cited or
                     any(tid not in allowed or bibliography.get(tid) != allowed[tid] for tid in cited)):
                 reason = 'miscited_source_claim'
@@ -83,6 +87,46 @@ def audit_result(route, draft, inputs, data):
     return result
 
 
+def _same_audit_request(previous_prompt, prompt):
+    """Validation feedback changes transport bytes, not the audited draft/evidence."""
+    if previous_prompt == prompt:
+        return True
+    try:
+        previous_template, previous_input = previous_prompt.split('\nINPUT_JSON\n', 1)
+        template, current_input = prompt.split('\nINPUT_JSON\n', 1)
+        previous = json.loads(previous_input)
+        previous.pop('validation_feedback', None)
+        return previous_template == template and previous == json.loads(current_input)
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
+def _partial_adverse_history(route, draft, inputs, data, schema, config):
+    """Salvage adverse facts only; an invalid inventory supplies no clean verdict."""
+    from collections import Counter
+    from jsonschema import Draft202012Validator
+    from ara.runtime.validation import guard_complexity
+    guard_complexity(data, config)
+    if not isinstance(data, dict) or not isinstance(data.get('labels'), list):
+        return None
+    expected = {s['sentence'] for s in inputs['sentences']}
+    nodes = {n.id for n in route.nodes}
+    # The repository's label schema is shallow and fixed. Validate labels in
+    # isolation so an unrelated invalid label cannot erase a valid adverse one.
+    validator = Draft202012Validator(schema['properties']['labels']['items'])
+    labels = [label for label in data['labels'] if validator.is_valid(label)
+              and label['sentence'] in expected and set(label['node_ids']) <= nodes]
+    adverse = [label for label in labels if audit_flags([label], inputs, draft)]
+    flags = {(flag['sentence'], flag['reason']): flag for flag in audit_flags(adverse, inputs, draft)}
+    if not flags:
+        return None
+    result = dict(covered_node_ids=[], missing_node_ids=[],
+        extra_steps=sorted({n for n, _ in flags}), flags=[flags[key] for key in sorted(flags)],
+        role_counts=dict(Counter(label['role'] for label in adverse)), faithful=False,
+        partial_adverse_only=True)
+    return result, adverse
+
+
 def audit_consensus(calls, route, draft):
     """Fresh samples plus unresolved adverse history; a dissent never votes away."""
     from ara.runtime.providers import Response
@@ -99,11 +143,12 @@ def audit_consensus(calls, route, draft):
             continue
         previous = events[index - 2] if index > 1 else {}
         recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
-        if event['prompt'] != prompt and (recorded or {}).get('prompt_sha256') != prompt_hash:
+        if not _same_audit_request(event['prompt'], prompt) and (recorded or {}).get('prompt_sha256') != prompt_hash:
             continue
+        data = None
+        schema = calls.response_schema('audit_essay', inputs)
         try:
             data = decode_response(Response(json.loads(event['response'])).text())
-            schema = calls.response_schema('audit_essay', inputs)
             if hasattr(calls.provider, 'normalize_output'):
                 data = calls.provider.normalize_output(schema, data)
             validate_local(schema, data, calls.config)
@@ -112,6 +157,12 @@ def audit_consensus(calls, route, draft):
                 result = {key: recorded[key] for key in result}
         except (ValueError, TypeError, KeyError, ValidationError) as exc:
             ignored.append(dict(event=index, reason=type(exc).__name__))
+            recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)
+            if recovered is not None:
+                ignored[-1]['retained_adverse'] = True
+                result, labels = recovered
+                historical.append(dict(event=index, invalid_reason=type(exc).__name__, **result))
+                failures.append(EssayAuditFailed(result, inputs, labels))
             continue
         if not result['faithful']:
             historical.append(dict(event=index, **result))
@@ -197,7 +248,10 @@ def audit_and_revise(calls, route, draft, *, final=False):
             spans = sentence_spans(draft['body'])
             originals = {flag['sentence']: draft['body'][slice(*spans[flag['sentence'] - 1])]
                          for flag in flags}
+            citation_repairs = {f['sentence'] for f in failure.result['flags'] if f['reason'] == 'miscited_source_claim'}
+            allowed = {b['id']: b for b in failure.inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
             inputs = dict(audit_inputs=failure.inputs, flags=flags, audit_failures=failure.result['flags'],
+                          citation_additions={str(n): sorted(allowed) for n in citation_repairs},
                           flagged_sentences=[dict(sentence=n, text=text,
                               citation_markers=CITE.findall(text), node_markers=NODE.findall(text))
                               for n, text in originals.items()],
@@ -219,12 +273,21 @@ def audit_and_revise(calls, route, draft, *, final=False):
                     if text:
                         for pattern, name in ((CITE, 'citations'), (NODE, 'node markers')):
                             expected, actual = pattern.findall(old), pattern.findall(text)
-                            require(actual == expected,
+                            addition = (pattern is CITE and item['sentence'] in citation_repairs and
+                                        actual[:len(expected)] == expected and
+                                        all(marker[6:-1] in allowed for marker in actual[len(expected):]))
+                            require(actual == expected or addition,
                                     f'revision changed {name} in sentence {item["sentence"]}: '
                                     f'forbidden or misplaced markers {actual!r}; required exact sequence {expected!r}')
                     start, end = spans[item['sentence'] - 1]
                     body = body[:start] + text + body[end:]
                 revised = {**draft, 'body': body}
+                bibliography = {b['id']: b for b in draft['bibliography']}
+                for marker in CITE.findall(body):
+                    tid = marker[6:-1]
+                    if tid in allowed and tid not in bibliography:
+                        bibliography[tid] = allowed[tid]
+                revised['bibliography'] = list(bibliography.values())
                 return calls.validate_essay(route, revised, minimum_words=0 if final else None)
 
             revised = calls.call('revise_essay', inputs, check)

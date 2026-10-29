@@ -489,3 +489,40 @@ bridge by placing its exact T IDs in named premise slots. Runtime logs the match
 bridge IDs and each slot's verified paper as proposal_bridge; open or scoped
 hypotheses do not supply paper support. The schema stays unchanged. Guidance does
 not force irrelevant premises, license a step, or promise three successful routes.
+
+
+## Frozen-source citations and export
+
+The writer and auditor share bibliography entries derived from each route's frozen
+support commitments and retained paper records, including physical PDF page numbers.
+Bibliography IDs identify commitments; several entries can refer to one paper.
+A corpus paper that supplies no support to the route is not added for coverage.
+
+Verification checks frozen citations against the retained extraction page text,
+PDF identity, grounding hash and commitment provenance before supplementary web
+search. Web absence cannot delete a locally supported citation. Missing local
+evidence refuses verification; a positive bibliography, source or quotation mismatch
+is removed with its reason in methodology. Lexical grounding and recorded identity
+do not prove faithful paraphrase; sentence support remains an audit judgment.
+
+Resumed drafts missing route citations receive a logged citation-only pass. It can
+append approved markers and canonical bibliography entries but cannot change prose
+or reset the shared three-round semantic repair allowance. Ordinary miscitation
+repairs may add only approved frozen markers, followed by a full audit. Source
+premises mapped as argument steps still require their source citations.
+
+Final export independently requires all source-bearing route supports in both the
+body markers and matching locally verified bibliography. Failure is explicit and
+non-zero, and removes stale final essays. Legacy runs without frozen provenance
+retain their existing export behavior and cannot claim local source verification; an explicitly cited frozen commitment without provenance refuses verification. Originality
+and references outside frozen T still use the configured web-evidence path. The
+fresh k-sample union audit remains mandatory after verification.
+
+
+An incomplete historical audit can still contain valid adverse evidence. The final
+union retains each individually valid, in-range substantive flag even when the
+response has a missing/duplicate sentence or an invalid neighboring label/node.
+These receipts disclose partial adverse history and cannot count as clean coverage.
+Three later clean responses do not erase them on unchanged-draft resume. Feedback
+added solely to correct response validation does not change the underlying audited
+request. Unparseable historical responses remain disclosed as unusable.

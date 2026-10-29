@@ -1886,6 +1886,36 @@ CASES += [
 ]
 
 
+CASES += [
+    ('frozen_citation_web_absence', 'ara/runtime/calls.py', 'local = local_verdicts(self, draft, all_items)', 'local = {}', 'tests/runtime/test_local_citations.py::test_web_absence_cannot_delete_frozen_citations'),
+    ('frozen_citation_missing_pages', 'ara/runtime/citations.py', "require(status != 'unresolved', 'local citation evidence unresolved: ' + item['id'])", 'pass', 'tests/runtime/test_local_citations.py::test_missing_local_pages_refuses_without_deleting_or_web_dispatch'),
+    ('frozen_citation_page_identity', 'ara/runtime/citations.py', "page_hash == paper['grounding']['source_text_sha256'] and", 'True and', 'tests/runtime/test_local_citations.py::test_local_page_content_and_identity_must_support_citation'),
+    ('frozen_citation_page_grounding', 'ara/runtime/citations.py', "not page_grounding['reasons'] and", 'True and', 'tests/runtime/test_local_citations.py::test_local_page_content_and_identity_must_support_citation'),
+    ('frozen_citation_mismatch', 'ara/runtime/citations.py', "mismatch = entry['status'] != 'unresolved' and item['text'] not in (entry['bibliography']['text'], entry['legacy_citation'])", 'mismatch = False', 'tests/runtime/test_local_citations.py::test_positive_bibliography_mismatch_is_logged_removal'),
+    ('frozen_citation_quote', 'ara/runtime/citations.py', "reason = 'exact_quotation_in_cited_pages' if exact else 'quotation_mismatch'", "exact = True\n        reason = 'exact_quotation_in_cited_pages' if exact else 'quotation_mismatch'", 'tests/runtime/test_local_citations.py::test_local_quotation_uses_cited_pages_not_web_absence'),
+    ('frozen_citation_export', 'ara/runtime/export.py', 'check_coverage(events, RouteGraph.from_dict(route), draft)', 'pass', 'tests/runtime/test_local_citations.py::test_cli_zero_citation_export_is_explicit_nonzero'),
+    ('frozen_citation_coverage', 'ara/runtime/citations.py', 'if not required <= cited or not required <= bibliography.keys() or not cited <= bibliography.keys():', 'if False:', 'tests/runtime/test_local_citations.py::test_export_refuses_missing_route_source_coverage'),
+    ('frozen_citation_restoration', 'ara/runtime/orchestration.py', 'draft = restore_citations(calls, route, draft)', 'draft = draft', 'tests/runtime/test_local_citations.py::test_citation_restoration_preserves_prose_and_repair_budget'),
+    ('frozen_citation_premise', 'ara/runtime/essay_audit.py', "elif role == 'argument_step' and premises and not premises <= set(cited):", 'elif False:', 'tests/runtime/test_local_citations.py::test_uncited_source_premise_cannot_hide_as_argument_step'),
+    ('frozen_citation_cited_inference', 'ara/runtime/essay_audit.py', "elif role == 'source_claim' or (cited and 'source_evidence' in inputs):", "elif role == 'source_claim':", 'tests/runtime/test_local_citations.py::test_cited_argument_step_cannot_hide_mismatched_source'),
+    ('frozen_citation_addition', 'ara/runtime/essay_audit.py', 'require(actual == expected or addition,', 'require(actual == expected,', 'tests/runtime/test_local_citations.py::test_miscited_sentence_can_add_only_approved_frozen_markers'),
+]
+
+
+CASES += [
+    ('audit_consensus_partial_history', 'ara/runtime/essay_audit.py', 'recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)', 'recovered = None', 'tests/runtime/test_audit_consensus.py::test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit'),
+    ('audit_consensus_partial_schema_history', 'ara/runtime/essay_audit.py', 'if recovered is not None:', 'if False:', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[invalid_label]'),
+    ('audit_consensus_corrected_partial_history', 'ara/runtime/essay_audit.py', "previous.pop('validation_feedback', None)", 'pass', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[corrected_partial]'),
+    ('frozen_citation_native_retention', 'ara/runtime/calls.py', 'local = local_verdicts(self, draft, all_items)', 'local = {}', 'tests/runtime/test_local_citations.py::test_native_competition_compose_cannot_strip_frozen_citations_and_export[True]'),
+]
+
+
+CASES += [
+    ('frozen_citation_absence_not_mismatch', 'ara/runtime/citations.py', "entry['status'] != 'unresolved' and item['text']", "item['text']", 'tests/runtime/test_local_citations.py::test_missing_local_pages_refuses_without_deleting_or_web_dispatch[S]'),
+    ('frozen_citation_no_provenance', 'ara/runtime/citations.py', "if frozen is not None and frozen.get(item['id']) is not None:", 'if False:', 'tests/runtime/test_local_citations.py::test_frozen_reference_without_provenance_refuses_instead_of_web_removal'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

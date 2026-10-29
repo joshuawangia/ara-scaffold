@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 from ara.runtime.cache import canonical, digest
-from ara.runtime.calls import ModelCalls, Rejected, require
+from ara.runtime.calls import ModelCalls, Rejected, EssayAuditFailed, require
 from ara.runtime.claude_code import ClaudeCodeError
 from ara.runtime.freeze_fork import effective_run
 from ara.runtime.writing import source_context
@@ -124,6 +124,8 @@ def polish(calls, route, draft, *, currency=None):
     candidate = None
     audit = dict(faithful=False)
     failure = None
+    repair_rounds = 0
+    accepted_repair_rounds = 0
     try:
         for index,chunk in enumerate(chunks):
             result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
@@ -135,22 +137,23 @@ def polish(calls, route, draft, *, currency=None):
         candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
             original_markdown=original,paragraphs=paragraphs(merged)),
             check_whole)
-        for attempt in range(2):
+        for attempt in range(4):
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
             try:
                 audit = calls.audit_essay(route,current,publication_context=publication_context)
                 break
-            except Rejected:
-                events = calls.log.read()
-                verdicts = [json.loads(e['payload_json']) for e in events if e['stage']=='essay_audit']
-                audit = verdicts[-1] if verdicts else dict(faithful=False)
-                if attempt or not audit.get('extra_steps'):
+            except EssayAuditFailed as rejection:
+                audit = rejection.result
+                if attempt == 3 or not audit.get('flags'):
                     raise
-                inputs = calls.audit_inputs(route,current)
-                flagged = [s['text'] for s in inputs['sentences'] if s['sentence'] in audit['extra_steps']]
+                inputs = rejection.inputs
+                flagged = [dict(**sentence,
+                    role=next(f['role'] for f in audit['flags'] if f['sentence']==sentence['sentence']),
+                    reasons=[f['reason'] for f in audit['flags'] if f['sentence']==sentence['sentence']])
+                    for sentence in inputs['sentences'] if sentence['sentence'] in audit['extra_steps']]
                 prior = paragraphs(candidate['markdown'])
-                allowed = [i for i,p in enumerate(prior) if any(s in NODE.sub('',p) for s in flagged)]
+                allowed = [i for i,p in enumerate(prior) if any(s['text'] in NODE.sub('',p) for s in flagged)]
                 require(bool(allowed), 'publication audit repair could not locate flagged paragraphs')
                 def validate_repair(value):
                     check_whole(value)
@@ -159,10 +162,13 @@ def polish(calls, route, draft, *, currency=None):
                     require(all(a == b for i,(a,b) in enumerate(zip(prior,after)) if i not in allowed),
                             'publication repair changed an unflagged paragraph')
                     return value
-                candidate = calls.call('polish_essay',dict(**base,mode='repair',markdown=candidate['markdown'],
+                repair_rounds = attempt + 1
+                candidate = calls.call('polish_essay',dict(**base,mode='repair',repair_round=repair_rounds,markdown=candidate['markdown'],
                     original_markdown=original,paragraphs=prior,allowed_paragraphs=allowed,
-                    flagged_sentences=flagged,audit=audit),validate_repair)
-                calls.log.record('publication_repair',allowed_paragraphs=allowed,**candidate)
+                    flagged_sentences=flagged,audit_failures=audit['flags'],audit=audit),validate_repair)
+                accepted_repair_rounds += 1
+                calls.log.record('publication_repair',round=repair_rounds,flagged_sentences=flagged,
+                                 audit_failures=audit['flags'],allowed_paragraphs=allowed,**candidate)
     except Rejected as exc:
         failure = str(exc)
         audit = {**audit,'faithful':False}
@@ -190,6 +196,7 @@ def polish(calls, route, draft, *, currency=None):
     references = render_references(chosen,evidence,records,currency,citation_receipt)
     result = dict(route_id=route.id,route_sha256=digest(route.to_json()),polished=success,audit=audit,polish_failure=failure,
         local_citations=local_citations,native_citations=native_citations,
+        repair_rounds=repair_rounds,accepted_repair_rounds=accepted_repair_rounds,
         words=len(NODE.sub('',FIGURE.sub('',reading)).split()),
         audit_words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
         reading_markdown=reading+references,citation_receipt=citation_receipt,literature_currency=currency,
@@ -215,7 +222,8 @@ def publish(log, result):
     log.record('publication_completed',path=str(target.relative_to(log.path.parent)),
         markdown_sha256=digest(result['markdown']),polished=result['polished'],audit=result['audit'],
         local_citations=result['local_citations'],native_citations=result['native_citations'],words=result['words'],
-        bibliographic_records=result['bibliographic_records'])
+        bibliographic_records=result['bibliographic_records'],repair_rounds=result['repair_rounds'],
+        accepted_repair_rounds=result['accepted_repair_rounds'])
     (directory/'latest.json').write_text(canonical(dict(path=name,sha256=digest(canonical(result)))))
     return result,target
 

@@ -1172,10 +1172,10 @@ class ModelCalls:
             return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
 
-    def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
+    def audit_inputs(self, route: RouteGraph, draft: dict, *, publication_context=None) -> dict:
         from ara.runtime.essay_audit import sentence_spans, NODE
-        parts = [NODE.sub('', draft['body'][start:end]).strip()
-                 for start, end in sentence_spans(draft['body'])]
+        spans = sentence_spans(draft['body'], literature=publication_context is not None)
+        parts = [NODE.sub('', draft['body'][start:end]).strip() for start, end in spans]
         inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
                   'outline': self.essay_outline(route),
                   'root_conclusion': {'node_id': route.root_id,
@@ -1183,19 +1183,25 @@ class ModelCalls:
         if self.config['essay_min_words'] >= 4500:
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
+        if publication_context is not None:
+            from ara.runtime.publication_audit import sentence_sections
+            inputs['publication_context'] = publication_context
+            for sentence, section in zip(inputs['sentences'], sentence_sections(draft['body'], spans)):
+                sentence['section'] = section
         return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None) -> dict:
         from collections import Counter
         from ara.runtime.essay_audit import audit_flags
-        inputs = self.audit_inputs(route, draft)
-        if publication_context is not None:
-            inputs['publication_context'] = publication_context
+        inputs = self.audit_inputs(route, draft, publication_context=publication_context)
         def check(data):
             ids = {n.id for n in route.nodes}
             expected = {s['sentence'] for s in inputs['sentences']}
             labels = data['labels']
             flags = audit_flags(labels, inputs, draft)
+            if publication_context is not None:
+                from ara.runtime.publication_audit import publication_flags
+                flags = publication_flags(labels, inputs, flags)
             numbers = [item['sentence'] for item in labels]
             if len(numbers) != len(set(numbers)) or set(numbers) != expected:
                 require(not flags,
@@ -1209,7 +1215,7 @@ class ModelCalls:
             covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
                        for node in item['node_ids']}
             missing = ids - covered
-            extra = [item['sentence'] for item in flags]
+            extra = list(dict.fromkeys(item['sentence'] for item in flags))
             markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
             result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
                       'extra_steps': extra, 'flags': flags,

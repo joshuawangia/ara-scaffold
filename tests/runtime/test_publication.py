@@ -92,7 +92,8 @@ def install_publication(rig, monkeypatch, adverse=0, repair_bad=False):
         elif kind in ('audit_essay', 'audit_publication'):
             audit_count+=1
             out={'labels':[dict(sentence=s['sentence'],node_ids=['n0','n1'],
-                asserts_premise_or_inference_not_in_outline=audit_count<=adverse and '[cite:p]' in s['text']) for s in data['sentences']]}
+                role='unsupported_claim' if audit_count<=adverse and '[cite:p]' in s['text'] else 'argument_step',
+                citation_supported=True,publication_issue='none') for s in data['sentences']]}
         elif kind=='search_evidence':
             raise ClaudeCodeError('stage_requires_api_provider')
         else: raise AssertionError(kind)
@@ -126,14 +127,21 @@ def test_native_polish_logs_sections_and_blocks_unavailable_verification(rig,mon
     assert any(e['stage']=='search_evidence' and json.loads(e['payload_json'])['status']=='rejected' for e in events)
 
 
-@pytest.mark.parametrize('adverse,expected',[(1,True),(2,False)])
-def test_one_targeted_repair_then_audit_or_exact_fallback(rig,monkeypatch,adverse,expected):
+@pytest.mark.parametrize('adverse,expected',[(1,True),(2,True),(3,True),(4,False)])
+def test_three_targeted_repairs_then_audit_or_exact_fallback(rig,monkeypatch,adverse,expected):
     from ara.runtime.publication import polish
     calls,route,seen=install_publication(rig,monkeypatch,adverse)
     result,_=polish(calls,route,paper())
     assert result['polished'] is expected
-    assert sum(k=='audit_publication' for k,_ in seen)==2
-    assert sum(k=='polish_essay' and d['mode']=='repair' for k,d in seen)==1
+    rounds=min(adverse,3)
+    assert sum(k=='audit_publication' for k,_ in seen)==rounds+1
+    repairs=[d for k,d in seen if k=='polish_essay' and d['mode']=='repair']
+    assert len(repairs)==result['repair_rounds']==rounds
+    assert [d['repair_round'] for d in repairs]==list(range(1,rounds+1))
+    for repair in repairs:
+        assert repair['flagged_sentences']
+        assert all(s['sentence']>0 and s['reasons']==['unsupported_claim'] for s in repair['flagged_sentences'])
+        assert repair['audit_failures']==repair['audit']['flags']
     if not expected:
         assert result['draft']==paper() and result['native_citations']['status']=='not_run'
 
@@ -312,7 +320,9 @@ def test_post_polish_audit_receives_currency_and_original_draft(rig,monkeypatch,
         if kind=='audit_publication':
             assert data['publication_context']['literature_currency']==currency
             assert data['publication_context']['original_draft']==paper()
-            return Response(response(dict(labels=[dict(sentence=s['sentence'],node_ids=['n0','n1'],asserts_premise_or_inference_not_in_outline=adverse and '[lit:' in s['text']) for s in data['sentences']])))
+            return Response(response(dict(labels=[dict(sentence=s['sentence'],node_ids=[] if '[lit:' in s['text'] else ['n0','n1'],
+                role=('unsupported_claim' if adverse else 'source_claim') if '[lit:' in s['text'] else 'argument_step',
+                citation_supported=True,publication_issue='none') for s in data['sentences']])))
         return old(kind,prompt,schema,maximum)
     monkeypatch.setattr(provider,'complete',complete)
     result,directory=polish(calls,route,paper(),currency=currency)
@@ -373,3 +383,63 @@ def test_publication_word_bounds_use_rendered_citations(rig,monkeypatch,words,ex
         assert result['audit_words']==words < 4500 <= result['words'] <= 6000
     else:
         assert 'word count' in result['polish_failure']
+
+
+@pytest.mark.parametrize('role',['framing','exposition','signpost','objection','reply'])
+def test_publication_typed_framing_is_not_a_false_positive(rig,monkeypatch,role):
+    from ara.runtime.publication import polish
+    calls,route,_=install_publication(rig,monkeypatch)
+    complete=calls.provider.complete
+    def classify(kind,prompt,schema,maximum):
+        raw=complete(kind,prompt,schema,maximum)
+        if kind=='audit_publication':
+            value=json.loads(raw.text()); value['labels'][0].update(role=role,node_ids=[])
+            return Response(response(value))
+        return raw
+    monkeypatch.setattr(calls.provider,'complete',classify)
+    result,_=polish(calls,route,paper())
+    assert result['polished'] and result['repair_rounds']==0
+    assert result['audit']['role_counts'][role]==1
+
+
+def test_publication_issue_reaches_targeted_repair(rig,monkeypatch):
+    from ara.runtime.publication import polish
+    calls,route,seen=install_publication(rig,monkeypatch)
+    complete=calls.provider.complete; audits=0
+    def classify(kind,prompt,schema,maximum):
+        nonlocal audits
+        raw=complete(kind,prompt,schema,maximum)
+        if kind=='audit_publication':
+            audits+=1;value=json.loads(raw.text())
+            if audits==1:
+                data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
+                n=next(s['sentence'] for s in data['sentences'] if not s['text'].startswith('#'))
+                next(l for l in value['labels'] if l['sentence']==n)['publication_issue']='thesis_placement'
+            return Response(response(value))
+        return raw
+    monkeypatch.setattr(calls.provider,'complete',classify)
+    result,_=polish(calls,route,paper())
+    assert result['polished'] and result['repair_rounds']==1
+    repair=next(d for k,d in seen if k=='polish_essay' and d['mode']=='repair')
+    assert repair['flagged_sentences'][0]['reasons']==['thesis_placement']
+
+
+def test_publication_literature_sentence_scope_and_typed_support(rig,monkeypatch):
+    from ara.runtime.calls import EssayAuditFailed
+    calls,route,_=install_publication(rig,monkeypatch)
+    currency={'evidence':{'p:e':{'kind':'read_fulltext','work':'p'}}}
+    context=dict(original_draft=paper(),literature_currency=currency)
+    draft=dict(title='P',body='## 1. Related work and scope of the novelty claim\n\nP. [lit:p:e]\n\n## 2. Argument\n\n[[node:n0]] [[node:n1]] Q.',bibliography=[])
+    def complete(kind,prompt,schema,maximum):
+        data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        return Response(response(dict(labels=[dict(sentence=s['sentence'],role='source_claim' if '[lit:' in s['text'] else 'argument_step',
+            node_ids=[] if '[lit:' in s['text'] else ['n0','n1'],citation_supported=True,publication_issue='none') for s in data['sentences']])))
+    monkeypatch.setattr(calls.provider,'complete',complete)
+    inputs=calls.audit_inputs(route,draft,publication_context=context)
+    sentence=next(s for s in inputs['sentences'] if '[lit:' in s['text'])
+    assert sentence['text']=='P. [lit:p:e]'
+    assert sentence['section']=='Related work and scope of the novelty claim'
+    assert calls.audit_essay(route,draft,publication_context=context)['faithful']
+    for changed,reason in [(draft['body'].replace('Related work and scope of the novelty claim','Introduction'),'literature_scope'),(draft['body'].replace('[lit:p:e]','[lit:p:z]'),'miscited_literature_claim')]:
+        with pytest.raises(EssayAuditFailed) as exc:calls.audit_essay(route,{**draft,'body':changed},publication_context=context)
+        assert reason in [f['reason'] for f in exc.value.result['flags']]

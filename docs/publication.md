@@ -23,7 +23,10 @@ unchanged. The existing canary, forbidden-context scan, identity/credential scan
 cache, schema validation, budget and append-only receipts apply. It opens one
 logical call per section and one whole-paper call. Transport retries retain their
 native bounded policy; publication validation does not silently regenerate a
-section. A complete adverse audit permits one targeted repair, then a full audit.
+section. A complete adverse typed audit permits up to three targeted repair rounds,
+each followed by a full audit. Every round receives exact flagged sentence numbers,
+text, typed roles and reason categories; only their paragraphs may change.
+Attempted and accepted repair counts are recorded separately.
 Remaining failure retains the original draft and explicitly records fallback.
 
 The structured response contains Markdown, figure placements and a paragraph
@@ -82,7 +85,12 @@ The optional numbered “Related work and scope of the novelty claim” section 
 separate `[lit:ID]` citations. All such citations must resolve to the logged record
 and stay in that section; the section cannot acquire route-node markers. The
 publication audit uses the native sentence-label and coverage checks with a
-publication-specific prompt. It receives the original draft and exactly the same
+publication-specific prompt. Source claims, argument steps, presentation, objections
+and replies have distinct roles; framing alone does not fail or satisfy route
+coverage. Unsupported substance, miscitation and unmapped argument steps still
+fail. Publication-specific reasons also identify misplaced literature positioning,
+misplaced thesis restatements, unsupported elaboration and material changes to the
+original draft. It receives the original draft and exactly the same
 currency evidence. Unsupported attribution, general novelty claims, loss of
 substantive limits and misuse of another proposal's search result are adverse
 labels. Only bounded absence within the stated 2018–2026 search and recorded
@@ -93,7 +101,10 @@ Polishing can merge or remove redundant paragraphs while retaining the distinct
 citation and route-node inventories. The change log follows output paragraphs;
 claim-level preservation is checked by the audit, not inferred from marker
 counts. Prompts call for a clear thesis, signposted argument, CQ-grounded
-objections, concise limits and removal of repetitive hedging. Word bounds apply
+objections, concise limits and removal of repetitive hedging. Literature positioning
+belongs only in related work; thesis statements belong only in the abstract,
+introduction and conclusion. Repairs may not elaborate beyond route nodes and
+answered CQs. These instructions also govern each targeted repair. Word bounds apply
 to the rendered reading text before acceptance, excluding references and internal
 markers. The shorter raw citation IDs in the audit copy do not impose a second
 minimum. Both counts remain in the receipt.

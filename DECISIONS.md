@@ -4025,3 +4025,17 @@ citations are deterministic author–year displays of provenance, with physical 
 pages explicitly labelled. The raw identifiers remain in accompanying receipts.
 
 Publication reading word count (quality followup): enforce the 4,500–6,000 bound on the reading text with rendered citations, excluding references and internal markers. Raw citation IDs make the annotated copy shorter; its count remains diagnostic, not a second minimum. This supersedes the dual-count gate noted above.
+
+
+## Publication typed audit and bounded repairs (2026-10-29)
+
+Publication adopts the writer's typed sentence audit. Presentation roles do not
+require route mappings and never establish coverage; source, inference and
+unsupported-claim checks retain their native semantics. The separate publication
+schema adds reason categories for placement, unsupported elaboration and draft
+fidelity. Logged currency claims remain a related-work-only exception, never
+route evidence. Publication passes the exact adverse inputs and reason categories
+into up to three targeted rounds, auditing after each and retaining original
+fallback after exhaustion. Each round keeps unflagged paragraphs unchanged.
+Attempted and accepted round counts remain distinct in artifacts and events.
+This supersedes the original publication stage's single-repair limit.

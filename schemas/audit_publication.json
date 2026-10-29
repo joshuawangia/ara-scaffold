@@ -22,14 +22,39 @@
               "minLength": 1
             }
           },
-          "asserts_premise_or_inference_not_in_outline": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "source_claim",
+              "argument_step",
+              "framing",
+              "exposition",
+              "signpost",
+              "objection",
+              "reply",
+              "unsupported_claim"
+            ]
+          },
+          "citation_supported": {
             "type": "boolean"
+          },
+          "publication_issue": {
+            "type": "string",
+            "enum": [
+              "none",
+              "literature_scope",
+              "thesis_placement",
+              "unsupported_elaboration",
+              "original_draft_fidelity"
+            ]
           }
         },
         "required": [
           "sentence",
           "node_ids",
-          "asserts_premise_or_inference_not_in_outline"
+          "role",
+          "citation_supported",
+          "publication_issue"
         ]
       }
     }

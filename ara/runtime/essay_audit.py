@@ -9,11 +9,12 @@ CITE = re.compile(r'\[cite:[^\]]+\]')
 BOUNDARY = re.compile(r'''[.!?]["”’')]*(?:\s*\[cite:[^\]]+\])*(?=\s|$)|\n+''')
 
 
-def sentence_spans(body):
+def sentence_spans(body, *, literature=False):
     """Keep original offsets; node markers are transparent to punctuation."""
     masked = NODE.sub(lambda match: ' ' * len(match.group()), body)
     spans, start = [], 0
-    for match in BOUNDARY.finditer(masked):
+    boundary = re.compile(BOUNDARY.pattern.replace(r'\[cite:', r'\[(?:cite|lit):')) if literature else BOUNDARY
+    for match in boundary.finditer(masked):
         end = match.start() if match.group().startswith('\n') else match.end()
         if not NODE.sub('', body[start:end]).strip():
             continue

@@ -182,6 +182,40 @@ def merge_extraction_patch(candidate: dict, patch: dict) -> dict:
     return merged
 
 
+def prune_extraction_relations(candidate: dict, existing=()) -> tuple[dict, list[dict], int]:
+    """Remove invalid edges only; one populated endpoint is one counted edge.
+
+    The caller validates the schema first. No item, attribution, citation,
+    inference origin, or text is edited, and the input remains untouched.
+    """
+    from copy import deepcopy
+    repaired = deepcopy(candidate)
+    by_id = {item.id: item.kind for item in existing}
+    by_id.update({item['id']: item['kind'] for item in candidate['items']})
+    removals, total = [], 0
+    for item in repaired['items']:
+        for field, refs in extraction_references(item):
+            total += len(refs)
+            retained = []
+            for ref in refs:
+                reason = None
+                if field not in RELATIONS_BY_KIND.get(item['kind'], []):
+                    reason = 'invalid_relation_dropped'
+                elif ref not in by_id:
+                    reason = 'dangling_link_dropped'
+                elif item['kind'] == 'inference' and (
+                    (field in ('premise_ids', 'conclusion_id') and by_id[ref] == 'inference') or
+                    (field == 'qualification_ids' and by_id[ref] not in ('distinction', 'qualification'))):
+                    reason = 'invalid_relation_dropped'
+                if reason:
+                    removals.append(dict(event=reason, item_id=item['id'], field=field, original_value=ref))
+                else:
+                    retained.append(ref)
+            if len(retained) != len(refs):
+                item[field] = (retained[0] if retained else None) if field == 'conclusion_id' else retained
+    return repaired, removals, total
+
+
 def word_count(draft: dict) -> int:
     # Count every whitespace-delimited token in title and body, including markers.
     return len(re.findall(r'\S+', draft['title'] + '\n' + draft['body']))
@@ -799,8 +833,6 @@ class ModelCalls:
                 return self._call_once('extract_paper', request,
                                        check if correction == 0 else corrected, attempt=correction + 1)
             except InvalidOutput as exc:
-                if correction == corrections:
-                    raise
                 try:
                     rejected = json.loads(exc.feedback['rejected_response'])
                     if hasattr(self.provider, 'normalize_output'):
@@ -821,9 +853,45 @@ class ModelCalls:
                                             changes=changes)
                     # Keep changes/additions from a failed patch visible to the
                     # next correction; never restart from a truncated inventory.
+                    if candidate is not None:
+                        addressed = {item['id'] for item in rejected['items']} | {d['id'] for d in rejected.get('discard_items', [])}
+                        required_reference_updates = [id for id in required_reference_updates if id not in addressed]
                     candidate = merge_extraction_patch(candidate or rejected, rejected)
                 except (ValueError, KeyError, TypeError) as error:
+                    if correction == corrections:
+                        raise exc
                     raise Rejected('candidate cannot support targeted correction') from error
+                if correction == corrections:
+                    require(not required_reference_updates,
+                            'duplicate references require explicit correction: ' + canonical(required_reference_updates))
+                    extraction_defaults(candidate)
+                    schema = self.response_schema('extract_paper', inputs)
+                    try:
+                        validate_local(schema, candidate, self.config)
+                    except ValidationError:
+                        raise exc
+                    repaired, removals, total = prune_extraction_relations(candidate, existing)
+                    if not removals:
+                        raise exc
+                    details = dict(source_id=paper.source_id, prefix=prefix, removed=len(removals),
+                                   total=total, share=len(removals) / total, policy='terminal-edge-pruning-v1',
+                                   corrections=correction, correction_limit=corrections,
+                                   candidate_hash=digest(canonical(candidate)))
+                    for removal in removals:
+                        self.log.record(removal['event'], source_id=paper.source_id, prefix=prefix,
+                                        **{k: v for k, v in removal.items() if k != 'event'})
+                    try:
+                        require(len(removals) * 4 <= total, 'repair share exceeds 25%')
+                        validate_local(schema, repaired, self.config)
+                        require(any(i['kind'] == 'inference' for i in repaired['items']),
+                                'repaired range requires at least one inference')
+                        result = check(repaired)
+                    except (Rejected, ValidationError) as error:
+                        self.log.record('extraction_structure_repaired', **details, status='rejected', reason=str(error))
+                        raise Rejected(str(error)) from error
+                    self.log.record('extraction_structure_repaired', **details, status='accepted',
+                                    inputs=inputs, candidate=candidate, repaired=repaired)
+                    return result
                 request = {**inputs, 'mode': 'targeted_correction',
                            'original_mode': inputs.get('mode'), 'candidate': candidate,
                            'validation_error': exc.feedback['error'],

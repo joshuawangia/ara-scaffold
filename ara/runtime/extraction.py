@@ -24,7 +24,7 @@ HEADER = '# ARA extracted literature v2\n'
 EXTRACTION_VERSION = 2
 PUBLICATION_POLICY = 'quarantine-aware-v1'
 # Bump when validation, normalization, mode schemas or graph interpretation change.
-EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v7'
+EXTRACTION_ACCEPTANCE_VERSION = 'rich-paper-acceptance-v8'
 V5_UNION_PROMPT_SHA256 = '7f653b3126df705c7fe2ccd8fb806f0c864146dfee63f12d4b907beb6492e537'
 V5_SCHEMA_SHA256 = 'e5995f28b1d3c311c10de7894e5106634cec33ba70f13310a5dd23d1df323df9'
 # The reviewed predecessors; unknown contracts never migrate by version alone.

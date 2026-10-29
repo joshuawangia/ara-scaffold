@@ -32,7 +32,7 @@ def is_thin(pages, items):
 
 def accepted_ranges(events, papers, config, root, log):
     from ara.runtime.calls import (ModelCalls, normalize_extraction, extraction_defaults,
-                                   normalize_patch_ids, merge_extraction_patch)
+                                   normalize_patch_ids, merge_extraction_patch, prune_extraction_relations, require)
     selected = {p.source_id: p for p in papers}
     expected = extraction_acceptance_identity(config, root)
     results = {}
@@ -59,13 +59,14 @@ def accepted_ranges(events, papers, config, root, log):
             windows[payload['source_id']] = payload
         elif stage == 'extraction_thin_retry':
             refined_pages.setdefault(payload['source_id'], set()).update(payload['pages'])
-        if stage != 'extract_paper' or event['label'] != 'MODEL' or payload.get('status') != 'accepted':
+        structural_repair = stage == 'extraction_structure_repaired' and payload.get('status') == 'accepted'
+        if not structural_repair and (stage != 'extract_paper' or event['label'] != 'MODEL' or payload.get('status') != 'accepted'):
             continue
         event_id = digest(canonical(event))
-        if event_id in seen or not event.get('response') or '\nINPUT_JSON\n' not in event['prompt']:
+        if event_id in seen or (not structural_repair and (not event.get('response') or '\nINPUT_JSON\n' not in event['prompt'])):
             continue
         seen.add(event_id)
-        request = json.loads(event['prompt'].split('\nINPUT_JSON\n')[1])
+        request = payload['inputs'] if structural_repair else json.loads(event['prompt'].split('\nINPUT_JSON\n')[1])
         source = request['source_id']
         if source not in selected or cfg is None or source not in windows:
             continue
@@ -74,7 +75,10 @@ def accepted_ranges(events, papers, config, root, log):
         if any(previous[k] != expected[k] for k in ('provider', 'stage', 'require_inference')):
             log.record('extraction_range_salvage_excluded', source_id=source, receipt_hash=event_id, reason='Incompatible effective extraction profile.')
             continue
-        template = event['prompt'].split('\nLOCAL_RESPONSE_SCHEMA')[0]
+        if structural_repair:
+            require(previous == expected and payload['policy'] == 'terminal-edge-pruning-v1',
+                    'incompatible structural repair receipt')
+        template = (root / 'prompts' / 'extract_paper.txt').read_text() if structural_repair else event['prompt'].split('\nLOCAL_RESPONSE_SCHEMA')[0]
         if digest(template) not in (V4_PROMPT_SHA256, V5_PRE_UNION_PROMPT_SHA256, V5_UNION_PROMPT_SHA256, expected['prompt_sha256']):
             # Older, unreviewed contracts cannot qualify through a version label.
             log.record('extraction_range_salvage_excluded', source_id=source, receipt_hash=event_id, reason='Unreviewed predecessor prompt contract.')
@@ -95,7 +99,18 @@ def accepted_ranges(events, papers, config, root, log):
                 if original.get(item['id']) != item:
                     raise ValueError('salvage reference lacks accepted evidence receipt')
                 existing.append(ExtractedItem(**{k:v for k,v in item.items() if k != 'citation'}))
-        raw = json.loads(Response(json.loads(event['response'])).text())
+        if structural_repair:
+            from ara.runtime.validation import validate_local
+            candidate = payload['candidate']
+            require(digest(canonical(candidate)) == payload['candidate_hash'], 'repair candidate hash mismatch')
+            validate_local(checker.response_schema('extract_paper', request), candidate, config)
+            raw, removals, total = prune_extraction_relations(candidate, existing)
+            require(bool(removals) and len(removals) * 4 <= total, 'repair share exceeds 25%')
+            require(raw == payload['repaired'] and len(removals) == payload['removed'] and total == payload['total'],
+                    'structural repair receipt mismatch')
+            require(any(i['kind'] == 'inference' for i in raw['items']), 'repaired range requires at least one inference')
+        else:
+            raw = json.loads(Response(json.loads(event['response'])).text())
         if cfg.get('provider') == 'codex_cli':
             from ara.runtime.codex_schema import normalize_output
             raw = normalize_output(checker.response_schema('extract_paper', request), raw, config)

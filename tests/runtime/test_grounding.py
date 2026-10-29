@@ -141,7 +141,7 @@ def test_quarantined_resolution_reopens_gap(rig):
     assert literature_entry(outcome)['open_gaps']==outcome['obligations']
 
 
-def test_discard_cannot_remove_accepted_or_leave_dangling_link(rig,monkeypatch):
+def test_discard_cannot_remove_accepted_and_terminal_pruning_removes_dangling_link(rig,monkeypatch):
     from ara.runtime.calls import merge_extraction_patch,Rejected
     candidate=sample()
     with pytest.raises(Rejected,match='discard'):
@@ -152,8 +152,12 @@ def test_discard_cannot_remove_accepted_or_leave_dangling_link(rig,monkeypatch):
     candidate['items'][0]['page_end']=99
     patch={**candidate,'items':[], 'discard_items':[dict(id='p',reason='P')]}
     sequence(monkeypatch,provider,[candidate,patch])
-    with pytest.raises(Rejected,match='unknown endpoint'):
-        calls.extract_paper(papers[0])
+    result = calls.extract_paper(papers[0])
+    assert len(result.items) == 7  # Only the model's explicit rejected-item discard.
+    assert next(i for i in result.items if i.id.endswith(':i')).premise_ids == ('p:r1-2:q',)
+    repairs = [json.loads(e['payload_json']) for e in calls.log.read() if e['stage']=='extraction_structure_repaired']
+    assert len(repairs) == 1 and repairs[0]['status'] == 'accepted'
+    assert repairs[0]['removed'] == 1 and repairs[0]['total'] == 9
 
 
 def test_revalidated_history_can_resume_again_without_conflict(rig,monkeypatch,tmp_path):

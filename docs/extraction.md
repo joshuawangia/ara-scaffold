@@ -179,7 +179,7 @@ the originating snapshot. The artifact carries per-item provenance and original
 snapshot identities and checkpoints. Gaps and resolutions remain snapshot-scoped;
 quarantine is recomputed over the union. A second resume rebuilds from verified
 original snapshots rather than recursively unioning derived copies. The acceptance
-identity is v7; `completed-snapshot-union-v1` versions this publication
+identity is v8; `completed-snapshot-union-v1` versions this publication
 representation.
 
 ## Extraction and provenance API
@@ -350,7 +350,40 @@ runtime does not infer intended links, change source text or relax local checks.
 Codex wire nulls are normalized before a failed patch is merged for another
 attempt. Raw responses and all correction/normalization receipts remain retained.
 
-The acceptance identity is `rich-paper-acceptance-v7`. Existing v6 paper outcomes
+The acceptance identity is `rich-paper-acceptance-v8`. Existing v6/v7 paper outcomes
 do not automatically qualify for reuse under this changed recovery contract.
 Use fresh extraction evidence; older reviewed v4/v5 migration still requires
 the existing full source and graph revalidation.
+
+
+## Terminal structural pruning
+
+After the configured targeted corrections are exhausted (including zero), the
+runtime may delete invalid relation endpoints from the final cumulative range
+candidate. It clears `applies_to` on kinds other than distinction/qualification,
+removes relation fields forbidden for a node kind, drops endpoints absent from
+the candidate and immutable evidence, and removes inference endpoints with an
+invalid target kind. It never adds, removes or rewrites items, text, attribution,
+page citations or inference origins. Ambiguous duplicate references still refuse.
+Reconciliation retains its existing single-pass behavior.
+
+Each populated endpoint counts as one edge, including a scalar conclusion and
+each entry in an array. Empty fields do not count. The denominator is the final
+candidate's edge count before deletion; each deleted edge is counted once even
+if it has multiple defects. The repaired share must be at most 25%, inclusive.
+The entire repaired candidate must pass local schema and graph checks and contain
+at least one valid inference. An inference missing its sole premise or conclusion
+still fails; pruning never discards its item. Citation, grounding, quarantine and
+publication checks remain in their native paths. This policy does not establish
+semantic fidelity or completeness.
+
+Each removal retains its item ID, field and original endpoint in an
+`invalid_relation_dropped` or `dangling_link_dropped` event. A separate
+`extraction_structure_repaired` receipt states the policy, range, counts, share,
+correction limit and accepted/rejected status. Accepted receipts retain both
+candidates for deterministic offline verification; model responses remain rejected
+and retain their original usage and content. No synthetic model call is logged.
+Methodology reports per-paper totals and per-range status, including rejected
+repair attempts. Counts are attempts, not unique published edges across resume.
+Offline salvage reruns the deletion policy and validation before retaining a
+repaired range. The policy is `terminal-edge-pruning-v1` under acceptance v8.

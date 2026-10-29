@@ -3925,3 +3925,25 @@ O15.4. A two-paper live quality gate must precede a new bridge batch. Acceptance
 item/inference coverage and grounding/quarantine are separate measurements.
 Structural repair and passing placeholders alone do not establish source
 fidelity, model serving identity, or adequate live extraction quality.
+
+
+## Omega round 16 — Bounded terminal structural pruning
+
+O16.1. After targeted range corrections are exhausted, invalid relation endpoints
+may be removed deterministically from the cumulative candidate. Never add or
+rewrite items, source text, attribution, citations or inference origins. Preserve
+ambiguous-reference refusal. Keep raw MODEL rejections and separate each removal
+receipt with its original endpoint.
+
+O16.2. Count each populated endpoint once, before pruning. Accept only when at
+most 25% are removed and the repaired candidate passes the existing schema,
+reference and citation checks with at least one inference. Grounding/quarantine
+and publication stay downstream. Failed candidates remain failures; no missing
+inference endpoint is invented. Methodology discloses counts and range status
+per paper. Acceptance v8 and terminal-edge-pruning-v1 bind replay to this policy.
+
+O16.3. Retest the two prior papers. Only if both are accepted, extract the current
+28-paper bridge manifest with resume and continue-on-failure, retaining per-paper
+outcomes and publishing the native literature artifact. Subscription Codex only;
+no API, Claude, credential rotation or push. Structural acceptance is separate
+from completeness, semantic fidelity and verified serving identity.

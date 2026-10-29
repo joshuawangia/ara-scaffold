@@ -63,7 +63,19 @@ def methodology(log_path: Path) -> str:
                 'budget_accounted': raw_totals(selected)}
     def totals(selected):
         return {**raw_totals(selected), **split_totals(selected)}
+    structural_repairs = {}
+    for event in events:
+        if event['stage'] != 'extraction_structure_repaired':
+            continue
+        repair = json.loads(event['payload_json'])
+        paper = structural_repairs.setdefault(repair['source_id'], dict(removed=0, total=0, accepted_ranges=0, rejected_ranges=0, ranges=[]))
+        paper['removed'] += repair['removed']
+        paper['total'] += repair['total']
+        paper[repair['status'] + '_ranges'] += 1
+        paper['ranges'].append({k: repair[k] for k in ('prefix', 'removed', 'total', 'share', 'status', 'policy')})
     extraction_summary = {
+        'structural_repairs_by_paper': structural_repairs,
+        'structural_repair_note': 'After corrections, invalid edges may be deleted only; each populated endpoint counts once. Each repaired range must remove at most 25% and pass validation with at least one inference. Counts include rejected repair attempts; no text or citation repair.',
         **split_totals(extraction_calls),
         'acceptance_note': 'Accepted range union; reconciliation is one best-effort pass. Open gaps and thin ranges are not completeness guarantees.',
         'publication_roster': publication_roster(outcomes),

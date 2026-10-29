@@ -148,7 +148,7 @@ CASES += [
     ('zero_inference_disclosure', 'ara/runtime/calls.py', "if self.config.get('extraction_require_inference', False) and not any(i.kind == 'inference' for i in items):", 'if False:', 'tests/runtime/test_extraction_round3b.py::test_zero_inference_disclosed_without_correction'),
     ('targeted_inventory_retained', 'ara/runtime/calls.py', "[updates.pop(id, item) for id, item in old.items() if id not in ids]", '[]', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-inferences]'),
     ('targeted_unchanged_allowed', 'ara/runtime/calls.py', "old, updates = inventory(candidate), inventory(patch)", "old, updates = inventory(candidate), inventory(patch)\n    require(all(item != old.get(item['id']) for item in patch['items']), 'unchanged')", 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[unchanged-inferences]'),
-    ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if correction == corrections:', "                if correction == corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
+    ('targeted_per_response_recovery', 'ara/runtime/calls.py', '                if correction == corrections:\n                    require(not required_reference_updates,', "                if correction == corrections or any(e['stage'] == 'extraction_targeted_correction' for e in self.log.read()):\n                    require(not required_reference_updates,", 'tests/runtime/test_context_request_fix.py::test_second_range_gets_correction_after_first_used_one'),
     ('qualification_local_guard', 'ara/runtime/calls.py', "require(not item.applies_to or item.kind in ('distinction', 'qualification'),", 'require(True,', 'tests/runtime/test_extraction_round3b.py::test_targeted_correction_preserves_inventory_and_is_bounded[valid-relation]'),
 ]
 
@@ -1736,6 +1736,14 @@ CASES += [
      "rejected = self.provider.normalize_output(self.response_schema('extract_paper', request), rejected)",
      'rejected = rejected',
      'tests/runtime/test_codex_extraction.py::test_codex_duplicate_initial_wire_recovers_and_replays[True]'),
+    ('terminal_pruning_dispatch', 'ara/runtime/calls.py', 'repaired, removals, total = prune_extraction_relations(candidate, existing)', 'repaired, removals, total = candidate, [], 0', 'tests/runtime/test_extraction_structure_pruning.py::test_terminal_pruning_preserves_content_and_logs_original_values'),
+    ('terminal_pruning_share', 'ara/runtime/calls.py', "require(len(removals) * 4 <= total, 'repair share exceeds 25%')", "require(True, 'repair share exceeds 25%')", 'tests/runtime/test_extraction_structure_pruning.py::test_pruning_over_quarter_fails_and_logs_disposition'),
+    ('terminal_pruning_inference', 'ara/runtime/calls.py', "require(any(i['kind'] == 'inference' for i in repaired['items']),", 'require(True,', 'tests/runtime/test_extraction_structure_pruning.py::test_pruning_cannot_bypass_other_acceptance_checks[no_inference]'),
+    ('terminal_pruning_dangling', 'ara/runtime/calls.py', 'elif ref not in by_id:', 'elif False:', 'tests/runtime/test_extraction_structure_pruning.py::test_pruning_drops_only_bad_endpoint[premise_ids-missing-dangling_link_dropped]'),
+    ('terminal_pruning_preservation', 'ara/runtime/calls.py', 'repaired = deepcopy(candidate)', 'repaired = candidate', 'tests/runtime/test_extraction_structure_pruning.py::test_pruning_preserves_existing_endpoints_and_is_deletion_only'),
+    ('terminal_pruning_receipts', 'ara/runtime/calls.py', "self.log.record(removal['event'], source_id=paper.source_id, prefix=prefix,", "self.log.record('omitted', source_id=paper.source_id, prefix=prefix,", 'tests/runtime/test_extraction_structure_pruning.py::test_terminal_pruning_preserves_content_and_logs_original_values'),
+    ('terminal_pruning_methodology', 'ara/runtime/export.py', "'structural_repairs_by_paper': structural_repairs,", "'structural_repairs_by_paper': {},", 'tests/runtime/test_extraction_structure_pruning.py::test_terminal_pruning_preserves_content_and_logs_original_values'),
+    ('terminal_pruning_replay', 'ara/runtime/salvage.py', "require(raw == payload['repaired'] and len(removals) == payload['removed'] and total == payload['total'],", 'require(True,', 'tests/runtime/test_extraction_structure_pruning.py::test_pruned_receipts_cannot_change_content_or_counts_on_replay[text]'),
 ]
 
 

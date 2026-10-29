@@ -71,6 +71,9 @@ def canned(config):
         if kind in ('map_leaf', 'propose_cuts'):
             from ara.runtime.search_context import leaf_slice
             inputs = leaf_slice(inputs, 8)
+        if kind == 'propose_targets':
+            from ara.runtime.search_context import target_slice
+            inputs = target_slice(inputs, config.get('target_context_hops', 1))
         prompt = calls.render(kind, inputs)[1]
         result[mock_key(kind, prompt)] = {
             'model': config['model'], 'stop_reason': 'end_turn',

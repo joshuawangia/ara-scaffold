@@ -37,6 +37,9 @@ def register(calls, provider, kind, inputs, value, **updates):
     if kind in ('map_leaf', 'propose_cuts'):
         from ara.runtime.search_context import leaf_slice
         inputs = leaf_slice(inputs, 8)
+    if kind == 'propose_targets' and 'commitments' in inputs:
+        from ara.runtime.search_context import target_slice
+        inputs = target_slice(inputs, calls.config.get('target_context_hops', 1))
     if kind == 'answer_cq':
         from ara.runtime.cq_context import fit_cq_request
         inputs = fit_cq_request(calls, inputs)

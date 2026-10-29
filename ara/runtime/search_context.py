@@ -84,3 +84,91 @@ def fit_leaf_request(calls, kind, inputs):
             return data
     calls.count_request(kind, data, admission=True)
     return data
+
+
+def target_slice(inputs, hops):
+    """Prompt projection only: required whole hops, plus a complete frozen index."""
+    from ara.runtime.closure_budget import depth_cut
+    if type(hops) is not int or hops < 0:
+        raise ValueError('target_context_hops must be a nonnegative integer')
+    commitments = CommitmentSet.from_dict(inputs['commitments'])
+    items = {c.id: c for c in commitments.commitments}
+    signatures = {c.id: set(symbols(c.formula)) for c in commitments.commitments}
+    provenance = inputs.get('commitment_provenance')
+    roles = provenance['commitments'] if provenance else {}
+    mandatory = {tid: set(roles.get(tid, {}).get('evidence_ids', [])) for tid in items}
+    dependencies = {tid: {other for other in items if other != tid and signatures[tid] & signatures[other]}
+                    for tid in items}
+    gap = inputs.get('resolution_gap')
+    roots = (set(gap['commitment_ids']) | {tid for group in gap.get('support_groups', []) for tid in group}
+             if gap else {tid for lead in inputs.get('forward_candidates', []) for tid in lead['support_ids']})
+    if not roots <= items.keys() or any(not ids <= items.keys() for ids in mandatory.values()):
+        raise ValueError('target scope contains unknown frozen commitment IDs')
+    full, boundary, depth = depth_cut(items, roots, dependencies, lambda ids: True,
+                                     max_depth=hops, mandatory=mandatory)
+    compact = set(items) - full
+    referenced = set().union(*signatures.values())
+    full_names = {name for tid in full for name, _, _ in signatures[tid]}
+    alignment = inputs.get('alignment_disclosure', {})
+    mapping = (provenance or {}).get('alignment', {}).get('mapping', {})
+    def relevant(pair):
+        return any(mapping.get(pair[key], pair[key]) in full_names for key in ('left', 'right'))
+    judgments = alignment.get('judgments', [])
+    kept_judgments = [j for j in judgments if relevant(j)]
+    unresolved = alignment.get('unresolved', [])
+    kept_unresolved = [j for j in unresolved if relevant(j)]
+    def citation(tid):
+        row = roles.get(tid, {})
+        if row.get('stance') == 'model_alignment':
+            return dict(evidence=[dict(id=eid, citation=citation(eid)) for eid in row['evidence_ids']])
+        if 'page_start' in row:
+            return {key: row[key] for key in ('source_id', 'page_start', 'page_end')}
+        return dict(legacy_citation=items[tid].citation)
+    catalogue = inputs.get('symbol_catalogue')
+    bridges = inputs.get('candidate_bridges', [])
+    selected_bridges = [b for b in bridges if gap is None or set(b['commitment_ids']) <= full]
+    data = {key: value for key, value in inputs.items() if key != 'commitment_provenance'}
+    data.update(commitments=CommitmentSet(tuple(c for c in commitments.commitments if c.id in full)).to_dict(),
+        compact_commitments=[dict(id=tid, formula=items[tid].formula.to_dict(),
+            stance=roles.get(tid, {}).get('stance', 'unavailable_legacy'), citation=citation(tid)) for tid in sorted(compact)],
+        commitments_scope='full_neighbourhood_plus_complete_compact_frozen_index',
+        commitment_roles={tid: roles[tid] for tid in sorted(full) if tid in roles} if provenance else None,
+        provenance_scope='projected_rows_bound_to_full_provenance_sha256',
+        symbol_catalogue=[s for s in catalogue if (s['name'],s['kind'],s['arity']) in referenced] if catalogue is not None else None,
+        candidate_bridges=selected_bridges,
+        alignment_disclosure={**alignment, 'judgments': kept_judgments, 'unresolved': kept_unresolved,
+            'unresolved_count': len(kept_unresolved), 'full_unresolved_count': len(unresolved),
+            'mapping': {a:b for a,b in alignment.get('mapping', {}).items() if b in full_names},
+            'scope': 'pairs_touching_full_neighbourhood'},
+        conditionals=[dict(id=c['id'], formula=c['formula']) for c in inputs.get('conditionals', [])],
+        target_slice=dict(version='target-context-v1', hops=hops, reached_depth=depth,
+            root_ids=sorted(roots), full_ids=sorted(full), compact_ids=sorted(compact),
+            omitted_commitment_ids=[], unexpanded_neighbours=boundary,
+            full_inputs_sha256=digest(canonical(inputs)),
+            full_alignment_sha256=digest(canonical(alignment)),
+            projected_alignment_pair_ids=[[j['left'],j['right']] for j in judgments if not relevant(j)],
+            projected_unresolved_pair_ids=[[j['left'],j['right']] for j in unresolved if not relevant(j)],
+            projected_bridge_ids=[b['bridge_id'] for b in bridges if b not in selected_bridges],
+            projected_symbol_names=[s['name'] for s in catalogue or [] if (s['name'],s['kind'],s['arity']) not in referenced],
+            projected_fields=['commitment_provenance', 'commitments', 'conditionals', 'alignment_disclosure',
+                              'candidate_bridges', 'symbol_catalogue'],
+            policy='No commitment or formula omitted. Full rows retain exact text and provenance; compact rows omit text and quotes. Validation uses full frozen T.'))
+    return data
+
+
+def fit_target_request(calls, inputs):
+    data = target_slice(inputs, calls.config.get('target_context_hops', 1))
+    count = calls.count_request('propose_targets', data)
+    total = count.initial_input_tokens + count.context_output_tokens
+    fits = total <= calls.config['model_context_token_bound']
+    calls.log.record('target_context_slice', **data['target_slice'],
+        decision='fits' if fits else 'refused', input_tokens=count.initial_input_tokens,
+        output_tokens=count.context_output_tokens, total_tokens=total,
+        limit=calls.config['model_context_token_bound'], inputs_sha256=digest(canonical(data)),
+        field_bytes={key: len(canonical(value).encode()) for key,value in data.items()},
+        prompt_bytes=len(calls.render('propose_targets', data)[1].encode()),
+        commitments_sha256=inputs.get('commitments_sha256'), catalogue_sha256=inputs.get('catalogue_sha256'),
+        provenance_sha256=inputs.get('provenance_sha256'))
+    if not fits:
+        calls.count_request('propose_targets', data, admission=True)
+    return data

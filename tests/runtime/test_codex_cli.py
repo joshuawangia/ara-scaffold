@@ -635,3 +635,48 @@ def test_web_requires_packaged_tool_host(codex):
     write('web')
     with pytest.raises(Rejected, match='cli_web_helper_unavailable'):
         calls.search_evidence({}, [])
+
+
+def test_context_window_override_reaches_isolated_canary_and_calls(codex, monkeypatch):
+    from ara.runtime.export import methodology
+    from ara.runtime.codex_window import apply_context_window
+    config, auth, write, tmp = codex
+    config.update(model='gpt-6-luna', model_context_window=872000)
+    decision = apply_context_window(config)
+    assert config['model_context_token_bound'] == 839232
+    binary = Path(config['codex_cli']['binary'])
+    binary.write_text(binary.read_text().replace("assert args[0]=='exec'",
+        "assert args[0]=='exec'\nassert 'model_context_window=872000' in args"))
+    log = EventLog(tmp/'events.jsonl')
+    calls = make_calls(config, log, 'P')
+    calls.formalise(Proposition('p','P'))
+    events = log.read()
+    receipts = [json.loads(e['payload_json']) for e in events if e['label']=='MODEL']
+    assert len(receipts) == 2 and receipts[0]['isolation']['status']=='proven'
+    assert all(r['cli']['context_window_decision'] == decision for r in receipts)
+    assert all(r['context_window_decision'] == decision for r in receipts)
+    assert any(e['stage']=='operator_context_window' for e in events)
+    assert '872000' in methodology(log.path) and 'operator_context_window' in methodology(log.path)
+
+
+@pytest.mark.parametrize('window', [872001, 0, -1, True, 872000.5, '872000', 16384])
+def test_context_window_refuses_invalid_or_above_pinned_max_before_provider(codex, window):
+    from ara.runtime.codex_cli import CodexCLIProvider
+    config, _, _, _ = codex
+    config.update(model='gpt-6-luna', model_context_window=window)
+    with pytest.raises(ValueError, match='context'):
+        CodexCLIProvider(config)
+
+
+def test_context_window_default_and_unpinned_model(codex):
+    from ara.runtime.codex_window import apply_context_window
+    config, _, _, _ = codex
+    old = config['model_context_token_bound']
+    assert apply_context_window(config) is None
+    assert config['model_context_token_bound'] == old
+    config['model_context_window'] = 872000
+    with pytest.raises(ValueError, match='pinned'):
+        apply_context_window(config)
+    config['model'] = 'gpt-6-luna'
+    config['model_context_window'] = 272000
+    assert apply_context_window(config)['model_context_token_bound'] == 239232

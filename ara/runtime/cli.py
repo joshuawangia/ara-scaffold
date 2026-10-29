@@ -43,10 +43,14 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument('--named-position')
     run.add_argument('--gap-file', type=Path)
     run.add_argument('--route')
+    run.add_argument('--model-context-window', type=int)
+    run.add_argument('--context-margin-tokens', type=int)
     fork = sub.add_parser('fork-from-freeze', help='verify and fork a frozen prefix; continue with current target proposal')
     fork.add_argument('--source-run', type=Path, required=True)
     fork.add_argument('--run-dir', type=Path, required=True)
     fork.add_argument('--gap-file', type=Path)
+    fork.add_argument('--model-context-window', type=int)
+    fork.add_argument('--context-margin-tokens', type=int)
     fork.add_argument('--provider', choices=('anthropic','mock','claude_code','codex_cli'))
     fork.add_argument('--codex-schema-preflight-log', type=Path)
     fork.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
@@ -115,6 +119,14 @@ def parser() -> argparse.ArgumentParser:
     construction.add_argument('--run-dir', type=Path, required=True)
     construction.add_argument('--profile', choices=('pilot', 'extraction-full'), default='pilot')
     construction.add_argument('--token-counter', choices=('local', 'provider'), default='local')
+    target_plan = sub.add_parser('plan-target-request', help='recount a recorded full target request; no generation')
+    target_plan.add_argument('--run-dir', type=Path, required=True)
+    target_plan.add_argument('--out', type=Path, required=True)
+    target_plan.add_argument('--gap-id')
+    target_plan.add_argument('--context-token-bound', type=int)
+    target_plan.add_argument('--model-context-window', type=int)
+    target_plan.add_argument('--context-margin-tokens', type=int)
+    target_plan.add_argument('--counter', choices=('provider', 'local'), default='provider')
     report = sub.add_parser('report', help='render verified run receipts offline; no model calls')
     report.add_argument('--run-dir', type=Path, action='append', required=True)
     report.add_argument('--out', type=Path, required=True)
@@ -164,8 +176,23 @@ def make_provider(config: dict, root: Path = ROOT):
 
 
 def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT, *, imported_draft=None) -> ModelCalls:
+    from ara.runtime.codex_window import apply_context_window
+    decision = apply_context_window(config)
+    if decision is not None:
+        log.record('operator_context_window', **decision)
     return ModelCalls(config, make_provider(config, root), log, Cache(Path(config['cache_dir'])), root, topic,
                       provider_factory=lambda settings: make_provider(settings, root), imported_draft=imported_draft)
+
+
+def configure_window(config, args):
+    from ara.runtime.codex_window import apply_context_window
+    if args.model_context_window is not None:
+        config['model_context_window'] = args.model_context_window
+    if args.context_margin_tokens is not None:
+        if args.model_context_window is None and config.get('model_context_window') is None:
+            raise ValueError('context margin requires model_context_window')
+        config['model_context_margin_tokens'] = args.context_margin_tokens
+    return apply_context_window(config)
 
 
 def apply_profile(config, name):
@@ -202,6 +229,13 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'plan-target-request':
+            from ara.runtime.planning import plan_recorded_target
+            report = plan_recorded_target(args.run_dir, args.out, ROOT, gap_id=args.gap_id,
+                                          bound=args.context_token_bound, counter=args.counter,
+                                          window=args.model_context_window, margin=args.context_margin_tokens)
+            print(json.dumps(report, sort_keys=True))
+            return 0
         if args.command == 'fork-from-freeze':
             from ara.runtime.freeze_fork import fork_from_freeze
             bank = load_bank(ROOT / 'bank')
@@ -215,6 +249,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 config['unknown_usage_policy'] = args.unknown_usage_policy
             if args.codex_schema_preflight_log is not None:
                 config['codex_cli'] = {**config.get('codex_cli', {}), 'schema_preflight_log': str(args.codex_schema_preflight_log)}
+            configure_window(config, args)
             log.record('freeze_fork_configuration', config=config)
             log.human('fork-from-freeze', json.dumps(raw_args), reported_minutes=args.human_minutes)
             from ara.runtime.codex_preflight import require_codex_preflight
@@ -484,6 +519,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 config['gap_file'] = str(args.gap_file.resolve())
             if args.provider is not None:
                 config['provider'] = args.provider
+            configure_window(config, args)
             from ara.runtime.codex_preflight import require_codex_preflight
             require_codex_preflight(config, ROOT)
             directory = args.run_dir or Path(config['runs_dir']) / uuid.uuid4().hex

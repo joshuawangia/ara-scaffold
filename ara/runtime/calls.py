@@ -364,6 +364,9 @@ class ModelCalls:
         if not schema_smoke and kind == 'answer_cq' and 'commitments' in inputs:
             from ara.runtime.cq_context import fit_cq_request
             inputs = fit_cq_request(self, inputs)
+        if not schema_smoke and kind == 'propose_targets' and 'commitments' in inputs:
+            from ara.runtime.search_context import fit_target_request
+            inputs = fit_target_request(self, inputs)
         # Same-request single flight prevents duplicate dispatch and partial cache reads.
         key = digest(canonical([kind, inputs, schema_smoke]))
         with self._key_lock:
@@ -620,10 +623,13 @@ class ModelCalls:
                                                        **({'source_id': self._paper_budget.source_id} if kind == 'extract_paper' and self._paper_budget else {})})))
 
     def count_request(self, kind: str, inputs: dict, *, maximum: int | None = None,
-                      admission: bool = False) -> RequestCount:
+                      admission: bool = False, purpose: str | None = None) -> RequestCount:
+        if purpose is None:
+            purpose = ('commitments_only_capacity_not_target_readiness'
+                       if kind == 'propose_targets' and 'bank' not in inputs else 'assembled_request')
         scoped = self._for_construction_stage(kind, inputs)
         if scoped is not self:
-            return scoped.count_request(kind, inputs, maximum=maximum, admission=admission)
+            return scoped.count_request(kind, inputs, maximum=maximum, admission=admission, purpose=purpose)
         if maximum is None:
             maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
             if kind == 'build_t_batch':
@@ -654,7 +660,7 @@ class ModelCalls:
             initial = self.provider.initial_context_tokens(estimate)
         context_output = self.provider.context_output_tokens(maximum) if hasattr(self.provider, 'context_output_tokens') else maximum
         fits = initial + context_output <= self.config['model_context_token_bound']
-        self.log.record('context_admission' if admission else 'context_plan', kind=kind,
+        self.log.record('context_admission' if admission else 'context_plan', kind=kind, purpose=purpose,
                         model=self.requested_model(kind), provider=self.config.get('provider'),
                         dispatch_stage=getattr(self, '_dispatch_stage', kind),
                         input_tokens=initial, output_tokens=context_output, reserved_usage=estimate.to_dict(),

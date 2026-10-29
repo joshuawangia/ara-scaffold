@@ -18,6 +18,7 @@ forward_pass_depth: 2
 essay_word_limit: 6000
 essay_min_words: 4500
 target_candidates: 30
+target_context_hops: 1  # full gap/formal neighbourhood; remaining T stays compact and citable
 semantic_conflict_pair_limit: 60
 classify_conflict_max_output_tokens: 1024
 publication_min_words: 3000

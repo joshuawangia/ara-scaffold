@@ -1,0 +1,511 @@
+[
+  {
+    "id": "architecture",
+    "file": "figures/architecture.svg",
+    "caption": "ARA separates the source of a license (L), the premises available to a run (T), and model-suggested hypotheses or cuts (H). Models propose; the deterministic engine decides formal admissibility. The final export path remains gated.",
+    "data": {
+      "source": [
+        "scaffold/PLAN.md",
+        "scaffold/CLAUDE.md",
+        "scaffold/SOURCE_MAP.md"
+      ],
+      "nodes": [
+        "L",
+        "T",
+        "H",
+        "extraction",
+        "engine",
+        "runtime",
+        "search",
+        "selection-writing-verification"
+      ]
+    }
+  },
+  {
+    "id": "funnel",
+    "file": "figures/funnel.svg",
+    "caption": "Common source evidence, then separate run histories; box area is not proportional to counts. The historical writing lineage used a frozen T. Gap pilot 1 completed construction but stopped at alignment candidate 36/150 after three altered-ID replies; 35 accepted judgments were not applied bridges. Its working set was never frozen, and downstream stages were not reached. Later acquisitions do not enlarge either pilot retrospectively.",
+    "data": {
+      "stages": [
+        [
+          "Chosen works",
+          53
+        ],
+        [
+          "Original PDFs / rich graphs",
+          26
+        ],
+        [
+          "Extracted items",
+          5659
+        ],
+        [
+          "Eligible items after quarantine",
+          5296
+        ]
+      ],
+      "historical_path": [
+        [
+          "Pilot 5 frozen T",
+          "169 commitments / 22 papers"
+        ],
+        [
+          "Fork 3 targets → searches",
+          "3 targets → 6 polarity searches"
+        ],
+        [
+          "Selected closed routes",
+          "2, supported by one paper"
+        ],
+        [
+          "Verified essay exports",
+          "0"
+        ]
+      ],
+      "gap_pilot_path": [
+        [
+          "Construction completed",
+          "74 windows: 53 accepted / 21 skipped"
+        ],
+        [
+          "Working set — UNFROZEN",
+          "159 commitments / 22 of 26 papers"
+        ],
+        [
+          "STOP: alignment 36/150",
+          "35 accepted judgments; 3 invalid replies"
+        ],
+        [
+          "NOT REACHED",
+          "Freeze → targets → search → essays"
+        ]
+      ],
+      "gap_pilot_facts": {
+        "source": [
+          "reports/overnight/gap1/handoff.md",
+          "reports/zeta-gap1.md",
+          "reports/overnight/gap1/pilot-exit.json",
+          "reports/overnight/gap1/final-local-accounting.json"
+        ],
+        "revision": "0a31afb92c319bd0ae38f71e51b3233050d32758",
+        "started_utc": "2026-10-29T09:04:37.624543Z",
+        "stopped_utc": "2026-10-29T13:36:58.286858Z",
+        "exit_code": 2,
+        "wall_seconds": 16340.662315368652,
+        "windows": 74,
+        "accepted_windows": 53,
+        "skipped_windows": 21,
+        "working_commitments": 159,
+        "represented_papers": 22,
+        "available_papers": 26,
+        "stance": {
+          "endorsed": 134,
+          "reported": 10,
+          "attacked": 15
+        },
+        "alignment_candidates": 150,
+        "attempted_candidates": 36,
+        "accepted_judgments": 35,
+        "unrelated": 34,
+        "right_to_left_entailment": 1,
+        "invalid_responses": 3,
+        "alignment_responses": 38,
+        "applied_bridges": 0,
+        "canonical_rewrites": 0,
+        "frozen": false,
+        "targets": 0,
+        "routes": 0,
+        "l3_resolved": false,
+        "failure": "Echoed immutable symbol identifier changed r27_39 to r27-39; all three replies refused.",
+        "resume": "plan-only refused: construction resume requires a terminal window refusal; no alignment resume at this revision",
+        "unresolved_review": "INTEG-F1: irrelevant fresh-atom padding can pass native CLOSED-derived gates; no route generated in this pilot",
+        "local_accounting": {
+          "runs": {
+            "codex-gap-1": {
+              "calls": 221,
+              "kinds": {
+                "isolation_canary": 2,
+                "select_t_roots": 75,
+                "build_t_batch": 106,
+                "judge_symbol_alignment": 38
+              },
+              "usage": {
+                "cache_read_tokens": 266752,
+                "cache_write_tokens": 0,
+                "input_tokens": 4674584,
+                "output_tokens": 230270,
+                "server_tool_uses": 0
+              },
+              "api_usd": 0.0
+            },
+            "codex-gap-1-preflight": {
+              "calls": 1,
+              "kinds": {
+                "isolation_canary": 1
+              },
+              "usage": {
+                "cache_read_tokens": 0,
+                "cache_write_tokens": 0,
+                "input_tokens": 4323,
+                "output_tokens": 2024,
+                "server_tool_uses": 0
+              },
+              "api_usd": 0.0
+            },
+            "codex-gap-1-schema-preflight": {
+              "calls": 20,
+              "kinds": {
+                "isolation_canary": 2,
+                "answer_cq": 1,
+                "audit_essay": 1,
+                "build_t": 1,
+                "build_t_batch": 2,
+                "classify_conflict": 1,
+                "classify_target": 1,
+                "formalise": 1,
+                "formalise_slots": 1,
+                "judge_symbol_alignment": 1,
+                "map_leaf": 1,
+                "propose_cuts": 1,
+                "propose_targets": 1,
+                "select_t_roots": 2,
+                "tier1_repair": 1,
+                "verify_originality_citations": 1,
+                "write_essay": 1
+              },
+              "usage": {
+                "cache_read_tokens": 0,
+                "cache_write_tokens": 0,
+                "input_tokens": 90415,
+                "output_tokens": 3632,
+                "server_tool_uses": 0
+              },
+              "api_usd": 0.0
+            },
+            "codex-gap-1-resume-check": {
+              "calls": 0,
+              "kinds": {},
+              "usage": {},
+              "api_usd": 0
+            }
+          },
+          "usage": {
+            "cache_read_tokens": 266752,
+            "cache_write_tokens": 0,
+            "input_tokens": 4769322,
+            "output_tokens": 235926,
+            "server_tool_uses": 0
+          },
+          "total_calls": 242,
+          "cost_usd": 0.0,
+          "providers": {
+            "codex_cli": 242
+          },
+          "served_models": {
+            "unverified": 242
+          }
+        }
+      },
+      "quarantine": {
+        "direct": 312,
+        "dependent": 51,
+        "total": 363
+      },
+      "later_pdfs": 54,
+      "source": [
+        "reports/zeta-full26-part7.md",
+        "reports/zeta-codex-pilot-5.md",
+        "reports/zeta-fork3.md",
+        "reports/nu4-writer.md",
+        "reports/eps2-methodology-supplement.md",
+        "reports/overnight/gap1/handoff.md"
+      ]
+    }
+  },
+  {
+    "id": "iterations",
+    "file": "figures/iterations.svg",
+    "caption": "Overlapping logged repair episodes, with gap pilot 1 timed from its supervisor receipt. The diamond marks the correctly refused alignment stop on October 29, before freeze. The hatched band is the acknowledged October 28 idle interval, not labor. Sigma r12 and nu4 r5 are pending requests, not completed repairs or successful continuations.",
+    "data": {
+      "episodes": [
+        [
+          "Extraction",
+          "2026-10-21T00:26:58Z",
+          "2026-10-22T23:59:23Z",
+          "Rich graph → grounded union"
+        ],
+        [
+          "Construction",
+          "2026-10-21T03:37:29Z",
+          "2026-10-23T19:39:01Z",
+          "Closure budgets → soft shares"
+        ],
+        [
+          "Providers / isolation",
+          "2026-10-23T10:02:43Z",
+          "2026-10-26T06:23:00Z",
+          "Credit stop → Claude → Codex"
+        ],
+        [
+          "Structure / vocabulary",
+          "2026-10-26T15:09:34Z",
+          "2026-10-27T14:05:42Z",
+          "Atomic T → conditionals + stance"
+        ],
+        [
+          "Novelty / cross-paper",
+          "2026-10-26T23:07:41Z",
+          "2026-10-29T06:19:53Z",
+          "Trivial closure → per-paper gate"
+        ],
+        [
+          "Writing / audit",
+          "2026-10-28T16:52:30Z",
+          "2026-10-28T21:39:35Z",
+          "Short drafts → sections + repairs"
+        ],
+        [
+          "Literature currency",
+          "2026-10-28T21:03:17Z",
+          "2026-10-29T06:17:05Z",
+          "Historical gaps → qualified L3"
+        ],
+        [
+          "Gap pilot 1",
+          "2026-10-29T09:04:37.624543Z",
+          "2026-10-29T13:36:58.286858Z",
+          "STOP: alignment 36/150; no freeze"
+        ]
+      ],
+      "idle_start": "2026-10-28T12:33:41Z",
+      "idle_end": "2026-10-28T16:49:21Z",
+      "pending": [
+        {
+          "item": "sigma r12",
+          "status": "pending",
+          "source": "briefs/sigma-round-12.md",
+          "requested": "Avoid model-echoed immutable IDs; record per-item unresolved failures; resume alignment from finished construction without silent repair.",
+          "dispatch_timestamp": "2026-10-29T13:50:20Z"
+        },
+        {
+          "item": "nu4 r5",
+          "status": "pending",
+          "source": "briefs/nu4-round-5.md",
+          "requested": "Expose rejected event type safely; diagnose native web-evidence path; preserve tool boundaries; resume verification and export from audited drafts.",
+          "dispatch_timestamp": "2026-10-29T13:52:50Z"
+        }
+      ],
+      "source": [
+        "correspondence/log.txt",
+        "reports/overnight/gap1/pilot-exit.json",
+        "briefs/sigma-round-12.md",
+        "briefs/nu4-round-5.md"
+      ]
+    }
+  },
+  {
+    "id": "gates",
+    "file": "figures/gates.svg",
+    "caption": "Native rejection reasons across pilot generations. The same candidate-attempt can occur in more than one column; columns must not be summed into a rejection total. “Attribution screen” includes lexical false positives, especially before that screen became advisory. Repeated proposal attempts count separately. Zero means no recorded rejection under that reason, not proof of semantic novelty.",
+    "data": {
+      "pilots": [
+        "fork1",
+        "codex4",
+        "codex5",
+        "fork2",
+        "fork3",
+        "fork4",
+        "fork5",
+        "fork6"
+      ],
+      "reasons": [
+        "attributed_report",
+        "own_thesis_not_established",
+        "single_commitment_entailment",
+        "target_content_not_established",
+        "gap_resolution_not_established",
+        "duplicate_retained_target"
+      ],
+      "values": [
+        [
+          13,
+          18,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          16,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          10,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          7,
+          2,
+          1
+        ]
+      ],
+      "source": "data.json/pilots/*/candidate_rows"
+    }
+  },
+  {
+    "id": "routes",
+    "file": "figures/routes.svg",
+    "caption": "Closed is a formal outcome. Pilot 3’s ten closed routes were trivial restatements; pilot 5’s four were conjunction packaging; fork 3’s two derived routes used a single paper. None met the complete accepted cross-paper criterion. Pilot 3 published twenty-one routes from twenty polarity searches.",
+    "data": {
+      "runs": [
+        "Pilot 2 resumed",
+        "Pilot 3",
+        "Pilot 5",
+        "Fork 2",
+        "Fork 3",
+        "Fork 5",
+        "Fork 6"
+      ],
+      "open": [
+        20,
+        11,
+        10,
+        4,
+        4,
+        12,
+        20
+      ],
+      "native_closed": [
+        0,
+        10,
+        4,
+        0,
+        2,
+        0,
+        0
+      ],
+      "source": [
+        "reports/zeta-codex-pilot-2-resumed.md",
+        "reports/zeta-codex-pilot-3.md",
+        "reports/zeta-codex-pilot-5.md",
+        "reports/zeta-fork2.md",
+        "reports/zeta-fork3.md",
+        "reports/zeta-fork5.md",
+        "reports/zeta-fork6.md"
+      ]
+    }
+  },
+  {
+    "id": "api-cost",
+    "file": "figures/api-cost.svg",
+    "caption": "Measured API cost is $131.785270; unknown-at-reservation is $1.844820. The sum, $133.630090, is a budget-accounting figure, not an invoice. Subscription calls contribute no API USD here. Earlier development/smoke work and later writing/polish are outside this report’s lineage.",
+    "data": {
+      "stages": [
+        "extract_paper",
+        "select_t_roots",
+        "build_t_batch"
+      ],
+      "measured": [
+        109.497235,
+        13.461825,
+        8.82621
+      ],
+      "unknown_at_reservation": [
+        0.89791,
+        0.94691,
+        0.0
+      ],
+      "source": "reports/overnight/fork6/accounting.json"
+    }
+  },
+  {
+    "id": "subscription-tokens",
+    "file": "figures/subscription-tokens.svg",
+    "caption": "Measured subscription usage in the same deduplicated lineage, grouped by native stage. Cache reads and writes are retained; these are accounting components, not unique prose tokens. Unknown reservations and an unclassified-provider legacy receipt are shown in the accompanying table, not these bars. Coding-agent and orchestration conversations are outside this ledger.",
+    "data": {
+      "groups": {
+        "Construction": [
+          "select_t_roots",
+          "build_t_batch",
+          "build_t"
+        ],
+        "Targets": [
+          "propose_targets",
+          "classify_target"
+        ],
+        "Search": [
+          "map_leaf",
+          "propose_cuts",
+          "formalise",
+          "formalise_slots",
+          "answer_cq",
+          "tier1_repair"
+        ],
+        "Summaries": [
+          "route_summary"
+        ],
+        "Checks / other": []
+      },
+      "measured_values": {
+        "claude_code": {
+          "Construction": 20338090,
+          "Targets": 153448,
+          "Search": 36637508,
+          "Summaries": 0,
+          "Checks / other": 24796
+        },
+        "codex_cli": {
+          "Construction": 16670247,
+          "Targets": 4888709,
+          "Search": 19399418,
+          "Summaries": 566946,
+          "Checks / other": 519466
+        }
+      },
+      "source": "data.json/provider_stage_accounting; reconciled to reports/overnight/fork6/accounting.json"
+    }
+  }
+]

@@ -69,7 +69,7 @@ def verified_source_rows(calls, route, draft, inputs, *, events=None):
             if digest(template+'\nINPUT_JSON\n'+canonical(old)) != gate['prompt_sha256']:
                 continue
             if _payload(event).get('status')!='accepted':
-                return None
+                continue
             if any(old.get(key)!=inputs.get(key) for key in ('outline','root_conclusion','source_evidence','proposal')):
                 return None
             if [(s['sentence'],s['text']) for s in old['sentences']] != list(enumerate(expected,1)):

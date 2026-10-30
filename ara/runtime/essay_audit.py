@@ -141,7 +141,7 @@ def _proposal_metadata_request(previous_prompt, prompt):
                 if text == 'Status and method':
                     text = 'Methodology'
                 if label in text:
-                    text = text.replace(label, '').replace('Disclosure:', '').replace('Proposal status:', '')
+                    text = text.replace(label, '').replace('This paper proposes the disclosure:', '').replace('Disclosure:', '').replace('Proposal status:', '')
                     text = text.strip(' \t\n."“”\'—-:;')
                 elif text.strip() == 'Disclosure: .':
                     text = ''

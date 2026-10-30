@@ -282,20 +282,23 @@ def test_disclosure_metadata_is_idempotent_and_never_a_source_quotation():
     validate_disclosure(proposal,result)
 
 
+@pytest.mark.parametrize('wrapped', [False, True])
 @pytest.mark.parametrize('malformed', [None, 'missing', 'duplicate', 'unknown_node'])
-def test_metadata_insertion_does_not_erase_unchanged_adverse_history(rig, monkeypatch, malformed):
+def test_metadata_insertion_does_not_erase_unchanged_adverse_history(rig, monkeypatch, malformed, wrapped):
     from ara.runtime.proposal import retain_disclosure
     from ara.runtime.essay_audit import audit_consensus
     calls,provider,log=rig
     r,_=setup(calls,log)
     old=dict(title='P — '+DISCLOSURE, body='Abstract\n'+DISCLOSURE+'.\nProposal\n[[node:n0]] [[node:n1]] This paper proposes P.\nMethodology\n'+DISCLOSURE+'.\nThis paper argues Q.', bibliography=[])
+    if wrapped:
+        old['body']=old['body'].replace('Abstract\n'+DISCLOSURE+'.', 'Abstract\nThis paper proposes the disclosure: '+DISCLOSURE+'. This paper argues Q.').replace('\nThis paper argues Q.', '')
     import ara.runtime.proposal as proposal_module
     validate=proposal_module.validate_disclosure
     monkeypatch.setattr(proposal_module,'validate_disclosure',lambda p,d:validate(p,d,allow_legacy=True))
     inputs=calls.audit_inputs(r,old)
-    labels=[label(s['sentence'], 'proposed_principle' if s['sentence']==4 else
+    labels=[label(s['sentence'], 'proposed_principle' if s['text']=='This paper proposes P.' else
                   'unsupported_claim' if s['text']=='This paper argues Q.' else 'framing',
-                  ('n0','n1') if s['sentence']==4 else ()) for s in inputs['sentences']]
+                  ('n0','n1') if s['text']=='This paper proposes P.' else ()) for s in inputs['sentences']]
     if malformed is None:
         register(calls,provider,'audit_essay',inputs,dict(labels=labels))
         with pytest.raises(EssayAuditFailed):calls.audit_essay(r,old)

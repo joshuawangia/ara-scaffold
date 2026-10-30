@@ -5,6 +5,9 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
 CASES=[
+ ('wrapped_disclosure_history','ara/runtime/proposal.py',
+  'Disclosure:|This paper proposes the disclosure:', 'Disclosure:',
+  'tests/runtime/test_proposal_mode.py::test_metadata_insertion_does_not_erase_unchanged_adverse_history[None-True]'),
  ('scope_adverse_history','ara/runtime/essay_audit.py',
   "            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)", '            remap = None',
   'tests/runtime/test_proposal_policy.py::test_moving_proposal_heading_preserves_substantive_adverse_history[True]'),
@@ -25,7 +28,7 @@ CASES=[
   'tests/runtime/test_proposal_policy.py::test_source_claim_must_be_cited_and_faithful_even_inside_proposal[True]'),
  ('metadata_adverse_history','ara/runtime/essay_audit.py',
   "            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)", '            remap = None',
-  'tests/runtime/test_proposal_mode.py::test_metadata_insertion_does_not_erase_unchanged_adverse_history[None]'),
+  'tests/runtime/test_proposal_mode.py::test_metadata_insertion_does_not_erase_unchanged_adverse_history[None-False]'),
  ('deterministic_disclosure','ara/runtime/proposal.py',
   '    result = insert_disclosure(proposal, draft)','    result = draft',
   'tests/runtime/test_proposal_mode.py::test_resume_inserts_disclosure_and_restores_cleanup_without_spending_repair'),

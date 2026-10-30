@@ -208,7 +208,7 @@ def insert_disclosure(proposal, draft):
     abstract = next((b for b in sections(body) if b['heading'].casefold() == 'abstract'), None)
     if abstract:
         content = body[abstract['content_start']:abstract['end']]
-        normalized = re.sub(r'(?:Disclosure:[ \t]*)?["“]?' + re.escape(label) + r'["”]?[.]?', '', content)
+        normalized = re.sub(r'(?:(?:Disclosure:|This paper proposes the disclosure:)[ \t]*)?["“]?' + re.escape(label) + r'["”]?[.]?', '', content)
         normalized = normalized.replace('Disclosure: .', '').strip()
         # Preserve already-normalized bytes and all substantive prose.
         if content.count(label) != 1 or not content.lstrip().startswith(sentence):

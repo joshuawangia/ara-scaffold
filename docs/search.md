@@ -645,39 +645,28 @@ exact `excerpt`. Record fields include id/authors/year/title/venue; optional URL
 and version metadata remain disclosed inputs. Pages and matching excerpts are
 retained in the append-only log. No declaration changes T or licenses an edge.
 
-The writer and audit share proposed_principle and argument_for_proposal roles.
-Ownership may be inherited from a section headed Proposal, The bridge principle,
-or Objections and replies, ending at the next heading. A paragraph beginning
-`Proposal:` or `**Proposal:**` ends at the next blank line. This permits natural
-prose; it does not establish support. Attributions and citation markers inside a
-scope fail regardless of the assigned role. Source claims belong in separate,
-unscoped cited text. Outside scope, new claims still need explicit ownership.
-Semantic unsupported claims fail both inside and outside scope.
+The proposal audit enforces four paper-level rules: the title page carries the origin
+label (in the short title or body before Abstract) and Abstract contains one disclosure sentence; the bridge principle is
+in a clearly headed Proposal section and is not attributed to a source; source
+claims are cited and faithful; no unsupported claim is presented as established.
+The bridge uses proposed_principle, with a faithful root-node mapping. Supporting
+arguments, objections and replies use argument_for_proposal throughout the paper.
+Neither sentence-level ownership prefixes nor paragraph markers are required.
+Source discussion is allowed within Proposal, with the same citation obligations.
+A status note and repeated process disclaimers are not required.
 
-`proposal_scopes.sentence_scopes(body, spans)` derives ownership from the draft;
-`calls.audit_inputs` adds `proposal_scope` to the affected sentence rows. The model
-cannot supply this authorization. `proposal.role_failure` accepts the optional
-`proposal_scope` keyword alongside `frozen_hypothesis` and `source_authors`.
-OPEN scope never authorizes frozen H; H still needs separate validated node
-binding and conditional disclosure. Publication owns its own layout integration.
+`proposal_scopes.sentence_scopes(body, spans)` identifies Proposal section spans,
+ending at the next heading. `calls.audit_inputs` adds their `proposal_scope`
+metadata; model output cannot supply that authorization. `proposal.role_failure`
+accepts `proposal_scope` alongside `frozen_hypothesis` and `source_authors`.
+OPEN mode never authorizes H; H retains separate validated node binding and
+conditional disclosure. Publication owns its layout integration.
 
-Proposal evidence remains obligatory during citation cleanup, export and
-publication; web absence cannot erase retained local evidence. Final fresh
-unanimous audits and the existing three-round shared repair cap are unchanged.
-Resuming without `--proposal-packet` restores the logged packet, including its
-length policy and exact thesis-origin disclosure. Replacing it requires a new run.
-
-Composition, resume and post-verification cleanup insert exactly one fixed,
-unquoted disclosure sentence in Abstract and a final Status and method note.
-The title uses ordinary prose. Abstract budgets are 100–250 words; status-note
-budgets are 50–150 words, with a final note ceiling of 250. Search/currency and
-process qualifications belong in the final note, not the abstract/introduction.
-Metadata normalization removes duplicate exact labels, renames a legacy Methodology
-heading, and retains substantive text. It does not summarize or erase qualifications.
-The strict gate can therefore refuse legacy prose needing a real quality revision.
-
-`validate_disclosure(proposal, draft, allow_legacy=True)` is an opt-in for callers
-that first verify an imported legacy export and its accepted audit receipt. It
-allows the former title/Abstract/Methodology layout only at import. New output and
-repairs use the strict default. Hash-linked metadata corrections never consume or
-reset a semantic repair round; unchanged adverse history remains binding.
+Composition, resume and post-verification cleanup add the title-page label and one
+fixed, unquoted abstract disclosure deterministically. They preserve substantive
+text and do not invent a status note. Verified legacy imports may call
+`validate_disclosure(..., allow_legacy=True)` only at entry; new output and repairs
+use the current contract. Metadata corrections do not consume or reset semantic
+repairs, and unchanged adverse history remains binding. Citation cleanup cannot
+erase retained local evidence. Fresh k>=3 union auditing and the shared three-round
+repair cap remain unchanged. Resume restores the logged immutable packet.

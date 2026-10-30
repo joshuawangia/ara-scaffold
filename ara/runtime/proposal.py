@@ -130,7 +130,7 @@ def _read_source(source):
 
 def validate_disclosure(proposal, draft, *, allow_legacy=False):
     from ara.runtime.calls import require
-    from ara.runtime.proposal_scopes import sections, misplaced_status
+    from ara.runtime.proposal_scopes import sections
     if proposal is None:
         return
     label = proposal['disclosure']
@@ -138,25 +138,19 @@ def validate_disclosure(proposal, draft, *, allow_legacy=False):
     by_name = {s['heading'].casefold(): draft['body'][s['content_start']:s['end']] for s in blocks}
     if allow_legacy and label in draft['title'] and all(label in by_name.get(h, '') for h in ('abstract','methodology')):
         return
-    require(not any(value in draft['title'] for value in LABELS.values()), 'proposal title must be ordinary prose; disclosure belongs in abstract and Status and method')
+    abstract_start = next((s['start'] for s in blocks if s['heading'].casefold() == 'abstract'), 0)
+    require(label in draft['title'] or label in draft['body'][:abstract_start],
+            'proposal title page needs its origin label')
     require(sum(s['heading'].casefold() == 'abstract' for s in blocks) == 1,
             'proposal needs one Abstract section')
     abstract = by_name.get('abstract', '')
     require(abstract.count(label) == 1 and 'Disclosure: ' + label + '.' in abstract,
             'proposal needs exactly one abstract disclosure')
-    note = by_name.get('status and method', '')
-    require(blocks and blocks[-1]['heading'].casefold() == 'status and method' and note.count(label) == 1,
-            'proposal disclosure missing from final Status and method note')
-    require(sum(s['heading'].casefold() == 'status and method' for s in blocks) == 1 and len(note.split()) <= 250,
-            'proposal Status and method note must be unique and short')
-    require(not misplaced_status(draft['body']), 'proposal search qualifications belong in Status and method')
+    require('proposal' in by_name, 'bridge principle needs a clearly headed Proposal section')
 
 
 def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors=(), proposal_scope=None):
     """Caller binds frozen_hypothesis to a validated H node; never infer it from OPEN mode."""
-    scoped = proposal is not None and proposal_scope is not None
-    if scoped and (role == 'source_claim' or source_attribution(text, source_authors)):
-        return 'source_attributed_proposal'
     if role not in ROLES:
         return None
     if frozen_hypothesis is not None:
@@ -166,15 +160,14 @@ def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors
                 frozen_hypothesis.get('source_id') is not None or
                 not frozen_hypothesis.get('declaration') or not frozen_hypothesis.get('formula')):
             return 'invalid_frozen_hypothesis_authorization'
+        if not re.match(r'(?:This paper proposes|We propose)\b', text, re.I):
+            return 'unmarked_proposal'
     elif proposal is None:
         return 'proposal_mode_required'
-    prefix = r'(?:This paper|We) (?:proposes?|propose)' if role == 'proposed_principle' else r'(?:This paper|We) (?:argues?|argue|reasons?|reason|objects?|object|replies|reply)'
-    if not scoped and not re.match(prefix+r'\b', text, re.I):
-        return 'unmarked_proposal'
-    # Source reports belong in their own cited sentence. The semantic auditor also
-    # rejects indirect attribution and unargued substantive claims under these roles.
-    remainder = re.sub(prefix+r'\b', '', text, count=1, flags=re.I)
-    if source_attribution(remainder, source_authors):
+    elif role == 'proposed_principle' and not (proposal_scope and
+            proposal_scope.get('kind') == 'section' and proposal_scope.get('heading', '').casefold() == 'proposal'):
+        return 'proposal_section_required'
+    if role == 'proposed_principle' and source_attribution(text, source_authors):
         return 'source_attributed_proposal'
     return None
 
@@ -205,34 +198,30 @@ def author_names(evidence):
 
 
 def insert_disclosure(proposal, draft):
-    """Normalize exact metadata only; substantive qualifications require author editing."""
+    """One abstract sentence and title label; no repeated methodological disclaimer."""
     if proposal is None:
         return draft
     from ara.runtime.proposal_scopes import sections
     label = proposal['disclosure']
     sentence = 'Disclosure: ' + label + '.'
-    title = draft['title'].replace(label, '').strip(' \t\n—-:."“”')
+    title = draft['title']
+    for left,right in (('"','"'), ('“','”')):
+        title = title.replace(left + label + right, label)
     body = draft['body']
-    blocks = sections(body)
-    edits, note = [], None
-    for block in blocks:
-        heading = block['heading'].casefold()
-        if heading not in ('abstract', 'methodology', 'status and method'):
-            continue
-        content = body[block['content_start']:block['end']]
-        content = re.sub(r'(?:Disclosure:[ \t]*)?["“]?' + re.escape(label) + r'["”]?[.]?', '', content)
-        content = content.replace('Disclosure: .', '').strip()
-        replacement = sentence + (' ' + content if content else '')
-        if heading == 'abstract':
-            edits.append((block['start'], block['end'], 'Abstract\n\n'+replacement+'\n\n'))
-        else:
-            note = replacement if note is None else note + '\n\n' + content
-            edits.append((block['start'], block['end'], ''))
-    for start,end,text in reversed(edits):
-        body = body[:start] + text + body[end:]
-    if not any(b['heading'].casefold() == 'abstract' for b in blocks):
+    abstract = next((b for b in sections(body) if b['heading'].casefold() == 'abstract'), None)
+    if abstract:
+        content = body[abstract['content_start']:abstract['end']]
+        normalized = re.sub(r'(?:Disclosure:[ \t]*)?["“]?' + re.escape(label) + r'["”]?[.]?', '', content)
+        normalized = normalized.replace('Disclosure: .', '').strip()
+        # Preserve already-normalized bytes and all substantive prose.
+        if content.count(label) != 1 or not content.lstrip().startswith(sentence):
+            replacement = sentence + (' ' + normalized if normalized else '')
+            body = body[:abstract['content_start']] + '\n' + replacement + '\n\n' + body[abstract['end']:]
+    else:
         body = 'Abstract\n\n' + sentence + '\n\n' + body
-    body = body.rstrip() + '\n\nStatus and method\n\n' + (note or sentence)
+    abstract_start = next(b['start'] for b in sections(body) if b['heading'].casefold() == 'abstract')
+    if label not in title and label not in body[:abstract_start]:
+        body = 'Proposal status: ' + label + '.\n\n' + body
     return {**draft, 'title': title, 'body': body}
 
 

@@ -40,7 +40,7 @@ def audit_flags(labels, inputs, draft):
     scopes = {s['sentence']: s.get('proposal_scope') for s in inputs['sentences']}
     allowed = {b['id']: b for b in inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
     bibliography = {b['id']: b for b in draft.get('bibliography', [])}
-    from ara.runtime.proposal import role_failure, author_names
+    from ara.runtime.proposal import role_failure, author_names, source_attribution
     authors = author_names(inputs.get('source_evidence', {}))
     flags = []
     for item in labels:
@@ -59,7 +59,8 @@ def audit_flags(labels, inputs, draft):
             reason = 'unmapped_argument_step'
         elif role == 'argument_step' and premises and not premises <= set(cited):
             reason = 'miscited_source_claim'
-        elif role == 'source_claim' or (cited and 'source_evidence' in inputs):
+        elif role == 'source_claim' or (cited and 'source_evidence' in inputs) or (
+                inputs.get('proposal') and source_attribution(sentences.get(item['sentence'], ''), authors)):
             if (not item['citation_supported'] or not cited or
                     any(tid not in allowed or bibliography.get(tid) != allowed[tid] for tid in cited)):
                 reason = 'miscited_source_claim'
@@ -111,7 +112,7 @@ def _same_audit_request(previous_prompt, prompt):
         template, current_input = prompt.split('\nINPUT_JSON\n', 1)
         previous = json.loads(previous_input)
         previous.pop('validation_feedback', None)
-        return previous_template == template and previous == json.loads(current_input)
+        return previous_template.split('\n', 1)[0] == template.split('\n', 1)[0] and previous == json.loads(current_input)
     except (ValueError, TypeError, AttributeError):
         return False
 
@@ -124,7 +125,7 @@ def _proposal_metadata_request(previous_prompt, prompt):
         template, current_json = prompt.split('\nINPUT_JSON\n', 1)
         old, current = json.loads(old_json), json.loads(current_json)
         old.pop('validation_feedback', None)
-        if old_template != template or not current.get('proposal'):
+        if old_template.split('\n', 1)[0] != template.split('\n', 1)[0] or not current.get('proposal'):
             return None
         if {k:v for k,v in old.items() if k != 'sentences'} != {k:v for k,v in current.items() if k != 'sentences'}:
             return None
@@ -136,7 +137,7 @@ def _proposal_metadata_request(previous_prompt, prompt):
                 if text == 'Status and method':
                     text = 'Methodology'
                 if label in text:
-                    text = text.replace(label, '').replace('Disclosure:', '')
+                    text = text.replace(label, '').replace('Disclosure:', '').replace('Proposal status:', '')
                     text = text.strip(' \t\n."“”\'—-:;')
                 elif text.strip() == 'Disclosure: .':
                     text = ''
@@ -220,7 +221,7 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                     data = scoped.provider.normalize_output(schema, data)
                 validate_local(schema, data, calls.config)
                 result = audit_result(route, draft, history_inputs, data)
-                if recorded is not None:
+                if recorded is not None and event['prompt'].split('\nINPUT_JSON\n', 1)[0] == prompt.split('\nINPUT_JSON\n', 1)[0]:
                     result = {key: recorded[key] for key in result}
             except (ValueError, TypeError, KeyError, ValidationError) as exc:
                 ignored.append(dict(event=index, reason=type(exc).__name__))

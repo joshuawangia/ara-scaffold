@@ -111,10 +111,8 @@ def sectioned_essay(calls, route, inputs, validate):
         sections = data['sections']
         if 'proposal' in inputs:
             headings = {s['heading'].casefold() for s in sections}
-            require({'abstract', 'status and method'} <= headings and
-                    bool({'proposal', 'the bridge principle'} & headings) and
-                    sections[-1]['heading'].casefold() == 'status and method',
-                    'proposal plan needs Abstract, Proposal and final Status and method sections')
+            require({'abstract', 'proposal'} <= headings,
+                    'proposal plan needs Abstract and Proposal sections')
             for section in sections:
                 heading, words = section['heading'].casefold(), section['word_budget']
                 low, high = (100, 250) if heading == 'abstract' else (50, 150) if heading == 'status and method' else (400, 1200)

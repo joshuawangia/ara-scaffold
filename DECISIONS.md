@@ -4648,3 +4648,12 @@ disclosure and final Status and method note retain status and bounded-search
 qualifications. Only a current, exact accepted export with a matching clean k≥3
 gate qualifies for legacy metadata import; final text and repairs remain strict.
 The conservative audit and occurrence-bound repair rules are unchanged.
+
+Operator correction: proposal auditing has four paper-level requirements only:
+one abstract disclosure and title label; a source-independent bridge principle
+in Proposal; faithful cited source claims; no unsupported claim presented as
+established. This supersedes mandatory sentence/paragraph ownership cues,
+blanket attribution bans across proposal sections, ordinary-title enforcement,
+and mandatory status-note/disclaimer-location gates. Source discussion may share
+the Proposal section; only the declared bridge cannot be source-attributed.
+Frozen-H authorization, immutable evidence, repair bounds and k>=3 union remain.

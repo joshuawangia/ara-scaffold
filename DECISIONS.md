@@ -4745,3 +4745,15 @@ Accepted carry-over re-evaluates old labels under the same narrow authorization,
 while all unrelated adverse history stays binding. Persisted meaning decisions
 prevent rerolls. No repair counter or publication dispatch is changed here.
 The owning contract and evidence limits are in [sentence carry-over](docs/audit-carryover.md).
+
+## Bounded meaning-inventory correction (2026-10-30)
+
+Meaning checks allow two validation attempts per sample independently of the
+parent publication's one-attempt setting. The second attempt corrects shape,
+with exact missing/extra/duplicate pair feedback; complete adverse responses do
+not trigger retries. Valid adverse votes from rejected attempts and interrupted
+gates remain binding, including after resume. Three complete meaning samples
+are still required for inheritance. Exhaustion refuses before the final audit;
+this changes neither semantic repair counts nor the final union gate. The prior
+retry regression hid the native failure by raising the parent's attempt count.
+Tests now retain the native default and exercise incomplete large inventories.

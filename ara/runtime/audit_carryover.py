@@ -2,6 +2,7 @@
 import json
 import re
 from difflib import SequenceMatcher
+from collections import Counter
 
 from jsonschema import ValidationError
 
@@ -208,11 +209,18 @@ def prepare_meaning_checks(calls, route, draft, inputs):
     expected={(p['sentence'],p['source_sentence']) for p in pairs}
     def check(data):
         keys=[(p['sentence'],p['source_sentence']) for p in data['pairs']]
-        if len(keys)!=len(set(keys)) or set(keys)!=expected:
-            raise ValidationError('meaning check pair inventory mismatch')
+        counts=Counter(keys)
+        if len(keys)!=len(counts) or set(keys)!=expected:
+            inventory=dict(expected=len(expected),returned=len(keys),
+                           missing=sorted(expected-set(keys)),extra=sorted(set(keys)-expected),
+                           duplicates=sorted(key for key,count in counts.items() if count>1))
+            detail='; '.join(f'{name}={json.dumps(value)}' for name,value in inventory.items())
+            raise ValidationError('meaning check pair inventory mismatch: '+detail)
         return data
     for sample in range(1,4):
-        value=scoped.call('audit_meaning',request,check,fresh=True)
+        # One shape correction even when the parent publication permits no retries.
+        # Valid adverse votes from either attempt remain binding below.
+        value=scoped.call('audit_meaning',request,check,fresh=True,validation_attempts=2)
         samples.append(dict(sample=sample,pairs=value['pairs']))
     # Include valid adverse votes in malformed responses/retries or interrupted gates.
     adverse={key:[] for key in expected}

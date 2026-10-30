@@ -28,6 +28,11 @@ scope, attribution, ownership and citation role are unchanged. Only three
 `equivalent` votes permit inheritance. Any dissent or uncertainty, including a
 valid adverse vote in a malformed response, leaves the sentence on the normal
 audit path. Persisted decisions prevent favorable rerolls of unchanged pairs.
+Each meaning sample allows one structural correction (two validation attempts),
+even if the parent publication allows only one attempt. Inventory feedback names
+missing, extra and duplicate pairs. Corrections retain valid prior adverse votes;
+a structurally valid adverse response never triggers a correction. Exhaustion
+refuses before the final audit, retaining responses for subsequent resume.
 Unaligned sentences are audited normally. Provider failures remain explicit.
 
 The `sentence_meaning_consensus` events record pair text, source/current sentence

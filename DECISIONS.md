@@ -4680,3 +4680,14 @@ refuse without retry or cache acceptance; record only fixed field names and
 whitespace categories so a refusal is diagnosable without retaining context.
 This closes an exposed discovery path, not proof that a particular host file
 was read by a historical failed call. Live diagnostic evidence stays in runs.
+
+## Proposal role precedence in publication audits
+
+Ordinary route-role instructions apply only without an OPEN proposal packet.
+Publication audit instructions use the same explicit precedence as the writer
+audit: faithful paper-owned root restatements use proposed_principle, including
+in Abstract or Conclusion, and supporting reasoning uses argument_for_proposal.
+The root declaration remains required under Proposal at document level, including
+nested subsections. Source fidelity, unsupported-claim enforcement, conservative
+sampling and adverse-history retention are unchanged. A corrected prompt does
+not discard prior raw labels, reset repair budgets, or prove improved live output.

@@ -587,7 +587,10 @@ The normalized view is never substituted into accepted definitions, catalogue
 entries or provenance. The legacy screen remains unchanged.
 
 Under the precise screen, content definitions must be textual: Markdown image
-tokens and HTML `img` elements are refused, including nested/reference images.
+tokens and non-text HTML elements are refused, including nested/reference images,
+`img`, image inputs and embedded content. Only the explicit text-formatting HTML
+tag set is supported; other tags refuse even if they contain text. Empty
+normalized text also refuses.
 Alt text cannot serve as the definition. Correction feedback identifies this
 unsupported markup explicitly. Source material remains intact and no image or
 URL is fetched. Ordinary text formatting remains supported by the screening view.

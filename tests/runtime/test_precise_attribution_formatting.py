@@ -20,7 +20,14 @@ FRAMES = ['b holds **that** P', 'b states *that* P', 'b maintains: that P',
           '![b h**olds** th**at** P](https://example.invalid/p.png)',
           'b ![h**olds**](https://example.invalid/p.png) th**at** P',
           '![b ![h**olds**](P) th**at** P](Q)',
-          'b <img alt="h&#111;lds" src="P"> that P']
+          'b <img alt="h&#111;lds" src="P"> that P',
+          '<input type="image" alt="b h&#111;lds th&#97;t P" src="">',
+          'b <input type="image" alt="h&#111;lds" src=""> that P',
+          'b <INPUT TYPE=IMAGE ALT="h&#111;lds"/> that P',
+          'b &lt;input type="image" alt="h&#111;lds"&gt; that P',
+          'b <object data="P" aria-label="h&#111;lds"></object> that P',
+          '<span></span>', '<!-- P -->', '<br>', '&nbsp;',
+          '<script>P</script>', 'P <svg><text>Q</text></svg>']
 
 
 @pytest.mark.parametrize('text', FRAMES)
@@ -92,9 +99,24 @@ def test_markup_screen_never_rewrites_accepted_definitions_or_source(rig, monkey
 
 @pytest.mark.parametrize('text', ['![P](https://example.invalid/p.png)',
     '<img alt="P" src="https://example.invalid/p.png">',
-    '![P][a]\n\n[a]: https://example.invalid/p.png', '![P ![Q](R)](S)'])
+    '![P][a]\n\n[a]: https://example.invalid/p.png', '![P ![Q](R)](S)', '<input type=IMAGE alt="P">'])
 def test_images_have_explicit_content_boundary_reason(text):
     from ara.runtime.commitment_provenance import definition_issues
     assert not content_definition(text,screen=PRECISE_SCREEN)
     issues = definition_issues(dict(commitments=[dict(id='P',definition=text)],new_symbols=[]),screen=PRECISE_SCREEN)
-    assert issues[0]['reason'] == 'image markup is not supported in content definitions'
+    assert issues[0]['reason'] == 'unsupported markup in content definition'
+
+
+@pytest.mark.parametrize('text', ['<span> </span>', '<!-- P -->', '&nbsp;'])
+def test_empty_screen_view_has_explicit_content_boundary_reason(text):
+    from ara.runtime.commitment_provenance import definition_issues
+    issues = definition_issues(dict(commitments=[dict(id='P',definition=text)],new_symbols=[]),screen=PRECISE_SCREEN)
+    assert issues[0]['reason'] == 'content definition has no textual content'
+
+
+@pytest.mark.parametrize('text', ['P <object data="Q"></object>', '<script>P</script>',
+    'P <svg><text>Q</text></svg>', 'P <iframe srcdoc="Q"></iframe>'])
+def test_nontext_html_has_explicit_content_boundary_reason(text):
+    from ara.runtime.commitment_provenance import definition_issues
+    issues = definition_issues(dict(commitments=[dict(id='P',definition=text)],new_symbols=[]),screen=PRECISE_SCREEN)
+    assert issues[0]['reason'] == 'unsupported markup in content definition'

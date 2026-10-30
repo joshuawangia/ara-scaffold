@@ -4698,3 +4698,15 @@ the injector indexed an empty prior set introduced by recovery setup. Restrict
 the injector to nonempty sets and assert that corruption actually occurred;
 keep the original specific rejection and no-freeze assertions. No production
 gate is weakened. All final tests/controls run on the resulting committed head.
+
+
+## Sigma S17-F1 — explicit text-only HTML boundary
+
+The image-element denylist missed rendered alternate content on HTML image inputs.
+Replace it with an explicit set of text-formatting HTML tags. Unsupported elements
+(including inputs, embedded content and scripts) refuse rather than disappearing
+from the screen view. Empty/whitespace-only normalized text also refuses. Correction
+feedback distinguishes unsupported markup and absent textual content. Keep the raw
+attribution guard, default-off behavior and unchanged persisted source/definitions.
+Native freeze and rehashed-sidecar regression cases cover the image-input escape,
+other non-text elements and empty views; controls disable each determining guard.

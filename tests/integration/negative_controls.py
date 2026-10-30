@@ -2628,14 +2628,21 @@ CASES += [
 
 
 CASES += [
-    ('precise_markup_normalization', 'ara/runtime/commitment_provenance.py', 'normalized = _definition_screen_text(text)', 'normalized = text', 'tests/runtime/test_precise_attribution_formatting.py'),
+    ('precise_markup_normalization', 'ara/runtime/commitment_provenance.py', 'normalized = _definition_screen_text(text)\n    return normalized', 'normalized = text\n    return normalized', 'tests/runtime/test_precise_attribution_formatting.py'),
     ('precise_markup_raw_guard', 'ara/runtime/commitment_provenance.py', 'or not text.strip() or attributed(text):', 'or not text.strip():', 'tests/runtime/test_precise_attribution_formatting.py'),
 ]
 
 
 CASES += [
     ('precise_markdown_image_boundary', 'ara/runtime/commitment_provenance.py', "if child.type == 'image':", "if False and child.type == 'image':", 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
-    ('precise_html_image_boundary', 'ara/runtime/commitment_provenance.py', "if tag == 'img':", "if False and tag == 'img':", 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
+    ('precise_html_text_boundary', 'ara/runtime/commitment_provenance.py', 'if tag not in _TEXT_HTML_TAGS:', 'if False and tag not in _TEXT_HTML_TAGS:', 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
+]
+
+
+CASES += [
+    ('precise_empty_text_boundary', 'ara/runtime/commitment_provenance.py',
+     'and bool(normalized.strip()) and not attributed(normalized)', 'and not attributed(normalized)',
+     'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
 ]
 
 

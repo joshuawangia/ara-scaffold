@@ -31,18 +31,31 @@ _PRECISE_ATTRIBUTION = re.compile(
     r"[’']s\s+(view|position|thesis|claim|belief|account)\b", re.I)
 
 
+# Only text-formatting HTML participates in a definition's screening view.
+# Other elements can render attribute/external content that handle_data omits.
+_TEXT_HTML_TAGS = frozenset({
+    'a', 'abbr', 'address', 'article', 'aside', 'b', 'bdi', 'bdo', 'blockquote',
+    'br', 'caption', 'cite', 'code', 'dd', 'del', 'details', 'dfn', 'div', 'dl',
+    'dt', 'em', 'figcaption', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'header', 'hr', 'i', 'ins', 'kbd', 'li', 'main', 'mark', 'nav', 'ol', 'p',
+    'pre', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'section', 'small', 'span',
+    'strong', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th',
+    'thead', 'time', 'tr', 'u', 'ul', 'var', 'wbr',
+})
+
+
 class _DefinitionText(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts = []
-        self.has_image = False
+        self.unsupported_markup = False
 
     def handle_data(self, data):
         self.parts.append(data)
 
     def handle_starttag(self, tag, attrs):
-        if tag == 'img':
-            self.has_image = True
+        if tag not in _TEXT_HTML_TAGS:
+            self.unsupported_markup = True
         if tag in {'br', 'p', 'div', 'li', 'blockquote', 'pre', 'tr', 'td', 'th',
                    'section', 'article', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
             self.parts.append(' ')
@@ -71,7 +84,7 @@ def _definition_screen_text(text):
     parser = _DefinitionText()
     parser.feed(''.join(parts))
     parser.close()
-    return None if parser.has_image else ''.join(parser.parts)
+    return None if parser.unsupported_markup else ''.join(parser.parts)
 
 
 def content_definition(text: str, *, screen: str | None = None) -> bool:
@@ -85,7 +98,7 @@ def content_definition(text: str, *, screen: str | None = None) -> bool:
     if screen != PRECISE_SCREEN:
         return True
     normalized = _definition_screen_text(text)
-    return normalized is not None and not attributed(normalized)
+    return normalized is not None and bool(normalized.strip()) and not attributed(normalized)
 
 
 def definition_issues(data: dict, *, screen: str | None = None) -> list[dict]:
@@ -97,8 +110,12 @@ def definition_issues(data: dict, *, screen: str | None = None) -> list[dict]:
             if not content_definition(text, screen=screen):
                 issues.append(dict(kind=kind, name=entry[key],
                                    phrases=[m.group() for m in _ATTRIBUTION.finditer(text)]))
-                if screen == PRECISE_SCREEN and _definition_screen_text(text) is None:
-                    issues[-1]['reason'] = 'image markup is not supported in content definitions'
+                if screen == PRECISE_SCREEN:
+                    normalized = _definition_screen_text(text)
+                    if normalized is None:
+                        issues[-1]['reason'] = 'unsupported markup in content definition'
+                    elif not normalized.strip():
+                        issues[-1]['reason'] = 'content definition has no textual content'
     return issues
 
 

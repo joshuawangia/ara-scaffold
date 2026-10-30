@@ -299,7 +299,10 @@ class ModelCalls:
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
             return prompt, prompt
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
-        if kind == 'build_t_batch':
+        if kind == 'build_t_batch' and inputs.get('mode') == 'vocabulary_consolidation':
+            from ara.runtime.shared_vocabulary import SHARED_CONTRACT
+            template = (self.root / 'prompts/consolidate_vocabulary.txt').read_text() + SHARED_CONTRACT
+        elif kind == 'build_t_batch':
             from ara.runtime.shared_vocabulary import vocabulary_policy, SHARED_CONTRACT
             if vocabulary_policy(self.config):
                 template = template.replace('Prefer source-prefixed names.', '') + SHARED_CONTRACT

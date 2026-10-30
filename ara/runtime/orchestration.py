@@ -110,13 +110,16 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         raise ValueError('commitments already frozen for this run')
     from ara.runtime.hypotheses import validate_hypothesis_config
     validate_hypothesis_config(calls.config)
+    from ara.runtime.vocabulary_consolidation import policy, consolidate
+    policy(calls.config)
     state = getattr(calls, 'alignment_resume', None)
     if state is not None:
         from ara.runtime.closure_budget import apply_context_limits
         decision = apply_context_limits(calls.config)
         if decision is not None:
             calls.log.record('operator_construction_limits', **decision)
-    commitments = state['commitments'] if state is not None else calls.build_t(literature, audience)
+    commitments = (state.get('consolidation_original',state['commitments']) if state is not None
+                   else calls.build_t(literature, audience))
     # Rich construction exposes semantic metadata without changing the strict
     # CommitmentSet codec or the legacy commitments.json artifact.
     from ara.runtime.frozen_catalogue import frozen_artifact
@@ -127,10 +130,27 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         if latest['commitments'] != commitments.to_dict():
             raise ValueError('frozen catalogue construction mismatch')
         from ara.runtime.symbol_alignment import align_symbols
-        commitments, symbols, rows, alignment = align_symbols(calls, commitments, latest['symbols'], latest['provenance'])
+        commitments,symbols,rows,consolidation = consolidate(calls,commitments,latest['symbols'],latest['provenance'],literature)
+        if consolidation is not None and state is not None and state.get('consolidation') is None:
+            # Prior alignment judgments bind the original formulas/catalogue and cannot be replayed.
+            calls.alignment_resume = None
+        commitments, symbols, rows, alignment = align_symbols(calls, commitments, symbols, rows)
         if state is not None and state.get('expected_source') is not None:
             from ara.runtime.construction_fork import validate_restored_source
-            validate_restored_source(state['expected_source'], commitments, symbols, rows)
+            if consolidation is None:
+                validate_restored_source(state['expected_source'], commitments, symbols, rows)
+            else:
+                from ara.runtime.vocabulary_consolidation import validate_receipt
+                from ara.runtime.symbol_alignment import validate_alignment
+                before_alignment,before_symbols=(validate_alignment(alignment,commitments,symbols,rows)
+                    if alignment is not None else (commitments,symbols))
+                original,_=validate_receipt(consolidation,before_alignment,before_symbols,rows)
+                expected=state['expected_source']
+                source_ids=set(consolidation['provenance'])
+                if ([(c.id,c.text,c.citation) for c in original.commitments] !=
+                    [(c['id'],c['text'],c['citation']) for c in expected['commitments']['commitments'] if c['id'] in source_ids]
+                    or any(expected['provenance'][id]!=rows[id] for id in source_ids)):
+                    raise ValueError('consolidation changed frozen source content or provenance')
         from ara.runtime.hypotheses import admit_hypotheses
         commitments, symbols, rows, hypotheses = admit_hypotheses(calls, commitments, symbols, rows)
         measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(),
@@ -142,9 +162,11 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         save_immutable(calls.log.path.parent / 'frozen-t.json', canonical(artifact))
         calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
         from ara.runtime.commitment_provenance import make_commitment_provenance
-        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment, hypotheses=hypotheses)
+        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment, hypotheses=hypotheses, consolidation=consolidation)
         save_immutable(calls.log.path.parent / 'commitment-provenance.json', canonical(provenance))
         calls.log.record('commitment_provenance_frozen', **provenance)
+    elif calls.config.get('construction_consolidate_vocabulary'):
+        raise ValueError('vocabulary consolidation requires rich construction and verified provenance')
     elif calls.config.get('hypothesis_premises'):
         raise ValueError('hypothesis premises require rich construction and verified provenance')
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())

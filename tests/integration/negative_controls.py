@@ -1722,7 +1722,7 @@ CASES += [
      " or receipt['mapping']!=mapping", '',
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_native_pipeline', 'ara/runtime/orchestration.py',
-     "align_symbols(calls, commitments, latest['symbols'], latest['provenance'])", "(commitments, latest['symbols'], latest['provenance'], None)",
+     "align_symbols(calls, commitments, symbols, rows)", "(commitments, symbols, rows, None)",
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_stage_identity', 'ara/runtime/construction_stages.py',
      "return dispatch_settings(config, 'build_t_batch', correction=False)", "return dispatch_settings(config, 'build_t_batch', correction=correction)",
@@ -2826,7 +2826,7 @@ CASES += [('recovery_partial_activation',
 
 CASES += [
     ('hypothesis_precise_source_envelope', 'ara/runtime/commitment_provenance.py',
-     "value['schema_version'] != 'commitment-provenance-v4' and", 'True and',
+     "value['schema_version'] not in ('commitment-provenance-v4','commitment-provenance-v5') and", 'True and',
      'tests/runtime/test_hypothesis_sigma_integration.py'),
     ('hypothesis_pre_h_alignment_replay', 'ara/runtime/commitment_provenance.py',
      "validate_alignment(value['alignment'], source_commitments,\n                                                               source_symbols, source_rows)",
@@ -2844,6 +2844,35 @@ CASES += [
      "validate_restored_source(state['expected_source'], commitments, symbols, rows)",
      'pass  # mutation disables source preservation',
      'tests/runtime/test_hypothesis_construction_fork.py::test_source_changed_on_replay_refuses_before_h'),
+]
+
+
+CASES += [
+    ('consolidation_native_step', 'ara/runtime/vocabulary_consolidation.py',
+     'if policy(calls.config) is None:return original,original_symbols,rows,None',
+     'if True:return original,original_symbols,rows,None',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_then_alignment_then_one_freeze'),
+    ('consolidation_immutable_text', 'ara/runtime/vocabulary_consolidation.py',
+     "require(all(c['definition']==expected[c['id']]['text'] for c in data['commitments']),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+    ('consolidation_reuse_judgment', 'ara/runtime/vocabulary_consolidation.py',
+     "require({a['name'] for a in data['alignments']}==set(used)&old_names and", 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+    ('consolidation_receipt_hash', 'ara/runtime/vocabulary_consolidation.py',
+     "require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+    ('consolidation_working_capacity', 'ara/runtime/vocabulary_consolidation.py',
+     "require(measured.initial_input_tokens<=calls.config['working_t_token_budget'] and", 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_capacity_refuses'),
+    ('consolidation_catalogue_capacity', 'ara/runtime/vocabulary_consolidation.py',
+     "require(counted.initial_input_tokens-baseline.initial_input_tokens<=calls.config['working_t_symbol_token_budget'],", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_capacity_refuses'),
+    ('consolidation_dependency_component', 'ara/runtime/vocabulary_consolidation.py',
+     "require(all(len(u)<=settings['batch_size'] for u in units),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_topic_plan_preserves_inference_components'),
+    ('consolidation_frozen_validation', 'ara/runtime/commitment_provenance.py',
+     "if value.get('consolidation') is not None:", "if False and value.get('consolidation') is not None:",
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
 ]
 
 

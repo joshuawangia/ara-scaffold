@@ -4853,3 +4853,22 @@ Plan-only verifies restoration and names without provider/counter creation.
 Offline regressions and production-wire controls belong to
 `test_hypothesis_construction_fork.py`; current executed evidence is recorded in
 the external Round 32c report, separately from older committed-head gates.
+
+
+## Accepted-content vocabulary consolidation (2026-10-30)
+
+An opt-in native step re-formalizes terminal-complete source commitments before
+alignment and a single freeze. A new construction fork authenticates and copies
+the original accepted receipts, retaining their plan identity, but drops old
+alignment judgments. Deterministic cross-source lexical batching keeps accepted
+dependency components intact. Only formulas may change; source content, citations,
+stance and provenance are immutable. Atoms remain allowed. Shared vocabulary and
+formula interpretation are disclosed model judgments, never deterministic proof
+of semantic equivalence or faithful translation.
+
+The consolidation receipt retains originals, batch evidence/inputs, responses and
+metrics, bound by canonical SHA-256 and embedded in provenance v5. Reload replays
+the formula gates, then verifies the complete frozen envelope; earlier provenance
+versions and CommitmentSet/frozen-t codecs remain readable unchanged. Existing
+alignment and proposed-hypothesis contracts apply after consolidation. No provider
+calls occur in plan-only mode, so real after-metrics are unavailable there.

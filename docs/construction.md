@@ -211,6 +211,77 @@ construction outcomes into a different plan. Reusing extraction is separate. Add
 new PDFs to validated extraction before anchoring them. Construction/alignment
 resume continues to require the recorded plan and source identities.
 
+## Opt-in partial acceptance and split retry
+
+For a fresh construction lifecycle, three independent run-level boolean flags default off (stage overrides refuse):
+
+```yaml
+construction_partial_acceptance: true
+construction_split_retry: true
+construction_precise_attribution: true
+```
+
+Partial acceptance runs only after ordinary validation/structure corrections fail.
+Whole-candidate complexity guards run before and after formula decoding; filtering
+never turns an over-budget response into an admitted one. Recovery projects the
+last complete, accounted candidate onto validated commitments,
+checks the normal schema, content definitions, source pages/stance/provenance,
+formula signatures and bindings, and recounts cumulative capacities. Formulas
+must be individually satisfiable and the endorsed union consistent; reported and
+attacked formulas do not become global premises. Candidates are admitted in stable
+ID order; conflicts preserve earlier accepted rows. This is not a relevance ranking
+or a promise to find the largest consistent subset. Unknown solver results refuse.
+
+Dropped dependencies propagate to dependants until stable, including inference
+endpoints and qualifiers. Existing disclosed support cuts remain disclosed; partial
+recovery never invents a new cut to retain an unsupported dependant. Surviving
+inferences must pass the structure gate. Symbol evidence lists are projected onto
+survivors without inventing bindings. The entire surviving batch is revalidated
+before acceptance. No formulas, source text or stance are repaired by this process.
+The terminal accepted receipt has `status: partial` and a
+`construction_partial_acceptance` receipt records the candidate hash, retained IDs,
+dropped IDs/reasons and discarded auxiliary inventories. It is not a skipped window.
+
+Split retry declares two dormant children for each divisible primary window in the
+counted plan. A failed/oversized primary activates its children once, in stable
+halves of the original evidence inventory. Each child uses normal root selection,
+full-graph closure, shared prior commitments/catalogue, formalization and admission.
+Children never split recursively. Global exhaustion does not activate retries.
+An indivisible item, large mandatory closure or still-invalid child can still be
+omitted. Partial success is terminal and does not activate its dormant children.
+
+The allocation reserves capacity for primary windows; children share that parent's
+allocation index and still face recounted global limits. The plan and receipts
+include `budget_index` and `retry_parent`. All entries have ordered outcomes:
+`status: split` on a retried parent, `inactive_retry` on unused children, or the normal
+accepted/partial/skipped outcome. This retains native stopped-construction and
+alignment-resume verification. Count primary coverage separately from retry entries;
+three plan entries do not mean three distinct original windows. Split decisions and
+partial results also appear in export methodology.
+
+The precise attribution flag allows ordinary uses of “holds”, “hold”, “states” and
+“maintains” while continuing to reject explicit report frames such as `b argues
+that P`, `b holds that P`, and `According to b, P`. Known-author exact unframing
+remains disclosed as before; an attributed frame itself never becomes a content
+definition. This optional construction screen does not change the search target
+attribution policy and is not a semantic completeness check.
+
+Opt-in source rows carry `definition_screen: attribution-frames-v1`, hash-bound in
+`commitment-provenance-v3`. The existing validator/loader accepts v1/v2 unchanged
+and validates v3 using its recorded screen, including after alignment or fork.
+Old readers refuse v3; use the updated reader for these runs. The outer
+commitments and frozen-catalogue formats are unchanged. All enabled options enter
+the construction plan/cache identity; no changed-input cache replay is licensed.
+
+Partial recovery adds no provider calls beyond existing corrections. Split retry
+adds at most two attempts per divisible failed primary: with correction limit C,
+each attempt makes at most `2 * (1 + C) + 1` generation calls (selection and
+formalization with corrections, plus one structure correction). Thus at most
+`2 * (2 * (1 + C) + 1)` extra calls per failed primary, or 14 at default C=2.
+Counts, local validation and bounded consistency checks add CPU time. Wall time
+and tokens remain response-dependent; neither larger bounds nor recovery guarantees
+coverage. Use new lifecycle settings only after reviewing the counted plan.
+
 ## Structure and frozen vocabulary
 
 Rich construction preserves selected inference nodes as content conditionals with source stance in provenance

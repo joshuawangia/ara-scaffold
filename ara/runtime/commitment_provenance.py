@@ -18,19 +18,32 @@ FIELDS = {'schema_version', 'definition_semantics', 'commitments_sha256', 'catal
           'commitments', 'sha256'}
 
 
-def content_definition(text: str) -> bool:
+PRECISE_SCREEN = 'attribution-frames-v1'
+# Ambiguous verbs require an explicit report frame. Other attribution markers
+# remain conservative; this screen is not a semantic authorship judgment.
+_PRECISE_ATTRIBUTION = re.compile(
+    r"\b(argues?|claims?|contends?|reports?|asserts?|suggests?|proposes?|believes?|"
+    r"defends?|endorses?|says?|thinks?)\b|\b(?:holds?|maintains?|states?)\s+that\b|"
+    r"\baccording\s+to\b|\bon\s+.+?[’']s\s+account\b|"
+    r"[’']s\s+(view|position|thesis|claim|belief|account)\b", re.I)
+
+
+def content_definition(text: str, *, screen: str | None = None) -> bool:
     # One lexicon shared with search; lexical screening is not semantic proof.
     from ara.runtime.target_policy import attributed_report
-    return isinstance(text, str) and bool(text.strip()) and not attributed_report(text)
+    if screen not in (None, PRECISE_SCREEN):
+        raise ValueError('unknown content definition screen')
+    attributed = _PRECISE_ATTRIBUTION.search if screen == PRECISE_SCREEN else attributed_report
+    return isinstance(text, str) and bool(text.strip()) and not attributed(text)
 
 
-def definition_issues(data: dict) -> list[dict]:
+def definition_issues(data: dict, *, screen: str | None = None) -> list[dict]:
     from ara.runtime.target_policy import _ATTRIBUTION
     issues = []
     for field, kind, key in (('commitments', 'commitment', 'id'), ('new_symbols', 'symbol', 'name')):
         for entry in data[field]:
             text = entry['definition']
-            if not content_definition(text):
+            if not content_definition(text, screen=screen):
                 issues.append(dict(kind=kind, name=entry[key],
                                    phrases=[m.group() for m in _ATTRIBUTION.finditer(text)]))
     return issues
@@ -67,8 +80,10 @@ def source_provenance(item: dict, authors: list[str], omitted_support_ids=()) ->
 
 
 def _validate_source(id, row):
-    if not isinstance(row, dict) or set(row) not in (SOURCE_FIELDS, SOURCE_FIELDS | {'definition_unframes'}):
+    if not isinstance(row, dict) or not SOURCE_FIELDS <= row.keys() or not row.keys() <= SOURCE_FIELDS | {'definition_unframes', 'definition_screen'}:
         raise ValueError('invalid commitment provenance fields')
+    if 'definition_screen' in row and row['definition_screen'] != PRECISE_SCREEN:
+        raise ValueError('invalid commitment definition screen')
     if (any(not isinstance(row[k], str) or not row[k].strip() for k in
             ('source_id', 'attributed_to', 'evidence_id', 'attribution', 'stance', 'source_kind', 'source_text')) or
             row['evidence_id'] != id or row['source_kind'] not in SOURCE_KINDS or
@@ -103,7 +118,9 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
     if (not isinstance(value, dict) or
             (value.get('schema_version'), frozenset(value)) not in (
                 ('commitment-provenance-v1', frozenset(FIELDS)),
-                ('commitment-provenance-v2', frozenset(FIELDS | {'alignment'}))) or
+                ('commitment-provenance-v2', frozenset(FIELDS | {'alignment'})),
+                ('commitment-provenance-v3', frozenset(FIELDS)),
+                ('commitment-provenance-v3', frozenset(FIELDS | {'alignment'}))) or
             value['definition_semantics'] != 'content'):
         raise ValueError('invalid commitment provenance schema')
     if (not isinstance(catalogue, dict) or not isinstance(catalogue.get('symbols'), list) or
@@ -118,7 +135,7 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
     if not isinstance(value['commitments'], dict) or set(value['commitments']) != {c.id for c in commitments.commitments}:
         raise ValueError('commitment provenance inventory mismatch')
     source_commitments, source_symbols = commitments, catalogue['symbols']
-    if value['schema_version'] == 'commitment-provenance-v2':
+    if 'alignment' in value:
         from ara.runtime.symbol_alignment import validate_alignment
         source_commitments, source_symbols = validate_alignment(value['alignment'], commitments,
                                                                catalogue['symbols'], value['commitments'])
@@ -129,10 +146,19 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
             if change['kind'] == 'symbol' and not any(
                     s['name'] == change['name'] and id in s['evidence_ids'] for s in source_symbols):
                 raise ValueError('unframed symbol lacks evidence binding')
-    if (not all(content_definition(c.text) for c in source_commitments.commitments) or
-            not all(content_definition(s['definition']) for s in source_symbols) or
-            not all(content_definition(c.text) for c in commitments.commitments) or
-            not all(content_definition(s['definition']) for s in catalogue['symbols'])):
+    policies = {row.get('definition_screen') for row in value['commitments'].values() if 'source_text' in row}
+    if (PRECISE_SCREEN in policies) != (value['schema_version'] == 'commitment-provenance-v3'):
+        raise ValueError('commitment definition screen version mismatch')
+    def definition_ok(text, ids):
+        source_ids = {source for id in ids for source in
+                      (value['commitments'][id].get('evidence_ids', [id]))}
+        screens = {value['commitments'][id].get('definition_screen') for id in source_ids}
+        screen = PRECISE_SCREEN if screens == {PRECISE_SCREEN} else None
+        return content_definition(text, screen=screen)
+    if (not all(definition_ok(c.text, [c.id]) for c in source_commitments.commitments) or
+            not all(definition_ok(s['definition'], s['evidence_ids']) for s in source_symbols) or
+            not all(definition_ok(c.text, [c.id]) for c in commitments.commitments) or
+            not all(definition_ok(s['definition'], s['evidence_ids']) for s in catalogue['symbols'])):
         raise ValueError('attribution in content definition')
     return value
 
@@ -143,6 +169,8 @@ def make_commitment_provenance(commitments: CommitmentSet, catalogue: dict, prov
                    catalogue_sha256=catalogue['sha256'], commitments=provenance)
     if alignment is not None:
         payload.update(schema_version='commitment-provenance-v2', alignment=alignment)
+    if any('definition_screen' in row for row in provenance.values()):
+        payload['schema_version'] = 'commitment-provenance-v3'
     return validate_commitment_provenance({**payload, 'sha256': digest(canonical(payload))}, commitments, catalogue)
 
 

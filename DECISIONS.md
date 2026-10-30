@@ -4606,3 +4606,28 @@ receipts and methodology. New settings require a fresh construction lifecycle;
 changed plan inputs cannot authorize stale response replay or old accepted-batch
 restoration. Existing extraction reuse remains available. No source rule or route
 success is inferred from an anchor or increased capacity.
+
+## Round 16 — opt-in validated subsets and one split retry
+
+Three run-config flags default off and bind only enabled policies into the counted
+construction plan. Partial acceptance uses an accounted candidate only after
+normal corrections; schema, provenance, formula, symbol, capacity, consistency and
+structure gates remain mandatory. Stable-ID cumulative admission preserves earlier
+rows when conflicts arise; this is not maximal-subset or relevance inference.
+Whole-candidate complexity guards remain mandatory before/after formula decoding;
+projection cannot bypass an original response resource limit. Dropped required
+dependencies transitively remove dependants, never become new support assumptions. Source/formula text is not rewritten to make a row pass.
+
+Split children are declared and counted before dispatch, with stable sequential
+indices and original allocation indices. Only failed parents activate them, once;
+children cannot split. Unused children have explicit empty inactive outcomes. The
+native contiguous receipt/artifact and resume checks remain authoritative, including
+terminal request refusals and one freeze. Reports distinguish primary coverage from
+retry entries. Global limits and stop scopes are retained.
+
+The optional precise content screen treats ambiguous ordinary verbs contextually
+but keeps explicit attribution frames hard. Record its policy in source provenance
+and emit v3 sidecars so future validators do not reinterpret definitions under a
+different lexicon. Legacy v1/v2 rows/validation and default plans remain unchanged;
+old readers refuse v3. Search target screening is outside this construction change.
+There is no cache rekeying, source-premise injection or live-run alteration.

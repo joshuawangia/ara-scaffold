@@ -113,6 +113,10 @@ working_t_symbol_token_budget: 16000
 construction_context_limits: {}
 # Extra priority windows over grounded extracted evidence; see docs/construction.md.
 construction_gap_anchors: []
+# Fresh-lifecycle recovery; each flag is strictly boolean and defaults off.
+construction_partial_acceptance: false
+construction_split_retry: false
+construction_precise_attribution: false
 
 # Full extraction is disabled until the operator supplies all three caps.
 extraction-full:

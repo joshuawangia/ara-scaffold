@@ -146,7 +146,7 @@ CASES += [
     ('extraction_stage_cache', 'ara/runtime/calls.py', 'identity, self.requested_model(kind), schema or {}', 'identity, self.provider.model, schema or {}', 'tests/runtime/test_extraction_round3.py::test_stage_model_wire_cache_and_receipts'),
     ('accounting_split', 'ara/runtime/export.py', "'measured_usage': raw_totals(measured)", "'measured_usage': raw_totals(selected)", 'tests/runtime/test_extraction_round3.py::test_accounting_separates_reservations'),
     ('node_wire_shape', 'ara/runtime/providers.py', "if original.get('title') == 'extract_paper_v2':", 'if False:', 'tests/runtime/test_extraction_round3.py::test_extraction_wire_has_unambiguous_nodes'),
-    ('fixed_formalization_inventory', 'ara/runtime/construction.py', "require(len(set(ids)) == len(ids) and set(ids) == selected_ids,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[qualification]'),
+    ('fixed_formalization_inventory', 'ara/runtime/construction.py', "require(len(set(ids)) == len(ids) and set(ids) == expected_ids,", 'require(True,', 'tests/runtime/test_extraction_rich.py::test_invalid_working_batch_refused_before_freeze[qualification]'),
 ]
 
 CASES += [
@@ -649,7 +649,7 @@ CASES += [
 
 CASES += [
     ('soft_recompute', 'ara/runtime/construction.py',
-     "windows_left = sum(n > 0 for n in allocation['window_initial_commitments'][batch.index:])", 'windows_left = len(batches)',
+     "windows_left = sum(n > 0 for n in allocation['window_initial_commitments'][budget_index:])", 'windows_left = len(batches)',
      'tests/runtime/test_construction_shares.py::test_borrowing_recounts_and_recomputes_before_next_dispatch'),
     ('soft_recount', 'ara/runtime/construction.py',
      "current = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': prior}})",
@@ -2517,7 +2517,7 @@ CASES += [
      "[anchor['evidence_ids']]",
      'tests/runtime/test_gap_construction.py::test_extra_anchor_windows_are_counted_split_and_reuse_exact_ids'),
     ('gap_anchor_omission_reconciliation', 'ara/runtime/construction.py',
-     'if anchors:\n        # Extra retrieval windows', 'if False:\n        # Extra retrieval windows',
+     'if anchors or split_enabled:\n        # Extra retrieval windows', 'if False:\n        # Extra retrieval windows',
      'tests/runtime/test_gap_construction.py::test_overlapping_page_anchors_keep_one_final_omission_per_item'),
     ('construction_context_limits_apply', 'ara/runtime/closure_budget.py',
      'config.update(limits, model_context_token_bound=bound)', 'config.update(model_context_token_bound=bound)',
@@ -2535,6 +2535,74 @@ CASES += [
     ('construction_context_limits_methodology', 'ara/runtime/export.py',
      "e['stage'] == 'operator_construction_limits'", "e['stage'] == 'disabled_construction_limits'",
      'tests/runtime/test_gap_construction.py::test_anchor_and_limits_are_disclosed_in_methodology'),
+]
+
+
+CASES += [
+    ('recovery_partial_activation', 'ara/runtime/construction.py',
+     "partial_enabled = calls.config.get('construction_partial_acceptance', False)", 'partial_enabled = False',
+     'tests/runtime/test_construction_recovery.py::test_partial_accepts_valid_rows_after_repairs_and_freezes_once[definition]'),
+    ('recovery_subset_schema', 'ara/runtime/construction_recovery.py',
+     'validate_local(schema, value, config)', 'pass',
+     'tests/runtime/test_construction_recovery.py::test_partial_accepts_valid_rows_after_repairs_and_freezes_once[schema_field]'),
+    ('recovery_subset_dependencies', 'ara/runtime/construction_recovery.py',
+     'invalid = {id for id, missing_ids in missing.items() if missing_ids}', 'invalid = set()',
+     'tests/runtime/test_construction_recovery.py::test_partial_dropped_support_drops_transitive_dependants'),
+    ('recovery_subset_consistency', 'ara/runtime/construction.py',
+     "require(consistent(commitments, CommitmentSet.from_dict({'commitments': prior}), items),", 'require(True,',
+     'tests/runtime/test_construction_recovery.py::test_partial_accepts_valid_rows_after_repairs_and_freezes_once[inconsistent]'),
+    ('recovery_consistency_unknown', 'ara/runtime/construction.py',
+     "require(consistent(commitments, CommitmentSet.from_dict({'commitments': prior}), items),", 'require(True,',
+     'tests/runtime/test_construction_recovery.py::test_unknown_consistency_never_accepts_partial'),
+    ('recovery_subset_structure', 'ara/runtime/construction_recovery.py',
+     "invalid = {issue['evidence_id'] for issue in metrics['issues']}", 'invalid = set()',
+     'tests/runtime/test_construction_recovery.py::test_partial_cannot_promote_bad_binding_conflict_or_flat_inference[structure]'),
+    ('recovery_no_flat_acceptance', 'ara/runtime/construction.py',
+     "metrics['passed'] or (metrics['flat'] and not partial_enabled)", "metrics['passed'] or metrics['flat']",
+     'tests/runtime/test_construction_recovery.py::test_partial_cannot_promote_bad_binding_conflict_or_flat_inference[structure]'),
+    ('recovery_orphaned_symbol', 'ara/runtime/construction_recovery.py',
+     "orphaned = {s['name'] for s in project(kept)['new_symbols'] if not s['evidence_ids']}", 'orphaned = set()',
+     'tests/runtime/test_construction_recovery.py::test_partial_symbol_binding_uses_valid_later_row_without_inventing_evidence[True]'),
+    ('recovery_later_symbol_binding', 'ara/runtime/construction_recovery.py',
+     'validate(kept | {id}, tentative=True)', 'validate(kept | {id})',
+     'tests/runtime/test_construction_recovery.py::test_partial_symbol_binding_uses_valid_later_row_without_inventing_evidence[False]'),
+    ('recovery_unknown_binding', 'ara/runtime/construction_recovery.py',
+     'if tentative or id in ids or id not in expected', 'if id in ids',
+     'tests/runtime/test_construction_recovery.py::test_partial_cannot_promote_bad_binding_conflict_or_flat_inference[unknown_binding]'),
+    ('recovery_split_activation', 'ara/runtime/construction.py',
+     'children = retry_children.get(batch.index, []) if retry else []', 'children = []',
+     'tests/runtime/test_construction_recovery.py::test_failed_window_splits_once_and_uses_shared_catalogue[output]'),
+    ('recovery_split_child_count', 'ara/runtime/construction.py',
+     'count(half, anchor), primary.allowance', '0, primary.allowance',
+     'tests/runtime/test_construction_recovery.py::test_split_children_are_counted_before_selection'),
+    ('recovery_split_dormant', 'ara/runtime/construction.py',
+     'if batch.retry_parent is not None and batch.retry_parent not in split_parents:', 'if False:',
+     'tests/runtime/test_construction_recovery.py::test_successful_parent_leaves_children_inactive_and_receipts_resumable'),
+    ('recovery_split_restored_activation', 'ara/runtime/construction.py',
+     "if data.get('split_retry'):", 'if False:',
+     'tests/runtime/test_construction_recovery.py::test_split_resume_retains_verified_child_before_terminal_refusal[1]'),
+    ('recovery_boolean_flags', 'ara/runtime/construction_recovery.py',
+     'if type(config.get(name, False)) is not bool:', 'if False:',
+     'tests/runtime/test_construction_recovery.py::test_invalid_recovery_flags_refuse_before_planning'),
+    ('recovery_precise_screen_activation', 'ara/runtime/construction.py',
+     "definition_screen = 'attribution-frames-v1' if calls.config.get('construction_precise_attribution') else None", 'definition_screen = None',
+     'tests/runtime/test_construction_recovery.py::test_precise_screen_survives_freeze_and_sidecar_validation'),
+    ('recovery_precise_hard_frames', 'ara/runtime/commitment_provenance.py',
+     '_PRECISE_ATTRIBUTION.search if screen == PRECISE_SCREEN else attributed_report', '(lambda text: False) if screen == PRECISE_SCREEN else attributed_report',
+     'tests/runtime/test_construction_recovery.py::test_precise_screen_keeps_explicit_attribution_hard'),
+    ('recovery_definition_policy_binding', 'ara/runtime/commitment_provenance.py',
+     "payload['schema_version'] = 'commitment-provenance-v3'", 'pass',
+     'tests/runtime/test_construction_recovery.py::test_recovery_methodology_and_precise_fork_preserve_receipts'),
+    ('recovery_methodology', 'ara/runtime/export.py',
+     "e['stage'] == 'construction_partial_acceptance'", "e['stage'] == 'disabled_partial_acceptance'",
+     'tests/runtime/test_construction_recovery.py::test_recovery_methodology_and_precise_fork_preserve_receipts'),
+]
+
+
+CASES += [
+    ('recovery_candidate_complexity', 'ara/runtime/construction_recovery.py',
+     'guard_complexity(value, config)', 'pass',
+     'tests/runtime/test_construction_recovery.py::test_recovery_does_not_bypass_response_complexity'),
 ]
 
 

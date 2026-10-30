@@ -927,6 +927,8 @@ class ModelCalls:
             require(bool(allowed), 'no extracted claims available to build T')
             from ara.runtime.construction import construct
             return construct(self, literature, audience)
+        require(not self.config.get('construction_gap_anchors') and not self.config.get('construction_context_limits'),
+                'construction gap anchors and context limits require rich extracted literature')
         return self.call('build_t', {'literature': literature, 'audience': audience}, CommitmentSet.from_dict)
 
     def search_vocabulary(self, commitments):

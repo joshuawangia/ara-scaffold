@@ -147,7 +147,9 @@ def methodology(log_path: Path) -> str:
                    'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments, provenance_from_events(events, commitments)))
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
-        'construction': {'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],
+        'construction': {'gap_anchor_windows': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_gap_anchor_window'],
+                         'context_limits': [json.loads(e['payload_json']) for e in events if e['stage'] == 'operator_construction_limits'],
+                         'structure_gates': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_gate'],
                          'structure_outcomes': [json.loads(e['payload_json']) for e in events if e['stage'] == 'build_t_structure_outcome'],
                          'frozen_catalogues': [json.loads(e['payload_json']) for e in events if e['stage'] == 'symbol_catalogue_frozen'],
                          'commitment_provenance': [json.loads(e['payload_json']) for e in events if e['stage'] == 'commitment_provenance_frozen'],

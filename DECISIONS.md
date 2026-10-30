@@ -4212,3 +4212,26 @@ its target_bases argument when mutating the full frozen commitment argument in
 the target-context negative control. Anchor uniqueness remains mandatory; both
 mutation and restoration must execute on the combined source. Regenerate only
 combined target prompt keys, retaining all recorded response values.
+
+## Round 15 — explicit construction anchors and context-derived budgets
+
+Operator gap anchors are retrieval/selection instructions over grounded rich
+evidence, never new premises. Resolve exact source IDs, physical page overlaps and
+explicit root IDs before counting. Prepend extra counted windows in operator order;
+retain ordinary corpus windows. Explicit roots are required by selection validation,
+while page-only matches still receive relevance/omission judgments. Full-graph
+closure, mandatory qualifiers, source stance, formalization, exact ID reuse, final
+global accounting and the single freeze remain authoritative. Duplicate final
+omissions from overlapping retrieval windows combine their distinct reasons; each
+original decision remains in its window receipt.
+
+`construction_context_limits` maps existing batch/working/catalogue token-budget
+keys to finite fractions in (0, 1), calculated from the normalized run context bound.
+Absent/empty settings preserve absolute limits and existing plan inputs. The
+existing window-cap multiplier remains an explicit independent operator setting.
+Output/catalogue reserves and exact admission under effective stage settings still
+apply. Both new settings bind the plan and model/cache inputs and are disclosed in
+receipts and methodology. New settings require a fresh construction lifecycle;
+changed plan inputs cannot authorize stale response replay or old accepted-batch
+restoration. Existing extraction reuse remains available. No source rule or route
+success is inferred from an anchor or increased capacity.

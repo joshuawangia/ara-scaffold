@@ -196,7 +196,7 @@ CASES += [
 ]
 
 CASES += [
-    ('root_measured_remaining_capacity', 'ara/runtime/construction.py', 'inputs_for(group, batch.index, max(0, available))', 'inputs_for(group, batch.index, batch.allowance)', 'tests/runtime/test_extraction_round4.py::test_two_rich_catalogues_share_global_capacity'),
+    ('root_measured_remaining_capacity', 'ara/runtime/construction.py', 'inputs_for(group, batch.index, max(0, available), anchor)', 'inputs_for(group, batch.index, batch.allowance, anchor)', 'tests/runtime/test_extraction_round4.py::test_two_rich_catalogues_share_global_capacity'),
 ]
 
 CASES += [
@@ -1970,6 +1970,42 @@ CASES += [
      "if values.get('model_context_window') is not None:", 'if False:',
      'tests/runtime/test_construction_stages.py::test_stage_cannot_clear_window_inherited_from_construction_group'),
 
+]
+
+
+CASES += [
+    ('gap_anchor_priority_windows', 'ara/runtime/construction.py',
+     'anchors = resolve_anchors(calls.config, usable)', 'anchors = []',
+     'tests/runtime/test_gap_construction.py::test_anchor_window_closes_full_graph_before_one_freeze'),
+    ('gap_anchor_required_roots', 'ara/runtime/construction.py',
+     "set(inputs.get('gap_anchor', {}).get('root_ids', [])) <= set(roots)", 'True',
+     'tests/runtime/test_gap_construction.py::test_anchor_cannot_bypass_selection_or_formalization[root]'),
+    ('gap_anchor_grounded_roots', 'ara/runtime/construction_anchors.py',
+     'not set(roots) <= items.keys()', 'False',
+     'tests/runtime/test_gap_construction.py::test_anchor_cannot_restore_quarantined_evidence'),
+    ('gap_anchor_counted_partition', 'ara/runtime/construction.py',
+     "counted_windows(anchor['evidence_ids'],\n        lambda ids: partition_count(ids, anchor), partition_bound, lambda: None)",
+     "[anchor['evidence_ids']]",
+     'tests/runtime/test_gap_construction.py::test_extra_anchor_windows_are_counted_split_and_reuse_exact_ids'),
+    ('gap_anchor_omission_reconciliation', 'ara/runtime/construction.py',
+     'if anchors:\n        # Extra retrieval windows', 'if False:\n        # Extra retrieval windows',
+     'tests/runtime/test_gap_construction.py::test_overlapping_page_anchors_keep_one_final_omission_per_item'),
+    ('construction_context_limits_apply', 'ara/runtime/closure_budget.py',
+     'config.update(limits, model_context_token_bound=bound)', 'config.update(model_context_token_bound=bound)',
+     'tests/runtime/test_gap_construction.py::test_window_derived_limits_admit_previously_oversized_source_without_truncation[True]'),
+    ('construction_context_limits_window', 'ara/runtime/closure_budget.py',
+     'apply_context_window(effective)', 'pass',
+     'tests/runtime/test_gap_construction.py::test_context_limits_plan_from_effective_run_window_without_generation'),
+    ('construction_context_limits_validation', 'ara/runtime/closure_budget.py',
+     'any(type(v) not in (int, float) or not isfinite(v) or not 0 < v < 1 for v in fractions.values())',
+     'False',
+     'tests/runtime/test_gap_construction.py::test_invalid_context_limits_refuse_before_construction'),
+    ('gap_anchor_methodology', 'ara/runtime/export.py',
+     "e['stage'] == 'construction_gap_anchor_window'", "e['stage'] == 'disabled_gap_anchor_window'",
+     'tests/runtime/test_gap_construction.py::test_anchor_and_limits_are_disclosed_in_methodology'),
+    ('construction_context_limits_methodology', 'ara/runtime/export.py',
+     "e['stage'] == 'operator_construction_limits'", "e['stage'] == 'disabled_construction_limits'",
+     'tests/runtime/test_gap_construction.py::test_anchor_and_limits_are_disclosed_in_methodology'),
 ]
 
 

@@ -107,6 +107,10 @@ extraction:
 build_t_batch_input_tokens: 70000
 working_t_token_budget: 100000
 working_t_symbol_token_budget: 16000
+# Opt-in fractions of the effective run context bound, keyed by the three limits above.
+construction_context_limits: {}
+# Extra priority windows over grounded extracted evidence; see docs/construction.md.
+construction_gap_anchors: []
 
 # Full extraction is disabled until the operator supplies all three caps.
 extraction-full:

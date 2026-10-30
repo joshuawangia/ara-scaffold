@@ -4657,3 +4657,14 @@ blanket attribution bans across proposal sections, ordinary-title enforcement,
 and mandatory status-note/disclaimer-location gates. Source discussion may share
 the Proposal section; only the declared bridge cannot be source-attributed.
 Frozen-H authorization, immutable evidence, repair bounds and k>=3 union remain.
+
+
+### Four-rule proposal publication contract supersedes placement restrictions
+
+The operator narrowed proposal publication requirements to title/abstract
+disclosure, a clearly headed and defended paper-owned Proposal, faithful cited
+source claims, and no unsupported substance presented as established. This
+supersedes mandatory paragraph cues, blanket citation exclusions from Proposal,
+fixed literature/disclaimer placement and repeated status disclosures. Placement
+labels alone are advisory for proposals; actual support/fidelity failures and
+fresh conservative union auditing remain binding. Ordinary-route policy remains.

@@ -60,8 +60,9 @@ no matching logged record exists; no checkout manifest supplies a replacement.
 Recorded bibliography metadata is not independently verified. Native audit checks source support and
 route fidelity. These are model assessments, not a semantic equivalence proof.
 
-The native citation/originality path is attempted on accepted polish. Its external
-retrieval step is unavailable through the isolated subscription provider: this is
+The native citation/originality path is attempted on accepted polish through the
+explicitly selected audit provider. Codex supports its native web verification;
+without that selection, Claude cannot perform the retrieval step. That case is
 recorded as **blocked**, returns exit 2, and does not call an API fallback. Local
 citation membership is a separate check, not a replacement for external source
 verification. A Markdown/PDF artifact can therefore exist with incomplete
@@ -176,9 +177,9 @@ pin; absent that override, the recorded writer model is used and must be a GPT
 model. Without the flag the existing pinned Claude audit remains available.
 Provider scopes share the same budget, append-only log and cache boundary, with
 provider/model/settings included in cache identity. Each provider performs its
-own isolation preflight. This selects only publication auditing; external
-citation/originality retrieval remains on the publication provider and explicitly
-blocked there. It does not change pilot routing or claim stable model judgments.
+own isolation preflight. The explicitly selected audit provider also performs native citation/originality
+verification, sharing the original log, cache and budget. Without a separate
+audit provider, unavailable external retrieval remains explicitly blocked. It does not change pilot routing or claim stable model judgments.
 The live receipt distinguishes schema/transport proof from the semantic verdict.
 
 ## Frozen citations and malformed audit history
@@ -207,25 +208,40 @@ responses never count as clean samples; the gate still requires at least three
 complete fresh samples. Receipts distinguish recovered adverse evidence from
 those sample verdicts.
 
-## Scoped proposal publications
+## Proposal publications
 
-An explicitly authorized OPEN proposal uses a substantive title, one disclosure
-sentence in its abstract, an Introduction, Proposal, Objections and replies,
-Conclusion, and a short final Status and method note. The native proposal
-validator owns disclosure and scope semantics. The note retains the exact
-proposal status and process qualifications; the ordinary route layout is
-unchanged. Proposal ownership does not establish source support or derivation.
+An explicitly authorized OPEN proposal retains its title-page label (in the title
+or front matter) and one abstract
+disclosure sentence. Its bridge is stated and defended in a clearly headed
+Proposal section as the paper's argued principle, not a source claim. Every
+source report must be cited and faithful, and unsupported substance cannot be
+presented as established. Native proposal validation owns that contract.
 
-The editor uses natural prose within the native section/paragraph scopes. Cited
-source discussion remains outside those scopes. The publication audit receives
-the same deterministic ownership metadata as the writer audit, with its existing
-fresh k≥3 union and adverse-history policy. Only the exact current accepted
-export, bound to a clean complete k≥3 writer gate, may use the legacy disclosure
-format on import. Whole-paper output and every repair use strict disclosure
-validation. The retained original export is not normalized or rewritten.
+Natural prose needs no sentence prefixes, paragraph ownership cues, repeated
+disclaimers or mandatory status-note placement. Source discussion is allowed
+inside Proposal when its citations support it and it remains distinct from the
+bridge. A short Status and method note is an editorial option. Proposal currency
+citations must resolve to their logged evidence; bounded-search qualifications,
+read status, page/section limits and source fidelity still apply wherever cited.
+The ordinary route layout and related-work rules remain unchanged.
 
-For proposals, imported literature-currency citations and search/novelty
-positioning belong in Status and method. Source discussion elsewhere uses the
-original source citations. Currency records still cannot supply route-node
-coverage, and their search bounds, verified locations and access limitations
-remain mandatory. Ordinary route papers retain the separate related-work section.
+Publication receives the native proposal/audit metadata and retains fresh k≥3
+samples, union of substantive flags and adverse history. Proposal-only placement
+labels are advisory; source/currency support, unsupported substance, route
+coverage and original-draft fidelity still fail when violated. The raw labels
+remain in the audit receipts. A clean gate is a model assessment, not proof of
+semantic truth.
+
+Only the current exact accepted export with a matching clean complete k≥3 writer
+gate may use the legacy disclosure format on import. Final text and every repair
+use the current native validator; the retained original export is not rewritten.
+The writer's Codex-only context window stays on the separately selected Codex
+auditor. The Claude editor uses the repository context-admission bound, preserving
+any smaller inherited bound. The source run configuration remains unchanged.
+
+The initial whole-paper output receives deterministic proposal metadata through
+the shared insertion helper before strict validation and the fresh audit. The
+model's original citation/node/figure inventories and indices are validated
+first; only metadata-related paragraph/figure indices are recomputed. A receipt
+binds the before/after values and retains the original model change log. Repairs
+still validate strictly and cannot use insertion to alter unflagged spans.

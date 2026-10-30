@@ -61,16 +61,14 @@ def validate_polish(value, original, figure_ids, *, whole=False, currency=None, 
         headings = re.findall(r'^## (\d+)\. (.+)$',markdown,re.M)
         require([int(n) for n,_ in headings] == list(range(1,len(headings)+1)), 'publication numbered sections invalid')
         labels = ' '.join(h.lower() for _,h in headings)
-        required = ('introduction','proposal','objection','repl','conclusion','status and method') if proposal else (
+        required = ('proposal',) if proposal else (
             'introduction','argument','objection','repl','limit','conclusion')
         require(all(term in labels for term in required), 'publication required section missing')
-        if proposal:
-            require(headings[-1][1].casefold() == 'status and method', 'proposal status note must be last')
     require([x['paragraph'] for x in value['change_log']] == list(range(len(body))), 'publication paragraph change log incomplete')
     require(set(CITATION.findall(markdown)) == set(CITATION.findall(original)), 'publication citation inventory changed')
     require(set(NODE.findall(markdown)) == set(NODE.findall(original)), 'publication node coverage changed')
     if whole:
-        require(not NODE.findall(body[0]), 'publication abstract must not duplicate node markers')
+        require(not NODE.findall(abstract[1]), 'publication abstract must not duplicate node markers')
         from ara.runtime.publication_currency import check_currency
         check_currency(markdown,currency,proposal=proposal)
     found = FIGURE.findall(markdown)
@@ -159,6 +157,27 @@ def polish(calls, route, draft, *, currency=None):
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
         validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'],proposal=proposal)
         return value
+    def check_composed(value):
+        from ara.runtime.proposal import insert_disclosure
+        before = as_draft(value['markdown'], draft['bibliography'])
+        disclosed = insert_disclosure(proposal, before)
+        if disclosed == before:
+            return check_whole(value)
+        # Validate the model's inventories and indices before metadata shifts them.
+        validate_polish(value, original, figure_ids)
+        markdown = '# ' + disclosed['title'] + '\n\n' + disclosed['body']
+        improvements = {p: c['improvement'] for p,c in zip(paragraphs(value['markdown']), value['change_log'])}
+        normalized = dict(value, markdown=markdown,
+            figure_placements=[dict(id=m[1], after_paragraph=len(paragraphs(markdown[:m.start()]))-1)
+                               for m in FIGURE.finditer(markdown)],
+            change_log=[dict(paragraph=i, improvement=improvements.get(p,
+                'Required proposal disclosure inserted; substantive text retained. Original model edits are recorded.'))
+                        for i,p in enumerate(paragraphs(markdown))])
+        check_whole(normalized)
+        calls.log.record('publication_proposal_disclosure_inserted', route_id=route.id,
+                         before_sha256=digest(canonical(value)), after_sha256=digest(canonical(normalized)),
+                         model_change_log=value['change_log'], semantic_repair_rounds_unchanged=True)
+        return normalized
     figure_ids = {f['id'] for f in figures}
     chunks = sections(draft,calls.log.read())
     original = '\n\n'.join(chunks)
@@ -183,7 +202,7 @@ def polish(calls, route, draft, *, currency=None):
         merged = '\n\n'.join(v['markdown'] for v in accepted)
         candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
             original_markdown=original,paragraphs=paragraphs(merged)),
-            check_whole)
+            check_composed)
         for attempt in range(4):
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
@@ -238,7 +257,10 @@ def polish(calls, route, draft, *, currency=None):
     native_citations = dict(status='not_run',reason='polish failed; original draft retained')
     if success:
         try:
-            cleaned, verification = calls.verify_originality_citations(chosen)
+            verifier = calls._for_construction_stage('audit_publication', {})
+            calls.log.record('publication_verification_provider',
+                             provider=verifier.config['provider'], model=verifier.config['model'])
+            cleaned, verification = verifier.verify_originality_citations(chosen)
             native_citations = dict(status='pass' if cleaned == chosen and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
             if native_citations['status'] == 'pass':
                 audit_consensus(calls,route,chosen,publication_context=publication_context)

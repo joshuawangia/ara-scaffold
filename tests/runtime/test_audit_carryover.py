@@ -162,7 +162,7 @@ def test_carryover_does_not_validate_malformed_current_inventory(rig,monkeypatch
 def test_malformed_meaning_retry_retains_valid_adverse_vote(rig,monkeypatch):
     calls,route,source,_,_=setup_source(rig,monkeypatch)
     original=calls.provider.complete
-    assert calls.config['validation_attempts']==1
+    assert calls.config.get('validation_attempts',1)==1
     count=0
     def complete(kind,prompt,schema,maximum):
         nonlocal count
@@ -199,6 +199,9 @@ def test_missing_meaning_inventory_keeps_all_51_adverse_votes(rig, monkeypatch, 
 
     first=' [cite:p]\n'.join(f'This paper argues that P{i:03d}, Q, and R.' for i in range(101))
     calls,route,source,_,_=setup_source(rig,monkeypatch,first=first)
+    # Leave room for the all-inherited mutation: it must fail on lost adverse
+    # votes, not incidentally hit the mock context ceiling.
+    calls.config['model_context_token_bound']=2_000_000
     draft={**source, 'body': source['body'].replace('This paper argues that ', '').replace(', Q, and R.', ' together with Q and R.').replace('We argue that ', '')}
     inputs=calls.audit_inputs(route,draft,publication_context=dict(original_draft=source,literature_currency=None))
     bound=verified_source_rows(calls,route,draft,inputs)
@@ -223,7 +226,7 @@ def test_missing_meaning_inventory_keeps_all_51_adverse_votes(rig, monkeypatch, 
         def reject(data):raise ValidationError('meaning check pair inventory mismatch')
         with pytest.raises(InvalidOutput):calls.call('audit_meaning',request,reject,fresh=True)
     with pytest.raises(EssayAuditFailed) as exc:run(calls,route,source,draft)
-    assert calls.config['validation_attempts']==1
+    assert calls.config.get('validation_attempts',1)==1
     assert len(requests)==4
     decisions=exc.value.result['verified_sentence_carryover']['meaning_checks']
     assert len(decisions)==101

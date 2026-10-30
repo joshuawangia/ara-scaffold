@@ -38,7 +38,7 @@ def source_context(calls, route):
             supports.append(row)
         else:
             alignment_evidence.append(dict(**row, authority='definition_evidence_not_additional_premise'))
-        if source and source.get('stance') == 'model_alignment':
+        if source and source.get('stance') in ('model_alignment','proposed'):
             continue
         bibliography.append(citations[tid]['bibliography'] if tid in citations
                             else dict(id=tid, text=commitment.citation, url=None))
@@ -73,6 +73,10 @@ def source_context(calls, route):
                   disclosed_limits=dict(open_node_ids=list(route.frontier),
                       omitted_support_ids=sorted({id for s in supports + alignment_evidence if s['provenance']
                           for id in s['provenance'].get('omitted_support_ids', [])})))
+    from ara.runtime.hypotheses import hypothesis_disclosure
+    disclosure = hypothesis_disclosure(provenance,ids)
+    if disclosure['conditional_on']:
+        result['hypothesis_disclosure'] = disclosure
     if alignment_evidence:
         result['alignment_source_evidence'] = alignment_evidence
     require(len(canonical(result)) <= MAX_CONTEXT_CHARS,

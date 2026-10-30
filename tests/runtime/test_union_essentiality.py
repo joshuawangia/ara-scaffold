@@ -109,9 +109,18 @@ def test_forward_union_essentiality_removes_padded_packages(tmp_path):
         Commitment('rs', 'R -> S', 'c:1', Formula('implies', (R, s)))))
     calls, _ = rig(tmp_path, lambda *args: pytest.fail('forward dispatched a model'))
     provenance = freeze(calls, t, ('a', 'b', 'c'))
-    result = forward_candidates(t, provenance, load_bank(ROOT/'bank'), calls.log, depth=2, node_cap=500)
-    padded = Formula('and', (P, Formula('or', (Q, R))))
-    assert result['licensed_consequences'] > 0
+    from ara.engine.forward import Consequence, ForwardResult
+    disjunction = Formula('or', (Q, R))
+    padded = Formula('and', (P, disjunction))
+    # Historical/route-witness packages still need the novelty gate even though
+    # fresh enumeration no longer generates them as standalone discoveries.
+    observed = ForwardResult((
+        Consequence(disjunction, 'disjunction_introduction', (Q,), 1, False),
+        Consequence(padded, 'conjunction_introduction', (P, disjunction), 2, False)), False)
+    result = forward_candidates(t, provenance, load_bank(ROOT/'bank'), calls.log,
+                                depth=2, node_cap=500, observed=(observed,))
+    assert result['licensed_consequences'] == 0
+    assert result['observed_scanned'] == 2
     assert not any(c['formula'] == padded.to_dict() for c in result['candidates'])
     assert not any(c['formula'] in (PADDED_OR.to_dict(), PADDED_IF.to_dict()) for c in result['candidates'])
 

@@ -42,7 +42,7 @@ class NativeEngine:
         vocabulary = calls.search_vocabulary(commitments)
         provenance = vocabulary['commitment_provenance']
         premises = CommitmentSet(tuple(c for c in commitments.commitments
-            if provenance is None or provenance['commitments'][c.id]['stance'] in ('endorsed', 'model_alignment')))
+            if provenance is None or provenance['commitments'][c.id]['stance'] in ('endorsed', 'model_alignment', 'proposed')))
         calls.log.record('search_stance_policy', provenance_status=vocabulary['provenance_status'],
                          provenance_sha256=vocabulary['provenance_sha256'],
                          eligible_commitment_ids=[c.id for c in premises.commitments],
@@ -108,6 +108,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     """One construction lifecycle, one freeze. Search cannot observe provisional batches."""
     if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
+    from ara.runtime.hypotheses import validate_hypothesis_config
+    validate_hypothesis_config(calls.config)
     state = getattr(calls, 'alignment_resume', None)
     if state is not None:
         from ara.runtime.closure_budget import apply_context_limits
@@ -126,6 +128,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
             raise ValueError('frozen catalogue construction mismatch')
         from ara.runtime.symbol_alignment import align_symbols
         commitments, symbols, rows, alignment = align_symbols(calls, commitments, latest['symbols'], latest['provenance'])
+        from ara.runtime.hypotheses import admit_hypotheses
+        commitments, symbols, rows, hypotheses = admit_hypotheses(calls, commitments, symbols, rows)
         measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(),
             'count': calls.config['target_candidates'], 'named_position': None},
             purpose='commitments_only_capacity_not_target_readiness')
@@ -135,9 +139,11 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         save_immutable(calls.log.path.parent / 'frozen-t.json', canonical(artifact))
         calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
         from ara.runtime.commitment_provenance import make_commitment_provenance
-        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment)
+        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment, hypotheses=hypotheses)
         save_immutable(calls.log.path.parent / 'commitment-provenance.json', canonical(provenance))
         calls.log.record('commitment_provenance_frozen', **provenance)
+    elif calls.config.get('hypothesis_premises'):
+        raise ValueError('hypothesis premises require rich construction and verified provenance')
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())
     calls.log.record('commitments_frozen', commitments=commitments.to_dict(), bank_version=bank.bank_version)
     return commitments

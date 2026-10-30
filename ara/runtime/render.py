@@ -21,6 +21,8 @@ def render_tree(graph: RouteGraph, commitments=None, provenance=None) -> str:
         if node is None:
             raise ValueError(f'graph references absent node: {node_id}')
         lines.append(f'{indent}{node.id}: {node.proposition.text} [{node.kind}; T={node.t_id}]')
+        if provenance and provenance['commitments'].get(node.t_id, {}).get('stance') == 'proposed':
+            lines.append(f'{indent}  [proposed hypothesis; conditional on H; not source endorsement]')
         if provenance and provenance['commitments'].get(node.t_id, {}).get('stance') == 'model_alignment':
             lines.append(f'{indent}  [alignment_premise; model_alignment; not source endorsement]')
         for child in node.children:

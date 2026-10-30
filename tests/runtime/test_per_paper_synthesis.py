@@ -225,3 +225,20 @@ def test_alignment_forward_uses_bridges_without_paper_ownership(tmp_path):
     # An alignment premise is not a paper even if its payload falsely supplies one.
     rows[bridge.id]['source_id']='c'
     assert set(endorsed_papers(aligned,provenance))=={'a','b'}
+
+
+def test_forward_coverage_reaches_report_and_methodology(tmp_path):
+    from ara.runtime.synthesis import forward_candidates
+    from ara.runtime.report import build_run
+    from ara.runtime.export import methodology
+    calls, _ = rig(tmp_path, lambda *args: pytest.fail('forward mining dispatched a model call'))
+    provenance = freeze(calls, T, ('a', 'b'))
+    result = forward_candidates(T, provenance, load_bank(ROOT/'bank'), calls.log, depth=2, node_cap=2)
+    assert any(c['formula'] == Q.to_dict() for c in result['candidates'])
+    coverage = build_run(tmp_path)['search']['forward_coverage']
+    assert len(coverage) == 1
+    payload = coverage[0]['payload']
+    assert payload['coverage'] == result['coverage']
+    assert payload['retained'] == result['licensed_consequences'] == 1
+    assert not result['truncated'] and result['cap_reason'] is None
+    assert 'excluded_packaging' in methodology(calls.log.path)

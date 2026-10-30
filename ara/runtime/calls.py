@@ -267,6 +267,8 @@ class ModelCalls:
         if kind == 'search_evidence':
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+        if kind in ('audit_essay','audit_publication') and inputs.get('outline',{}).get('hypothesis_disclosure'):
+            schema['properties']['labels']['items']['properties']['role']['enum'].append('proposed_principle')
         if kind == 'extract_paper':
             if inputs.get('mode') != 'targeted_correction':
                 del schema['properties']['discard_items']
@@ -304,6 +306,14 @@ class ModelCalls:
             note = ('constraints apply after runtime completion of omitted edge fields; follow WIRE SHAPE, never put field instructions in text'
                     if kind == 'extract_paper' else 'all constraints are mandatory')
             template += f'\nLOCAL_RESPONSE_SCHEMA ({note})\n' + canonical(schema)
+        if (inputs.get('outline',{}).get('hypothesis_disclosure') or inputs.get('hypothesis_disclosure')):
+            template += ('\nFROZEN HYPOTHESES: These are proposed premises, never sources. '
+                'Any using conclusion is conditional on H; explicitly say Conditional on H in the essay. '
+                'State each H in a separate node-marked sentence beginning This paper proposes or We propose. '
+                'Use the typed proposed_principle audit role only for these authorized H nodes; never source_claim or argument_step. '
+                'Do not attribute H to an author or attach a source citation to its proposal sentence. '
+                'Other source claims still need exact citations. H cannot answer source CQs or count as a paper. '
+                'All novelty, licensing and consistency gates remain mandatory.')
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
@@ -1171,8 +1181,8 @@ class ModelCalls:
                 self.log.record('cq_answer_downgraded', bank_id=proposal.bank_id,
                                 original=answer.to_dict(), reason='partial_answer_is_not_yes')
                 answer = replace(answer, answered=False)
-            require(provenance is None or all(provenance['commitments'][t]['stance'] != 'model_alignment'
-                    for t in answer.supporting_t_ids), 'alignment premises cannot substitute for source CQ evidence')
+            require(provenance is None or all(provenance['commitments'][t]['stance'] not in ('model_alignment','proposed')
+                    for t in answer.supporting_t_ids), 'alignment premises or hypothesis premises cannot substitute for source CQ evidence')
             return answer
         return self.call('answer_cq', dict(question=question.to_dict(), proposal=proposal.to_dict(),
                                       commitments=commitments.to_dict(), **vocabulary), check)
@@ -1230,10 +1240,15 @@ class ModelCalls:
                     source = provenance['commitments'].get(tid)
                     require(source is not None, 'outline source role missing frozen commitment')
                     roles.append(dict(node_id=node.id, evidence_id=tid,
-                                      role='alignment_premise' if source['stance']=='model_alignment' and role=='global_premise' else role,
+                                      role=('hypothesis_premise' if source['stance']=='proposed' else 'alignment_premise')
+                                          if source['stance'] in ('model_alignment','proposed') and role=='global_premise' else role,
                                       stance=source['stance'], attributed_to=source.get('attributed_to'),
                                       source_id=source['source_id']))
             outline['source_roles'] = roles
+            from ara.runtime.hypotheses import route_disclosure
+            disclosure = route_disclosure(self.log.read(),route)
+            if disclosure['conditional_on']:
+                outline['hypothesis_disclosure'] = disclosure
             if 'alignment' in provenance:
                 from ara.runtime.symbol_alignment import alignment_disclosure
                 outline['alignment_disclosure'] = alignment_disclosure(provenance)
@@ -1247,6 +1262,8 @@ class ModelCalls:
 
     def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
         validate_local(self.response_schema('write_essay', {}), data, self.config)
+        from ara.runtime.hypotheses import validate_disclosure
+        validate_disclosure(self.log.read(),route,data)
         require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
         require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
         markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))

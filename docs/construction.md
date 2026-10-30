@@ -446,3 +446,50 @@ Alignment judgment requests explicitly set `topic=''`: the task topic and any
 desired thesis do not enter the pair judgment prompt. Every selected pair still
 requires the model's relation judgment; broader retrieval never asserts an
 alignment by itself.
+
+## Proposed hypothesis premises
+
+`hypothesis_premises` is an optional run-config list, empty by default. Each entry
+has `id` (prefixed `hypothesis:`), content `text`, `rationale`, `proposer`
+(`ara-target`, `eps2`, or `operator`), and nullable `linked_gap`/`linked_target`
+(at least one is required). Supply exactly one of a normal formula AST or a
+`formalization_request` string. Optional `new_symbols` entries contain `name`,
+`kind`, `arity`, and a content `definition`; every symbol must be used and cannot
+replace an existing catalogue signature. Missing definitions refuse.
+
+For example, with P and Q already defined, a placeholder hypothesis can declare
+`(P and Q) implies R`, introduce R with an explicit definition, and link to a
+placeholder target. A supplied formula passes the normal local formula schema;
+a request passes through the logged `formalise` model boundary. Text/formula
+fidelity remains a model/operator responsibility, not a consequence of Z3.
+
+Admission follows source symbol alignment and precedes the single freeze and
+capacity check. The full combined T and H must be satisfiable; conflicts and
+solver uncertainty refuse before writing freeze artifacts. This conservative
+admission also refuses a T that already contains unrelated contradictions.
+Search still uses its existing consistent-support policy. Hypotheses cannot be
+added to a completed freeze; construct a new run. Frozen-prefix forks preserve
+existing hypotheses and their provenance bytes exactly.
+
+The four-field CommitmentSet codec and frozen-t v1 catalogue envelope are
+unchanged. Hypothesis-bearing provenance uses v4 with a replayable base snapshot,
+exact declarations/resolved formulas and consistency receipt. Its canonical hash
+binds the complete T and catalogue. A hypothesis row has `kind=hypothesis`,
+`stance=proposed`, and `source_id=null`; it never supplies paper ownership,
+bibliography entries, source-pair conflicts, or CQ source evidence.
+
+A selected route still needs two distinct source formulas assignable to two
+endorsed papers. Per-paper novelty includes used H as assumptions: if H alone
+or H plus one paper supplies the target, extra source leaves do not turn that
+restatement into a contribution. A successful using route remains mechanically
+CLOSED but its contribution receipt and human rendering say **conditional on H**.
+This neither proves H nor turns an OPEN proposal paper into a derivation.
+
+The writer must state each H in a node-marked sentence beginning “This paper
+proposes” or “We propose”, with no source citation or author attribution, and
+explicitly state “Conditional on H”. The typed `proposed_principle` role is
+available only for verified hypothesis nodes. Other source and argument roles,
+three-sample adverse-union audits, citation verification and repair bounds stay
+in force. Export and publication refuse missing disclosure, even if a draft
+receipt exists. Construction receipts, report data, methodology, route receipts
+and figures retain the proposed status.

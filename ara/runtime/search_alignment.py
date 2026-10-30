@@ -21,6 +21,7 @@ def catalogue_inputs(directory, commitments):
     from ara.runtime.commitment_provenance import load_commitment_provenance
     from ara.runtime.bridges import bridge_context
     from ara.runtime.symbol_alignment import alignment_disclosure
+    from ara.runtime.hypotheses import hypothesis_disclosure
     path = directory / 'frozen-t.json'
     catalogue = validate_frozen_artifact(json.loads(path.read_text()), commitments) if path.exists() else None
     provenance = load_commitment_provenance(directory, commitments, catalogue)
@@ -32,6 +33,7 @@ def catalogue_inputs(directory, commitments):
                 provenance_sha256=provenance['sha256'] if provenance else None,
                 provenance_status='verified' if provenance else 'unavailable_legacy',
                 alignment_disclosure=alignment_disclosure(provenance),
+                **({'hypothesis_disclosure': hypothesis_disclosure(provenance)} if provenance and provenance.get('hypotheses') else {}),
                 definition_semantics='content' if provenance else 'unavailable_legacy',
                 **bridge_context(commitments,catalogue['symbols'] if catalogue else None,provenance))
 

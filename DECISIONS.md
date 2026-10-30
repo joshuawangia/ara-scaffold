@@ -4606,3 +4606,42 @@ receipts and methodology. New settings require a fresh construction lifecycle;
 changed plan inputs cannot authorize stale response replay or old accepted-batch
 restoration. Existing extraction reuse remains available. No source rule or route
 success is inferred from an anchor or increased capacity.
+
+
+## Round 32 — Proposed premises and bounded forward discovery
+
+Optional `hypothesis_premises` are explicit run configuration, formalized through
+normal logged local validation before the single native freeze. Rich construction
+and exact vocabulary/provenance are required. The existing CommitmentSet and
+catalogue codecs are unchanged. Hypothesis-bearing provenance v4 binds a
+replayable pre-hypothesis snapshot and declarations; v1/v2 readers retain their
+strict validation. Proposed rows are `kind=hypothesis`, `stance=proposed`, with no
+source owner. Admission refuses inconsistent or solver-unresolved combined T.
+
+Search can use these premises, but CQ evidence, paper matching and bibliography
+never treat them as sources. Novelty tests each paper together with H, rejecting
+H restatement/padding and requiring two distinct endorsed source-paper supports.
+Every using route is disclosed as conditional on H in receipts and the writer
+outline. Proposal sentences require a dedicated `proposed_principle` role and a
+paper-owned proposal prefix, cannot carry source citations/attribution, and cannot
+cover source/inference nodes. Export and publication refuse missing disclosures.
+Forks preserve the exact frozen metadata; they do not admit new H after freeze.
+Concrete operator-requested premise drafts remain external report artifacts.
+
+Fresh forward enumeration excludes conjunction/disjunction introduction,
+existential generalisation and double-negation wrapping as standalone discoveries.
+Backward search and licensed witness steps retain the full bank. Schema-less
+schemes require CQ-supported observed witnesses; removing packaging does not
+invent conclusions or establish exhaustive scheme coverage. A two-consequence
+regression preserves a deduction then a genuine scheme consequence that packaging
+previously crowded out. Independent node and work caps remain; per-rule coverage
+records visited layers, checked/licensed/retained counts, completed depth and cap
+reason in logs, offline reports and methodology. Legacy forward records retain
+empty coverage rather than invented history. Historical packaging still passes
+through novelty checks when replayed.
+
+Offline proof includes native freeze/search/writer/audit/export/fork regression,
+source-credit and missing-disclosure mutations, strict legacy metadata and typed
+role regressions, capped forward regression and coverage reporting. Full release
+receipts and real-freeze coverage are retained in the external Round 32 report;
+no live provider, semantic-faithfulness or literature-originality claim follows.

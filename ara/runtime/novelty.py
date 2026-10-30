@@ -90,10 +90,14 @@ def per_paper_novelty(formula, commitments, provenance, *, support_ids=None, bas
         basis_ids if support_ids is None else support_ids, exact=support_ids is not None)
     union = tuple(commitments.get(tid) for tid in selection['selected_commitment_ids'])
     union_premises = tuple(c.formula for c in union)
+    from ara.runtime.hypotheses import hypothesis_ids
+    conditional = [c for c in union if c.id in hypothesis_ids(provenance)]
     checks = []
     base = dict(basis='per_paper_endorsed_closure',
         basis_commitment_ids=[c.id for group in groups.values() for c in group],
         union_basis_commitment_ids=[c.id for c in union], consistent_basis=selection, checks=checks)
+    if conditional:
+        base['conditional_on'] = [c.id for c in conditional]
     def check(premises, goal, scope, paper=None, **details):
         result = cached_entails(premises, goal, 1000)
         checks.append(dict(scope=scope, paper_id=paper, solver_result=result, timeout_ms=1000, **details))
@@ -120,9 +124,9 @@ def per_paper_novelty(formula, commitments, provenance, *, support_ids=None, bas
             return result('unresolved','novelty_unresolved','A bounded per-paper consistency check was unresolved.')
         premises[paper] = tuple(commitments.get(tid).formula for tid in paper_basis['selected_commitment_ids'])
     for paper, basis in premises.items():
-        verdict = check(basis, formula, 'per_paper_closure', paper)
+        verdict = check(basis + tuple(c.formula for c in conditional), formula, 'per_paper_closure', paper)
         if verdict == 'SOLVER_UNSAT':
-            return result('rejected','single_paper_closure',
+            return result('rejected','hypothesis_padding' if conditional else 'single_paper_closure',
                 'One paper already entails the target; wrappers or unused antecedents do not add a synthesis.',
                 paper_id=paper, entailing_commitment_ids=[c.id for c in groups[paper]])
         if verdict != 'SOLVER_COUNTEREXAMPLE':

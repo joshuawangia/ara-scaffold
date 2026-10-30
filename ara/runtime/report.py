@@ -266,17 +266,30 @@ def construction(records, evidence):
     freezes = [r for r in records if r['event']['stage'] == 'commitments_frozen']
     commitments = payload(freezes[-1]['event'])['commitments']['commitments'] if freezes else []
     enriched = []
+    from ara.runtime.hypotheses import hypothesis_ids
+    from ara.runtime.route_policy import frozen_from_events,provenance_from_events
+    events=[r['event'] for r in records]
+    ids=set(hypothesis_ids(provenance_from_events(events,frozen_from_events(events)))) if any(
+        e['stage']=='hypotheses_admitted' for e in events) else set()
     for c in commitments:
         matches = [v for v in evidence.get(c['id'], []) if v.get('citation') == c['citation']]
+        if c['id'] in ids:
+            enriched.append(dict(**c,source_evidence=[],kind='hypothesis',stance='proposed',
+                provenance='proposed hypothesis; conditional on H; not source evidence'))
+            continue
         enriched.append(dict(**c, source_evidence=matches,
                              provenance='exact evidence id and citation match' if matches else 'citation only; structured source link unavailable'))
     merged = [payload(r['event']) for r in records if r['event']['stage'] == 'build_t_merged']
     catalogues = [payload(r['event']) for r in records if r['event']['stage'] == 'symbol_catalogue_frozen']
     symbols = catalogues[-1]['symbols'] if catalogues else merged[-1].get('symbols') if merged else None
     def classification(commitment, field):
+        if commitment.get('kind')=='hypothesis':
+            return 'hypothesis' if field=='kind' else '(no source paper)'
         values = {item.get(field) for item in commitment['source_evidence']}
         return next(iter(values)) if len(values) == 1 and None not in values else '(unknown or ambiguous)'
-    return dict(commitments=enriched, alignment=alignment_summary(records),
+    return dict(commitments=enriched,
+                hypotheses=[payload(r['event']) for r in records if r['event']['stage']=='hypotheses_admitted'],
+                alignment=alignment_summary(records),
                 by_source=dict(Counter(classification(c, 'source_id') for c in enriched)),
                 by_kind=dict(Counter(classification(c, 'kind') for c in enriched)),
                 symbol_catalogue=symbols, symbol_count=len(symbols) if symbols is not None else None,
@@ -284,7 +297,7 @@ def construction(records, evidence):
                               commitments_sha256=digest(canonical(payload(r['event'])['commitments'])),
                               hash_note='SHA-256 of canonical logged commitments, computed by reporter; event_hash is the chain freeze receipt.',
                               payload=payload(r['event'])) for r in freezes],
-                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_', 'alignment_'))])
+                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_', 'alignment_', 'hypotheses_'))])
 
 
 def route_details(row, commitments, provenance=None):
@@ -324,6 +337,8 @@ def build_run(directory):
     built['commitment_provenance'] = provenance
     routes = [route_details(r, frozen, provenance) for r in records if r['event']['stage'] == 'route']
     search = searches(records, directory)
+    search['forward_coverage'] = [compact(r) for r in records if r['event']['stage']=='forward_coverage']
+    search['forward_target_candidates'] = [compact(r) for r in records if r['event']['stage']=='forward_target_candidates']
     from ara.runtime.conflict_feedback import conflict_report
     conflicts = conflict_report(events)
     for trace in search['traces']:

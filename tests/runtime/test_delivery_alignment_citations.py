@@ -50,7 +50,7 @@ def aligned_sources(calls, provider, log, monkeypatch):
         return Response(response(dict(relation='entails_left_right', reason='P Q')))
     monkeypatch.setattr(provider, 'complete', judge)
     frozen = prepare_commitments(calls, load_bank(ROOT / 'bank'), 'P', 'P')
-    bridge = frozen.commitments[-1]
+    bridge = next(c for c in frozen.commitments if c.id.startswith('alignment:'))
     assert bridge.id.startswith('alignment:')
     route = RouteGraph('aligned', 'nq', (
         RouteNode('nq', Proposition('target', 'Q', Formula('atom', name='Q')), 'inference',

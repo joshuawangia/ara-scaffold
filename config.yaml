@@ -113,6 +113,8 @@ working_t_symbol_token_budget: 16000
 construction_context_limits: {}
 # Extra priority windows over grounded extracted evidence; see docs/construction.md.
 construction_gap_anchors: []
+# Explicit proposed premises; admitted before freeze with no source-paper authority.
+hypothesis_premises: []
 
 # Full extraction is disabled until the operator supplies all three caps.
 extraction-full:

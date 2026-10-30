@@ -45,7 +45,17 @@ def audit_flags(labels, inputs, draft):
         cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
         premises = {r['evidence_id'] for r in inputs['outline'].get('source_roles', [])
                     if r['role'] == 'global_premise' and r['node_id'] in item['node_ids']}
-        if role == 'unsupported_claim':
+        hypothesis_nodes = {r['node_id'] for r in inputs['outline'].get('source_roles', [])
+                            if r['role']=='hypothesis_premise'}
+        if hypothesis_nodes & set(item['node_ids']):
+            from ara.runtime.hypotheses import hypothesis_role_failure
+            reason = hypothesis_role_failure(role,sentences.get(item['sentence'],''),
+                bool(inputs['outline'].get('hypothesis_disclosure',{}).get('conditional_on')))
+            if set(item['node_ids']) - hypothesis_nodes:
+                reason = 'hypothesis_role_covers_source_or_inference'
+        elif role == 'proposed_principle':
+            reason = 'unauthorized_hypothesis_role'
+        elif role == 'unsupported_claim':
             reason = 'unsupported_claim'
         elif role == 'argument_step' and not item['node_ids']:
             reason = 'unmapped_argument_step'
@@ -79,7 +89,7 @@ def audit_result(route, draft, inputs, data):
         raise ValidationError('essay audit: sentence inventory mismatch')
     referenced = {node for item in labels for node in item['node_ids']}
     require(referenced <= ids, 'essay audit: unknown node id')
-    covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
+    covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim', 'proposed_principle')
                for node in item['node_ids']}
     missing = ids - covered
     extra = list(dict.fromkeys(item['sentence'] for item in flags))

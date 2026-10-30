@@ -56,7 +56,9 @@ def figure_data(calls, route, citation_receipt=None):
             label += '\nCQ: no answers recorded'
         if source:
             p = source['provenance']
-            if p and p.get('stance') == 'model_alignment':
+            if p and p.get('stance') == 'proposed':
+                label += '\nProposed hypothesis; conditional on H (not source endorsement)'
+            elif p and p.get('stance') == 'model_alignment':
                 label += '\nModel alignment judgment (not source endorsement)'
             else:
                 label += '\nSource: ' + (citation_receipt[node.t_id]['display'] if citation_receipt else (p['source_id'] if p else 'unavailable') + '; ' + source['commitment']['citation'])
@@ -65,6 +67,10 @@ def figure_data(calls, route, citation_receipt=None):
     for role in outline.get('source_roles', []):
         source = supports[role['evidence_id']]
         p = source['provenance']
+        if p.get('stance') == 'proposed':
+            support_rows.append((str(len(support_rows)), role['node_id'] +
+                ' ← Proposed hypothesis; conditional on H (not source endorsement)\n' + source['commitment']['text']))
+            continue
         if p.get('stance') == 'model_alignment':
             support_rows.append((str(len(support_rows)), role['node_id'] +
                 ' ← Model alignment judgment (not source endorsement)\n' +

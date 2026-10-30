@@ -112,6 +112,8 @@ def as_draft(markdown, bibliography):
 def polish(calls, route, draft, *, currency=None):
     from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
+    from ara.runtime.hypotheses import validate_disclosure
+    validate_disclosure(calls.log.read(),route,draft)
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -126,6 +128,7 @@ def polish(calls, route, draft, *, currency=None):
         for id,record in currency['sources'].items():
             records.setdefault(id,dict(record=record,verification='logged_currency_record'))
     def check_whole(value):
+        validate_disclosure(calls.log.read(),route,as_draft(value['markdown'],draft['bibliography']))
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
         validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'])
         return value
@@ -240,6 +243,14 @@ def polish(calls, route, draft, *, currency=None):
 
 def publish(log, result):
     """Persist a validated audit artifact and its marker-free reading copy."""
+    events=log.read()
+    if any(e['stage']=='hypotheses_admitted' for e in events):
+        routes=[json.loads(e['payload_json'])['graph'] for e in events if e['stage']=='route']
+        route=next((r for r in reversed(routes) if r['id']==result['route_id']),None)
+        require(route is not None, 'hypothesis publication requires recorded route')
+        from ara.runtime.hypotheses import validate_disclosure
+        validate_disclosure(events,RouteGraph.from_dict(route),
+            as_draft(result['markdown'],result['draft']['bibliography']))
     result = {**result, 'audit_markdown': result['markdown'],
               'markdown': NODE.sub('', result.get('reading_markdown',result['markdown']))}
     directory = log.path.parent/'publication'

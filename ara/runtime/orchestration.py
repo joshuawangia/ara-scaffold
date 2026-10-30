@@ -128,6 +128,9 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
             raise ValueError('frozen catalogue construction mismatch')
         from ara.runtime.symbol_alignment import align_symbols
         commitments, symbols, rows, alignment = align_symbols(calls, commitments, latest['symbols'], latest['provenance'])
+        if state is not None and state.get('expected_source') is not None:
+            from ara.runtime.construction_fork import validate_restored_source
+            validate_restored_source(state['expected_source'], commitments, symbols, rows)
         from ara.runtime.hypotheses import admit_hypotheses
         commitments, symbols, rows, hypotheses = admit_hypotheses(calls, commitments, symbols, rows)
         measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(),

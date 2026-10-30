@@ -23,6 +23,11 @@ def load_alignment_resume(log, bank):
     events=log.read()
     require(not any((directory/name).exists() for name in
         ('commitments.json','frozen-t.json','commitment-provenance.json')), 'alignment resume refuses an existing freeze artifact')
+    return _load_alignment_resume(directory, events, bank)
+
+
+def _load_alignment_resume(directory, events, bank):
+    """Shared verifier for an authenticated pre-freeze prefix and its artifacts."""
     require(not any(e['stage'] in ('symbol_catalogue_frozen','commitment_provenance_frozen',
         'symbol_alignment_applied','symbol_alignment_refused') for e in events),
         'alignment resume requires unfinished alignment with no partial freeze')
@@ -31,6 +36,11 @@ def load_alignment_resume(log, bank):
     run=starts[0]
     require(run['bank_version']==bank.bank_version,'alignment resume bank version mismatch')
     config=run['config']
+    forks=[json.loads(e['payload_json']) for e in events if e['stage']=='construction_forked']
+    if forks:
+        config={**config,'hypothesis_premises':forks[-1]['hypotheses'],'cache_dir':forks[-1]['cache_dir']}
+        run={**run,'config':config}
+    log=SimpleNamespace(path=directory/'events.jsonl',read=lambda:events)
     state=load_construction_resume(SimpleNamespace(log=log,config=config),completed_only=True)
     merged=[(i,json.loads(e['payload_json'])) for i,e in enumerate(events) if e['stage']=='build_t_merged']
     require(len(merged)==1,'alignment resume requires one terminal merged receipt')
@@ -114,7 +124,8 @@ def load_alignment_resume(log, bank):
                 candidates=candidates,judgments=[accepted[p] for p in pairs if p in accepted],
                 unresolved=[unresolved[p] for p in pairs if p in unresolved],
                 plan_id=state['plan_id'],completed_windows=len(outcomes),restored_receipts=restored_receipts,
-                merged_receipt=digest(canonical(events[offset])),source_tail=digest(canonical(events[-1])))
+                merged_receipt=digest(canonical(events[offset])),source_tail=digest(canonical(events[-1])),
+                expected_source=forks[-1]['expected_source'] if forks else None)
 
 
 def resume_summary(state):

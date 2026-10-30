@@ -675,3 +675,37 @@ report frame. Accepted definitions retain their exact original typography. The
 raw guard remains independent: report text in an HTML comment still refuses even
 though the display-oriented view omits that comment. This policy does not claim
 to recognize arbitrary visual confusables or determine semantic authorship.
+
+
+## New hypothesis lifecycle from completed construction
+
+Use `resume-alignment --source-run SOURCE --run-dir NEW --hypotheses-file H.json`
+to copy a verified construction/alignment prefix into a separate empty run.
+The source may already be frozen. Its original artifacts and log stay untouched;
+its old freeze, targets and search do not enter the new lifecycle. All construction
+windows must be terminal and match their retained artifacts. Accepted alignment
+judgments are reused with the recorded retrieval policy, and only unfinished
+pairs can dispatch. This does not enable reconstruction or widened alignment.
+
+`H.json` is a JSON list using the hypothesis declaration fields above. An optional
+`existing_symbols` list names mandatory exact catalogue symbols, for example
+`["P", "Q"]` for an H formula `P implies Q`. Both supplied formulas and normal
+model formalization must use each named symbol with its recorded signature.
+Unknown names, omitted required names and definition collisions refuse. The
+check also runs when loading hypothesis provenance. Names are never guessed
+from prose or silently remapped; after alignment they must still exist in the
+resulting catalogue. `new_symbols` remains available for explicitly new meanings.
+
+Before admitting H, a completed-source fork compares the restored commitments,
+provenance and catalogue with the original source freeze (excluding any old H).
+Only H entries may be appended. H remains `kind=hypothesis`, `stance=proposed`,
+with no source-paper credit, and using routes retain the runtime-owned conditional
+disclosure. The new lifecycle records one freeze after H admission. An H file
+replaces the prior lifecycle's H declarations; it does not accumulate them.
+
+Add `--plan-only --output-dir PLAN` to validate the source, required names and
+reuse inventory without creating NEW, a provider or a counter. PLAN must be
+separate from both source and destination. This check cannot promise that a model
+will formalize H faithfully, that H is consistent, or that search will close;
+those gates still run before freezing and during native search. A live continuation
+still requires current provider preflight and sufficient budgets.

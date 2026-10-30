@@ -2835,6 +2835,18 @@ CASES += [
 ]
 
 
+CASES += [
+    ('hypothesis_required_existing_symbols', 'ara/runtime/hypotheses.py',
+     "if not {(s['name'],s['kind'],s['arity']) for s in required} <= used:",
+     "if False and not {(s['name'],s['kind'],s['arity']) for s in required} <= used:",
+     'tests/runtime/test_hypothesis_construction_fork.py::test_h_formalization_cannot_ignore_required_existing_symbol'),
+    ('hypothesis_fork_preserves_source', 'ara/runtime/orchestration.py',
+     "validate_restored_source(state['expected_source'], commitments, symbols, rows)",
+     'pass  # mutation disables source preservation',
+     'tests/runtime/test_hypothesis_construction_fork.py::test_source_changed_on_replay_refuses_before_h'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

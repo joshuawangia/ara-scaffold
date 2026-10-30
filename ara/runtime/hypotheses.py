@@ -6,7 +6,7 @@ from ara.runtime.search_alignment import symbols as formula_symbols
 from ara.types import Commitment, CommitmentSet, Formula
 
 _FIELDS = {'id', 'text', 'rationale', 'proposer', 'linked_gap', 'linked_target'}
-_OPTIONAL = {'formula', 'formalization_request', 'new_symbols'}
+_OPTIONAL = {'formula', 'formalization_request', 'new_symbols', 'existing_symbols'}
 
 
 def declaration(value):
@@ -27,7 +27,20 @@ def declaration(value):
     if not isinstance(fresh,list) or any(not isinstance(s,dict) or
             set(s) != {'name','kind','arity','definition'} or not content_definition(s['definition']) for s in fresh):
         raise ValueError('invalid hypothesis symbol definitions')
+    required = value.get('existing_symbols', [])
+    if (not isinstance(required,list) or any(not isinstance(n,str) or not n.strip() for n in required)
+            or len(required)!=len(set(required))):
+        raise ValueError('invalid hypothesis existing symbols')
     return value
+
+
+def required_symbols(value, symbols):
+    """Operator-named symbols are mandatory exact catalogue references, not hints."""
+    names={s['name']:s for s in symbols}
+    required=value.get('existing_symbols', [])
+    if any(name not in names for name in required):
+        raise ValueError('hypothesis required existing symbol is unavailable in catalogue')
+    return [names[name] for name in required]
 
 
 def _append(commitments, symbols, rows, entries):
@@ -43,6 +56,9 @@ def _append(commitments, symbols, rows, entries):
         if value.get('formula') is not None and Formula.from_dict(value['formula']) != formula:
             raise ValueError('hypothesis formula binding mismatch')
         used = set(formula_symbols(formula))
+        required = required_symbols(value, symbols)
+        if not {(s['name'],s['kind'],s['arity']) for s in required} <= used:
+            raise ValueError('hypothesis formula omits required existing symbols')
         for s in value.get('new_symbols', []):
             if s['name'] in names or (s['name'],s['kind'],s['arity']) not in used:
                 raise ValueError('hypothesis symbol collision or unused definition')
@@ -79,8 +95,9 @@ def admit_hypotheses(calls, commitments, symbols, rows):
         else:
             entry=calls.call('formalise',dict(proposition=dict(id=value['id'],text=value['text']),
                 symbol_catalogue=symbols,new_symbols=value.get('new_symbols',[]),
+                required_existing_symbols=required_symbols(value,symbols),
                 formalization_request=value['formalization_request'],
-                vocabulary_instruction='Formalize this proposed hypothesis, not a source assertion. Reuse exact supplied symbol definitions/signatures. No undeclared symbols.'),check)
+                vocabulary_instruction='Formalize this proposed hypothesis, not a source assertion. Reuse exact supplied symbol definitions/signatures. Include every required_existing_symbols entry with its exact name and signature. No undeclared symbols.'),check)
         entries.append(entry)
     frozen,vocabulary,provenance=_append(commitments,symbols,rows,entries)
     consistency=support_consistency(frozen,[c.id for c in frozen.commitments])

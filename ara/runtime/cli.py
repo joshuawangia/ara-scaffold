@@ -62,6 +62,8 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
     alignment = sub.add_parser('resume-alignment', help='continue unfinished alignment from verified completed construction')
     alignment.add_argument('--run-dir', type=Path, required=True)
+    alignment.add_argument('--source-run', type=Path, help='copy verified completed construction into a new lifecycle')
+    alignment.add_argument('--hypotheses-file', type=Path, help='JSON list of proposed H entries; requires --source-run')
     alignment.add_argument('--plan-only', action='store_true', help='verify restoration only; no provider or counter')
     alignment.add_argument('--output-dir', type=Path, help='separate empty directory for free resume receipts')
     alignment.add_argument('--codex-schema-preflight-log', type=Path)
@@ -303,8 +305,11 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             from ara.runtime.construction_resume import construction_resume_lock
             from ara.runtime.extraction import save_immutable
             from ara.runtime.cache import canonical
-            if not (args.run_dir / 'events.jsonl').is_file():
+            source=args.source_run or args.run_dir
+            if not (source / 'events.jsonl').is_file():
                 raise ValueError('alignment run log does not exist')
+            if bool(args.source_run) != bool(args.hypotheses_file):
+                raise ValueError('--source-run and --hypotheses-file must be supplied together')
             if args.plan_only:
                 if (args.output_dir is None or args.output_dir.resolve().is_relative_to(args.run_dir.resolve()) or
                         args.run_dir.resolve().is_relative_to(args.output_dir.resolve())):
@@ -313,6 +318,25 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                     raise ValueError('plan-only output directory must be empty')
             elif args.output_dir is not None:
                 raise ValueError('--output-dir requires --plan-only')
+            if args.source_run:
+                from ara.runtime.construction_fork import inspect_construction_fork, write_construction_fork
+                hypotheses_text=args.hypotheses_file.read_text()
+                hypotheses=json.loads(hypotheses_text)
+                plan=inspect_construction_fork(source,args.run_dir,load_bank(ROOT/'bank'),hypotheses)
+                if args.plan_only:
+                    if (args.output_dir.resolve().is_relative_to(source.resolve()) or
+                            source.resolve().is_relative_to(args.output_dir.resolve())):
+                        raise ValueError('plan-only output must be separate from source')
+                    summary={**resume_summary(plan['state']),
+                        'hypothesis_ids':[h['id'] for h in hypotheses], 'construction_fork':plan['receipt']}
+                    log=EventLog(args.output_dir/'events.jsonl')
+                    log.human('resume-alignment-plan',json.dumps(raw_args),reported_minutes=args.human_minutes)
+                    log.record('alignment_resume_plan',**summary)
+                    save_immutable(args.output_dir/'alignment-resume-plan.json',canonical(summary))
+                    print(json.dumps(summary))
+                    return 0
+                fork_log=write_construction_fork(plan)
+                fork_log.human('hypothesis-premises-file',hypotheses_text,source=str(args.hypotheses_file))
             with construction_resume_lock(args.run_dir):
                 source_log=EventLog(args.run_dir / 'events.jsonl')
                 bank=load_bank(ROOT / 'bank')

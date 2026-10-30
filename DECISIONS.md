@@ -4832,3 +4832,24 @@ fields remain mandatory when declared, including refusal of null corruption.
 Both branches' disclosures, configuration, decisions and control inventories
 are retained. A native two-paper precise/shared/aligned/H freeze and exact fork
 regression covers the combined persistence contract.
+
+
+## Round 32c addition — hypothesis admission after completed construction
+
+An explicit `resume-alignment --source-run ... --hypotheses-file ...` forks an
+authenticated pre-freeze prefix and verified construction artifacts into a new
+empty run. Completed construction and accepted alignment judgments are reused;
+no construction call or old freeze is replayed. The original source run is
+read-only, and the new lifecycle still freezes exactly once after H admission.
+A completed source freeze binds the restored source commitments, provenance and
+catalogue before H can append anything. Partial/damaged freezes refuse.
+
+Operator-named `existing_symbols` are mandatory exact catalogue signatures in
+both supplied and model-formalized H formulas, including provenance reload.
+They are not suggestions and cannot authorize renaming source symbols. The H
+file is logged as HUMAN input; its declarations remain proposed, without source
+credit, and existing runtime-owned conditional disclosure gates still apply.
+Plan-only verifies restoration and names without provider/counter creation.
+Offline regressions and production-wire controls belong to
+`test_hypothesis_construction_fork.py`; current executed evidence is recorded in
+the external Round 32c report, separately from older committed-head gates.

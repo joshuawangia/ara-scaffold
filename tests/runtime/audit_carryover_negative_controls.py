@@ -31,6 +31,8 @@ def main():
     results=[]
     env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','TMPDIR':'/dev/shm'}
     for name,filename,old,new,test in CASES:
+        if len(sys.argv)>2 and name not in sys.argv[2:]:
+            continue
         path=ROOT/filename
         original=path.read_bytes();text=original.decode()
         assert text.count(old)==1,name
@@ -43,7 +45,8 @@ def main():
             path.write_bytes(original)
         good=subprocess.run(command+['--basetemp=/dev/shm/nu4-inline-control-'+name+'-restored'],cwd=ROOT,env=env,capture_output=True,text=True)
         (out/(name+'-restored.txt')).write_text(good.stdout+good.stderr)
-        row=dict(name=name,detected=bad.returncode==1 and '1 failed' in bad.stdout,restored=good.returncode==0)
+        diagnostic = name!='no_reroll' or 'assert 6 == 3' in bad.stdout
+        row=dict(name=name,detected=bad.returncode==1 and '1 failed' in bad.stdout and diagnostic,restored=good.returncode==0)
         results.append(row)
         (out/'results.json').write_text(json.dumps(results,indent=2)+'\n')
         print(json.dumps(row),flush=True)

@@ -21,7 +21,7 @@ def test_bridge_principle_outside_proposal_section_fails(rig):
     labels=[label(s['sentence'],'proposed_principle' if s['text']=='P.' else 'framing',('n0','n1') if s['text']=='P.' else ()) for s in inputs['sentences']]
     register(calls,provider,'audit_essay',inputs,dict(labels=labels))
     with pytest.raises(EssayAuditFailed) as failure:calls.audit_essay(route,d)
-    assert failure.value.result['flags'][0]['reason']=='proposal_section_required'
+    assert failure.value.result['missing_node_ids']==[route.root_id]
 
 
 def test_open_scope_does_not_authorize_frozen_hypotheses():
@@ -30,3 +30,10 @@ def test_open_scope_does_not_authorize_frozen_hypotheses():
     assert role_failure('proposed_principle','P.',None,proposal_scope=scope)=='proposal_mode_required'
     h=dict(kind='hypothesis',stance='proposed',source_id=None,declaration=dict(text='P'),formula=dict(op='atom',name='P'))
     assert role_failure('proposed_principle','P.',None,frozen_hypothesis=h,proposal_scope=scope)
+
+
+def test_bridge_in_proposal_subsection_is_still_in_proposal(rig):
+    calls,provider,log=rig;route,_=setup(calls,log);d=paper();d['body']=d['body'].replace('\nProposal\n','\n## Proposal\n\n### P\n').replace('\nObjections and replies\n','\n## Objections and replies\n');inputs=calls.audit_inputs(route,d)
+    labels=[label(s['sentence'],'proposed_principle' if s['text']=='P.' else 'framing',('n0','n1') if s['text']=='P.' else ()) for s in inputs['sentences']]
+    register(calls,provider,'audit_essay',inputs,dict(labels=labels))
+    assert calls.audit_essay(route,d)['faithful']

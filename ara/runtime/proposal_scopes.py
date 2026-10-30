@@ -15,8 +15,9 @@ def sections(body):
         if not markdown and (not text or not text[0].isupper() or len(text.split()) > 12
                              or len(text) > 100 or re.search(r'[.!?;:,\[\]*]', text)):
             continue
-        headings.append(dict(heading=text, start=match.start(), content_start=match.end()))
-    return [{**h, 'end': headings[i+1]['start'] if i+1 < len(headings) else len(body)}
+        headings.append(dict(heading=text, start=match.start(), content_start=match.end(),
+                             level=len(raw)-len(raw.lstrip('#')) if markdown else 2))
+    return [{**h, 'end': next((n['start'] for n in headings[i+1:] if n['level'] <= h['level']), len(body))}
             for i, h in enumerate(headings)]
 
 

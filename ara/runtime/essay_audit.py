@@ -92,7 +92,9 @@ def audit_result(route, draft, inputs, data):
                                                      if inputs.get('proposal') else ('argument_step', 'source_claim'))
                for node in item['node_ids']}
     missing = ids - covered
-    if inputs.get('proposal') and not any(item['role'] == 'proposed_principle' and route.root_id in item['node_ids'] for item in labels):
+    scopes = {s['sentence']: s.get('proposal_scope', {}) for s in inputs['sentences']}
+    if inputs.get('proposal') and not any(item['role'] == 'proposed_principle' and route.root_id in item['node_ids']
+            and scopes.get(item['sentence'], {}).get('heading', '').casefold() == 'proposal' for item in labels):
         missing.add(route.root_id)
     extra = list(dict.fromkeys(item['sentence'] for item in flags))
     markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
@@ -134,6 +136,8 @@ def _proposal_metadata_request(previous_prompt, prompt):
             rows = []
             for sentence in data['sentences']:
                 text = sentence['text']
+                if re.fullmatch(r'(?:#{1,6}\s*)?(?:\d+[.)]\s*)?Proposal', text, re.I):
+                    continue
                 if text == 'Status and method':
                     text = 'Methodology'
                 if label in text:
@@ -142,7 +146,7 @@ def _proposal_metadata_request(previous_prompt, prompt):
                 elif text.strip() == 'Disclosure: .':
                     text = ''
                 if text:
-                    row = {k:v for k,v in sentence.items() if k not in ('sentence','start','end')}
+                    row = {k:v for k,v in sentence.items() if k not in ('sentence','start','end','proposal_scope','section')}
                     rows.append((sentence['sentence'], {**row, 'text':text}))
             return rows
         before, after = inventory(old), inventory(current)
@@ -213,6 +217,19 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
             if not same and remap is None:
                 continue
             history_inputs = remap[0] if remap else inputs
+            if remap:
+                current_rows = {s['sentence']: s for s in inputs['sentences']}
+                rows = []
+                for row in history_inputs['sentences']:
+                    updated = {k:v for k,v in row.items() if k != 'proposal_scope'}
+                    current = current_rows.get(remap[1].get(row['sentence']), {})
+                    if 'section' in current:
+                        updated['section'] = current['section']
+                    scope = current.get('proposal_scope')
+                    if scope is not None:
+                        updated['proposal_scope'] = scope
+                    rows.append(updated)
+                history_inputs = {**history_inputs, 'sentences': rows}
             data = None
             schema = scoped.response_schema(kind, inputs)
             try:
@@ -221,7 +238,7 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                     data = scoped.provider.normalize_output(schema, data)
                 validate_local(schema, data, calls.config)
                 result = audit_result(route, draft, history_inputs, data)
-                if recorded is not None and event['prompt'].split('\nINPUT_JSON\n', 1)[0] == prompt.split('\nINPUT_JSON\n', 1)[0]:
+                if recorded is not None and remap is None and event['prompt'].split('\nINPUT_JSON\n', 1)[0] == prompt.split('\nINPUT_JSON\n', 1)[0]:
                     result = {key: recorded[key] for key in result}
             except (ValueError, TypeError, KeyError, ValidationError) as exc:
                 ignored.append(dict(event=index, reason=type(exc).__name__))

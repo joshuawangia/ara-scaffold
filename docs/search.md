@@ -649,7 +649,8 @@ The proposal audit enforces four paper-level rules: the title page carries the o
 label (in the short title or body before Abstract) and Abstract contains one disclosure sentence; the bridge principle is
 in a clearly headed Proposal section and is not attributed to a source; source
 claims are cited and faithful; no unsupported claim is presented as established.
-The bridge uses proposed_principle, with a faithful root-node mapping. Supporting
+The bridge uses proposed_principle, with a faithful root-node mapping in Proposal.
+The abstract and other sections may restate the same proposal. Supporting
 arguments, objections and replies use argument_for_proposal throughout the paper.
 Neither sentence-level ownership prefixes nor paragraph markers are required.
 Source discussion is allowed within Proposal, with the same citation obligations.

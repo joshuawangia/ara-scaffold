@@ -5,6 +5,9 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
 CASES=[
+ ('scope_adverse_history','ara/runtime/essay_audit.py',
+  "            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)", '            remap = None',
+  'tests/runtime/test_proposal_policy.py::test_moving_proposal_heading_preserves_substantive_adverse_history[True]'),
  ('policy_adverse_history','ara/runtime/essay_audit.py',
   '            if not same and remap is None:', '            if True:',
   'tests/runtime/test_proposal_policy.py::test_prompt_policy_update_keeps_valid_adverse_labels'),
@@ -14,8 +17,8 @@ CASES=[
  ('outside_unsupported_claim','ara/runtime/essay_audit.py',
   "        elif role == 'unsupported_claim':", '        elif False:',
   'tests/runtime/test_proposal_policy.py::test_outside_proposal_unsupported_established_claim_fails'),
- ('bridge_section','ara/runtime/proposal.py',
-  "    elif role == 'proposed_principle' and not (proposal_scope and", '    elif False and not (proposal_scope and',
+ ('bridge_section','ara/runtime/essay_audit.py',
+  "and scopes.get(item['sentence'], {}).get('heading', '').casefold() == 'proposal' for item in labels):", 'and True for item in labels):',
   'tests/runtime/test_proposal_scopes.py::test_bridge_principle_outside_proposal_section_fails'),
  ('source_fidelity','ara/runtime/essay_audit.py',
   "if (not item['citation_supported'] or not cited or", 'if (False or not cited or',

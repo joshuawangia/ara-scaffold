@@ -2492,6 +2492,16 @@ CASES += [('codex_stage_window_normalization',
   'tests/runtime/test_construction_stages.py::test_stage_cannot_clear_window_inherited_from_construction_group')]
 
 
+CASES += [
+    ('audit_consensus_current_retry_history', 'ara/runtime/essay_audit.py',
+     'collect_history(calls.log.read(), start=len(events), partial_only=True)', 'pass',
+     'tests/runtime/test_audit_consensus.py::test_schema_retry_within_fresh_gate_retains_adverse_labels[3-True]'),
+    ('publication_current_retry_history', 'ara/runtime/essay_audit.py',
+     'collect_history(calls.log.read(), start=len(events), partial_only=True)', 'pass',
+     'tests/runtime/test_publication_quality5.py::test_fresh_schema_retry_preserves_valid_adverse_label'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

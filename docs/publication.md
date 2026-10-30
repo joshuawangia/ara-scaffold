@@ -199,3 +199,10 @@ only, never a clean verdict. Validation-feedback retries do not change which
 unchanged audit input the history belongs to. Every cited sentence is checked for
 citation support regardless of its typed role; restated source premises require
 their frozen evidence citations even when labelled as argument steps.
+
+The conservative gate also reads rejected responses produced by schema retries
+within its fresh samples before deciding. A valid adverse label in a malformed
+response remains binding even when the corrected response is clean. Invalid
+responses never count as clean samples; the gate still requires at least three
+complete fresh samples. Receipts distinguish recovered adverse evidence from
+those sample verdicts.

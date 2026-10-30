@@ -4570,3 +4570,16 @@ its target_bases argument when mutating the full frozen commitment argument in
 the target-context negative control. Anchor uniqueness remains mandatory; both
 mutation and restoration must execute on the combined source. Regenerate only
 combined target prompt keys, retaining all recorded response values.
+
+
+## Publication quality5: retain adverse schema-retry evidence in the same gate
+
+The shared conservative gate must include valid adverse labels from malformed
+responses generated during its own fresh sample calls, not only pre-existing
+history. Scan the newly appended receipts before deriving the union and verdict;
+complete sample verdicts remain represented once. This closes favorable schema
+retry replacement without changing the sample minimum, repair budget, citation
+verification, provider routing or draft identity. Offline writer and publication
+regressions cover first/last-sample retries and non-adverse invalid responses;
+production-wire controls disable the receipt scan and require rejection tests to
+fail. No live publication outcome is implied.

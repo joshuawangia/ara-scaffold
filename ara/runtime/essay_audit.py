@@ -144,36 +144,39 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
     prompt = scoped.render(kind, inputs)[1]
     prompt_hash = digest(prompt)
     historical, failures, ignored = [], [], []
+    def collect_history(events, *, start=0, partial_only=False):
+        for index, event in enumerate(events[start:], start + 1):
+            if event['stage'] != kind or event['label'] != 'MODEL':
+                continue
+            previous = events[index - 2] if index > 1 else {}
+            recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
+            if not _same_audit_request(event['prompt'], prompt) and (recorded or {}).get('prompt_sha256') != prompt_hash:
+                continue
+            data = None
+            schema = scoped.response_schema(kind, inputs)
+            try:
+                data = decode_response(Response(json.loads(event['response'])).text())
+                if hasattr(scoped.provider, 'normalize_output'):
+                    data = scoped.provider.normalize_output(schema, data)
+                validate_local(schema, data, calls.config)
+                result = audit_result(route, draft, inputs, data)
+                if recorded is not None:
+                    result = {key: recorded[key] for key in result}
+            except (ValueError, TypeError, KeyError, ValidationError) as exc:
+                ignored.append(dict(event=index, reason=type(exc).__name__))
+                recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)
+                if recovered is not None:
+                    ignored[-1]['retained_adverse'] = True
+                    result, labels = recovered
+                    historical.append(dict(event=index, invalid_reason=type(exc).__name__, **result))
+                    failures.append(EssayAuditFailed(result, inputs, labels))
+                continue
+            if not partial_only and not result['faithful']:
+                historical.append(dict(event=index, **result))
+                failures.append(EssayAuditFailed(result, inputs, data['labels']))
+
     events = calls.log.read()
-    for index, event in enumerate(events, 1):
-        if event['stage'] != kind or event['label'] != 'MODEL':
-            continue
-        previous = events[index - 2] if index > 1 else {}
-        recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
-        if not _same_audit_request(event['prompt'], prompt) and (recorded or {}).get('prompt_sha256') != prompt_hash:
-            continue
-        data = None
-        schema = scoped.response_schema(kind, inputs)
-        try:
-            data = decode_response(Response(json.loads(event['response'])).text())
-            if hasattr(scoped.provider, 'normalize_output'):
-                data = scoped.provider.normalize_output(schema, data)
-            validate_local(schema, data, calls.config)
-            result = audit_result(route, draft, inputs, data)
-            if recorded is not None:
-                result = {key: recorded[key] for key in result}
-        except (ValueError, TypeError, KeyError, ValidationError) as exc:
-            ignored.append(dict(event=index, reason=type(exc).__name__))
-            recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)
-            if recovered is not None:
-                ignored[-1]['retained_adverse'] = True
-                result, labels = recovered
-                historical.append(dict(event=index, invalid_reason=type(exc).__name__, **result))
-                failures.append(EssayAuditFailed(result, inputs, labels))
-            continue
-        if not result['faithful']:
-            historical.append(dict(event=index, **result))
-            failures.append(EssayAuditFailed(result, inputs, data['labels']))
+    collect_history(events)
     samples = []
     for number in range(1, k + 1):
         try:
@@ -188,6 +191,10 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                 samples=samples, historical_adverse=historical, unusable_history=ignored, faithful=False)
             raise
         samples.append(dict(sample=number, **result))
+    # Schema retries append rejected receipts during this gate. A clean retry
+    # cannot erase a valid adverse label in one of those rejected responses.
+    # Complete sample verdicts are already represented in samples/failures.
+    collect_history(calls.log.read(), start=len(events), partial_only=True)
     all_results = historical + samples
     flags = { (flag['sentence'], flag['reason']): flag
               for result in all_results for flag in result['flags'] }

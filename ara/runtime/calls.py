@@ -308,7 +308,9 @@ class ModelCalls:
             template += f'\nLOCAL_RESPONSE_SCHEMA ({note})\n' + canonical(schema)
         if (inputs.get('outline',{}).get('hypothesis_disclosure') or inputs.get('hypothesis_disclosure')):
             template += ('\nFROZEN HYPOTHESES: These are proposed premises, never sources. '
-                'Any using conclusion is conditional on H; explicitly say Conditional on H in the essay. '
+                'Conditional on H disclosure: copy hypothesis_disclosure.required_statement exactly once as a standalone plain paragraph, '
+                'without quotes, blockquote, code or other markup. In sectioned writing put it only in the introduction. '
+                'Do not add other conditional-on-H, unconditional, or independence claims that contradict or obscure it. '
                 'State each H in a separate node-marked sentence beginning This paper proposes or We propose. '
                 'Use the typed proposed_principle audit role only for these authorized H nodes; never source_claim or argument_step. '
                 'Do not attribute H to an author or attach a source citation to its proposal sentence. '
@@ -1263,7 +1265,10 @@ class ModelCalls:
     def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
         validate_local(self.response_schema('write_essay', {}), data, self.config)
         from ara.runtime.hypotheses import validate_disclosure
-        validate_disclosure(self.log.read(),route,data)
+        try:
+            validate_disclosure(self.log.read(),route,data)
+        except ValueError as exc:
+            raise Rejected(str(exc)) from exc
         require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
         require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
         markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))

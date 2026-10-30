@@ -22,7 +22,7 @@ from ara.runtime.orchestration import compose, native_engine, prepare, search_al
 from ara.runtime.search_publication import search_status
 from ara.runtime.providers import AnthropicProvider, MockProvider
 from ara.types import RouteGraph
-from ara.runtime.route_policy import route_classification, selectable_routes, frozen_from_events, provenance_from_events
+from ara.runtime.route_policy import route_display_status, selectable_routes, frozen_from_events, provenance_from_events
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -592,7 +592,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         routes = [RouteGraph.from_dict(json.loads(e['payload_json'])['graph'])
                   for e in events if e['stage'] == 'route']
         for route in routes:
-            print(f'{route.id} [{route_classification(route, commitments, provenance_from_events(events, commitments))}]' +
+            print(f'{route.id} [{route_display_status(route, commitments, provenance_from_events(events, commitments))}]' +
                   (' selectable' if route in selectable_routes(routes, commitments, provenance_from_events(log.read(), commitments)) else ' disclosed; explicit --route required'))
         offered = selectable_routes(routes, commitments, provenance_from_events(log.read(), commitments))
         if args.route is None and not offered:

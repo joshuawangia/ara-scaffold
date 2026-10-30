@@ -1,5 +1,4 @@
 """Explicit proposed premises: one freeze, no source authority, replayable metadata."""
-from ara.runtime.cache import canonical, digest
 from ara.runtime.commitment_provenance import content_definition
 from ara.runtime.frozen_catalogue import make_catalogue
 from ara.runtime.novelty_basis import support_consistency
@@ -126,12 +125,77 @@ def hypothesis_disclosure(provenance, support_ids=None):
         note='Hypotheses are the paper\'s proposals, never author-endorsed source claims. Derivation is conditional on these premises.' if ids else None)
 
 
+def route_hypothesis_disclosure(route, provenance):
+    """Actual reachable H use, independent of closure or novelty classification."""
+    nodes = {node.id: node for node in route.nodes}
+    pending, seen, used = [route.root_id], set(), set()
+    while pending:
+        node_id = pending.pop()
+        if node_id in seen:
+            continue
+        seen.add(node_id)
+        node = nodes[node_id]
+        if node.kind == 'leaf':
+            used.add(node.t_id)
+        used.update(tid for answer in node.cq_answers for tid in answer.supporting_t_ids)
+        pending.extend(node.children)
+    disclosure = hypothesis_disclosure(provenance, used)
+    if disclosure['conditional_on']:
+        ids = ', '.join(disclosure['conditional_on'])
+        closed = route.status == 'CLOSED'
+        disclosure.update(conclusion_id=route.root_id,
+            conclusion_text=nodes[route.root_id].proposition.text, route_status=route.status,
+            conclusion_status='conditional on H' if closed else 'conditional on H; no completed conclusion',
+            required_statement=(f"This paper's conclusion is conditional on H ({ids})." if closed else
+                f'This unfinished argument is conditional on H ({ids}); no completed conclusion is established.'))
+        if not closed:
+            disclosure['note'] = 'Proposed premises are used in this unfinished route; no completed conclusion is established.'
+    return disclosure
+
+
 def route_disclosure(events, route):
     from ara.runtime.route_policy import frozen_from_events, provenance_from_events
-    from ara.runtime.citations import support_ids
-    frozen=frozen_from_events(events)
-    provenance=provenance_from_events(events,frozen)
-    return hypothesis_disclosure(provenance,support_ids(route,frozen))
+    frozen = frozen_from_events(events)
+    return route_hypothesis_disclosure(route, provenance_from_events(events, frozen))
+
+
+def validate_conditional_statement(disclosure, body):
+    """One runtime-specified affirmative paragraph, never a phrase occurrence."""
+    import re
+    from html.parser import HTMLParser
+    from markdown_it import MarkdownIt
+    if not disclosure['conditional_on']:
+        return
+    statement = disclosure['required_statement']
+    markdown = MarkdownIt('commonmark')
+    tokens = markdown.parse(body)
+    affirmative = any(token.type == 'inline' and token.content == statement and
+        i > 0 and tokens[i-1].type == 'paragraph_open' and tokens[i-1].level == 0 and
+        all(child.type == 'text' for child in token.children or ())
+        for i, token in enumerate(tokens))
+    if not affirmative or body.count(statement) != 1:
+        raise ValueError('hypothesis disclosure requires one standalone plain paragraph: ' + statement)
+
+    class VisibleText(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.parts = []
+        def handle_data(self, data):
+            self.parts.append(data)
+        def handle_starttag(self, tag, attrs):
+            if tag == 'br':
+                self.parts.append(' ')
+            if tag == 'img':
+                self.parts.append(dict(attrs).get('alt', '') or '')
+
+    # Screening view only: preserve all authored bytes, including markup.
+    text = VisibleText()
+    text.feed(markdown.render(body.replace(statement, '', 1)))
+    text.close()
+    if re.search(r'\bconditional\s+on\s+h\b|\bunconditional(?:ly)?\b|'
+                 r'\b(?:independent\s+of|(?:not|never)\s+(?:depend|rely)\s+on)\s+'
+                 r'(?:h\b|(?:the\s+)?(?:proposed\s+)?hypothes)', ''.join(text.parts), re.I):
+        raise ValueError('hypothesis disclosure has contradictory or ambiguous status wording')
 
 
 def hypothesis_role_failure(role, text, authorized):
@@ -157,8 +221,7 @@ def validate_disclosure(events, route, draft):
     disclosure=route_disclosure(events,route)
     if not disclosure['conditional_on']:
         return
-    if not re.search(r'\bconditional on H\b',draft['body'],re.I):
-        raise ValueError('hypothesis disclosure missing: conditional on H')
+    validate_conditional_statement(disclosure, draft['body'])
     for tid in disclosure['conditional_on']:
         nodes={n.id for n in route.nodes if n.kind=='leaf' and n.t_id==tid}
         marked=[draft['body'][a:b] for a,b in sentence_spans(draft['body'])

@@ -146,7 +146,8 @@ def per_paper_novelty(formula, commitments, provenance, *, support_ids=None, bas
         known = False
         for paper, basis in premises.items():
             for goal in (atom, atom.negated()):
-                verdict = check(basis, goal, 'per_paper_atom_closure', paper, application_key=key)
+                verdict = check(basis + tuple(c.formula for c in conditional), goal,
+                                'per_paper_atom_closure', paper, application_key=key)
                 if verdict == 'SOLVER_UNSAT':
                     known = True
                     break

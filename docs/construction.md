@@ -479,17 +479,27 @@ binds the complete T and catalogue. A hypothesis row has `kind=hypothesis`,
 bibliography entries, source-pair conflicts, or CQ source evidence.
 
 A selected route still needs two distinct source formulas assignable to two
-endorsed papers. Per-paper novelty includes used H as assumptions: if H alone
-or H plus one paper supplies the target, extra source leaves do not turn that
+endorsed papers. Per-paper novelty includes used H as assumptions in both
+whole-target and essential-atom checks: if H alone or H plus one paper supplies
+the target or its claimed new atom, extra source leaves do not turn that
 restatement into a contribution. A successful using route remains mechanically
 CLOSED but its contribution receipt and human rendering say **conditional on H**.
 This neither proves H nor turns an OPEN proposal paper into a derivation.
 
 The writer must state each H in a node-marked sentence beginning “This paper
 proposes” or “We propose”, with no source citation or author attribution, and
-explicitly state “Conditional on H”. The typed `proposed_principle` role is
+copy the runtime-supplied `hypothesis_disclosure.required_statement` exactly once
+as a standalone plain Markdown paragraph (in the introduction when writing in
+sections). For example: “This paper's conclusion is conditional on H
+(hypothesis:h).” Quoted, blockquoted, code or negated occurrences do not count.
+Contradictory or ambiguous conditional-status wording elsewhere is refused,
+including rendered emphasis and HTML entities. The typed `proposed_principle` role is
 available only for verified hypothesis nodes. Other source and argument roles,
 three-sample adverse-union audits, citation verification and repair bounds stay
 in force. Export and publication refuse missing disclosure, even if a draft
-receipt exists. Construction receipts, report data, methodology, route receipts
-and figures retain the proposed status.
+receipt exists. Both the audit-marked publication and its reading copy are
+checked at publication and reload. Construction receipts, report data, methodology,
+route receipts and figures retain the proposed status. Selection summaries, CLI
+listings and tree headings disclose H beside the classification; OPEN routes
+retain their actual reachable H use and state that no completed conclusion is
+established. Local assumptions and unreachable nodes do not become global H use.

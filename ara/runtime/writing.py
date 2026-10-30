@@ -73,8 +73,8 @@ def source_context(calls, route):
                   disclosed_limits=dict(open_node_ids=list(route.frontier),
                       omitted_support_ids=sorted({id for s in supports + alignment_evidence if s['provenance']
                           for id in s['provenance'].get('omitted_support_ids', [])})))
-    from ara.runtime.hypotheses import hypothesis_disclosure
-    disclosure = hypothesis_disclosure(provenance,ids)
+    from ara.runtime.hypotheses import route_hypothesis_disclosure
+    disclosure = route_hypothesis_disclosure(route,provenance)
     if disclosure['conditional_on']:
         result['hypothesis_disclosure'] = disclosure
     if alignment_evidence:

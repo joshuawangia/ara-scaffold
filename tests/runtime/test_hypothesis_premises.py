@@ -167,7 +167,7 @@ def test_hypothesis_export_and_typed_audit(tmp_path,monkeypatch,mode):
               'a argues that (P and Q) implies R' if mode=='attributed' else '(P and Q) implies R') if hypothesis else 'P Q'
         body.append(f'[[node:{node.id}]] {text}.')
         labels.append(dict(sentence=i,node_ids=[node.id],role='proposed_principle' if hypothesis else 'argument_step',citation_supported=True))
-    body.append('Conditional on H.')
+    body.append("\nThis paper's conclusion is conditional on H (hypothesis:h).")
     labels.append(dict(sentence=len(body),node_ids=[],role='framing',citation_supported=True))
     draft=dict(title='P',body='\n'.join(body),bibliography=[])
     inputs=calls.audit_inputs(route,draft)
@@ -273,7 +273,7 @@ def test_hypothesis_native_writer_audit_export_and_figures(tmp_path,monkeypatch)
         citation=' [cite:'+node.t_id+']' if node.t_id in ('p','q') else ''
         body.append(f'[[node:{node.id}]] {text}.{citation}')
         labels.append(dict(sentence=i,node_ids=[node.id],role='proposed_principle' if hypothesis else 'argument_step',citation_supported=True))
-    body.append('Conditional on H.');labels.append(dict(sentence=len(body),node_ids=[],role='framing',citation_supported=True))
+    body.append("\nThis paper's conclusion is conditional on H (hypothesis:h).");labels.append(dict(sentence=len(body),node_ids=[],role='framing',citation_supported=True))
     draft=dict(title='P',body='\n'.join(body),bibliography=evidence['allowed_bibliography'])
     seen=[]
     def complete(kind,prompt,*_):
@@ -289,14 +289,14 @@ def test_hypothesis_native_writer_audit_export_and_figures(tmp_path,monkeypatch)
     assert compose(calls,route)==draft
     assert 'write_essay' in seen and seen.count('audit_essay')>=3
     essay=(tmp_path/'export/essay.txt').read_text()
-    assert 'Conditional on H' in essay and 'This paper proposes' in essay
+    assert 'conditional on H (hypothesis:h)' in essay and 'This paper proposes' in essay
     assert 'Proposed hypothesis:' not in '\n'.join(b['text'] for b in draft['bibliography'])
     from ara.runtime.publication_figures import generate_figures
     manifest=generate_figures(calls,route,tmp_path/'figures')
     assert all('Proposed hypothesis' in (tmp_path/'figures'/e['file']).read_text() for e in manifest)
     # A later malformed final draft must not inherit the earlier clean export.
     from ara.runtime.export import export_run
-    undisclosed={**draft,'body':draft['body'].replace('This paper proposes ','').replace('Conditional on H.','')}
+    undisclosed={**draft,'body':draft['body'].replace('This paper proposes ','').replace("This paper's conclusion is conditional on H (hypothesis:h).",'')}
     calls.log.record('final_draft',route_id=route.id,draft=undisclosed)
     with pytest.raises(ValueError,match='hypothesis disclosure'):
         export_run(calls.log.path,tmp_path/'export')
@@ -335,7 +335,9 @@ def test_hypothesis_publication_refuses_qualifier_loss(tmp_path,monkeypatch):
     route=selectable_routes(NativeEngine(bank,calls)._engine(t).search(Proposition('r','R',R)).routes,t,meta)[0]
     calls.log.record('route',graph=route.to_dict())
     with pytest.raises(ValueError,match='hypothesis disclosure'):
-        publish(calls.log,dict(route_id=route.id,markdown='# P\n\nP Q.',draft=dict(bibliography=[])))
+        publish(calls.log,dict(route_id=route.id,markdown='# P\n\nP Q.',draft=dict(bibliography=[]),
+            polished=True,audit={},local_citations=[],native_citations=[],words=3,bibliographic_records={},
+            repair_rounds=0,accepted_repair_rounds=0,word_limits={},repair_validation_attempts=0))
     assert not (tmp_path/'publication/latest.json').exists()
 
 

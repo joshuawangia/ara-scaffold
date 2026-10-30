@@ -2549,7 +2549,7 @@ CASES += [
     ('hypothesis_export_disclosure', 'ara/runtime/export.py', 'validate_disclosure(events, RouteGraph.from_dict(route), draft)', 'pass', 'tests/runtime/test_hypothesis_premises.py::test_hypothesis_native_writer_audit_export_and_figures'),
     ('hypothesis_typed_attribution', 'ara/runtime/essay_audit.py', "reason = hypothesis_role_failure(role,sentences.get(item['sentence'],''),\n                bool(inputs['outline'].get('hypothesis_disclosure',{}).get('conditional_on')))", 'reason = None', 'tests/runtime/test_hypothesis_premises.py::test_hypothesis_export_and_typed_audit[attributed]'),
     ('hypothesis_report_disclosure', 'ara/runtime/report.py', "if r['event']['stage']=='hypotheses_admitted'", "if r['event']['stage']=='disabled_hypotheses_admitted'", 'tests/runtime/test_hypothesis_premises.py::test_native_conditional_route_requires_two_real_papers'),
-    ('hypothesis_publication_disclosure', 'ara/runtime/publication.py', "validate_disclosure(events,RouteGraph.from_dict(route),\n            as_draft(result['markdown'],result['draft']['bibliography']))", 'pass', 'tests/runtime/test_hypothesis_premises.py::test_hypothesis_publication_refuses_qualifier_loss'),
+    ('hypothesis_publication_disclosure', 'ara/runtime/publication.py', "validate_publication_disclosure(log.read(), result, result['markdown'],\n                                   result.get('reading_markdown', result['markdown']))", 'pass', 'tests/runtime/test_hypothesis_premises.py::test_hypothesis_publication_refuses_qualifier_loss'),
 ]
 
 
@@ -2568,6 +2568,42 @@ CASES += [
     ('forward_coverage_receipt', 'ara/runtime/report.py',
      "if r['event']['stage']=='forward_coverage'", "if False",
      'tests/runtime/test_per_paper_synthesis.py::test_forward_coverage_reaches_report_and_methodology'),
+]
+
+
+CASES += [
+    ('hypothesis_atom_novelty_conditions_on_h', 'ara/runtime/novelty.py',
+     "check(basis + tuple(c.formula for c in conditional), goal,\n                                'per_paper_atom_closure'",
+     "check(basis, goal,\n                                'per_paper_atom_closure'",
+     'tests/runtime/test_hypothesis_padding.py'),
+    ('hypothesis_affirmative_paragraph', 'ara/runtime/hypotheses.py',
+     'if not affirmative or body.count(statement) != 1:', 'if False:',
+     'tests/runtime/test_hypothesis_disclosure.py'),
+    ('hypothesis_no_contradictory_status', 'ara/runtime/hypotheses.py',
+     "if re.search(r'\\bconditional\\s+on\\s+h\\b|\\bunconditional(?:ly)?\\b|'",
+     "if False and re.search(r'\\bconditional\\s+on\\s+h\\b|\\bunconditional(?:ly)?\\b|'",
+     'tests/runtime/test_hypothesis_disclosure.py'),
+    ('hypothesis_reading_copy_disclosure', 'ara/runtime/publication.py',
+     "validate_conditional_statement(route_disclosure(events,RouteGraph.from_dict(route)),\n                                       reading_markdown)",
+     'pass', 'tests/runtime/test_hypothesis_disclosure.py::test_publication_reading_copy_retains_affirmative_disclosure'),
+    ('hypothesis_open_route_usage', 'ara/runtime/route_policy.py',
+     'hypotheses = route_hypothesis_disclosure(route, provenance)',
+     "hypotheses = route_hypothesis_disclosure(route, provenance if route.status == 'CLOSED' else None)",
+     'tests/runtime/test_hypothesis_reports.py::test_route_selection_summaries_disclose_hypotheses[False]'),
+    ('hypothesis_selection_summary', 'ara/runtime/report_render.py',
+     "('conclusion_status','conditional_on','hypothesis_disclosure') if key in route['contribution']",
+     "() if key in route['contribution']",
+     'tests/runtime/test_hypothesis_reports.py::test_route_selection_summaries_disclose_hypotheses[True]'),
+    ('hypothesis_display_status', 'ara/runtime/route_policy.py',
+     "receipt.get('conditional_on') else ''", "False else ''",
+     'tests/runtime/test_hypothesis_reports.py::test_route_selection_summaries_disclose_hypotheses[True]'),
+]
+
+
+CASES += [
+    ('hypothesis_reload_disclosure', 'ara/runtime/publication.py',
+     "validate_publication_disclosure(events, result, result.get('audit_markdown', result['markdown']),\n                                   result['markdown'])",
+     'pass', 'tests/runtime/test_hypothesis_disclosure.py::test_publication_reload_rechecks_hypothesis_disclosure'),
 ]
 
 

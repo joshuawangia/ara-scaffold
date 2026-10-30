@@ -4645,3 +4645,29 @@ source-credit and missing-disclosure mutations, strict legacy metadata and typed
 role regressions, capped forward regression and coverage reporting. Full release
 receipts and real-freeze coverage are retained in the external Round 32 report;
 no live provider, semantic-faithfulness or literature-originality claim follows.
+
+
+## Round 32b — conditional novelty and affirmative disclosure
+
+Address X32-F1/F2/F3. Essential-atom novelty uses each paper together with the
+route's proposed premises, just as whole-target novelty does. H=R, compound or
+vacuously quantified H containing R, and one-paper-plus-H derivations of R cannot
+upgrade R conjoined with source restatements to CLOSED-derived. Genuine separate
+P/Q source support with H=(P and Q) implies R remains conditional and selectable.
+
+H disclosure is an exact runtime-supplied, standalone affirmative paragraph,
+once per complete essay. A negated phrase, quotation, blockquote, code sample,
+or contradictory rendered status statement cannot satisfy it. Native writer
+validation preserves actionable correction feedback; export, publication and
+publication reload recheck the policy, including the actual reading copy.
+Node-marked paper-owned proposal sentences and typed audit roles remain required.
+This deterministic wording gate is bounded syntax validation, not a general
+semantic proof of arbitrary prose.
+
+Actual H use is collected from reachable route leaves and CQ support independently
+of closure classification. OPEN receipts explicitly disclose no completed
+conclusion; summaries and CLI/tree headings retain H alongside existing status.
+No provenance codec, source authority, licensing or source-credit rule changes.
+Red-first native regressions and production-wire controls cover padding,
+misleading text, authenticated old publications and selection/report disclosure.
+Full offline gate receipts are recorded in the external Round 32b report.

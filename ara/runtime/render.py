@@ -3,12 +3,12 @@ from pathlib import Path
 
 from ara.runtime.cache import digest
 from ara.types import RouteGraph
-from ara.runtime.route_policy import route_classification
+from ara.runtime.route_policy import route_display_status
 
 
 def render_tree(graph: RouteGraph, commitments=None, provenance=None) -> str:
     nodes = {n.id: n for n in graph.nodes}
-    lines = [f'{graph.id} [{route_classification(graph, commitments, provenance)}] frontier={list(graph.frontier)}']
+    lines = [f'{graph.id} [{route_display_status(graph, commitments, provenance)}] frontier={list(graph.frontier)}']
     if provenance and 'alignment' in provenance:
         from ara.runtime.symbol_alignment import alignment_disclosure
         from ara.runtime.cache import canonical

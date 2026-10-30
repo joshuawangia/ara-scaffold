@@ -299,6 +299,10 @@ class ModelCalls:
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
             return prompt, prompt
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
+        if kind == 'build_t_batch':
+            from ara.runtime.shared_vocabulary import vocabulary_policy, SHARED_CONTRACT
+            if vocabulary_policy(self.config):
+                template = template.replace('Prefer source-prefixed names.', '') + SHARED_CONTRACT
         if kind != 'search_evidence':
             # The service grammar is a compact projection. Show the model every
             # local constraint as well; the same complete prompt is logged/keyed.
@@ -585,7 +589,9 @@ class ModelCalls:
             if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': reason if isinstance(exc, ValidationError) or kind == 'extract_paper' else str(exc),
                     'rejected_response': Response(raw).text(),
-                    'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
+                    'instruction': 'Return a new response satisfying every local schema and reference constraint.',
+                    **({'construction_candidate': data} if kind == 'build_t_batch' and
+                       self.config.get('construction_partial_acceptance') and isinstance(locals().get('data'), dict) else {})}) from exc
             if not isinstance(exc, Rejected):
                 raise
             if isinstance(exc, EssayAuditFailed):
@@ -958,7 +964,8 @@ class ModelCalls:
             require(bool(allowed), 'no extracted claims available to build T')
             from ara.runtime.construction import construct
             return construct(self, literature, audience)
-        require(not self.config.get('construction_gap_anchors') and not self.config.get('construction_context_limits'),
+        require(not self.config.get('construction_gap_anchors') and not self.config.get('construction_context_limits') and
+                not any(self.config.get(k) for k in ('construction_partial_acceptance', 'construction_split_retry', 'construction_precise_attribution')),
                 'construction gap anchors and context limits require rich extracted literature')
         return self.call('build_t', {'literature': literature, 'audience': audience}, CommitmentSet.from_dict)
 

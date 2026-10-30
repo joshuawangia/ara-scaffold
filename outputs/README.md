@@ -7,7 +7,7 @@ Nothing here is a submission verdict. Route selection is the operator's.
 
 | Item | File | Status |
 | --- | --- | --- |
-| Metapaper v4 (methodology, 32 pp; honest novelty status; §10 Credits for 39 workers) | `metapaper/metapaper.pdf` | Rendered; anonymity grep clean; marks pending work as pending |
+| Metapaper v5 (43 pp, 10 figures; unified under ARA base concepts; root cause: paper-isolated atomic T; §Credits) | `metapaper/metapaper.pdf` | Rendered; anonymity grep clean; marks pending work as pending |
 | Route-1 paper, polished (3,471 words, 9 pp) | `papers/pi3-quality3.pdf` | Typed post-polish audit passed after 1 repair (single-sample audit, pre k=3 gate) |
 | Route-1 paper, unpolished fallback (5,065 words, 12 pp) | `papers/pi3-quality4.pdf` | Polish failed (repair below 3,000 floor); fallback kept |
 | Route-1 paper, first publication | `papers/pi3-publication.pdf` | Earlier version (4,743 words) |

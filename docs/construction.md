@@ -211,6 +211,77 @@ construction outcomes into a different plan. Reusing extraction is separate. Add
 new PDFs to validated extraction before anchoring them. Construction/alignment
 resume continues to require the recorded plan and source identities.
 
+## Opt-in partial acceptance and split retry
+
+For a fresh construction lifecycle, three independent run-level boolean flags default off (stage overrides refuse):
+
+```yaml
+construction_partial_acceptance: true
+construction_split_retry: true
+construction_precise_attribution: true
+```
+
+Partial acceptance runs only after ordinary validation/structure corrections fail.
+Whole-candidate complexity guards run before and after formula decoding; filtering
+never turns an over-budget response into an admitted one. Recovery projects the
+last complete, accounted candidate onto validated commitments,
+checks the normal schema, content definitions, source pages/stance/provenance,
+formula signatures and bindings, and recounts cumulative capacities. Formulas
+must be individually satisfiable and the endorsed union consistent; reported and
+attacked formulas do not become global premises. Candidates are admitted in stable
+ID order; conflicts preserve earlier accepted rows. This is not a relevance ranking
+or a promise to find the largest consistent subset. Unknown solver results refuse.
+
+Dropped dependencies propagate to dependants until stable, including inference
+endpoints and qualifiers. Existing disclosed support cuts remain disclosed; partial
+recovery never invents a new cut to retain an unsupported dependant. Surviving
+inferences must pass the structure gate. Symbol evidence lists are projected onto
+survivors without inventing bindings. The entire surviving batch is revalidated
+before acceptance. No formulas, source text or stance are repaired by this process.
+The terminal accepted receipt has `status: partial` and a
+`construction_partial_acceptance` receipt records the candidate hash, retained IDs,
+dropped IDs/reasons and discarded auxiliary inventories. It is not a skipped window.
+
+Split retry declares two dormant children for each divisible primary window in the
+counted plan. A failed/oversized primary activates its children once, in stable
+halves of the original evidence inventory. Each child uses normal root selection,
+full-graph closure, shared prior commitments/catalogue, formalization and admission.
+Children never split recursively. Global exhaustion does not activate retries.
+An indivisible item, large mandatory closure or still-invalid child can still be
+omitted. Partial success is terminal and does not activate its dormant children.
+
+The allocation reserves capacity for primary windows; children share that parent's
+allocation index and still face recounted global limits. The plan and receipts
+include `budget_index` and `retry_parent`. All entries have ordered outcomes:
+`status: split` on a retried parent, `inactive_retry` on unused children, or the normal
+accepted/partial/skipped outcome. This retains native stopped-construction and
+alignment-resume verification. Count primary coverage separately from retry entries;
+three plan entries do not mean three distinct original windows. Split decisions and
+partial results also appear in export methodology.
+
+The precise attribution flag allows ordinary uses of “holds”, “hold”, “states” and
+“maintains” while continuing to reject explicit report frames such as `b argues
+that P`, `b holds that P`, and `According to b, P`. Known-author exact unframing
+remains disclosed as before; an attributed frame itself never becomes a content
+definition. This optional construction screen does not change the search target
+attribution policy and is not a semantic completeness check.
+
+Opt-in source rows carry `definition_screen: attribution-frames-v1`, hash-bound in
+`commitment-provenance-v3`. The existing validator/loader accepts v1/v2 unchanged
+and validates v3 using its recorded screen, including after alignment or fork.
+Old readers refuse v3; use the updated reader for these runs. The outer
+commitments and frozen-catalogue formats are unchanged. All enabled options enter
+the construction plan/cache identity; no changed-input cache replay is licensed.
+
+Partial recovery adds no provider calls beyond existing corrections. Split retry
+adds at most two attempts per divisible failed primary: with correction limit C,
+each attempt makes at most `2 * (1 + C) + 1` generation calls (selection and
+formalization with corrections, plus one structure correction). Thus at most
+`2 * (2 * (1 + C) + 1)` extra calls per failed primary, or 14 at default C=2.
+Counts, local validation and bounded consistency checks add CPU time. Wall time
+and tokens remain response-dependent; neither larger bounds nor recovery guarantees
+coverage. Use new lifecycle settings only after reviewing the counted plan.
+
 ## Structure and frozen vocabulary
 
 Rich construction preserves selected inference nodes as content conditionals with source stance in provenance
@@ -511,3 +582,96 @@ classification; OPEN routes retain reachable H use and state that no completed
 conclusion is established. Local assumptions and unreachable nodes do not become
 global H use. Runtime status is a mechanical disclosure, not a semantic proof of
 arbitrary authored prose.
+
+## Shared vocabulary and wider alignment (opt-in)
+
+A fresh lifecycle can set `construction_shared_vocabulary: true`. Construction
+then replaces the source-prefixed naming preference with a shared-vocabulary
+contract in the counted, cached and logged formalization prompt. The existing
+run-level catalogue grows sequentially from accepted source-supported symbols.
+The model is asked to reuse exact meanings/signatures and expose relational
+structure with predicates, terms and connectives. No starter ontology, automatic
+synonym rewrite, minimum reuse quota or invented equivalence is introduced.
+Faithful atomic formulas remain possible; offline tests cannot establish source
+faithfulness or guarantee that a provider follows this guidance.
+
+`construction_alignment_top_k: 20` selects up to 20 neighbours per atom/predicate
+from all signature-compatible cross-source pairs. Definition-weighted lexical
+similarity ranks neighbours, including zero-overlap pairs; it is not an embedding
+retriever or a semantic equivalence test. Neighbour rank rounds distribute the
+existing `construction_alignment_candidates` global call cap across symbols.
+For example, set that cap to 2000 for a wider pool. A top-k union may contain
+fewer than the cap; very small caps can still leave symbols uncovered. Retrieval
+receipts disclose the selected inventory, zero-overlap/backfill counts, coverage
+and truncation. Only subsequent model judgments authorize same-content rewriting
+or disclosed entailment bridges. The existing consistency/refusal gates apply.
+All candidate pairs are considered for ranking; retained neighbour memory is
+bounded by symbol count times the smaller of top-k and the global cap.
+
+Both settings are run-level only and validated before planning. Defaults are
+false/zero and preserve prior prompts, plan fields and retrieval receipts.
+Enabled shared guidance is bound into the construction plan; enabled top-k is
+bound into its alignment policy and persisted retrieval receipt. The alignment
+receipt envelope remains v3; its retrieval payload is extended only when top-k
+is enabled. Updated validators replay that inventory exactly; old readers refuse
+new retrieval payloads rather than downgrade. CommitmentSet, commitments.json,
+frozen-t and provenance codecs are unchanged in this round.
+
+A previously planned lifecycle cannot widen alignment in place: its recorded
+configuration and construction plan bind that inventory. Native resume reads the
+recorded policy; frozen-prefix forks preserve the frozen result. Use a fresh
+lifecycle for changed policies. Copying cache files does not authorize replay
+under changed prompts, plans, catalogue or commitment hashes.
+
+Construction and alignment emit opt-in vocabulary metrics, exposed in methodology:
+atomic commitment count/fraction, actual source-use shared symbols/predicates,
+shared symbols including model-alignment context, and cross-paper exact-antecedent
+modus-ponens candidates among endorsed source rows. The last is a narrow structural
+opportunity count, not a complete bank sweep, solver proof or licensed route.
+Alignment bridges do not count as source endorsement. Inspect the source-use and
+alignment-context counts separately; a bridge can raise only the latter.
+
+Shared guidance adds prompt tokens but no new logical calls. Wider alignment can
+add one logical judgment per selected pair, each with the existing validation
+attempt allowance. Run/window/provider budgets still apply, and unresolved
+judgment limits still refuse freezing. These options may increase latency and
+are not a claim of useful cross-paper synthesis without a measured live run.
+
+
+The precise attribution screen recognizes explicit report frames even when
+emphasis, quotes, a colon or a dash separates the verb from its complement marker.
+Sentence-ending punctuation remains a boundary. This same check runs when loading
+persisted provenance; a previously admitted formatted report frame refuses rather
+than being accepted under a recorded precise-screen marker. Source text is intact.
+
+Precise screening checks raw text and a formatting-free view, using Markdown
+tokens plus HTML text/entity parsing. Formatting inside report words, HTML tags,
+character entities and line-break tags cannot hide the tested explicit frames.
+The normalized view is never substituted into accepted definitions, catalogue
+entries or provenance. The legacy screen remains unchanged.
+
+Under the precise screen, content definitions must be textual: Markdown image
+tokens and non-text HTML elements are refused, including nested/reference images,
+`img`, image inputs and embedded content. Only the explicit text-formatting HTML
+tag set is supported; other tags refuse even if they contain text. Empty
+normalized text also refuses.
+Alt text cannot serve as the definition. Correction feedback identifies this
+unsupported markup explicitly. Source material remains intact and no image or
+URL is fetched. Ordinary text formatting remains supported by the screening view.
+
+
+The supported HTML subset is attribute-free emphasis, spans, paragraphs, line
+breaks, code and lists. All HTML attributes refuse; hidden/style/directional
+presentation is not interpreted. Tags with special rendering behavior, including
+`details` and `bdo`, are unsupported. Invisible Unicode format controls, selectors
+and fillers refuse rather than split a reporting word in the screening view.
+Ordinary Markdown emphasis and links remain supported. This is a conservative
+textual boundary, not a browser renderer or semantic attribution proof.
+
+
+The decoded formatting-free screening view also uses Unicode NFKC compatibility
+normalization, so bold/full-width typographic letters cannot conceal an explicit
+report frame. Accepted definitions retain their exact original typography. The
+raw guard remains independent: report text in an HTML comment still refuses even
+though the display-oriented view omits that comment. This policy does not claim
+to recognize arbitrary visual confusables or determine semantic authorship.

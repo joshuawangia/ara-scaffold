@@ -30,6 +30,8 @@ class Batch:
     input_tokens: int | None
     allowance: int
     anchor_json: str | None = None
+    budget_index: int | None = None
+    retry_parent: int | None = None
 
 
 @dataclass(frozen=True)
@@ -139,7 +141,7 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
     fields = {'omissions': 'group_id'} if kind == 'select_t_roots' else {
         'commitments': 'id', 'new_symbols': 'name', 'alignments': 'name'}
     try:
-        candidate = json.loads(error.feedback['rejected_response'])
+        candidate = error.feedback.get('construction_candidate') or json.loads(error.feedback['rejected_response'])
         if kind == 'build_t_batch':
             for item in candidate['commitments']:
                 if isinstance(item['formula'], str):
@@ -147,6 +149,8 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
         require(all(len({item[key] for item in candidate[field]}) == len(candidate[field])
                     for field, key in fields.items()), 'ambiguous construction correction inventory')
     except (ValueError, KeyError, TypeError) as exc:
+        if kind == 'build_t_batch' and calls.config.get('construction_partial_acceptance'):
+            raise error
         raise Rejected(str(error) + '; candidate cannot support targeted construction correction') from exc
     limit = remaining[kind]
     candidate_error = error.feedback['error']
@@ -187,6 +191,8 @@ def construction_call(calls: ModelCalls, kind: str, inputs: dict, check, remaini
                 error = exc
                 candidate_error = exc.feedback['error']
             candidate = latest
+    if kind == 'build_t_batch' and calls.config.get('construction_partial_acceptance'):
+        error.feedback['construction_candidate'] = candidate
     raise error
 
 
@@ -196,6 +202,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     from ara.runtime.budget import BudgetStop
     from ara.runtime.closure_budget import apply_context_limits
     context_limits = apply_context_limits(calls.config)
+    from ara.runtime.construction_recovery import recovery_policy
+    recovery = recovery_policy(calls.config)
+    from ara.runtime.shared_vocabulary import vocabulary_policy, vocabulary_metrics
+    shared_policy = vocabulary_policy(calls.config)
+    partial_enabled = calls.config.get('construction_partial_acceptance', False)
+    split_enabled = calls.config.get('construction_split_retry', False)
+    definition_screen = 'attribution-frames-v1' if calls.config.get('construction_precise_attribution') else None
     corrections = calls.config.get('construction_targeted_corrections', 2)
     if type(corrections) is not int or corrections < 0:
         raise ValueError('construction_targeted_corrections must be a nonnegative integer')
@@ -231,6 +244,10 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
         'symbol_token_budget': calls.config['working_t_symbol_token_budget'],
         'working_t_token_budget': calls.config['working_t_token_budget']}
+    if shared_policy:
+        metadata['shared_vocabulary_policy'] = shared_policy
+    if recovery:
+        metadata['recovery_policy'] = recovery
     if anchors:
         metadata['gap_anchors'] = anchors
     if context_limits is not None:
@@ -336,9 +353,25 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     batches = [Batch(index, tuple(p['source_id'] for p in grouped(ids)), canonical(grouped(ids)),
                      count(ids, anchor), metadata['working_t_token_budget'], canonical(anchor) if anchor is not None else None)
                for index, (ids, anchor) in enumerate(zip(windows, window_anchors))]
+    if split_enabled:
+        # Declare dormant children up front: stable IDs, counted inputs and one
+        # terminal outcome per plan entry retain the native resume contract.
+        expanded = []
+        for primary, (ids, anchor) in zip(batches, zip(windows, window_anchors)):
+            index = len(expanded)
+            expanded.append(Batch(index, primary.source_ids, primary.papers_json, primary.input_tokens,
+                                  primary.allowance, primary.anchor_json, primary.index))
+            if len(ids) > 1:
+                midpoint = len(ids) // 2
+                for half in (ids[:midpoint], ids[midpoint:]):
+                    group = grouped(half)
+                    expanded.append(Batch(len(expanded), tuple(p['source_id'] for p in group), canonical(group),
+                        count(half, anchor), primary.allowance, primary.anchor_json, primary.index, index))
+        batches = expanded
     plan = {**metadata, 'budget': allocation, 'batches': [dict(index=b.index, source_ids=b.source_ids, input_tokens=b.input_tokens,
                                        allowance=b.allowance, content_hash=digest(b.papers_json),
-                                       **({'gap_anchor': json.loads(b.anchor_json)} if b.anchor_json is not None else {})) for b in batches]}
+                                       **({'gap_anchor': json.loads(b.anchor_json)} if b.anchor_json is not None else {}),
+                                       **({'budget_index': b.budget_index, 'retry_parent': b.retry_parent} if split_enabled else {})) for b in batches]}
     plan_id = digest(canonical(plan))
     if resumption:
         require(plan_id == resumption['plan_id'], 'construction resume requires the same counted plan id')
@@ -358,14 +391,24 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     materialized = set()
     exhausted = None
     refusal_reasons = []
+    split_parents = set()
+    retry_children = {b.index: [c.index for c in batches if c.retry_parent == b.index] for b in batches} if split_enabled else {}
     def preview(next_window):
         return dict(plan=plan, plan_id=plan_id, next_window=next_window,
                     restored_windows=sorted(resumption['completed']),
                     restored_commitments=sum(len(r.commitments.commitments) for r in results))
-    def skip(batch, window_items, reason, selection, closure):
+    def skip(batch, window_items, reason, selection, closure, *, retry=True):
         omitted = [dict(evidence_id=id, reason=reason) for id in sorted(window_items)]
         window_omissions.extend(omitted)
         receipt = dict(omitted=omitted, roots=selection.get('roots', []), closure=closure, reason=reason)
+        children = retry_children.get(batch.index, []) if retry else []
+        if children:
+            split_parents.add(batch.index)
+            receipt.update(status='split', split_retry=dict(children=children, reason=reason))
+            calls.log.record('construction_split_retry', plan_id=plan_id, index=batch.index,
+                             children=children, reason=reason, maximum_depth=1)
+        elif split_enabled:
+            receipt['status'] = 'inactive_retry' if batch.retry_parent is not None and not window_items else 'skipped'
         result = BatchResult(batch.index, CommitmentSet(()), canonical(receipt))
         results.append(result)
         calls.log.record('build_t_batch_skipped', plan_id=plan_id, index=batch.index, **receipt)
@@ -386,6 +429,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             commitments = CommitmentSet.from_dict({'commitments': data.get('commitments', [])})
             results.append(BatchResult(batch.index, commitments, canonical(data)))
             symbols += data.get('new_symbols', [])
+            if data.get('split_retry'):
+                split_parents.add(batch.index)
             materialized.update(c.id for c in commitments.commitments)
             window_omissions.extend(o for o in data['omitted'] if o['evidence_id'] in window_items)
             calls.log.record('build_t_batch_restored', plan_id=plan_id, index=batch.index,
@@ -396,8 +441,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             selection = {'roots': closure['roots']} if closure else {}
             skip(batch, window_items, 'terminal provider request refusal; unknown usage counted at reservation', selection, closure)
             continue
+        if batch.retry_parent is not None and batch.retry_parent not in split_parents:
+            skip(batch, {}, 'split retry not activated', selection, closure, retry=False)
+            continue
         if exhausted:
-            skip(batch, window_items, exhausted, selection, closure)
+            skip(batch, window_items, exhausted, selection, closure, retry=False)
             continue
         if batch.input_tokens is None:
             skip(batch, window_items, 'terminal token-count request refusal; uncounted window omitted', selection, closure)
@@ -407,9 +455,10 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             refusal_reasons.append(reason)
             skip(batch, window_items, reason, selection, closure)
             continue
-        window_cap = allocation['window_commitment_caps'][batch.index]
+        budget_index = batch.index if batch.budget_index is None else batch.budget_index
+        window_cap = allocation['window_commitment_caps'][budget_index]
         if window_cap == 0:
-            skip(batch, window_items, 'zero initial window share; commitment cap is zero', selection, closure)
+            skip(batch, window_items, 'zero initial window share; commitment cap is zero', selection, closure, retry=False)
             continue
         try:
             prior = [c.to_dict() for r in results for c in r.commitments.commitments]
@@ -422,11 +471,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             if catalog_tokens > symbol_budget:
                 calls.budget.stop('accepted catalogue exceeds global budget on recount', 'build_t_batch')
             symbol_available = symbol_budget - catalog_tokens
-            windows_left = sum(n > 0 for n in allocation['window_initial_commitments'][batch.index:])
+            windows_left = sum(n > 0 for n in allocation['window_initial_commitments'][budget_index:])
             # Reserve the original headroom as a soft target; accepted output may borrow it.
             working_share = max(0, int(metadata['working_t_token_budget'] * (1 - allocation['headroom_fraction'])) - current.initial_input_tokens) // windows_left
             symbol_share = max(0, int(symbol_budget * (1 - allocation['headroom_fraction'])) - catalog_tokens) // windows_left
-            window_budget = {**allocation, 'initial_window_commitments': allocation['window_initial_commitments'][batch.index],
+            window_budget = {**allocation, 'initial_window_commitments': allocation['window_initial_commitments'][budget_index],
                              'window_commitment_cap': window_cap, 'window_copy_token_budget': working_share,
                              'symbol_available_tokens': max(0, symbol_available),
                              'window_symbol_token_budget': symbol_share,
@@ -442,10 +491,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 calls.log.record('build_t_global_exhaustion', plan_id=plan_id, index=batch.index,
                                  reason=exhausted, accepted_ids=sorted(materialized),
                                  note='Freeze only previously accepted work; remaining windows are omitted.')
-                skip(batch, window_items, exhausted, selection, closure)
+                skip(batch, window_items, exhausted, selection, closure, retry=False)
                 continue
             inputs = {**inputs_for(group, batch.index, max(0, available), anchor), 'plan_id': plan_id,
-                      'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
+                      'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json),
+                      **({'split_retry_parent': batch.retry_parent} if batch.retry_parent is not None else {})}
             root_ids, selection_groups = selection_inventory(window_items)
             groups_by_id = {g['group_id']: g for g in selection_groups}
             selection_inputs = {**selection_request(inputs, window_items), 'window_budget': window_budget}
@@ -530,6 +580,9 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
             selected_ids -= materialized
             inputs = formalization_inputs(closure)
+            if not selected_ids and retry_children.get(batch.index):
+                skip(batch, window_items, closure['empty_reason'] or 'empty selected closure', selection, closure)
+                continue
             if not selected_ids:
                 window_omissions.extend(o for o in omitted if o['evidence_id'] in window_items)
                 result = BatchResult(batch.index, CommitmentSet(()), canonical({'omitted': omitted, 'closure': closure}))
@@ -562,11 +615,15 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 raise Rejected('selected closure exceeds bounded formalization; no truncation; reselect roots')
             calls.count_request('build_t_batch', inputs, admission=True)
             # The actual growing catalogue and plan identity are counted again, including retries.
-            def check(data):
+            latest_candidate = None
+            def check(data, subset=None, *, symbol_scope=None):
+                nonlocal latest_candidate
+                latest_candidate = deepcopy(data)
                 data = deepcopy(data)
+                expected_ids = selected_ids if subset is None else subset
                 ids = [c['id'] for c in data['commitments']]
                 require(len(ids) <= window_cap, 'construction window commitment cap exceeded')
-                require(len(set(ids)) == len(ids) and set(ids) == selected_ids, 'formalization inventory differs from fixed closure')
+                require(len(set(ids)) == len(ids) and set(ids) == expected_ids, 'formalization inventory differs from fixed closure')
                 from ara.runtime.commitment_provenance import (definition_issues, unframe_definitions,
                                                                source_provenance, _validate_source)
                 for change in unframe_definitions(data, items, authors):
@@ -576,12 +633,14 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                         history = definition_unframes.setdefault(id, [])
                         if record not in history:
                             history.append(record)
-                issues = definition_issues(data)
+                issues = definition_issues(data, screen=definition_screen)
                 require(not issues, 'content definition must not contain attribution: ' + canonical(issues) +
                         '; give each listed commitment and symbol a content-only restatement; preserve source text and citations')
                 definitions = {c['id']: c['definition'] for c in data['commitments']}
                 provenance = {id: source_provenance(items[id], authors[items[id]['source_id']], support_omitted.get(id, []))
                               for id in definitions}
+                if definition_screen is not None:
+                    for row in provenance.values(): row['definition_screen'] = definition_screen
                 for id, history in definition_unframes.items():
                     retained = [r for r in history if (r['kind'] == 'commitment' and r['name'] in definitions) or
                                 any(s['name'] == r['name'] and id in s['evidence_ids'] for s in data['new_symbols'])]
@@ -616,9 +675,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 require(valid_alignments, 'symbol alignment evidence mismatch')
                 bindings = [dict(name=name, evidence_ids=sorted(ids)) for name, ids in sorted(used.items())]
                 for symbol in data['new_symbols']:
-                    require(bool(symbol['definition'].strip()) and set(symbol['evidence_ids']) <= selected and
+                    require(bool(symbol['definition'].strip()) and set(symbol['evidence_ids']) <= (selected if symbol_scope is None else symbol_scope) and
                             bool(symbol['evidence_ids']), 'symbol definition lacks evidence')
                     require(symbol['name'] in used, 'unused symbol definition')
+                if partial_enabled:
+                    from ara.runtime.construction_recovery import consistent
+                    require(consistent(commitments, CommitmentSet.from_dict({'commitments': prior}), items),
+                            'construction consistency not established (unsat or unknown)')
                 cumulative = calls.count_request('propose_targets', {**target_inputs,
                     'commitments': {'commitments': prior + commitments.to_dict()['commitments']}})
                 require(cumulative.initial_input_tokens <= metadata['working_t_token_budget'], 'working T global token allowance exceeded')
@@ -633,31 +696,53 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                     symbols_borrowed_tokens=max(0, with_catalog.initial_input_tokens - without.initial_input_tokens - catalog_tokens - symbol_share))
                 return BatchResult(batch.index, commitments, canonical({**data, 'commitments': commitments.to_dict()['commitments'],
                     'bindings': bindings, 'provenance': provenance, 'omitted': omitted, 'closure': closure, 'borrowing': borrowing}))
-            result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
             from ara.runtime.construction_structure import structure_gate
             prior_set = CommitmentSet.from_dict({'commitments': prior})
-            metrics = structure_gate(result.commitments, prior_set, items)
-            calls.log.record('build_t_structure_gate', plan_id=plan_id, index=batch.index,
-                             phase='initial', **metrics)
-            if not metrics['passed']:
-                # One structure-specific correction per batch, independent of the
-                # validation-repair allowance. Full replacement permits removing
-                # the unused atom symbols of a flattened candidate.
-                candidate = json.loads(result.receipt_json)
-                candidate = {key: candidate[key] for key in ('commitments', 'new_symbols', 'alignments')}
-                candidate['commitments'] = [dict(id=c['id'], definition=c['text'], formula=c['formula']) for c in candidate['commitments']]
-                feedback = dict(issues=metrics['issues'],
-                    instruction='Encode each selected inference as premises -> conclusion, reusing selected endpoint formulas. '
-                                'Use shared predicates/constants where source-supported. Keep unsupported qualifications separate. '
-                                'Do not invent structure: if source-faithful structure cannot be supplied, retain flat formulas for disclosure.')
-                calls.log.record('construction_structure_correction', plan_id=plan_id, index=batch.index,
-                                 candidate_hash=digest(canonical(candidate)), feedback=feedback)
-                result = calls._transport_call('build_t_batch', {**inputs, 'mode': 'structure_correction',
-                    'candidate': candidate, 'structure_feedback': feedback}, check, attempt=2)
+            partial_receipt = None
+            try:
+                result = construction_call(calls, 'build_t_batch', inputs, check, remaining)
                 metrics = structure_gate(result.commitments, prior_set, items)
                 calls.log.record('build_t_structure_gate', plan_id=plan_id, index=batch.index,
-                                 phase='corrected', **metrics)
-                require(metrics['passed'] or metrics['flat'], 'non-flat inference structure contract failed after correction')
+                                 phase='initial', **metrics)
+                if not metrics['passed']:
+                    # One structure-specific correction per batch, independent of the
+                    # validation-repair allowance. Full replacement permits removing
+                    # the unused atom symbols of a flattened candidate.
+                    candidate = json.loads(result.receipt_json)
+                    candidate = {key: candidate[key] for key in ('commitments', 'new_symbols', 'alignments')}
+                    candidate['commitments'] = [dict(id=c['id'], definition=c['text'], formula=c['formula']) for c in candidate['commitments']]
+                    feedback = dict(issues=metrics['issues'],
+                        instruction='Encode each selected inference as premises -> conclusion, reusing selected endpoint formulas. '
+                                    'Use shared predicates/constants where source-supported. Keep unsupported qualifications separate. '
+                                    'Do not invent structure: if source-faithful structure cannot be supplied, retain flat formulas for disclosure.')
+                    calls.log.record('construction_structure_correction', plan_id=plan_id, index=batch.index,
+                                     candidate_hash=digest(canonical(candidate)), feedback=feedback)
+                    result = calls._transport_call('build_t_batch', {**inputs, 'mode': 'structure_correction',
+                        'candidate': candidate, 'structure_feedback': feedback}, check, attempt=2)
+                    metrics = structure_gate(result.commitments, prior_set, items)
+                    calls.log.record('build_t_structure_gate', plan_id=plan_id, index=batch.index,
+                                     phase='corrected', **metrics)
+                    require(metrics['passed'] or (metrics['flat'] and not partial_enabled), 'non-flat inference structure contract failed after correction')
+            except Rejected as error:
+                if not partial_enabled:
+                    raise
+                from ara.runtime.construction_recovery import partial_candidate
+                candidate = getattr(error, 'feedback', {}).get('construction_candidate', latest_candidate)
+                result, metrics, partial_receipt = partial_candidate(candidate, selected_ids, materialized,
+                    dependencies, support_omitted, check, prior_set, items,
+                    json.loads((calls.root / 'schemas/build_t_batch.json').read_text()), calls.config)
+                selected_ids = {c.id for c in result.commitments.commitments}
+                omitted = [o for o in omitted if o['evidence_id'] not in selected_ids] + partial_receipt['dropped']
+                retained_full = selected_ids | (set(closure['full_inventory']) & materialized)
+                closure = {**closure, 'roots': [id for id in closure['roots'] if id in retained_full],
+                    'added_ids': sorted(retained_full - set(closure['roots'])), 'full_inventory': sorted(retained_full),
+                    'inventory': sorted(selected_ids), 'omitted': omitted,
+                    'support_omitted': {id: ids for id, ids in closure['support_omitted'].items() if id in retained_full},
+                    'partial_acceptance': partial_receipt}
+                calls.log.record('build_t_closure', plan_id=plan_id, index=batch.index, **closure)
+                calls.log.record('construction_partial_acceptance', plan_id=plan_id, index=batch.index, **partial_receipt)
+                result = BatchResult(result.index, result.commitments, canonical({**json.loads(result.receipt_json),
+                    'omitted': omitted, 'closure': closure, 'partial_acceptance': partial_receipt}))
             disclosure = 'flat_after_one_correction' if metrics['flat'] else None
             calls.log.record('build_t_structure_outcome', plan_id=plan_id, index=batch.index,
                              disclosure=disclosure, **metrics)
@@ -671,7 +756,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             results.append(result)
             calls.log.record('build_t_batch_accepted', plan_id=plan_id, index=batch.index,
                              source_ids=batch.source_ids, output_hash=digest(result.receipt_json),
-                             evidence_ids=[c.id for c in result.commitments.commitments], omitted=data['omitted'])
+                             evidence_ids=[c.id for c in result.commitments.commitments], omitted=data['omitted'],
+                             **({'status': 'partial' if partial_receipt else 'accepted'} if recovery else {}))
             save_immutable(calls.log.path.parent / f'build-t-{plan_id}-{batch.index}.json', result.receipt_json)
         except (Rejected, BudgetStop, CountRequestRefused) as exc:
             if isinstance(exc, BudgetStop) and exc.scope != 'window':
@@ -683,7 +769,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     merged = merge_batches(tuple(results), len(batches))
     require(bool(merged.commitments), 'empty working T after accounted omissions' + (': ' + '; '.join(refusal_reasons) if refusal_reasons else ''))
     final_omissions = [o for o in window_omissions if o['evidence_id'] not in materialized]
-    if anchors:
+    if anchors or split_enabled:
         # Extra retrieval windows can omit the same item; retain each reason once
         # in the final inventory, while individual window receipts retain all decisions.
         reasons = {}
@@ -706,6 +792,9 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         calls.budget.stop('accepted catalogue exceeds global budget before freeze', 'build_t_batch')
     provenance = {id: row for result in results for id, row in json.loads(result.receipt_json).get('provenance', {}).items()}
     require(set(provenance) == materialized, 'merged commitment provenance inventory mismatch')
+    if shared_policy or calls.config.get('construction_alignment_top_k', 0):
+        calls.log.record('construction_vocabulary_metrics', plan_id=plan_id,
+                         metrics=vocabulary_metrics(merged, symbols, provenance))
     calls.log.record('build_t_merged', plan_id=plan_id, commitments=merged.to_dict(), symbols=symbols, provenance=provenance,
                      input_tokens=measured.initial_input_tokens, source_ids=[p['source_id'] for p in papers],
                      note='One construction lifecycle, one freeze; explicit model omissions retained in batch receipts.')

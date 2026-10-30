@@ -113,6 +113,10 @@ working_t_symbol_token_budget: 16000
 construction_context_limits: {}
 # Extra priority windows over grounded extracted evidence; see docs/construction.md.
 construction_gap_anchors: []
+# Fresh-lifecycle recovery; each flag is strictly boolean and defaults off.
+construction_partial_acceptance: false
+construction_split_retry: false
+construction_precise_attribution: false
 
 # Full extraction is disabled until the operator supplies all three caps.
 extraction-full:
@@ -183,3 +187,7 @@ local_validation_timeout_seconds: 2.0
 
 # Optional external-gaps-v1 JSON file; logged AI findings are proposed before native gaps.
 gap_file: null
+
+# Opt-in shared construction vocabulary; use a fresh lifecycle.
+construction_shared_vocabulary: false
+construction_alignment_top_k: 0 # Per-symbol neighbours; candidate cap remains global.

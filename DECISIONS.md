@@ -4606,3 +4606,136 @@ receipts and methodology. New settings require a fresh construction lifecycle;
 changed plan inputs cannot authorize stale response replay or old accepted-batch
 restoration. Existing extraction reuse remains available. No source rule or route
 success is inferred from an anchor or increased capacity.
+
+## Round 16 — opt-in validated subsets and one split retry
+
+Three run-config flags default off and bind only enabled policies into the counted
+construction plan. Partial acceptance uses an accounted candidate only after
+normal corrections; schema, provenance, formula, symbol, capacity, consistency and
+structure gates remain mandatory. Stable-ID cumulative admission preserves earlier
+rows when conflicts arise; this is not maximal-subset or relevance inference.
+Whole-candidate complexity guards remain mandatory before/after formula decoding;
+projection cannot bypass an original response resource limit. Dropped required
+dependencies transitively remove dependants, never become new support assumptions. Source/formula text is not rewritten to make a row pass.
+
+Split children are declared and counted before dispatch, with stable sequential
+indices and original allocation indices. Only failed parents activate them, once;
+children cannot split. Unused children have explicit empty inactive outcomes. The
+native contiguous receipt/artifact and resume checks remain authoritative, including
+terminal request refusals and one freeze. Reports distinguish primary coverage from
+retry entries. Global limits and stop scopes are retained.
+
+The optional precise content screen treats ambiguous ordinary verbs contextually
+but keeps explicit attribution frames hard. Record its policy in source provenance
+and emit v3 sidecars so future validators do not reinterpret definitions under a
+different lexicon. Legacy v1/v2 rows/validation and default plans remain unchanged;
+old readers refuse v3. Search target screening is outside this construction change.
+There is no cache rekeying, source-premise injection or live-run alteration.
+
+
+## Sigma round 17 — opt-in shared vocabulary and wider alignment
+
+The accumulated catalogue already existed, but the formalization prompt preferred
+source-prefixed names and allowed source claims to remain atomic. Add a run-level
+shared-vocabulary policy that replaces that preference, requests source-supported
+predicate/term structure and exact semantic reuse, and leaves all native validation,
+stance, support, consistency and one-freeze rules intact. No content ontology or
+automatic equivalence is supplied. Defaults preserve the prior request and plan.
+
+Add bounded per-symbol top-k retrieval over all compatible cross-source pairs,
+ranked by weighted lexical definition similarity with zero-overlap backfill and
+rank-round allocation under the existing total candidate cap. Model judgments,
+not retrieval, authorize rewrites/bridges. The opt-in retrieval payload is replayed
+by the existing strict receipt validator, including native resume; old readers
+refuse it. Changed policy requires a new lifecycle; no cache rekeying or pilot
+mutation. Instrument actual source-use sharing separately from bridge context.
+
+Offline evidence uses placeholders and a free diagnostic replay of retained
+artifacts; additional real-pair judgments and improved semantic synthesis are
+unverified. Round16 repair is checkpointed at 1ad5aca; parallel windows remain
+explicitly deferred to prioritize this round. Full combined verification belongs
+in the external round17 handoff, with its exact revision and scope.
+
+
+## Sigma round 17 review repair — formatted attribution frames
+
+Independent S17-F1 review showed that emphasis and separator punctuation around
+the complement marker bypassed the opt-in precise attribution screen. Tighten
+explicit holds/maintains/states report frames across formatting separators while
+retaining sentence boundaries and ordinary state predication. Native construction
+and persisted metadata loading share this check. Do not rewrite source text or
+relax legacy screening. The existing v3 policy marker remains valid for clean
+content; formerly admitted formatted report frames now refuse on reload.
+
+Repair is isolated from the pinned ae7db53 suite/control run. Red-first native
+freeze and metadata-reload regressions establish the defect; final exact-head
+suite/control receipts are recorded in the external round17 report.
+
+
+### S17-F1 markup completion
+
+Independent repair review also reproduced HTML-tag and entity escapes. Precise
+screening now checks both raw text and a formatting-free view built with the
+existing Markdown parser and standard-library HTML text/entity parsing. This
+recognizes report words split by formatting and preserves block/sentence
+boundaries. The view is used only for screening, never persisted in place of
+content or source text. Legacy screening and codec fields remain unchanged.
+All earlier exact-head gates continue in their original isolated checkouts;
+final repaired-head evidence is separate.
+
+
+### S17-F1 image boundary and full-suite injector repair
+
+Independent review found raw Markdown image-alt text could still hide formatted
+report words. Use the operator-authorized boundary alternative: the precise
+content screen refuses Markdown image tokens and HTML img elements outright,
+including nested/reference images, rather than interpreting image alt text as a
+formal content definition. Targeted correction feedback identifies unsupported
+image markup. No image is fetched; immutable source material is unchanged.
+
+The preserved ae7db53 full suite also exposed two corruption-fixture crashes:
+the injector indexed an empty prior set introduced by recovery setup. Restrict
+the injector to nonempty sets and assert that corruption actually occurred;
+keep the original specific rejection and no-freeze assertions. No production
+gate is weakened. All final tests/controls run on the resulting committed head.
+
+
+## Sigma S17-F1 — explicit text-only HTML boundary
+
+The image-element denylist missed rendered alternate content on HTML image inputs.
+Replace it with an explicit set of text-formatting HTML tags. Unsupported elements
+(including inputs, embedded content and scripts) refuse rather than disappearing
+from the screen view. Empty/whitespace-only normalized text also refuses. Correction
+feedback distinguishes unsupported markup and absent textual content. Keep the raw
+attribution guard, default-off behavior and unchanged persisted source/definitions.
+Native freeze and rehashed-sidecar regression cases cover the image-input escape,
+other non-text elements and empty views; controls disable each determining guard.
+
+
+## Sigma S17-F1 — preserve visible text at the formatting boundary
+
+Tag names alone cannot guarantee text-preserving HTML: attributes can hide text,
+and direction/closed-container elements alter its displayed order or visibility.
+Restrict precise-screen HTML to attribute-free emphasis, spans, paragraphs, code,
+line breaks and lists. Reject all attributes and other tags; do not emulate CSS
+or browser layout. Refuse invisible Unicode controls, selectors and fillers that
+can split an otherwise visible reporting word. Retain ordinary Markdown links and
+emphasis, raw attribution screening and unchanged accepted source/artifact text.
+Native freeze and rehashed metadata regressions reproduce hidden/style/directional
+and invisible-word escapes before repair. Separate controls disable attribute and
+Unicode guards. Default screening and provenance codec fields remain unchanged.
+
+
+## Sigma S17-F1/F2 — compatibility view and distinguishing raw-guard proof
+
+Add NFKC to the decoded formatting-free screening view; preserve original text
+and the raw guard. Bold/full-width report words, including entity and emphasis
+variants, now receive the same explicit-frame check. Ordinary typographic content
+stays unchanged through freeze/reload. This does not transliterate arbitrary
+confusables or infer authorship.
+
+The unknown-tag boundary made the earlier raw-guard mutation test redundant.
+Retain that mandatory control and add a distinguishing native/rehashed-metadata
+case containing raw attribution inside a comment omitted from the normalized
+view. The control now requires metadata rejection to fail when the raw guard is
+removed. Keep compatibility normalization under its own mutation control.

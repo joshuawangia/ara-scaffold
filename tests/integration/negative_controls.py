@@ -2938,6 +2938,9 @@ CASES += [
      "data = {k: v for k, v in inputs.items() if k != 'commitment_provenance'}",
      "data = dict(inputs)",
      'tests/runtime/test_consolidated_search_fork.py::test_native_v5_fork_keeps_history_out_of_search_prompts'),
+    ('native_stop_at_freeze', 'ara/runtime/cli.py',
+     "if args.stop_at == 'freeze':", 'if False:',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_stop_at_freeze_excludes_targets_and_search'),
 ]
 
 

@@ -62,6 +62,7 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
     alignment = sub.add_parser('resume-alignment', help='continue unfinished alignment from verified completed construction')
     alignment.add_argument('--run-dir', type=Path, required=True)
+    alignment.add_argument('--stop-at', choices=('freeze',), help='stop after the single freeze, before target generation or search')
     alignment.add_argument('--source-run', type=Path, help='copy verified completed construction into a new lifecycle')
     alignment.add_argument('--consolidation-config', type=Path, help='opt-in JSON vocabulary policy; requires --source-run')
     alignment.add_argument('--hypotheses-file', type=Path, help='JSON list of proposed H entries; requires --source-run')
@@ -373,6 +374,15 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 calls=calls_factory(config,log,run['topic'])
                 calls.alignment_resume=state
                 human=next((json.loads(e['payload_json']) for e in log.read() if e['stage']=='run' and e['label']=='HUMAN'),{})
+                if args.stop_at == 'freeze':
+                    from ara.runtime.orchestration import prepare_commitments
+                    commitments=prepare_commitments(calls,bank,run['literature'],run['audience'])
+                    log.record('run_stopped_at_freeze', controller='native_cli', command='resume-alignment',
+                               commitments=len(commitments.commitments),
+                               note='Operator requested --stop-at freeze; target generation and search were not started.')
+                    log.record('run_finished',state='frozen')
+                    print(str(args.run_dir))
+                    return 0
                 commitments,targets=prepare(calls,bank,run['literature'],run['audience'],human.get('named_position'))
                 routes=search_all(calls,engine_factory(bank,calls),commitments,targets)
                 log.record('awaiting_selection',route_ids=[r.id for r in routes],search=disclose_search(log))

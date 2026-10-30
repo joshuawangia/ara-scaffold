@@ -721,6 +721,11 @@ The construction plan and accepted-window receipts keep their original identity;
 old alignment judgments are excluded because they bind the old formulas. This
 option permits a new alignment retrieval policy without mutating the source plan.
 
+Add `--stop-at freeze` to finish after the single native freeze, before target
+generation or search. The log and generated methodology disclose this explicit
+operator boundary as `run_stopped_at_freeze`; the default command continues into
+targets/search. The frozen artifacts remain valid inputs to `fork-from-freeze`.
+
 `C.json` must explicitly set `construction_consolidate_vocabulary: true`. It may
 set `consolidation_batch_size` (1–64, default 16) and the existing
 `construction_alignment_candidates`, `construction_alignment_top_k`,

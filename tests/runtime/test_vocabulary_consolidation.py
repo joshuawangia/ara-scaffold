@@ -376,3 +376,31 @@ def test_h_only_refork_must_not_reinterpret_consolidated_source(rig,monkeypatch,
     with pytest.raises(ValueError,match='construction fork changed source'):
         prepare_commitments(h_calls,bank,'P','P')
     assert not (fork_log.path.parent/'commitments.json').exists()
+
+
+def test_native_stop_at_freeze_excludes_targets_and_search(rig,monkeypatch,tmp_path):
+    from ara.runtime import cli
+    from ara.runtime.logging import EventLog
+    from ara.runtime.freeze_fork import fork_from_freeze
+    from ara.runtime.search_alignment import catalogue_inputs
+    calls=rig[0];finish_source(calls,monkeypatch);source=calls.log.path.parent
+    before=snapshot(source);provider(calls,monkeypatch)
+    settings=tmp_path/'settings.json';settings.write_text(canonical(options()))
+    destination=tmp_path/'freeze-only'
+    def factory(config,log,topic):
+        result=ModelCalls(config,calls.provider,log,Cache(destination/'cache'),ROOT,topic)
+        monkeypatch.setattr(result,'propose_targets',lambda *a:pytest.fail('freeze stop must not propose targets'))
+        return result
+    monkeypatch.setattr(cli,'search_all',lambda *a:pytest.fail('freeze stop must not search'))
+    assert main(['resume-alignment','--source-run',str(source),'--run-dir',str(destination),
+                 '--consolidation-config',str(settings),'--stop-at','freeze'],calls_factory=factory)==0
+    events=EventLog(destination/'events.jsonl').read();stages=[e['stage'] for e in events]
+    assert stages.count('commitments_frozen')==1
+    assert stages.index('vocabulary_consolidated')<stages.index('symbol_alignment_candidates')<stages.index('commitments_frozen')<stages.index('run_stopped_at_freeze')
+    assert not {'candidates','search_started','awaiting_selection'} & set(stages)
+    assert json.loads(next(e['payload_json'] for e in events if e['stage']=='run_stopped_at_freeze'))['controller']=='native_cli'
+    assert 'run_stopped_at_freeze' in (destination/'export'/'methodology.md').read_text()
+    fork=tmp_path/'fork-check';log,run,t=fork_from_freeze(destination,fork,load_bank(ROOT/'bank'))
+    assert catalogue_inputs(fork,t)['commitment_provenance']['schema_version']=='commitment-provenance-v5'
+    assert sum(e['stage']=='commitments_frozen' for e in log.read())==1
+    assert snapshot(source)==before

@@ -4911,3 +4911,11 @@ consolidation or alignment calls, and checks all frozen artifacts byte-for-byte.
 This integration proof does not certify a future real consolidated freeze or its
 request sizes; verify that artifact through the native fork and counter after it
 exists. Main publication still requires the independent merge verdict.
+## Explicit native freeze boundary (2026-10-30)
+
+`resume-alignment --stop-at freeze` runs the normal commitment preparation,
+including optional consolidation, alignment and H, then stops after the sole
+freeze without target generation or search. The explicit native CLI boundary
+is recorded in the log and its generated methodology. The default command
+continues into targets/search unchanged. Frozen-prefix reuse validates the same
+artifacts and receipts for either stopping policy.

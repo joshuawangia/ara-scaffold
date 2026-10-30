@@ -233,10 +233,16 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         from ara.runtime.symbol_alignment import validate_alignment
         source_commitments, source_symbols = validate_alignment(value['alignment'], source_commitments,
                                                                source_symbols, source_rows)
+    precise_symbols=set()
+    def symbol_identity(s):return (s['name'],s['kind'],s['arity'],s['definition'])
     if value.get('consolidation') is not None:
         from ara.runtime.vocabulary_consolidation import validate_receipt
         source_commitments, source_symbols = validate_receipt(
             value['consolidation'], source_commitments, source_symbols, source_rows)
+        from ara.runtime.consolidation_bindings import VERSION
+        if value['consolidation']['schema_version']==VERSION:
+            # Only a fully replayed new-definition receipt grants this policy.
+            precise_symbols={symbol_identity(s) for s in value['consolidation']['symbols']}
     for source in source_commitments.commitments:
         id, row = source.id, value['commitments'][source.id]
         _validate_source(id, row)
@@ -249,16 +255,20 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
     if (value['schema_version'] not in ('commitment-provenance-v4','commitment-provenance-v5') and
             (PRECISE_SCREEN in policies) != (value['schema_version'] == 'commitment-provenance-v3')):
         raise ValueError('commitment definition screen version mismatch')
-    def definition_ok(text, ids):
+    def definition_ok(text, ids, *, precise=False):
         source_ids = {source for id in ids for source in
                       (value['commitments'][id].get('evidence_ids', [id]))}
         screens = {value['commitments'][id].get('definition_screen') for id in source_ids}
-        screen = PRECISE_SCREEN if screens == {PRECISE_SCREEN} else None
+        screen = PRECISE_SCREEN if precise or screens == {PRECISE_SCREEN} else None
         return content_definition(text, screen=screen)
+    def precise_alignment(id):
+        row=value['commitments'][id]
+        return row.get('kind')=='alignment' and bool(row['definitions']) and all(
+            symbol_identity(s) in precise_symbols for s in row['definitions'])
     if (not all(definition_ok(c.text, [c.id]) for c in source_commitments.commitments) or
             not all(definition_ok(s['definition'], s['evidence_ids']) for s in source_symbols) or
-            not all(definition_ok(c.text, [c.id]) for c in commitments.commitments) or
-            not all(definition_ok(s['definition'], s['evidence_ids']) for s in catalogue['symbols'])):
+            not all(definition_ok(c.text, [c.id],precise=precise_alignment(c.id)) for c in commitments.commitments) or
+            not all(definition_ok(s['definition'], s['evidence_ids'],precise=symbol_identity(s) in precise_symbols) for s in catalogue['symbols'])):
         raise ValueError('attribution in content definition')
     return value
 

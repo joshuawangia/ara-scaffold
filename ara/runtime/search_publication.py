@@ -54,14 +54,19 @@ class SearchPublication:
 
 
 def search_status(events):
-    phases = [json.loads(e['payload_json']) for e in events if e['stage'] == 'search_phase_finished']
-    analyses = [json.loads(e['payload_json']) for e in events if e['stage'] == 'search_analysis_failed']
+    phase_positions = [i for i, e in enumerate(events) if e['stage'] == 'search_phase_finished']
+    phases = [json.loads(events[i]['payload_json']) for i in phase_positions]
+    current = events[phase_positions[-1] + 1:] if phase_positions else events
+    analyses = [json.loads(e['payload_json']) for e in current if e['stage'] == 'search_analysis_failed']
     phase = phases[-1] if phases else None
     jobs = phase['jobs'] if phase else []
-    return {'status': ('stopped' if phase and phase['status'] == 'stopped' else
+    pauses = [json.loads(e['payload_json']) for e in events if e['stage'] == 'search_zero_inference_pause']
+    return {'status': ('paused' if phase and phase['status'] == 'paused' else
+                       'stopped' if phase and phase['status'] == 'stopped' else
                        'partial' if analyses or (phase and phase['status'] == 'partial') else
                        'complete' if phase else 'not_recorded'),
             'jobs': jobs,
+            'diagnostic_receipt': pauses[-1]['receipt_path'] if pauses and phase and phase['status'] == 'paused' else None,
             'failed_job_indices': [p['job_index'] for p in jobs if p['status'] == 'failed'],
             'cancelled_job_indices': [p['job_index'] for p in jobs if p['status'] == 'cancelled'],
             'retried_job_indices': [p['job_index'] for p in jobs if p['attempts'] > 1],

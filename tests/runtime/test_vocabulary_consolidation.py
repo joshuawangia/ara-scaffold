@@ -25,12 +25,12 @@ def provider(calls, monkeypatch, damage=None):
     def complete(kind,prompt,schema,maximum):
         value=json.loads(prompt.split('\nINPUT_JSON\n')[1]);requests.append((kind,value))
         if kind=='judge_symbol_alignment':return Response(response(dict(relation='unrelated',reason='P Q')))
-        assert kind=='build_t_batch' and value['mode']=='vocabulary_consolidation'
+        assert kind=='consolidate_vocabulary' and value['mode']=='vocabulary_consolidation'
         fresh=not value['shared_symbols']
-        ids=[c['id'] for c in value['accepted_commitments']['commitments']]
-        data=dict(commitments=[dict(id=c['id'],definition=c['text'],formula=dict(op='predicate',name='F',terms=[dict(kind='constant',name='a')])) for c in value['accepted_commitments']['commitments']],
-            new_symbols=[dict(name='F',kind='predicate',arity=1,definition='F(a)',evidence_ids=ids),dict(name='a',kind='constant',arity=0,definition='a',evidence_ids=ids)] if fresh else [],
-            alignments=[] if fresh else [dict(name=n,reason='F(a)') for n in ('F','a')])
+        handles=('n0','n1') if fresh else ('s0','s1')
+        data=dict(formulas=[dict(op='predicate',name=handles[0],terms=[dict(kind='constant',name=handles[1])]) for c in value['accepted_commitments']['commitments']],
+            new_symbols=[dict(kind='predicate',arity=1,definition='F(a)'),dict(kind='constant',arity=0,definition='a')] if fresh else [],
+            reuse=[] if fresh else [dict(handle=n,reason='F(a)') for n in handles])
         if damage:damage(data,value)
         return Response(response(data))
     monkeypatch.setattr(calls.provider,'complete',complete)
@@ -78,8 +78,8 @@ def test_native_consolidation_then_alignment_then_one_freeze(rig,monkeypatch,tmp
     assert receipt['original_commitments']==original.to_dict()
     assert receipt['before']['shared_symbols']==0 and receipt['after']['shared_symbols']==2
     assert receipt['after']['bare_atoms']==0
-    assert {c.formula.name for c in t.commitments}=={'F'}
-    assert len([k for k,v in requests if k=='build_t_batch'])==2
+    assert {c.formula.name for c in t.commitments}=={'V0_0'}
+    assert len([k for k,v in requests if k=='consolidate_vocabulary'])==2
     assert len(requests[1][1]['shared_symbols'])==2
     events=EventLog(path/'events.jsonl').read();stages=[e['stage'] for e in events]
     assert stages.count('commitments_frozen')==1
@@ -88,14 +88,14 @@ def test_native_consolidation_then_alignment_then_one_freeze(rig,monkeypatch,tmp
 
 
 @pytest.mark.parametrize('damage',[
-    lambda d,v:d['commitments'][0].update(definition='Q'),
-    lambda d,v:d['commitments'].pop(),
-    lambda d,v:d['commitments'][0].update(formula=dict(op='not',args=[d['commitments'][0]['formula']])),
-    lambda d,v:d['commitments'].append(deepcopy(d['commitments'][0])),
+    lambda d,v:d.update(commitments=[dict(definition='Q')]),
+    lambda d,v:d['formulas'].pop(),
+    lambda d,v:d['formulas'].__setitem__(0,dict(op='not',args=[d['formulas'][0]])),
+    lambda d,v:d['formulas'].append(deepcopy(d['formulas'][0])),
     lambda d,v:d['new_symbols'][0].update(definition='b holds that P') if d['new_symbols'] else None,
-    lambda d,v:d.update(alignments=[]) if v['shared_symbols'] else None,
-    lambda d,v:d['commitments'][0]['formula'].update(name='missing'),
-    lambda d,v:d['new_symbols'].append(dict(name='unused',kind='atom',arity=0,definition='P',evidence_ids=[d['commitments'][0]['id']])),
+    lambda d,v:d.update(reuse=[]) if v['shared_symbols'] else None,
+    lambda d,v:d['formulas'][0].update(name='missing'),
+    lambda d,v:d['new_symbols'].append(dict(kind='atom',arity=0,definition='P')),
 ])
 def test_invalid_consolidation_never_freezes(rig,monkeypatch,tmp_path,damage):
     rc,path,_,_=launch(rig,monkeypatch,tmp_path,damage)
@@ -140,8 +140,8 @@ def test_rehashed_receipt_tampering_refuses(rig,monkeypatch,tmp_path,damage):
     if damage=='text':r['original_commitments']['commitments'][0]['text']='Q'
     elif damage=='citation':r['original_commitments']['commitments'][0]['citation']='Q'
     elif damage=='stance':r['provenance']['P']['stance']='reported'
-    elif damage=='formula':r['batches'][0]['response']['commitments'][0]['formula']={'op':'atom','name':'Q'}
-    elif damage=='judgment':r['batches'][1]['response']['alignments']=[]
+    elif damage=='formula':r['batches'][0]['response']['formulas'][0]={'op':'atom','name':'Q'}
+    elif damage=='judgment':r['batches'][1]['response']['reuse']=[]
     if damage!='hash':r['sha256']=digest(canonical({k:v for k,v in r.items() if k!='sha256'}))
     else:r['sha256']='0'*64
     meta['sha256']=digest(canonical({k:v for k,v in meta.items() if k!='sha256'}))
@@ -200,7 +200,7 @@ def test_reported_stance_and_historical_symbol_unframes_survive(rig,monkeypatch)
     assert meta['commitments']['Q']['definition_unframes'][0]['name']=='Q'
 
 
-@pytest.mark.parametrize('required,success',[(['F','a'],True),(['P'],False)])
+@pytest.mark.parametrize('required,success',[(['V0_0','V0_1'],True),(['P'],False)])
 def test_hypotheses_bind_resulting_catalogue_not_original(rig,monkeypatch,tmp_path,required,success):
     from ara.runtime.construction_fork import inspect_construction_fork,write_construction_fork
     from ara.runtime.alignment_resume import load_alignment_resume
@@ -208,7 +208,7 @@ def test_hypotheses_bind_resulting_catalogue_not_original(rig,monkeypatch,tmp_pa
     from ara.runtime.search_alignment import catalogue_inputs
     calls=rig[0];finish_source(calls,monkeypatch);bank=load_bank(ROOT/'bank')
     h=dict(id='hypothesis:h',text='F(a)',proposer='operator',rationale='P',linked_gap='P',linked_target=None,
-           existing_symbols=required,formula=dict(op='predicate',name='F',terms=[dict(kind='constant',name='a')]))
+           existing_symbols=required,formula=dict(op='predicate',name='V0_0',terms=[dict(kind='constant',name='V0_1')]))
     plan=inspect_construction_fork(calls.log.path.parent,tmp_path/'h-fork',bank,[h],consolidation=options())
     log=write_construction_fork(plan);state=load_alignment_resume(log,bank)
     new=ModelCalls(state['run']['config'],calls.provider,log,Cache(tmp_path/'h-cache'),ROOT,'P')
@@ -277,10 +277,9 @@ def test_consolidation_alignment_and_hypothesis_refork(rig,monkeypatch,tmp_path,
     new.alignment_resume=state
     def separate_symbol(data,inputs):
         if inputs['batch_index']==1:
-            ids=[c['id'] for c in data['commitments']]
-            for c in data['commitments']:c['formula']['name']='G'
-            data['new_symbols']=[dict(name='G',kind='predicate',arity=1,definition='F(a)',evidence_ids=ids)]
-            data['alignments']=[dict(name='a',reason='a')]
+            for f in data['formulas']:f['name']='n0'
+            data['new_symbols']=[dict(kind='predicate',arity=1,definition='F(a)')]
+            data['reuse']=[dict(handle='s1',reason='a')]
     provider(new,monkeypatch,separate_symbol);complete=new.provider.complete
     def judge(kind,prompt,schema,maximum):
         if kind=='judge_symbol_alignment':return Response(response(dict(relation=relation,reason='F(a)')))
@@ -291,7 +290,7 @@ def test_consolidation_alignment_and_hypothesis_refork(rig,monkeypatch,tmp_path,
     assert meta['alignment']['judgments'][0]['relation']==relation
     assert meta['consolidation']['after']['shared_symbols']==2
     h=dict(id='hypothesis:h',text='F(a)',proposer='operator',rationale='P',linked_gap='P',linked_target=None,
-           existing_symbols=['F','a'],formula=dict(op='predicate',name='F',terms=[dict(kind='constant',name='a')]))
+           existing_symbols=['V0_0','V0_1'],formula=dict(op='predicate',name='V0_0',terms=[dict(kind='constant',name='V0_1')]))
     fork=inspect_construction_fork(log.path.parent,tmp_path/'after-h',bank,[h])
     fork_log=write_construction_fork(fork);fork_state=load_alignment_resume(fork_log,bank)
     h_calls=ModelCalls(fork_state['run']['config'],calls.provider,fork_log,Cache(tmp_path/'after-h-cache'),ROOT,'P')
@@ -325,8 +324,9 @@ def test_consolidation_refuses_disconnected_conditional(rig,monkeypatch):
     items={id:dict(id=id,kind='premise',premise_ids=[],conclusion_id=None,qualification_ids=[],applies_to=[]) for id in rows}
     items['R'].update(kind='inference',premise_ids=['P'],conclusion_id='Q')
     def disconnected(data,inputs):
-        c=next(c for c in data['commitments'] if c['id']=='R');f=c['formula']
-        c['formula']=dict(op='implies',args=[f,dict(op='implies',args=[f,f])])
+        i=next(i for i,c in enumerate(inputs['accepted_commitments']['commitments']) if c['id']=='R')
+        f=data['formulas'][i]
+        data['formulas'][i]=dict(op='implies',args=[f,dict(op='implies',args=[f,f])])
     provider(calls,monkeypatch,disconnected)
     with pytest.raises(ValueError,match='conditional endpoint mismatch'):
         consolidate(calls,t,symbols,rows,items)
@@ -347,10 +347,9 @@ def test_h_only_refork_must_not_reinterpret_consolidated_source(rig,monkeypatch,
     new.alignment_resume=state
     def separate_symbol(data,inputs):
         if inputs['batch_index']==1:
-            ids=[c['id'] for c in data['commitments']]
-            for c in data['commitments']:c['formula']['name']='G'
-            data['new_symbols']=[dict(name='G',kind='predicate',arity=1,definition='F(a)',evidence_ids=ids)]
-            data['alignments']=[dict(name='a',reason='a')]
+            for f in data['formulas']:f['name']='n0'
+            data['new_symbols']=[dict(kind='predicate',arity=1,definition='F(a)')]
+            data['reuse']=[dict(handle='s1',reason='a')]
     provider(new,monkeypatch,separate_symbol);complete=new.provider.complete
     def judge(kind,prompt,schema,maximum):
         if kind=='judge_symbol_alignment':return Response(response(dict(relation=relation,reason='F(a)')))
@@ -367,7 +366,7 @@ def test_h_only_refork_must_not_reinterpret_consolidated_source(rig,monkeypatch,
     monkeypatch.setattr(alignment,'apply_judgments',apply)
     assert meta['consolidation']['after']['shared_symbols']==2
     h=dict(id='hypothesis:h',text='F(a)',proposer='operator',rationale='P',linked_gap='P',linked_target=None,
-           existing_symbols=['F','a'],formula=dict(op='predicate',name='F',terms=[dict(kind='constant',name='a')]))
+           existing_symbols=['V0_0','V0_1'],formula=dict(op='predicate',name='V0_0',terms=[dict(kind='constant',name='V0_1')]))
     fork=inspect_construction_fork(log.path.parent,tmp_path/'after-h',bank,[h])
     fork_log=write_construction_fork(fork);fork_state=load_alignment_resume(fork_log,bank)
     h_calls=ModelCalls(fork_state['run']['config'],calls.provider,fork_log,Cache(tmp_path/'after-h-cache'),ROOT,'P')

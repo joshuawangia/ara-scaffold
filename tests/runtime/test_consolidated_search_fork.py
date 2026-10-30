@@ -21,9 +21,11 @@ def test_native_v5_fork_keeps_history_out_of_search_prompts(rig, monkeypatch, tm
     t = CommitmentSet.from_json((source/'commitments.json').read_text())
     full = catalogue_inputs(source, t)
     assert full['commitment_provenance']['schema_version'] == 'commitment-provenance-v5'
+    assert full['commitment_provenance']['consolidation']['schema_version'] == 'vocabulary-consolidation-v3'
     destination = tmp_path/'packed-fork'
     sent = []
-    target = Proposition('r', 'R', Formula('atom', name='R'))
+    target = Proposition('r', 'R', Formula('atom', name='R'),
+                         basis_commitment_ids=tuple(c.id for c in t.commitments))
     def factory(settings, log, topic):
         provider = MockProvider({})
         def complete(kind, prompt, *args):
@@ -56,6 +58,8 @@ def test_native_v5_fork_keeps_history_out_of_search_prompts(rig, monkeypatch, tm
     leaf_requests = [(kind, data) for kind, data in sent if kind in ('map_leaf', 'propose_cuts')]
     assert {kind for kind, _ in leaf_requests} == {'map_leaf', 'propose_cuts'}
     for _, data in leaf_requests:
+        assert set(target.basis_commitment_ids) <= {c['id'] for c in data['commitments']['commitments']}
+        assert data['search_slice']['basis_context']['basis_coverage'] == 1.0
         assert 'commitment_provenance' not in data
         assert data['provenance_sha256'] == full['provenance_sha256']
         assert data['consolidation_disclosure'] == full['consolidation_disclosure']

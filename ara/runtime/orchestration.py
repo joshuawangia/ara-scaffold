@@ -79,6 +79,7 @@ class NativeEngine:
                 jobs.append((engine, goal))
         results, fatal = run_search_jobs(self.calls.log, jobs, concurrency,
                                          lambda: self._engine(commitments),
+                                         pause_after=self.calls.config.get('search_zero_inference_pause_after', 10),
                                          restored={i: item[0] for i, item in restored.items()})
         for i in range(0, len(jobs), 2):
             positive, negative = jobs[i][0], jobs[i + 1][0]
@@ -190,6 +191,9 @@ def search_all(calls: ModelCalls, engine: EngineAPI, commitments: CommitmentSet,
     concurrency = calls.config.get('search_concurrency', 4)
     if type(concurrency) is not int or concurrency < 1:
         raise ValueError('search_concurrency must be a positive integer')
+    pause_after = calls.config.get('search_zero_inference_pause_after', 10)
+    if type(pause_after) is not int or pause_after < 0:
+        raise ValueError('search_zero_inference_pause_after must be a nonnegative integer')
     original_log, budget_log = calls.log, calls.budget.log
     with SerializedEventLog(original_log) as writer:
         calls.log = calls.budget.log = writer

@@ -12,14 +12,14 @@ from ara.runtime.frozen_catalogue import make_catalogue
 from ara.runtime.shared_vocabulary import vocabulary_metrics
 from ara.types import CommitmentSet, Formula
 
-VERSION = 'vocabulary-consolidation-v1'
+from ara.runtime.consolidation_bindings import VERSION, LEGACY, BOUND_VERSIONS, bind_response, catalogue_handles, rewrite_handles, screen_new_definitions
 CONFIG_KEYS = {'construction_consolidate_vocabulary', 'consolidation_batch_size',
                'construction_alignment_candidates', 'construction_alignment_top_k',
                'construction_alignment_min_score', 'construction_alignment_paper_diversity',
                'construction_alignment_max_unresolved'}
 
 
-def policy(config):
+def policy(config, *, version=VERSION):
     enabled = config.get('construction_consolidate_vocabulary', False)
     require(type(enabled) is bool, 'construction_consolidate_vocabulary must be boolean')
     size = config.get('consolidation_batch_size', 16)
@@ -27,7 +27,13 @@ def policy(config):
     require(not any(isinstance(v, dict) and any(k in v for k in
         ('construction_consolidate_vocabulary','consolidation_batch_size')) for v in config.get('stages',{}).values()),
         'consolidation settings are run-level only')
-    return dict(version=VERSION, batch_size=size, grouping='lexical-overlap-cross-source-first-v1') if enabled else None
+    if not enabled:return None
+    settings=dict(version=version,batch_size=size,grouping='lexical-overlap-cross-source-first-v1')
+    if version in BOUND_VERSIONS:settings['target_batch_size']=min(size,8)
+    if version == VERSION:
+        from ara.runtime.commitment_provenance import PRECISE_SCREEN
+        settings['definition_screen']=PRECISE_SCREEN
+    return settings
 
 
 def config_override(value):
@@ -54,8 +60,8 @@ def evidence_items(literature, rows):
                     qualification_ids=[],applies_to=[]) for id,r in rows.items()}
 
 
-def make_plan(commitments, symbols, rows, config, literature):
-    settings=policy(config)
+def make_plan(commitments, symbols, rows, config, literature, *, version=VERSION):
+    settings=policy(config, version=version)
     require(settings is not None, 'consolidation is not enabled')
     make_catalogue(commitments,symbols)
     ids={c.id for c in commitments.commitments}
@@ -81,7 +87,7 @@ def make_plan(commitments, symbols, rows, config, literature):
     while units:
         selected=list(units.pop(0))
         while units:
-            room=settings['batch_size']-len(selected)
+            room=settings.get('target_batch_size',settings['batch_size'])-len(selected)
             eligible=[u for u in units if len(u)<=room]
             if not eligible:break
             terms=set().union(*(words[id] for id in selected))
@@ -103,12 +109,17 @@ def make_plan(commitments, symbols, rows, config, literature):
 
 def batch_inputs(plan, index, original, original_symbols, rows, current, symbols, items):
     ids=set(plan['batches'][index])
-    return dict(mode='vocabulary_consolidation',consolidation_plan_id=plan['plan_id'],batch_index=index,
+    inputs=dict(mode='vocabulary_consolidation',consolidation_plan_id=plan['plan_id'],batch_index=index,
         accepted_commitments=CommitmentSet(tuple(c for c in original.commitments if c.id in ids)).to_dict(),
         original_catalogue=original_symbols,source_provenance={id:rows[id] for id in sorted(ids)},
         source_evidence=[items[id] for id in sorted(ids)],
         existing_commitments=current.to_dict()['commitments'],shared_symbols=symbols,
         commitments_sha256=plan['original_commitments_sha256'],provenance_sha256=plan['provenance_sha256'])
+    if plan['policy']['version'] in BOUND_VERSIONS:
+        encode={s['name']:f's{i}' for i,s in enumerate(symbols)}
+        inputs.update(binding_version=plan['policy']['version'],shared_symbols=catalogue_handles(symbols),
+            existing_commitments=[{**c.to_dict(),'formula':rewrite_handles(c.formula,encode).to_dict()} for c in current.commitments])
+    return inputs
 
 
 def validate_batch(data, inputs, original, prior, symbols, rows):
@@ -132,11 +143,14 @@ def validate_batch(data, inputs, original, prior, symbols, rows):
     require({a['name'] for a in data['alignments']}==set(used)&old_names and
             len(data['alignments'])==len({a['name'] for a in data['alignments']}) and
             all(a['reason'].strip() for a in data['alignments']), 'consolidation reuse judgment mismatch')
+    precise_definitions=inputs.get('binding_version')==VERSION
+    if precise_definitions:screen_new_definitions(new)
     for s in new:
         require(s['name'] in used and set(s['evidence_ids'])==used[s['name']],
                 'consolidation symbol evidence must bind its actual accepted uses')
-        screen=PRECISE_SCREEN if all(rows[id].get('definition_screen')==PRECISE_SCREEN for id in s['evidence_ids']) else None
-        require(content_definition(s['definition'],screen=screen), 'consolidation symbol is not content')
+        if not precise_definitions:
+            screen=PRECISE_SCREEN if all(rows[id].get('definition_screen')==PRECISE_SCREEN for id in s['evidence_ids']) else None
+            require(content_definition(s['definition'],screen=screen), 'consolidation symbol is not content')
     make_catalogue(combined,catalogue)  # Exact signature inventory and locally bound variables.
     require(all(_consistent(CommitmentSet((c,))) for c in fresh.commitments) and
             _consistent(CommitmentSet(tuple(c for c in combined.commitments if rows[c.id]['stance']=='endorsed'))),
@@ -156,26 +170,31 @@ def validate_receipt(receipt, final, symbols, rows):
     from pathlib import Path
     fields={'schema_version','plan','original_commitments','original_symbols','provenance',
             'evidence','batches','commitments','symbols','before','after','sha256'}
-    require(isinstance(receipt,dict) and set(receipt)==fields and receipt['schema_version']==VERSION,
+    require(isinstance(receipt,dict) and set(receipt)==fields and receipt['schema_version'] in (LEGACY, *BOUND_VERSIONS),
             'invalid consolidation receipt')
     require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),
             'consolidation receipt hash mismatch')
     original=CommitmentSet.from_dict(receipt['original_commitments']);source_rows=receipt['provenance']
     config=dict(construction_consolidate_vocabulary=True,consolidation_batch_size=receipt['plan']['policy']['batch_size'])
-    plan=make_plan(original,receipt['original_symbols'],source_rows,config,receipt['evidence'])
+    plan=make_plan(original,receipt['original_symbols'],source_rows,config,receipt['evidence'],version=receipt['schema_version'])
     require(plan==receipt['plan'], 'consolidation plan mismatch')
     require({id:rows[id] for id in source_rows}==source_rows, 'consolidation changed source provenance')
     from ara.runtime.commitment_provenance import make_commitment_provenance
     make_commitment_provenance(original,make_catalogue(original,receipt['original_symbols']),source_rows)
     current=CommitmentSet(());catalogue=[];items=evidence_items(receipt['evidence'],source_rows)
-    schema=json.loads((Path(__file__).resolve().parents[2]/'schemas/build_t_batch.json').read_text())
+    schema_name='build_t_batch' if receipt['schema_version']==LEGACY else 'consolidate_vocabulary'
+    schema=json.loads((Path(__file__).resolve().parents[2]/f'schemas/{schema_name}.json').read_text())
     require(len(receipt['batches'])==len(plan['batches']), 'consolidation missing batch')
     for index,batch in enumerate(receipt['batches']):
         inputs=batch_inputs(plan,index,original,receipt['original_symbols'],source_rows,current,catalogue,items)
-        require(set(batch)=={'index','input_sha256','response','structure'} and batch['index']==index and
+        batch_fields={'index','input_sha256','response','structure'} | ({'bindings'} if receipt['schema_version'] in BOUND_VERSIONS else set())
+        require(set(batch)==batch_fields and batch['index']==index and
                 batch['input_sha256']==digest(canonical(inputs)), 'consolidation batch input mismatch')
         validate_local(schema,batch['response'])
-        current,catalogue,structure=validate_batch(batch['response'],inputs,original,current,catalogue,source_rows)
+        materialized,bound_catalogue,bindings=bind_response(batch['response'],inputs,original,current,catalogue)
+        if receipt['schema_version'] in BOUND_VERSIONS:
+            require(batch['bindings']==bindings, 'consolidation runtime binding mismatch')
+        current,catalogue,structure=validate_batch(materialized,inputs,original,current,bound_catalogue,source_rows)
         require(structure==batch['structure'], 'consolidation structure receipt mismatch')
     require(current==final and receipt['commitments']==final.to_dict() and receipt['symbols']==catalogue and
             make_catalogue(final,symbols)==make_catalogue(current,catalogue), 'consolidation output mismatch')
@@ -190,7 +209,7 @@ def restored_receipt(events, original, symbols, rows, config, literature):
     if not applied:return None
     receipt=applied[0];final=CommitmentSet.from_dict(receipt['commitments'])
     before,before_symbols=validate_receipt(receipt,final,receipt['symbols'],rows)
-    require(before==original and before_symbols==symbols and receipt['plan']==make_plan(original,symbols,rows,config,literature),
+    require(before==original and before_symbols==symbols and receipt['plan']==make_plan(original,symbols,rows,config,literature,version=receipt['schema_version']),
             'consolidation restored source mismatch')
     return receipt
 
@@ -201,23 +220,27 @@ def consolidate(calls, original, original_symbols, rows, literature):
     restored=restored_receipt(events,original,original_symbols,rows,calls.config,literature)
     if restored:return CommitmentSet.from_dict(restored['commitments']),restored['symbols'],rows,restored
     plan=make_plan(original,original_symbols,rows,calls.config,literature)
+    prior_plans=[json.loads(e['payload_json']) for e in events if e['stage']=='vocabulary_consolidation_plan']
+    require(all(p==plan for p in prior_plans), 'consolidation protocol or plan changed; use a fresh lifecycle')
+    kind='consolidate_vocabulary'
     calls.log.record('vocabulary_consolidation_plan',**plan)
     current=CommitmentSet(());symbols=[];batches=[];items=evidence_items(literature,rows)
     for index in range(len(plan['batches'])):
         inputs=batch_inputs(plan,index,original,original_symbols,rows,current,symbols,items)
-        calls.count_request('build_t_batch',inputs,admission=True)
+        calls.count_request(kind,inputs,admission=True)
         def check(data):
-            result,catalogue,structure=validate_batch(data,inputs,original,current,symbols,rows)
+            materialized,bound_catalogue,bindings=bind_response(data,inputs,original,current,symbols)
+            result,catalogue,structure=validate_batch(materialized,inputs,original,current,bound_catalogue,rows)
             measured=calls.count_request('propose_targets',dict(commitments=result.to_dict(),count=calls.config['target_candidates'],named_position=None),admission=True)
             require(measured.initial_input_tokens<=calls.config['working_t_token_budget'] and measured.initial_input_tokens+measured.context_output_tokens<=calls.config['model_context_token_bound'],
                     'consolidation working T capacity exceeded')
-            baseline=calls.count_request('build_t_batch',{**inputs,'accepted_commitments':{'commitments':[]},'original_catalogue':[],'shared_symbols':[]})
-            counted=calls.count_request('build_t_batch',{**inputs,'accepted_commitments':{'commitments':[]},'original_catalogue':[],'shared_symbols':catalogue})
+            baseline=calls.count_request(kind,{**inputs,'accepted_commitments':{'commitments':[]},'original_catalogue':[],'shared_symbols':[]})
+            counted=calls.count_request(kind,{**inputs,'accepted_commitments':{'commitments':[]},'original_catalogue':[],'shared_symbols':catalogue_handles(catalogue)})
             require(counted.initial_input_tokens-baseline.initial_input_tokens<=calls.config['working_t_symbol_token_budget'],
                     'consolidation catalogue capacity exceeded')
-            return result,catalogue,structure,deepcopy(data)
-        current,symbols,structure,data=calls.call('build_t_batch',inputs,check)
-        batch=dict(index=index,input_sha256=digest(canonical(inputs)),response=data,structure=structure)
+            return result,catalogue,structure,deepcopy(data),bindings
+        current,symbols,structure,data,bindings=calls.call(kind,inputs,check)
+        batch=dict(index=index,input_sha256=digest(canonical(inputs)),response=data,structure=structure,bindings=bindings)
         batches.append(batch)
         calls.log.record('vocabulary_consolidation_batch',plan_id=plan['plan_id'],**batch,
             note='Predicate reuse and formula interpretation are model judgments; accepted source content is unchanged.')

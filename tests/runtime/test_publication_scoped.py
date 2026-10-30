@@ -148,3 +148,33 @@ def test_native_publication_imports_legacy_only_with_verified_export(rig, monkey
     assert '[cite:' not in (directory/'paper.md').read_text()
     assert result['original_sha256']==digest(canonical(original))
     assert next(json.loads(e['payload_json'])['draft'] for e in log.read() if e['stage']=='final_draft')==original
+
+
+def test_codex_writer_window_stays_on_codex_audit_not_claude_polish(rig):
+    import copy, json
+    from types import SimpleNamespace
+    from ara.runtime.codex_window import apply_context_window
+    from ara.runtime.construction_stages import dispatch_settings
+    from ara.runtime.publication import publication_command
+    from test_calls import graph
+    calls,_,log=rig
+    config=copy.deepcopy(calls.config)
+    config.update(provider='codex_cli',model='gpt-6-luna',model_context_window=872000,
+                  model_context_margin_tokens=16384,model_context_token_bound=839232)
+    log.record('run_started',config=config,topic='P')
+    route=graph();log.record('route',graph=route.to_dict())
+    draft_path=log.path.parent/'draft.json';draft_path.write_text(json.dumps(paper()))
+    args=SimpleNamespace(command='polish',run_dir=log.path.parent,route=route.id,draft=draft_path,
+                         min_words=3000,audit_provider='codex_cli',audit_model=None,unknown_usage_policy=None,
+                         literature_currency=[])
+    class Captured(Exception):pass
+    def factory(settings,*unused,**kwargs):
+        assert settings['provider']=='claude_code'
+        assert apply_context_window(settings) is None
+        assert settings['model_context_token_bound']<=200000
+        audit=dispatch_settings(settings,'audit_publication')[2]
+        assert audit['provider']=='codex_cli' and audit['model_context_window']==872000
+        assert audit['model_context_token_bound']>200000
+        raise Captured
+    with pytest.raises(Captured):publication_command(args,log,calls.root,factory)
+    assert json.loads(log.read()[0]['payload_json'])['config']==config

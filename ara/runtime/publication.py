@@ -334,11 +334,21 @@ def publication_command(args, log, root, calls_factory):
         config.update(provider='claude_code',model=MODEL,stages={},fallbacks=[],validation_attempts=1,
                       publication_min_words=minimum,essay_min_words=minimum,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
+        # A writer's Codex client window belongs to the separately selected
+        # Codex auditor, never to the Claude publication provider.
+        if config.pop('model_context_window', None) is not None:
+            import yaml
+            default_bound = yaml.safe_load((root/'config.yaml').read_text())['model_context_token_bound']
+            config['model_context_token_bound'] = min(config['model_context_token_bound'], default_bound)
+        config.pop('model_context_margin_tokens', None)
         if args.audit_provider == 'codex_cli':
             audit_model = args.audit_model or writer_settings['model']
             require(audit_model.startswith('gpt-'), 'Codex publication audit requires a configured GPT model')
             config['stages']['audit_publication'] = dict(provider='codex_cli', model=audit_model,
                 effort=writer_settings['effort'], system_prompt=writer_settings.get('system_prompt', ''))
+            config['stages']['audit_publication'].update({key: writer_settings[key] for key in
+                ('model_context_window', 'model_context_margin_tokens', 'propose_targets_max_output_tokens')
+                if key in writer_settings})
         elif args.audit_model is not None:
             require(args.audit_model == MODEL, 'Claude publication audit uses the pinned publication model')
         config.setdefault('claude_code', {}).setdefault('timeout_seconds', 900)

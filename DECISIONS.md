@@ -4670,3 +4670,15 @@ content; formerly admitted formatted report frames now refuse on reload.
 Repair is isolated from the pinned ae7db53 suite/control run. Red-first native
 freeze and metadata-reload regressions establish the defect; final exact-head
 suite/control receipts are recorded in the external round17 report.
+
+
+### S17-F1 markup completion
+
+Independent repair review also reproduced HTML-tag and entity escapes. Precise
+screening now checks both raw text and a formatting-free view built with the
+existing Markdown parser and standard-library HTML text/entity parsing. This
+recognizes report words split by formatting and preserves block/sentence
+boundaries. The view is used only for screening, never persisted in place of
+content or source text. Legacy screening and codec fields remain unchanged.
+All earlier exact-head gates continue in their original isolated checkouts;
+final repaired-head evidence is separate.

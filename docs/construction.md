@@ -579,3 +579,9 @@ emphasis, quotes, a colon or a dash separates the verb from its complement marke
 Sentence-ending punctuation remains a boundary. This same check runs when loading
 persisted provenance; a previously admitted formatted report frame refuses rather
 than being accepted under a recorded precise-screen marker. Source text is intact.
+
+Precise screening checks raw text and a formatting-free view, using Markdown
+tokens plus HTML text/entity parsing. Formatting inside report words, HTML tags,
+character entities and line-break tags cannot hide the tested explicit frames.
+The normalized view is never substituted into accepted definitions, catalogue
+entries or provenance. The legacy screen remains unchanged.

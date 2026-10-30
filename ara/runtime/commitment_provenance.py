@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import re
+from html import unescape
+from html.parser import HTMLParser
 from pathlib import Path
 
 from ara.runtime.cache import canonical, digest
@@ -29,13 +31,53 @@ _PRECISE_ATTRIBUTION = re.compile(
     r"[’']s\s+(view|position|thesis|claim|belief|account)\b", re.I)
 
 
+class _DefinitionText(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts = []
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+    def handle_starttag(self, tag, attrs):
+        if tag in {'br', 'p', 'div', 'li', 'blockquote', 'pre', 'tr', 'td', 'th',
+                   'section', 'article', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
+            self.parts.append(' ')
+
+    def handle_endtag(self, tag):
+        self.handle_starttag(tag, ())
+
+
+def _definition_screen_text(text):
+    """Formatting-free screening view only; never replace persisted content."""
+    from markdown_it import MarkdownIt
+    parts = []
+    for token in MarkdownIt('commonmark').parse(unescape(text)):
+        if token.type == 'inline':
+            for child in token.children or ():
+                if child.type in ('text', 'code_inline', 'html_inline', 'image'):
+                    parts.append(child.content)
+                elif child.type in ('softbreak', 'hardbreak'):
+                    parts.append(' ')
+        elif token.type in ('html_block', 'code_block', 'fence'):
+            parts.append(token.content)
+        elif token.block and token.nesting == -1:
+            parts.append(' ')
+    parser = _DefinitionText()
+    parser.feed(''.join(parts))
+    parser.close()
+    return ''.join(parser.parts)
+
+
 def content_definition(text: str, *, screen: str | None = None) -> bool:
     # One lexicon shared with search; lexical screening is not semantic proof.
     from ara.runtime.target_policy import attributed_report
     if screen not in (None, PRECISE_SCREEN):
         raise ValueError('unknown content definition screen')
     attributed = _PRECISE_ATTRIBUTION.search if screen == PRECISE_SCREEN else attributed_report
-    return isinstance(text, str) and bool(text.strip()) and not attributed(text)
+    if not isinstance(text, str) or not text.strip() or attributed(text):
+        return False
+    return screen != PRECISE_SCREEN or not attributed(_definition_screen_text(text))
 
 
 def definition_issues(data: dict, *, screen: str | None = None) -> list[dict]:

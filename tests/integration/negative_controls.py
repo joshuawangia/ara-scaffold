@@ -2627,6 +2627,12 @@ CASES += [
 ]
 
 
+CASES += [
+    ('precise_markup_normalization', 'ara/runtime/commitment_provenance.py', 'not attributed(_definition_screen_text(text))', 'not attributed(text)', 'tests/runtime/test_precise_attribution_formatting.py'),
+    ('precise_markup_raw_guard', 'ara/runtime/commitment_provenance.py', 'or not text.strip() or attributed(text):', 'or not text.strip():', 'tests/runtime/test_precise_attribution_formatting.py'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

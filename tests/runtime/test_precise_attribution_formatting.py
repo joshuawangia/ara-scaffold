@@ -12,7 +12,11 @@ from test_extraction import rig, response
 
 FRAMES = ['b holds **that** P', 'b states *that* P', 'b maintains: that P',
           'b holds _that_ P', 'b states `that` P', 'b maintains — that P',
-          'b holds, that P', 'b maintains; that P']
+          'b holds, that P', 'b maintains; that P',
+          'b holds <em>that</em> P', 'b states <strong>that</strong> P',
+          'b maintains &quot;that&quot; P', 'b h&#111;lds <em>th&#97;t</em> P',
+          'b h**olds** th**at** P', 'b holds<br>that P',
+          'b holds &lt;em&gt;that&lt;/em&gt; P', 'b <holds> that P']
 
 
 @pytest.mark.parametrize('text', FRAMES)
@@ -52,6 +56,31 @@ def test_formatted_report_frame_rejected_when_loading_metadata(text):
 
 
 @pytest.mark.parametrize('text', ['P holds', 'P and Q hold', 'P states are Q',
-    'P maintains Q', 'P holds. That Q holds is R.'])
+    'P maintains Q', 'P holds. That Q holds is R.',
+    'P <em>holds</em>', 'P <span>states</span> are Q',
+    'P &lt; Q', 'P holds.<br>That Q holds is R.'])
 def test_ordinary_state_predication_stays_content(text):
     assert content_definition(text,screen=PRECISE_SCREEN)
+
+
+def test_markup_screen_never_rewrites_accepted_definitions_or_source(rig, monkeypatch):
+    from ara.runtime.extraction import HEADER
+    from ara.runtime.commitment_provenance import load_commitment_provenance
+    calls, provider, literature, _ = setup(rig, monkeypatch)
+    calls.config['construction_precise_attribution'] = True
+    source = {i['id']:i['text'] for p in json.loads(literature[len(HEADER):])['papers'] for i in p['items']}
+    definition = 'P <em>holds</em>'
+    complete = provider.complete
+    def respond(kind, prompt, schema, maximum):
+        value = json.loads(complete(kind, prompt, schema, maximum).text())
+        if kind == 'build_t_batch':
+            for row in value['commitments'] + value['new_symbols']:
+                row['definition'] = definition
+        return Response(response(value))
+    monkeypatch.setattr(provider, 'complete', respond)
+    result = freeze(calls, literature)
+    catalogue = json.loads((calls.log.path.parent/'frozen-t.json').read_text())['symbol_catalogue']
+    metadata = load_commitment_provenance(calls.log.path.parent,result,catalogue)
+    assert all(c.text == definition for c in result.commitments)
+    assert all(s['definition'] == definition for s in catalogue['symbols'])
+    assert all(row['source_text'] == source[id] for id,row in metadata['commitments'].items())

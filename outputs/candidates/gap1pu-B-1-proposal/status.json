@@ -1,0 +1,279 @@
+{
+  "id": "gap1pu-B-1-proposal",
+  "stage": "refused",
+  "words": 3171,
+  "bib": 5,
+  "markers": 19,
+  "flags_per_sample": [
+    [
+      0,
+      3,
+      4
+    ],
+    [
+      5,
+      4,
+      0
+    ]
+  ],
+  "refusal_reason": {
+    "error_type": "EssayAuditFailed",
+    "message": "Substantive adverse history remains binding at exhausted three-round repair cap"
+  },
+  "pdf": null,
+  "run_dir": "/home/dev/ara-work/nu4/runs/proposal-mode/gap1pu-B-1-proposal/run",
+  "source_head": "849a9cde385661fecf4ab7971d3526ceb615107d",
+  "substage": "finished",
+  "operator_selection": "all queued candidates; final submission selection remains with operator",
+  "updated_at": "2026-10-30T17:07:23.048151+00:00",
+  "proposal_mode": true,
+  "disclosure": "ARA-proposed thesis; bridge principle argued, not mechanically derived",
+  "candidate_status": "OPEN-proposal",
+  "resumed_draft": null,
+  "route_id": "a08ae7ed3885:r0",
+  "route_status": "OPEN",
+  "length_policy": {
+    "policy": "native-proposal-sections",
+    "essay_min_words": 3000,
+    "runtime_word_limit": 6000,
+    "origin": "orchestrator decision: route-proportional length; operator instruction: draft all candidates",
+    "audit_samples": 3,
+    "repair_round_limit": 3,
+    "citation_policy": "unchanged"
+  },
+  "initial_audit_flags": [
+    3,
+    2,
+    1,
+    0,
+    0,
+    3,
+    4
+  ],
+  "final_consensus": "complete",
+  "exit_code": 2,
+  "run_archived": true,
+  "run_archive": "/home/dev/ara-work/nu4/runs/proposal-mode/gap1pu-B-1-proposal/refused-run.tar.gz",
+  "archive_verification": "/home/dev/ara-work/nu4/runs/proposal-mode/gap1pu-B-1-proposal/archive-verification.json",
+  "final_union_flags": [
+    {
+      "reason": "unsupported_claim",
+      "role": "unsupported_claim",
+      "sentence": 14,
+      "text": "This paper argues that  expresses the necessity direction: under the proposal, if the relevant information-sensitive safety condition is preserved, this criterion does not require retraction.",
+      "samples": [
+        3
+      ],
+      "classification": "substantive",
+      "classification_reason": "Already explicitly paper-owned; the adverse label concerns the necessity-direction reasoning, not a missing ownership cue. Cleanup also removed a quoted logical expression. Restoring or defending that reasoning is beyond inserting required provenance labels.",
+      "binding_under_current_standard": true
+    },
+    {
+      "reason": "unsupported_claim",
+      "role": "unsupported_claim",
+      "sentence": 40,
+      "text": "This paper argues that the literature comparison is bounded: the supplied dossier reports  for the specified component and describes it as partially anticipated by Mighty Knowledge and Dinges (2021).",
+      "samples": [
+        2,
+        3
+      ],
+      "classification": "substantive",
+      "classification_reason": "Already explicitly paper-owned, but reports substantive literature/dossier findings without a supporting source citation. The ownership prefix does not turn a source report into a proposed principle. Cleanup removed quoted search-status text; required provenance labels cannot repair the evidential claim.",
+      "binding_under_current_standard": true
+    },
+    {
+      "reason": "unsupported_claim",
+      "role": "unsupported_claim",
+      "sentence": 58,
+      "text": "This paper argues that the dossier\u2019s  result is limited to its stated component and 2018\u20132026 search scope.",
+      "samples": [
+        2,
+        3
+      ],
+      "classification": "substantive",
+      "classification_reason": "Already explicitly paper-owned, but reports substantive literature/dossier findings without a supporting source citation. The ownership prefix does not turn a source report into a proposed principle. Cleanup removed quoted search-status text; required provenance labels cannot repair the evidential claim.",
+      "binding_under_current_standard": true
+    },
+    {
+      "reason": "unsupported_claim",
+      "role": "unsupported_claim",
+      "sentence": 122,
+      "text": "This paper argues that the supplied literature mapping reports  only for its stated component and bounded 2018\u20132026 search scope; its currency verdict is partial, including partial anticipation by Mighty Knowledge and Dinges (2021), inaccessible comparisons, and incomplete citation indexing.",
+      "samples": [
+        2,
+        3
+      ],
+      "classification": "substantive",
+      "classification_reason": "Already explicitly paper-owned, but reports substantive literature/dossier findings without a supporting source citation. The ownership prefix does not turn a source report into a proposed principle. Cleanup removed quoted search-status text; required provenance labels cannot repair the evidential claim.",
+      "binding_under_current_standard": true
+    }
+  ],
+  "final_audited_draft_sha256": "bb596e8e636c6deee2fb1cdad08643a7c2fb5682b39dc8af059d7bad885df1b4",
+  "final_audited_words": 3187,
+  "final_union_classification": {
+    "labelling_format": 0,
+    "substantive": 4
+  },
+  "deterministic_label_repair": {
+    "applied": true,
+    "reason": "Required disclosure metadata and Proposal heading normalized without substantive changes or repair reset; original setup refusal and final refusal retained"
+  },
+  "policy_review": {
+    "standard": "operator four-rule proposal standard",
+    "classification_by": "nu4 review",
+    "marking_ritual_only": 0,
+    "substantive": 4,
+    "semantic_repair_cap": 3,
+    "repair_rounds_reset": false,
+    "fresh_final_gate": "complete",
+    "disk_free_bytes": 9384349696,
+    "disk_reserve_bytes": 6000000000,
+    "projected_restore_and_gate_bytes": 770067669,
+    "reason": "Fresh gate completed; four original substantive findings plus two new citation-support flags remain binding at3/3repairs",
+    "restore_integrity_receipt": "/home/dev/ara-work/reports/candidates/gap1pu-B-1-proposal/four-rule-restore-integrity.json",
+    "setup_refusal": "/home/dev/ara-work/reports/candidates/gap1pu-B-1-proposal/four-rule-setup-refusal.json",
+    "source_head": "39d33fe051cf9520eb449f569b8d59ba2da2cc79",
+    "repair_rounds_used": 3,
+    "faithful": false,
+    "fresh_flags_per_sample": [
+      5,
+      4,
+      0
+    ],
+    "historical_adverse_count": 2,
+    "union_flags": [
+      {
+        "sentence": 13,
+        "role": "unsupported_claim",
+        "reason": "unsupported_claim"
+      },
+      {
+        "sentence": 35,
+        "role": "source_claim",
+        "reason": "miscited_source_claim"
+      },
+      {
+        "sentence": 36,
+        "role": "source_claim",
+        "reason": "miscited_source_claim"
+      },
+      {
+        "sentence": 39,
+        "role": "unsupported_claim",
+        "reason": "unsupported_claim"
+      },
+      {
+        "sentence": 57,
+        "role": "unsupported_claim",
+        "reason": "unsupported_claim"
+      },
+      {
+        "sentence": 122,
+        "role": "unsupported_claim",
+        "reason": "unsupported_claim"
+      }
+    ],
+    "reservation_released": true,
+    "reservation_released_bytes": 770000000,
+    "cleanup_performed": false
+  },
+  "word_basis": "current four-rule final-audited draft",
+  "continuing_run_restored": true,
+  "historical_archive_retained": true,
+  "four_rule_audited_draft_sha256": "a85f71f5c5b20c0d5719a595d8ce4fa9a3f995cd4ffe4ef45da19dde249109b0",
+  "four_rule_final_union_flags": [
+    {
+      "sentence": 13,
+      "role": "unsupported_claim",
+      "reason": "unsupported_claim",
+      "text": "This paper argues that  expresses the necessity direction: under the proposal, if the relevant information-sensitive safety condition is preserved, this criterion does not require retraction.",
+      "samples": [
+        2
+      ],
+      "historical_events": [
+        12018
+      ],
+      "classification": "substantive",
+      "binding_under_current_standard": true,
+      "classification_reason": "Citation-support or unsupported-claim finding; required disclosure/heading labels do not repair the substantive issue. Raw findings remain binding at the existing3-round cap."
+    },
+    {
+      "sentence": 35,
+      "role": "source_claim",
+      "reason": "miscited_source_claim",
+      "text": "This paper argues that MacFarlane\u2019s one-way rule cannot simply be reversed to establish that safety failure is necessary for an obligation.",
+      "samples": [
+        1
+      ],
+      "historical_events": [],
+      "classification": "substantive",
+      "binding_under_current_standard": true,
+      "classification_reason": "Citation-support or unsupported-claim finding; required disclosure/heading labels do not repair the substantive issue. Raw findings remain binding at the existing3-round cap."
+    },
+    {
+      "sentence": 36,
+      "role": "source_claim",
+      "reason": "miscited_source_claim",
+      "text": "This paper argues that permission to retract even when an assertion is still thought true does not, by itself, establish that such retraction is required.",
+      "samples": [
+        1
+      ],
+      "historical_events": [],
+      "classification": "substantive",
+      "binding_under_current_standard": true,
+      "classification_reason": "Citation-support or unsupported-claim finding; required disclosure/heading labels do not repair the substantive issue. Raw findings remain binding at the existing3-round cap."
+    },
+    {
+      "sentence": 39,
+      "role": "unsupported_claim",
+      "reason": "unsupported_claim",
+      "text": "This paper argues that the literature comparison is bounded: the supplied dossier reports  for the specified component and describes it as partially anticipated by Mighty Knowledge and Dinges (2021).",
+      "samples": [
+        1,
+        2
+      ],
+      "historical_events": [
+        12012,
+        12018
+      ],
+      "classification": "substantive",
+      "binding_under_current_standard": true,
+      "classification_reason": "Citation-support or unsupported-claim finding; required disclosure/heading labels do not repair the substantive issue. Raw findings remain binding at the existing3-round cap."
+    },
+    {
+      "sentence": 57,
+      "role": "unsupported_claim",
+      "reason": "unsupported_claim",
+      "text": "This paper argues that the dossier\u2019s  result is limited to its stated component and 2018\u20132026 search scope.",
+      "samples": [
+        1,
+        2
+      ],
+      "historical_events": [
+        12012,
+        12018
+      ],
+      "classification": "substantive",
+      "binding_under_current_standard": true,
+      "classification_reason": "Citation-support or unsupported-claim finding; required disclosure/heading labels do not repair the substantive issue. Raw findings remain binding at the existing3-round cap."
+    },
+    {
+      "sentence": 122,
+      "role": "unsupported_claim",
+      "reason": "unsupported_claim",
+      "text": "This paper argues that the supplied literature mapping reports  only for its stated component and bounded 2018\u20132026 search scope; its currency verdict is partial, including partial anticipation by Mighty Knowledge and Dinges (2021), inaccessible comparisons, and incomplete citation indexing.",
+      "samples": [
+        1,
+        2
+      ],
+      "historical_events": [
+        12012,
+        12018
+      ],
+      "classification": "substantive",
+      "binding_under_current_standard": true,
+      "classification_reason": "Citation-support or unsupported-claim finding; required disclosure/heading labels do not repair the substantive issue. Raw findings remain binding at the existing3-round cap."
+    }
+  ],
+  "flags_per_sample_basis": "Chronological original gate followed by four-rule recheck; prior and current union classifications retained separately"
+}

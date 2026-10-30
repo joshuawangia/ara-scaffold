@@ -14,7 +14,10 @@ Nothing here is a submission verdict. Route selection is the operator's.
 | Route essays, round 5 (4,710 / 4,613 words) | `essays/round5/` | Native exports; final audit passed only by cache replay of a non-deterministic audit |
 | Route essays, round 6 | `essays/round6/*-NO-CITATIONS.txt` | k=3 audit passed, but verification stripped every citation — not usable as-is (round 7 fixing) |
 | Early drafts | `essays/drafts/` | Unverified |
-| L3 gap paper | — | Not yet produced: gap search running from the gap1r freeze |
+| **B/2 proposal paper** (verified original, 3,168 w) | `candidates/gap1pu-B-2-proposal/paper.pdf` | ARA-proposed thesis; bridge argued. k=3 audit [0,0,0]; Opus polish refused, not used |
+| **T2 proposal paper** (verified original, 3,427 w) | `candidates/gap1pu-C-T2-iff-proposal/paper.pdf` | eps2-proposed thesis (tested in ARA); bridge argued. k=3 audit [0,0,0]; polish refused |
+| B/1, A/3 proposal papers | `candidates/gap1pu-B-1-proposal`, `gap1pu-A-3-proposal` | Refused: substantive audit flags after 3 repairs |
+| ARA-derived (CLOSED) route paper | — | None yet: search pending packing fix (xi) and vocabulary consolidation (sigma) |
 
 ## Reports
 

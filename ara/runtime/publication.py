@@ -158,6 +158,11 @@ def polish(calls, route, draft, *, currency=None):
     from ara.runtime.proposal import activate, validate_disclosure
     proposal = activate(calls, route)
     validate_disclosure(proposal, draft, allow_legacy=bool(proposal) and verified_legacy_import(calls.log.read(), route, draft))
+    from ara.runtime.publication_resume import repair_state
+    resumed = repair_state(calls.log.read(), route.id, digest(canonical(draft)))
+    if resumed['candidate'] is not None:
+        calls.screen_imported_draft(as_draft(resumed['candidate']['markdown'], draft['bibliography']),
+                                    kind='audit_publication')
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -201,32 +206,50 @@ def polish(calls, route, draft, *, currency=None):
     chunks = sections(draft,calls.log.read())
     original = '\n\n'.join(chunks)
     calls.log.record('publication_started', route_id=route.id, original_draft=draft,
-                     original_sha256=digest(canonical(draft)), requested_model=MODEL)
+                     original_sha256=digest(canonical(draft)), requested_model=MODEL,
+                     resumed_repair_rounds=resumed['repair_rounds'])
     base = dict(**({'proposal': proposal} if proposal else {}), outline=calls.essay_outline(route), source_evidence=evidence,
                 minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'],
                 figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'], literature_currency=currency)
     accepted = []
-    candidate = None
+    candidate = resumed['candidate']
+    if candidate is not None:
+        check_whole(candidate)
     audit = dict(faithful=False)
     failure = None
-    repair_rounds = 0
-    accepted_repair_rounds = 0
+    repair_rounds = resumed['repair_rounds']
+    accepted_repair_rounds = resumed['accepted_repair_rounds']
+    native_citations = dict(status='not_run',reason='polish failed; original draft retained')
     try:
-        for index,chunk in enumerate(chunks):
-            result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
-                markdown=chunk,paragraphs=paragraphs(chunk)),
-                lambda value,chunk=chunk: validate_polish(value,chunk,figure_ids))
-            accepted.append(result)
-            calls.log.record('publication_section',route_id=route.id,section_index=index,**result)
-        merged = '\n\n'.join(v['markdown'] for v in accepted)
-        candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
-            original_markdown=original,paragraphs=paragraphs(merged)),
-            check_composed)
-        for attempt in range(4):
+        if candidate is None:
+            for index,chunk in enumerate(chunks):
+                result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
+                    markdown=chunk,paragraphs=paragraphs(chunk)),
+                    lambda value,chunk=chunk: validate_polish(value,chunk,figure_ids))
+                accepted.append(result)
+                calls.log.record('publication_section',route_id=route.id,section_index=index,**result)
+            merged = '\n\n'.join(v['markdown'] for v in accepted)
+            candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
+                original_markdown=original,paragraphs=paragraphs(merged)),
+                check_composed)
+        for attempt in range(repair_rounds, 4):
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
             try:
                 audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                try:
+                    verifier = calls._for_construction_stage('audit_publication', {})
+                    calls.log.record('publication_verification_provider',
+                                     provider=verifier.config['provider'], model=verifier.config['model'])
+                    cleaned, verification = verifier.verify_originality_citations(current)
+                    native_citations = dict(status='pass' if cleaned == current and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
+                    if native_citations['status'] == 'pass':
+                        audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                except (ClaudeCodeError, Rejected) as exc:
+                    if str(exc) != 'stage_requires_api_provider':
+                        raise
+                    native_citations = dict(status='blocked',reason=str(exc))
+                    calls.log.record('publication_verification_blocked',**native_citations)
                 break
             except EssayAuditFailed as rejection:
                 audit = rejection.result
@@ -273,21 +296,8 @@ def polish(calls, route, draft, *, currency=None):
     success = bool(audit['faithful'])
     chosen = as_draft(candidate['markdown'],draft['bibliography']) if success else draft
     local_citations = citation_check(chosen,evidence)
-    native_citations = dict(status='not_run',reason='polish failed; original draft retained')
-    if success:
-        try:
-            verifier = calls._for_construction_stage('audit_publication', {})
-            calls.log.record('publication_verification_provider',
-                             provider=verifier.config['provider'], model=verifier.config['model'])
-            cleaned, verification = verifier.verify_originality_citations(chosen)
-            native_citations = dict(status='pass' if cleaned == chosen and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
-            if native_citations['status'] == 'pass':
-                audit_consensus(calls,route,chosen,publication_context=publication_context)
-        except (ClaudeCodeError, Rejected) as exc:
-            if str(exc) != 'stage_requires_api_provider':
-                raise
-            native_citations = dict(status='blocked',reason=str(exc))
-            calls.log.record('publication_verification_blocked',**native_citations)
+    if not success:
+        native_citations = dict(status='not_run',reason='polish failed; original draft retained')
     markdown = candidate['markdown'] if success else '# '+draft['title']+'\n\n'+original
     placements = candidate['figure_placements'] if success else [
         dict(id=f['id'],after_paragraph=len(paragraphs(markdown))-1) for f in figures]

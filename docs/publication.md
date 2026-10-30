@@ -54,6 +54,17 @@ k>=3 adverse-history audits remain unchanged; requests that still exceed admissi
 refuse without truncation. The policy is an admission estimate, not a serving-token
 measurement or a guarantee that a provider will accept a particular request.
 
+The audit after citation verification shares the same three-round repair loop.
+A late flag receives the same occurrence-bound repair permissions and fresh audit
+requirements as an earlier flag. It cannot be outvoted by clean samples. Restarting
+an interrupted publication recovers its last accepted repair from the append-only
+log for the same route and original-draft hash; it screens that draft through the
+effective providers before logging or dispatch, revalidates it, and resumes at the
+next unused round. It does not rerun section or whole-paper editing. The ledger
+rejects consumed-round restarts, exhausted budgets, excess structural attempts and
+unfinished repair outputs rather than replenishing retries. A completed third-round
+refusal stands; retain the verified pre-polish export as the fallback deliverable.
+
 The structured response contains Markdown, figure placements and a paragraph
 change log. The whole paper requires a 150–200-word abstract, consecutive numbered
 sections and, by default, 3,000–6,000 reading words excluding references and internal

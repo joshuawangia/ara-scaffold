@@ -45,50 +45,61 @@ def local_catalogue(events, ids):
     return found
 
 
-def activate(calls, route, packet=None):
-    """Validate and retain one immutable packet before any writer or resumed draft."""
+def validated_packet(route, packet, events):
+    """Validate a paper proposal without logging, dispatch, or changing frozen T."""
     from ara.runtime.calls import require
     from ara.runtime.citations import catalogue
     from ara.runtime.route_policy import frozen_from_events
+    prior = from_events(events, route.id)
+    require(isinstance(packet, dict) and set(packet) == {
+        'route_id', 'target_text', 'thesis_origin', 'dossier_mapping', 'missing_premise',
+        'frozen_evidence_ids', 'local_sources', 'minimum_words'}, 'invalid proposal packet fields')
+    require(route.status == 'OPEN' and packet['route_id'] == route.id, 'proposal requires matching OPEN route')
+    target = next(n.proposition.text for n in route.nodes if n.id == route.root_id)
+    require(packet['target_text'] == target, 'proposal target differs from route')
+    require(packet['thesis_origin'] in LABELS, 'unknown proposal thesis origin')
+    require(all(isinstance(packet[k], str) and packet[k].strip() for k in
+                ('dossier_mapping', 'missing_premise')), 'proposal needs dossier and missing premise')
+    require(type(packet['minimum_words']) is int and 3000 <= packet['minimum_words'] <= 4500,
+            'proposal minimum must be 3000–4500')
+    require(len(canonical(packet)) <= 120000, 'proposal packet exceeds bound')
+    if prior:
+        require(prior['packet'] == packet, 'proposal packet is immutable; use an independent run')
+        return prior
+    else:
+        ids = packet['frozen_evidence_ids']
+        require(isinstance(ids, list) and ids and all(isinstance(i,str) for i in ids)
+                and len(set(ids)) == len(ids), 'proposal needs unique frozen evidence ids')
+        frozen = frozen_from_events(events)
+        require(frozen is not None and all(frozen.get(i) is not None for i in ids), 'proposal evidence missing from frozen T')
+        entries = catalogue(events, set(ids))
+        require(entries and all(e['status'] == 'verified' for e in entries.values()), 'proposal frozen evidence lacks verified local pages')
+        local = {}
+        require(isinstance(packet['local_sources'], list), 'proposal local sources must be a list')
+        for source in packet['local_sources']:
+            item = _read_source(source)
+            tid = item['id']
+            require(tid not in local and frozen.get(tid) is None, 'proposal evidence id collision')
+            local[tid] = item
+        prior = dict(route_id=route.id, route_sha256=digest(route.to_json()), packet=packet,
+                     disclosure=LABELS[packet['thesis_origin']], local_evidence=local,
+                     authority='paper_owned_proposal_not_frozen_T_or_engine_license',
+                     length_basis='orchestrator decision: route-proportional length; operator instruction: draft all candidates')
+    return prior
+
+
+def activate(calls, route, packet=None):
+    """Validate and retain one immutable packet before any writer or resumed draft."""
+    from ara.runtime.calls import require
     events = calls.log.read()
     prior = from_events(events, route.id)
     if packet is not None:
         calls.screen_imported_draft(packet)
-        require(isinstance(packet, dict) and set(packet) == {
-            'route_id', 'target_text', 'thesis_origin', 'dossier_mapping', 'missing_premise',
-            'frozen_evidence_ids', 'local_sources', 'minimum_words'}, 'invalid proposal packet fields')
-        require(route.status == 'OPEN' and packet['route_id'] == route.id, 'proposal requires matching OPEN route')
-        target = next(n.proposition.text for n in route.nodes if n.id == route.root_id)
-        require(packet['target_text'] == target, 'proposal target differs from route')
-        require(packet['thesis_origin'] in LABELS, 'unknown proposal thesis origin')
-        require(all(isinstance(packet[k], str) and packet[k].strip() for k in
-                    ('dossier_mapping', 'missing_premise')), 'proposal needs dossier and missing premise')
-        require(type(packet['minimum_words']) is int and 3000 <= packet['minimum_words'] <= 4500,
-                'proposal minimum must be 3000–4500')
-        require(len(canonical(packet)) <= 120000, 'proposal packet exceeds bound')
-        if prior:
-            require(prior['packet'] == packet, 'proposal packet is immutable; use an independent run')
-        else:
-            ids = packet['frozen_evidence_ids']
-            require(isinstance(ids, list) and ids and all(isinstance(i,str) for i in ids)
-                    and len(set(ids)) == len(ids), 'proposal needs unique frozen evidence ids')
-            frozen = frozen_from_events(events)
-            require(frozen is not None and all(frozen.get(i) is not None for i in ids), 'proposal evidence missing from frozen T')
-            entries = catalogue(events, set(ids))
-            require(entries and all(e['status'] == 'verified' for e in entries.values()), 'proposal frozen evidence lacks verified local pages')
-            local = {}
-            require(isinstance(packet['local_sources'], list), 'proposal local sources must be a list')
-            for source in packet['local_sources']:
-                item = _read_source(source)
-                tid = item['id']
-                require(tid not in local and frozen.get(tid) is None, 'proposal evidence id collision')
-                local[tid] = item
-            prior = dict(route_id=route.id, route_sha256=digest(route.to_json()), packet=packet,
-                         disclosure=LABELS[packet['thesis_origin']], local_evidence=local,
-                         authority='paper_owned_proposal_not_frozen_T_or_engine_license',
-                         length_basis='orchestrator decision: route-proportional length; operator instruction: draft all candidates')
-            calls.screen_imported_draft(prior)
-            calls.log.record('essay_proposal_mode', **prior)
+        prepared = validated_packet(route, packet, events)
+        if prior is None:
+            calls.screen_imported_draft(prepared)
+            calls.log.record('essay_proposal_mode', **prepared)
+        prior = prepared
     if prior:
         require(prior['route_sha256'] == digest(route.to_json()), 'proposal route changed')
         calls.config['essay_min_words'] = prior['packet']['minimum_words']

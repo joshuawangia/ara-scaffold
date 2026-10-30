@@ -89,6 +89,23 @@ def source_context(calls, route):
         result['proposal_source_evidence'] = proposal_evidence
     if alignment_evidence:
         result['alignment_source_evidence'] = alignment_evidence
+    if len(canonical(result)) > MAX_CONTEXT_CHARS:
+        # Retain every contextual item and its per-anchor order; store repeats once.
+        items, indexes, compact = [], {}, []
+        for row in result['paper_context']:
+            if 'items' not in row:
+                compact.append(row)
+                continue
+            refs = []
+            for item in row['items']:
+                key = canonical(item)
+                if key not in indexes:
+                    indexes[key] = len(items)
+                    items.append(item)
+                refs.append(indexes[key])
+            compact.append({**{k:v for k,v in row.items() if k!='items'}, 'item_refs':refs})
+        result.update(paper_context=compact, context_items=items,
+                      context_encoding='paper_context.item_refs indexes context_items; all items retained')
     require(len(canonical(result)) <= MAX_CONTEXT_CHARS,
             'essay required source context exceeds bound; no evidence was truncated')
     return result

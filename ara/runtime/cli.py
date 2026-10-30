@@ -54,6 +54,14 @@ def parser() -> argparse.ArgumentParser:
     fork.add_argument('--provider', choices=('anthropic','mock','claude_code','codex_cli'))
     fork.add_argument('--codex-schema-preflight-log', type=Path)
     fork.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
+    admission = sub.add_parser('admit-proposal', help='admit a paper-owned OPEN target from verified frozen evidence; no search or model calls')
+    admission.add_argument('--source-run', type=Path, required=True)
+    admission.add_argument('--run-dir', type=Path, required=True)
+    admission.add_argument('--packet', type=Path, required=True)
+    admission.add_argument('--plan-only', action='store_true', help='validate evidence and projected capacity without copying or dispatch')
+    promotion = sub.add_parser('promote-proposal', help='verify an admitted proposal and print its queue entry; no dispatch')
+    promotion.add_argument('--entry', type=Path, required=True)
+    promotion.add_argument('--run-dir', type=Path, required=True)
     resume = sub.add_parser('resume-construction', help='continue a verified stopped construction in its existing directory')
     resume.add_argument('--run-dir', type=Path, required=True)
     resume.add_argument('--codex-schema-preflight-log', type=Path)
@@ -232,6 +240,16 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'promote-proposal':
+            from ara.runtime.proposal_admission import promote_queue_entry
+            result=promote_queue_entry(json.loads(args.entry.read_text()),args.run_dir)
+            print(json.dumps(result,sort_keys=True))
+            return 0
+        if args.command == 'admit-proposal':
+            from ara.runtime.proposal_admission import admit
+            result=admit(args.source_run,args.run_dir,json.loads(args.packet.read_text()),ROOT,plan_only=args.plan_only)
+            print(json.dumps(result,sort_keys=True))
+            return 0
         if args.command == 'plan-target-request':
             from ara.runtime.planning import plan_recorded_target
             report = plan_recorded_target(args.run_dir, args.out, ROOT, gap_id=args.gap_id,
@@ -571,6 +589,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             return 0
         if not (args.run_dir / 'events.jsonl').is_file():
             raise ValueError('run log does not exist')
+        if args.command == 'select':
+            from ara.runtime.logging import read_log
+            from ara.runtime.proposal_admission import check_selection_capacity
+            check_selection_capacity([r['event'] for r in read_log(args.run_dir/'events.jsonl')],args.run_dir,ROOT)
         log = EventLog(args.run_dir / 'events.jsonl')
         log.human(args.command + '_command', json.dumps(raw_args, ensure_ascii=False),
                   argv=raw_args, reported_minutes=args.human_minutes)

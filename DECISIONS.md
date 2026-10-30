@@ -4757,3 +4757,20 @@ are still required for inheritance. Exhaustion refuses before the final audit;
 this changes neither semantic repair counts nor the final union gate. The prior
 retry regression hid the native failure by raising the parent's attempt count.
 Tests now retain the native default and exercise incomplete large inventories.
+
+## Native paper-owned target admission without search closure (2026-10-30)
+
+A proposal paper may begin from authenticated frozen source evidence even when
+no faithful formalization or search route exists. Native admission retains the
+original freeze prefix and adds one explicitly paper-owned OPEN target with no
+formula, inference edge, admitted H or engine license. It cannot claim conditional
+mechanical derivation. The existing proposal writer/audit/citation path consumes
+that envelope. A no-copy plan and receipt-bound queue promotion keep held grounding
+metadata separate from executable candidates. Source/grounding hashes, native
+identity/credential scans, existing audit history and projected disk reserves
+remain required. See docs/proposal-admission.md for the CLI and evidence limits.
+
+Large proposal grounding can repeat neighboring source items across anchors.
+Exact item interning with ordered per-anchor references preserves the entire
+selected context while retaining the existing size bound. A round-trip regression
+requires exact reconstruction; contexts still too large are explicitly refused.

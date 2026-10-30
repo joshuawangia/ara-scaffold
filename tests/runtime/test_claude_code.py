@@ -959,3 +959,22 @@ def test_list_context_keeps_sensitive_output_screening(cli, context, reason):
     assert context not in log.path.read_text()
     assert len(binary.with_suffix('.trace').read_text().splitlines()) == 1
     assert not list((binary.parent/'cache').glob('*.json'))
+
+
+def test_canary_format_does_not_invalidate_content_cache(cli, monkeypatch):
+    make, _, _, binary = cli
+    calls, log = make()
+    current = calls.provider.metadata
+    def legacy(kind):
+        data = current(kind)
+        if kind != 'isolation_canary':
+            data.pop('canary_report_format', None)
+        return data
+    monkeypatch.setattr(calls.provider, 'metadata', legacy)
+    calls.formalise(Proposition('p', 'P'))
+    monkeypatch.setattr(calls.provider, 'metadata', current)
+    calls.formalise(Proposition('p', 'P'))
+    assert json.loads(model_events(log)[-1]['payload_json'])['cache_hit']
+    assert len(binary.with_suffix('.trace').read_text().splitlines()) == 2
+    assert 'canary_report_format' not in current('formalise')
+    assert current('isolation_canary')['canary_report_format'] == 'context-lists-v1'

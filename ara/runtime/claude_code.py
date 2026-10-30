@@ -239,7 +239,7 @@ class ClaudeCodeProvider:
 
     def metadata(self, kind):
         return {'provider': self.provider_kind, 'cli_version': self.version,
-                'canary_report_format': self.canary_report_format,
+                **({'canary_report_format': self.canary_report_format} if kind == 'isolation_canary' else {}),
                 'isolation_flags': ISOLATION_FLAGS, 'fresh_cwd_and_config': True,
                 'token_estimate_method': self.estimate_method,
                 'calibration': {'version': TABLE['version'], 'sha256': TABLE_HASH,

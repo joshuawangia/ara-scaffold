@@ -4710,3 +4710,9 @@ of the Claude-specific wire change. Red-first subprocess regressions and
 production controls cover presence, types, missing fields and this inheritance
 boundary. Changing a reporting format does not establish that historical failed
 calls read ambient files or weaken the fail-closed preflight.
+
+Report-format metadata is scoped to isolation_canary only. Emitting it on other
+stages would change their request identities and unnecessarily regenerate accepted
+editing outputs. A real cache-replay regression against legacy metadata and a
+production mutation control enforce this compatibility boundary; preflight remains
+fresh and uncached independently of content reuse.

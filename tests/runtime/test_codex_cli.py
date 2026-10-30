@@ -157,7 +157,8 @@ def test_native_calls_and_receipts(codex):
     assert all(e['cost_usd']==0 for e in log.read())
     assert calls.budget.used_tokens==220
     assert rows[0]['isolation']['status']=='proven'
-    assert all(r['canary_report_format']=='context-strings-v1' for r in rows)
+    assert rows[0]['canary_report_format']=='context-strings-v1'
+    assert 'canary_report_format' not in rows[1]
 
 
 @pytest.mark.parametrize('tool', ['command_execution','file_read','file_change','web_search','mcp_tool_call','tool_call','function_call'])

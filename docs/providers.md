@@ -124,7 +124,9 @@ item types and missing fields reject schema validation. No entry is trimmed,
 filtered or defaulted. Rejection receipts retain fixed field names and entry
 counts, never the rejected context itself. The system-prompt, tool, debug-marker,
 forbidden-content, credential and identity checks remain unchanged. Codex retains
-its explicit legacy string schema and reports `context-strings-v1`. A fresh config directory alone does not
+its explicit legacy string schema and reports `context-strings-v1`. Report-format
+metadata appears only on canary receipts, preserving existing content-stage cache
+identities and allowing accepted editing outputs to be reused. A fresh config directory alone does not
 isolate HOME-based discovery; both locations are isolated for every invocation,
 including the version probe. Host credentials are read before constructing this
 environment and are never copied into either directory.

@@ -1,5 +1,9 @@
 """Production mutations for the approved Claude-only list canary contract."""
 CASES = [
+    ('claude_canary_content_cache', 'ara/runtime/claude_code.py',
+     "**({'canary_report_format': self.canary_report_format} if kind == 'isolation_canary' else {})",
+     "'canary_report_format': self.canary_report_format",
+     'tests/runtime/test_claude_code.py::test_canary_format_does_not_invalidate_content_cache'),
     ('claude_canary_codex_receipt', 'ara/runtime/codex_cli.py',
      "    canary_report_format = 'context-strings-v1'\n", '',
      'tests/runtime/test_codex_cli.py::test_native_calls_and_receipts'),

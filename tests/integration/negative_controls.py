@@ -2606,6 +2606,21 @@ CASES += [
 ]
 
 
+CASES += [
+    ('shared_vocabulary_prompt', 'ara/runtime/calls.py', 'if vocabulary_policy(self.config):', 'if False and vocabulary_policy(self.config):', 'tests/runtime/test_shared_vocabulary.py::test_shared_policy_is_counted_keyed_and_plan_bound'),
+    ('shared_vocabulary_plan', 'ara/runtime/construction.py', "metadata['shared_vocabulary_policy'] = shared_policy", "metadata['shared_vocabulary_policy'] = {}", 'tests/runtime/test_shared_vocabulary.py::test_shared_policy_is_counted_keyed_and_plan_bound'),
+    ('shared_vocabulary_flags', 'ara/runtime/shared_vocabulary.py', 'if type(enabled) is not bool:', 'if False and type(enabled) is not bool:', 'tests/runtime/test_shared_vocabulary.py::test_vocabulary_settings_refuse_invalid_and_stage_overrides'),
+    ('shared_vocabulary_stage_policy', 'ara/runtime/shared_vocabulary.py', 'if any(isinstance(s, dict) and any(k in s for k in keys)', 'if False and any(isinstance(s, dict) and any(k in s for k in keys)', 'tests/runtime/test_shared_vocabulary.py::test_vocabulary_settings_refuse_invalid_and_stage_overrides'),
+    ('shared_vocabulary_wide_activation', 'ara/runtime/symbol_alignment.py', 'if per_symbol_top_k:\n        return _wide_inventory', 'if False and per_symbol_top_k:\n        return _wide_inventory', 'tests/runtime/test_shared_vocabulary.py::test_wide_native_alignment_replays_and_refuses_policy_tampering'),
+    ('shared_vocabulary_zero_overlap', 'ara/runtime/symbol_alignment.py', '_scored_pairs(symbols, provenance, stats, include_zero=True)', '_scored_pairs(symbols, provenance, stats, include_zero=False)', 'tests/runtime/test_shared_vocabulary.py::test_wide_retrieval_includes_zero_overlap_with_per_symbol_coverage'),
+    ('shared_vocabulary_global_cap', 'ara/runtime/symbol_alignment.py', '[pair for _, pair in pool[:limit]]', '[pair for _, pair in pool]', 'tests/runtime/test_shared_vocabulary.py::test_wide_retrieval_includes_zero_overlap_with_per_symbol_coverage'),
+    ('shared_vocabulary_replay', 'ara/runtime/symbol_alignment.py', "per_symbol_top_k=retrieval.get('per_symbol_top_k',0)", 'per_symbol_top_k=0', 'tests/runtime/test_shared_vocabulary.py::test_wide_native_alignment_replays_and_refuses_policy_tampering'),
+    ('shared_vocabulary_source_use', 'ara/runtime/shared_vocabulary.py', 'uses[name].add(source)', "uses[name].add('a')", 'tests/runtime/test_shared_vocabulary.py::test_metrics_count_actual_source_uses_and_cross_paper_modus_ponens'),
+    ('shared_vocabulary_stance', 'ara/runtime/shared_vocabulary.py', "if row.get('stance') == 'endorsed':", 'if True:', 'tests/runtime/test_shared_vocabulary.py::test_metrics_count_actual_source_uses_and_cross_paper_modus_ponens'),
+    ('shared_vocabulary_methodology', 'ara/runtime/export.py', "if e['stage'] == 'alignment_vocabulary_metrics'", "if e['stage'] == 'unused_alignment_vocabulary_metrics'", 'tests/runtime/test_shared_vocabulary.py::test_wide_native_alignment_replays_and_refuses_policy_tampering'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

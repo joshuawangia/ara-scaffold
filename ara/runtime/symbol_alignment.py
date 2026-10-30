@@ -27,14 +27,18 @@ def retrieval_settings(config):
         raise ValueError('construction_alignment_min_score must be a finite number from 0 to 1')
     if type(diversity) is not bool:
         raise ValueError('construction_alignment_paper_diversity must be boolean')
-    return dict(minimum_score=minimum_score,paper_diversity=diversity)
+    from ara.runtime.shared_vocabulary import vocabulary_policy
+    vocabulary_policy(config)
+    top_k=config.get('construction_alignment_top_k',0)
+    return dict(minimum_score=minimum_score,paper_diversity=diversity,
+                **({'per_symbol_top_k':top_k} if top_k else {}))
 
 
 def _rank(pair):
     return -pair['score'],pair['left'],pair['right']
 
 
-def _scored_pairs(symbols, provenance, stats):
+def _scored_pairs(symbols, provenance, stats, *, include_zero=False):
     eligible = sorted((s for s in symbols if s['kind'] in ('atom','predicate')), key=lambda s:s['name'])
     terms = {s['name']: set(re.findall(r"\b[^\W\d_][\w'-]*\b",s['definition'].casefold())) - _STOP for s in eligible}
     frequencies = {}
@@ -50,10 +54,10 @@ def _scored_pairs(symbols, provenance, stats):
             continue
         stats['signature_compatible_pairs'] += 1
         common = terms[a] & terms[b]
-        if not common: continue
-        stats['lexical_overlap_pairs'] += 1
+        if not common and not include_zero: continue
+        stats['lexical_overlap_pairs'] += int(bool(common))
         norm = math.sqrt(sum(weights[t]**2 for t in terms[a]) * sum(weights[t]**2 for t in terms[b]))
-        score = sum(weights[t]**2 for t in common) / norm
+        score = sum(weights[t]**2 for t in common) / norm if norm else 0.0
         yield dict(left=a,right=b,score=round(score,8)),papers[a]|papers[b],score
 
 
@@ -64,12 +68,15 @@ def legacy_candidate_pairs(symbols, provenance, limit=150):
     return nsmallest(limit,(pair for pair,_,score in _scored_pairs(symbols,provenance,{}) if score>=0.15),key=_rank)
 
 
-def candidate_inventory(symbols, provenance, limit=150, *, minimum_score=0.10, paper_diversity=True):
+def candidate_inventory(symbols, provenance, limit=150, *, minimum_score=0.10, paper_diversity=True, per_symbol_top_k=0):
     """Bound model calls, backfill lexical leads, and retain source-paper coverage."""
     if type(limit) is not int or limit < 0:
         raise ValueError('construction_alignment_candidates must be a nonnegative integer')
     settings=retrieval_settings(dict(construction_alignment_min_score=minimum_score,
-                                    construction_alignment_paper_diversity=paper_diversity))
+                                    construction_alignment_paper_diversity=paper_diversity,
+                                    construction_alignment_top_k=per_symbol_top_k))
+    if per_symbol_top_k:
+        return _wide_inventory(symbols, provenance, limit, settings)
     stats=dict(**settings,above_threshold_pairs=0,diversity_additions=0)
     best_by_paper={}
     def scored():
@@ -100,6 +107,42 @@ def candidate_inventory(symbols, provenance, limit=150, *, minimum_score=0.10, p
                  selected_pairs=len(selected),limit=limit,
                  ranking='weighted_cosine_then_names; backfill_shared_terms; preserve_and_extend_paper_coverage')
     return dict(candidates=selected,**stats)
+
+
+def _wide_inventory(symbols, provenance, limit, settings):
+    """Per-symbol retrieval from all compatible pairs, including zero word overlap.
+
+    Weighted lexical similarity ranks candidates; only the model judges semantics.
+    Round-robin rank allocation prevents one dense cluster consuming the whole cap.
+    Retained memory is bounded by symbols times min(top_k, global call limit).
+    """
+    top_k = settings['per_symbol_top_k']
+    stats = dict(**settings, above_threshold_pairs=0)
+    neighbours = {}
+    width = min(top_k, limit)
+    for pair, papers, score in _scored_pairs(symbols, provenance, stats, include_zero=True):
+        stats['above_threshold_pairs'] += int(score >= settings['minimum_score'])
+        for name in (pair['left'], pair['right']):
+            neighbours[name] = nsmallest(width, neighbours.get(name, []) + [pair], key=_rank)
+    ranked = {}
+    for name in sorted(neighbours):
+        for rank, pair in enumerate(neighbours[name]):
+            key = (pair['left'], pair['right'])
+            previous = ranked.get(key)
+            if previous is None or rank < previous[0]:
+                ranked[key] = (rank, pair)
+    pool = sorted(ranked.values(), key=lambda item: (item[0], *_rank(item[1])))
+    selected = sorted([pair for _, pair in pool[:limit]], key=_rank)
+    symbol_papers = {s['name']: {provenance[id]['source_id'] for id in s['evidence_ids']} for s in symbols}
+    covered = sorted({name for p in selected for name in (p['left'], p['right'])})
+    stats.update(selected_pairs=len(selected), limit=limit,
+        top_k_pool_pairs=len(pool), truncated=len(pool)>limit or (width<top_k and stats['signature_compatible_pairs']>limit),
+        zero_overlap_pairs=sum(p['score']==0 for p in selected),
+        backfilled_pairs=sum(p['score']<settings['minimum_score'] for p in selected),
+        eligible_symbols_with_pairs=len(neighbours), covered_symbols=covered,
+        covered_papers=sorted({paper for name in covered for paper in symbol_papers[name]}),
+        ranking='per_symbol_top_k; rank_rounds_then_weighted_cosine_then_names; zero_overlap_eligible')
+    return dict(candidates=selected, **stats)
 
 
 def candidate_pairs(symbols, provenance, limit=150, **settings):
@@ -274,6 +317,11 @@ def align_symbols(calls, commitments, symbols, provenance):
         calls.log.record('symbol_alignment_refused',**receipt)
         return commitments,symbols,provenance,receipt
     receipt['mapping']=mapping
+    if calls.config.get('construction_shared_vocabulary') or calls.config.get('construction_alignment_top_k',0):
+        from ara.runtime.shared_vocabulary import vocabulary_metrics
+        calls.log.record('alignment_vocabulary_metrics',
+            before=vocabulary_metrics(commitments,symbols,provenance),
+            after=vocabulary_metrics(result,catalogue,rows))
     calls.log.record('symbol_alignment_applied',**receipt)
     return result,catalogue,rows,receipt
 
@@ -301,7 +349,8 @@ def validate_alignment(receipt, commitments, symbols, rows):
         if not isinstance(retrieval,dict) or not {'minimum_score','paper_diversity'} <= retrieval.keys():
             raise ValueError('invalid alignment retrieval policy')
         inventory=candidate_inventory(original_symbols,source_rows,receipt['candidate_limit'],
-            minimum_score=retrieval['minimum_score'],paper_diversity=retrieval['paper_diversity'])
+            minimum_score=retrieval['minimum_score'],paper_diversity=retrieval['paper_diversity'],
+            per_symbol_top_k=retrieval.get('per_symbol_top_k',0))
         candidates=inventory.pop('candidates')
         if retrieval!=inventory:
             raise ValueError('alignment retrieval replay mismatch')

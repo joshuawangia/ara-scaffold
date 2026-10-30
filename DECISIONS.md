@@ -4631,3 +4631,27 @@ and emit v3 sidecars so future validators do not reinterpret definitions under a
 different lexicon. Legacy v1/v2 rows/validation and default plans remain unchanged;
 old readers refuse v3. Search target screening is outside this construction change.
 There is no cache rekeying, source-premise injection or live-run alteration.
+
+
+## Sigma round 17 — opt-in shared vocabulary and wider alignment
+
+The accumulated catalogue already existed, but the formalization prompt preferred
+source-prefixed names and allowed source claims to remain atomic. Add a run-level
+shared-vocabulary policy that replaces that preference, requests source-supported
+predicate/term structure and exact semantic reuse, and leaves all native validation,
+stance, support, consistency and one-freeze rules intact. No content ontology or
+automatic equivalence is supplied. Defaults preserve the prior request and plan.
+
+Add bounded per-symbol top-k retrieval over all compatible cross-source pairs,
+ranked by weighted lexical definition similarity with zero-overlap backfill and
+rank-round allocation under the existing total candidate cap. Model judgments,
+not retrieval, authorize rewrites/bridges. The opt-in retrieval payload is replayed
+by the existing strict receipt validator, including native resume; old readers
+refuse it. Changed policy requires a new lifecycle; no cache rekeying or pilot
+mutation. Instrument actual source-use sharing separately from bridge context.
+
+Offline evidence uses placeholders and a free diagnostic replay of retained
+artifacts; additional real-pair judgments and improved semantic synthesis are
+unverified. Round16 repair is checkpointed at 1ad5aca; parallel windows remain
+explicitly deferred to prioritize this round. Full combined verification belongs
+in the external round17 handoff, with its exact revision and scope.

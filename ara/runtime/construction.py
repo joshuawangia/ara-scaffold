@@ -204,6 +204,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     context_limits = apply_context_limits(calls.config)
     from ara.runtime.construction_recovery import recovery_policy
     recovery = recovery_policy(calls.config)
+    from ara.runtime.shared_vocabulary import vocabulary_policy, vocabulary_metrics
+    shared_policy = vocabulary_policy(calls.config)
     partial_enabled = calls.config.get('construction_partial_acceptance', False)
     split_enabled = calls.config.get('construction_split_retry', False)
     definition_screen = 'attribution-frames-v1' if calls.config.get('construction_precise_attribution') else None
@@ -242,6 +244,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
         'symbol_token_budget': calls.config['working_t_symbol_token_budget'],
         'working_t_token_budget': calls.config['working_t_token_budget']}
+    if shared_policy:
+        metadata['shared_vocabulary_policy'] = shared_policy
     if recovery:
         metadata['recovery_policy'] = recovery
     if anchors:
@@ -788,6 +792,9 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         calls.budget.stop('accepted catalogue exceeds global budget before freeze', 'build_t_batch')
     provenance = {id: row for result in results for id, row in json.loads(result.receipt_json).get('provenance', {}).items()}
     require(set(provenance) == materialized, 'merged commitment provenance inventory mismatch')
+    if shared_policy or calls.config.get('construction_alignment_top_k', 0):
+        calls.log.record('construction_vocabulary_metrics', plan_id=plan_id,
+                         metrics=vocabulary_metrics(merged, symbols, provenance))
     calls.log.record('build_t_merged', plan_id=plan_id, commitments=merged.to_dict(), symbols=symbols, provenance=provenance,
                      input_tokens=measured.initial_input_tokens, source_ids=[p['source_id'] for p in papers],
                      note='One construction lifecycle, one freeze; explicit model omissions retained in batch receipts.')

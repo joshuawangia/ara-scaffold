@@ -517,3 +517,58 @@ Alignment judgment requests explicitly set `topic=''`: the task topic and any
 desired thesis do not enter the pair judgment prompt. Every selected pair still
 requires the model's relation judgment; broader retrieval never asserts an
 alignment by itself.
+
+
+## Shared vocabulary and wider alignment (opt-in)
+
+A fresh lifecycle can set `construction_shared_vocabulary: true`. Construction
+then replaces the source-prefixed naming preference with a shared-vocabulary
+contract in the counted, cached and logged formalization prompt. The existing
+run-level catalogue grows sequentially from accepted source-supported symbols.
+The model is asked to reuse exact meanings/signatures and expose relational
+structure with predicates, terms and connectives. No starter ontology, automatic
+synonym rewrite, minimum reuse quota or invented equivalence is introduced.
+Faithful atomic formulas remain possible; offline tests cannot establish source
+faithfulness or guarantee that a provider follows this guidance.
+
+`construction_alignment_top_k: 20` selects up to 20 neighbours per atom/predicate
+from all signature-compatible cross-source pairs. Definition-weighted lexical
+similarity ranks neighbours, including zero-overlap pairs; it is not an embedding
+retriever or a semantic equivalence test. Neighbour rank rounds distribute the
+existing `construction_alignment_candidates` global call cap across symbols.
+For example, set that cap to 2000 for a wider pool. A top-k union may contain
+fewer than the cap; very small caps can still leave symbols uncovered. Retrieval
+receipts disclose the selected inventory, zero-overlap/backfill counts, coverage
+and truncation. Only subsequent model judgments authorize same-content rewriting
+or disclosed entailment bridges. The existing consistency/refusal gates apply.
+All candidate pairs are considered for ranking; retained neighbour memory is
+bounded by symbol count times the smaller of top-k and the global cap.
+
+Both settings are run-level only and validated before planning. Defaults are
+false/zero and preserve prior prompts, plan fields and retrieval receipts.
+Enabled shared guidance is bound into the construction plan; enabled top-k is
+bound into its alignment policy and persisted retrieval receipt. The alignment
+receipt envelope remains v3; its retrieval payload is extended only when top-k
+is enabled. Updated validators replay that inventory exactly; old readers refuse
+new retrieval payloads rather than downgrade. CommitmentSet, commitments.json,
+frozen-t and provenance codecs are unchanged in this round.
+
+A previously planned lifecycle cannot widen alignment in place: its recorded
+configuration and construction plan bind that inventory. Native resume reads the
+recorded policy; frozen-prefix forks preserve the frozen result. Use a fresh
+lifecycle for changed policies. Copying cache files does not authorize replay
+under changed prompts, plans, catalogue or commitment hashes.
+
+Construction and alignment emit opt-in vocabulary metrics, exposed in methodology:
+atomic commitment count/fraction, actual source-use shared symbols/predicates,
+shared symbols including model-alignment context, and cross-paper exact-antecedent
+modus-ponens candidates among endorsed source rows. The last is a narrow structural
+opportunity count, not a complete bank sweep, solver proof or licensed route.
+Alignment bridges do not count as source endorsement. Inspect the source-use and
+alignment-context counts separately; a bridge can raise only the latter.
+
+Shared guidance adds prompt tokens but no new logical calls. Wider alignment can
+add one logical judgment per selected pair, each with the existing validation
+attempt allowance. Run/window/provider budgets still apply, and unresolved
+judgment limits still refuse freezing. These options may increase latency and
+are not a claim of useful cross-paper synthesis without a measured live run.

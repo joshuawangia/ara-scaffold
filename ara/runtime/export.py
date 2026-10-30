@@ -162,7 +162,9 @@ def methodology(log_path: Path) -> str:
                    'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments, provenance_from_events(events, commitments)))
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
-        'construction': {'partial_acceptances': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_partial_acceptance'],
+        'construction': {'vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_vocabulary_metrics'],
+                         'alignment_vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'alignment_vocabulary_metrics'],
+                         'partial_acceptances': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_partial_acceptance'],
                          'split_retries': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_split_retry'],
                          'gap_anchor_windows': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_gap_anchor_window'],
                          'context_limits': [json.loads(e['payload_json']) for e in events if e['stage'] == 'operator_construction_limits'],

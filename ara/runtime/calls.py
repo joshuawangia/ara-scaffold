@@ -297,6 +297,10 @@ class ModelCalls:
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
             return prompt, prompt
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
+        if kind == 'build_t_batch':
+            from ara.runtime.shared_vocabulary import vocabulary_policy, SHARED_CONTRACT
+            if vocabulary_policy(self.config):
+                template = template.replace('Prefer source-prefixed names.', '') + SHARED_CONTRACT
         if kind != 'search_evidence':
             # The service grammar is a compact projection. Show the model every
             # local constraint as well; the same complete prompt is logged/keyed.

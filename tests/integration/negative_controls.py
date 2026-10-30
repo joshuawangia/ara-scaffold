@@ -2634,14 +2634,24 @@ CASES += [
 
 
 CASES += [
-    ('precise_markdown_image_boundary', 'ara/runtime/commitment_provenance.py', "if child.type == 'image':", "if False and child.type == 'image':", 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
-    ('precise_html_text_boundary', 'ara/runtime/commitment_provenance.py', 'if tag not in _TEXT_HTML_TAGS:', 'if False and tag not in _TEXT_HTML_TAGS:', 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
+    ('precise_markdown_image_boundary', 'ara/runtime/commitment_provenance.py', "if child.type == 'image':\n                    return None", "if child.type == 'image':\n                    parts.append(child.content)", 'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
+    ('precise_html_text_boundary', 'ara/runtime/commitment_provenance.py', 'if tag not in _TEXT_HTML_TAGS:', 'if False and tag not in _TEXT_HTML_TAGS:', 'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
 ]
 
 
 CASES += [
     ('precise_empty_text_boundary', 'ara/runtime/commitment_provenance.py',
      'and bool(normalized.strip()) and not attributed(normalized)', 'and not attributed(normalized)',
+     'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
+]
+
+
+CASES += [
+    ('precise_html_attribute_boundary', 'ara/runtime/commitment_provenance.py',
+     '        if attrs:', '        if False and attrs:',
+     'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
+    ('precise_invisible_formatting_boundary', 'ara/runtime/commitment_provenance.py',
+     'return any(unicodedata.category(c)', 'return False and any(unicodedata.category(c)',
      'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
 ]
 

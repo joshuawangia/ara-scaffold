@@ -594,3 +594,12 @@ normalized text also refuses.
 Alt text cannot serve as the definition. Correction feedback identifies this
 unsupported markup explicitly. Source material remains intact and no image or
 URL is fetched. Ordinary text formatting remains supported by the screening view.
+
+
+The supported HTML subset is attribute-free emphasis, spans, paragraphs, line
+breaks, code and lists. All HTML attributes refuse; hidden/style/directional
+presentation is not interpreted. Tags with special rendering behavior, including
+`details` and `bdo`, are unsupported. Invisible Unicode format controls, selectors
+and fillers refuse rather than split a reporting word in the screening view.
+Ordinary Markdown emphasis and links remain supported. This is a conservative
+textual boundary, not a browser renderer or semantic attribution proof.

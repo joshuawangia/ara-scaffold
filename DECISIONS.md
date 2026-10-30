@@ -4710,3 +4710,17 @@ feedback distinguishes unsupported markup and absent textual content. Keep the r
 attribution guard, default-off behavior and unchanged persisted source/definitions.
 Native freeze and rehashed-sidecar regression cases cover the image-input escape,
 other non-text elements and empty views; controls disable each determining guard.
+
+
+## Sigma S17-F1 — preserve visible text at the formatting boundary
+
+Tag names alone cannot guarantee text-preserving HTML: attributes can hide text,
+and direction/closed-container elements alter its displayed order or visibility.
+Restrict precise-screen HTML to attribute-free emphasis, spans, paragraphs, code,
+line breaks and lists. Reject all attributes and other tags; do not emulate CSS
+or browser layout. Refuse invisible Unicode controls, selectors and fillers that
+can split an otherwise visible reporting word. Retain ordinary Markdown links and
+emphasis, raw attribution screening and unchanged accepted source/artifact text.
+Native freeze and rehashed metadata regressions reproduce hidden/style/directional
+and invisible-word escapes before repair. Separate controls disable attribute and
+Unicode guards. Default screening and provenance codec fields remain unchanged.

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
@@ -34,14 +35,19 @@ _PRECISE_ATTRIBUTION = re.compile(
 # Only text-formatting HTML participates in a definition's screening view.
 # Other elements can render attribute/external content that handle_data omits.
 _TEXT_HTML_TAGS = frozenset({
-    'a', 'abbr', 'address', 'article', 'aside', 'b', 'bdi', 'bdo', 'blockquote',
-    'br', 'caption', 'cite', 'code', 'dd', 'del', 'details', 'dfn', 'div', 'dl',
-    'dt', 'em', 'figcaption', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'header', 'hr', 'i', 'ins', 'kbd', 'li', 'main', 'mark', 'nav', 'ol', 'p',
-    'pre', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'section', 'small', 'span',
-    'strong', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th',
-    'thead', 'time', 'tr', 'u', 'ul', 'var', 'wbr',
+    'b', 'blockquote', 'br', 'code', 'div', 'em', 'i', 'li', 'mark', 'ol',
+    'p', 'pre', 's', 'small', 'span', 'strong', 'u', 'ul',
 })
+
+
+def _unsupported_definition_formatting(text):
+    # Invisible controls, selectors and fillers must not split a visible word.
+    return any(unicodedata.category(c) in {'Cf', 'Cc'} and c not in '\t\r\n'
+               or c in '\u034f\u115f\u1160\u17b4\u17b5\u3164\uffa0'
+               or 0x180b <= ord(c) <= 0x180f or 0x2060 <= ord(c) <= 0x206f
+               or 0xfe00 <= ord(c) <= 0xfe0f or 0xe0000 <= ord(c) <= 0xe0fff
+               for c in text)
+
 
 
 class _DefinitionText(HTMLParser):
@@ -56,6 +62,8 @@ class _DefinitionText(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag not in _TEXT_HTML_TAGS:
             self.unsupported_markup = True
+        if attrs:
+            self.unsupported_markup = True
         if tag in {'br', 'p', 'div', 'li', 'blockquote', 'pre', 'tr', 'td', 'th',
                    'section', 'article', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
             self.parts.append(' ')
@@ -67,8 +75,11 @@ class _DefinitionText(HTMLParser):
 def _definition_screen_text(text):
     """Formatting-free screening view only; never replace persisted content."""
     from markdown_it import MarkdownIt
+    text = unescape(text)
+    if _unsupported_definition_formatting(text):
+        return None
     parts = []
-    for token in MarkdownIt('commonmark').parse(unescape(text)):
+    for token in MarkdownIt('commonmark').parse(text):
         if token.type == 'inline':
             for child in token.children or ():
                 if child.type == 'image':
@@ -84,7 +95,10 @@ def _definition_screen_text(text):
     parser = _DefinitionText()
     parser.feed(''.join(parts))
     parser.close()
-    return None if parser.unsupported_markup else ''.join(parser.parts)
+    normalized = ''.join(parser.parts)
+    if parser.unsupported_markup or _unsupported_definition_formatting(normalized):
+        return None
+    return normalized
 
 
 def content_definition(text: str, *, screen: str | None = None) -> bool:

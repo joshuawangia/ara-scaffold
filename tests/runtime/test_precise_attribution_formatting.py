@@ -27,7 +27,14 @@ FRAMES = ['b holds **that** P', 'b states *that* P', 'b maintains: that P',
           'b &lt;input type="image" alt="h&#111;lds"&gt; that P',
           'b <object data="P" aria-label="h&#111;lds"></object> that P',
           '<span></span>', '<!-- P -->', '<br>', '&nbsp;',
-          '<script>P</script>', 'P <svg><text>Q</text></svg>']
+          '<script>P</script>', 'P <svg><text>Q</text></svg>',
+          'b holds <span hidden>Q</span> that P',
+          'b holds <span style="display:none">Q</span> that P',
+          'b <bdo dir="rtl">sdloh</bdo> that P',
+          'b holds <details>Q</details> that P',
+          'b ho\u200blds that P', 'b ho&#x200b;lds that P',
+          'b ho\u034flds that P', 'b ho\ufe0flds that P',
+          'b ho\u00adlds that P', 'b \u202esdloh\u202c that P']
 
 
 @pytest.mark.parametrize('text', FRAMES)
@@ -74,13 +81,13 @@ def test_ordinary_state_predication_stays_content(text):
     assert content_definition(text,screen=PRECISE_SCREEN)
 
 
-def test_markup_screen_never_rewrites_accepted_definitions_or_source(rig, monkeypatch):
+@pytest.mark.parametrize('definition', ['P <em>holds</em>', 'P [holds](Q)', 'P **holds**'])
+def test_markup_screen_never_rewrites_accepted_definitions_or_source(rig, monkeypatch, definition):
     from ara.runtime.extraction import HEADER
     from ara.runtime.commitment_provenance import load_commitment_provenance
     calls, provider, literature, _ = setup(rig, monkeypatch)
     calls.config['construction_precise_attribution'] = True
     source = {i['id']:i['text'] for p in json.loads(literature[len(HEADER):])['papers'] for i in p['items']}
-    definition = 'P <em>holds</em>'
     complete = provider.complete
     def respond(kind, prompt, schema, maximum):
         value = json.loads(complete(kind, prompt, schema, maximum).text())
@@ -115,7 +122,9 @@ def test_empty_screen_view_has_explicit_content_boundary_reason(text):
 
 
 @pytest.mark.parametrize('text', ['P <object data="Q"></object>', '<script>P</script>',
-    'P <svg><text>Q</text></svg>', 'P <iframe srcdoc="Q"></iframe>'])
+    'P <svg><text>Q</text></svg>', 'P <iframe srcdoc="Q"></iframe>',
+    'P <span hidden>Q</span>', 'P <span style="display:none">Q</span>',
+    'P <bdo>Q</bdo>'])
 def test_nontext_html_has_explicit_content_boundary_reason(text):
     from ara.runtime.commitment_provenance import definition_issues
     issues = definition_issues(dict(commitments=[dict(id='P',definition=text)],new_symbols=[]),screen=PRECISE_SCREEN)

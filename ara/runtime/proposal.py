@@ -164,9 +164,6 @@ def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors
             return 'unmarked_proposal'
     elif proposal is None:
         return 'proposal_mode_required'
-    elif role == 'proposed_principle' and not (proposal_scope and
-            proposal_scope.get('kind') == 'section' and proposal_scope.get('heading', '').casefold() == 'proposal'):
-        return 'proposal_section_required'
     if role == 'proposed_principle' and source_attribution(text, source_authors):
         return 'source_attributed_proposal'
     return None

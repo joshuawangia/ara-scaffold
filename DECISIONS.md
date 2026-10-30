@@ -4938,3 +4938,19 @@ Round 19 and its fresh freeze-only lifecycle are orchestrator instructions, not
 new operator authorizations. Standing operator approvals cover loosened token
 limits, parallel efforts and drafting all candidates. Real after-sharing metrics
 must come from an admitted freeze, not a free plan or rejected output.
+
+
+## Sigma round 20 — screen fresh definitions under a bound precise policy
+
+Per orchestrator instruction, consolidation v3 pins attribution-frames-v1 for
+new declarations, independently of source-row screen metadata. Keep imported
+source text, provenance, stance and absent historical markers unchanged. V1/v2
+receipts retain their historical validation. Exact report frames remain refused,
+including formatting disguises and unsupported markup. Bounded correction
+feedback names each declaration slot/handle and the raw/normalized screen match.
+No model text is repaired. Frozen validation obtains precise authority only from
+a successfully replayed v3 receipt, including deterministic alignment bridges.
+Native handle binding, consistency, endpoints, capacity and the sole freeze remain
+mandatory. The fresh freeze-only lifecycle is an orchestrator instruction; the
+operator's standing approvals remain loosened limits, parallel efforts and drafting
+all candidates.

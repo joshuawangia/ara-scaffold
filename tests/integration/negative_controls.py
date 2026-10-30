@@ -2961,6 +2961,25 @@ CASES += [
 ]
 
 
+
+CASES += [
+    ('consolidation_precise_fresh_screen', 'ara/runtime/consolidation_bindings.py',
+     'if content_definition(text,screen=PRECISE_SCREEN):continue', 'if content_definition(text,screen=None):continue',
+     'tests/runtime/test_consolidation_screen.py::test_fresh_definitions_do_not_inherit_legacy_lexicon'),
+    ('consolidation_definition_refusal', 'ara/runtime/consolidation_bindings.py',
+     'if content_definition(text,screen=PRECISE_SCREEN):continue', 'if True:continue',
+     'tests/runtime/test_consolidation_screen.py::test_exact_definition_feedback_allows_bounded_correction'),
+    ('consolidation_definition_feedback', 'ara/runtime/consolidation_bindings.py',
+     'definition_issues=issues)', 'definition_issues=[])',
+     'tests/runtime/test_consolidation_screen.py::test_exact_definition_feedback_allows_bounded_correction'),
+    ('consolidation_frozen_precise_authority', 'ara/runtime/commitment_provenance.py',
+     "precise_symbols={symbol_identity(s) for s in value['consolidation']['symbols']}", 'precise_symbols=set()',
+     'tests/runtime/test_consolidation_screen.py::test_precise_definitions_survive_alignment_and_frozen_fork'),
+    ('consolidation_definition_policy_pin', 'ara/runtime/vocabulary_consolidation.py',
+     "settings['definition_screen']=PRECISE_SCREEN", "settings['definition_screen']=None",
+     'tests/runtime/test_consolidation_screen.py::test_fresh_definitions_do_not_inherit_legacy_lexicon'),
+]
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

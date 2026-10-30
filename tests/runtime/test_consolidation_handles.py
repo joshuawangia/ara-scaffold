@@ -51,7 +51,7 @@ def test_native_consolidation_derives_ids_and_all_symbol_uses(rig,monkeypatch):
     meta=context['commitment_provenance'];receipt=meta['consolidation']
     assert set(schemas[0]['properties'])=={'formulas','new_symbols','reuse'}
     assert 'evidence_ids' not in schemas[0]['properties']['new_symbols']['items']['properties']
-    assert receipt['schema_version']=='vocabulary-consolidation-v2'
+    assert receipt['schema_version']=='vocabulary-consolidation-v3'
     assert [(c.id,c.text,c.citation) for c in frozen.commitments]==[(c.id,c.text,c.citation) for c in t.commitments]
     expected=sorted(c.id for c in t.commitments)
     assert all(s['evidence_ids']==expected for s in receipt['symbols'])

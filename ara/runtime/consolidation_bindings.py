@@ -7,7 +7,9 @@ from ara.runtime.calls import Rejected
 from ara.runtime.construction import formula_symbols
 from ara.types import Formula
 
-VERSION = 'vocabulary-consolidation-v2'
+VERSION = 'vocabulary-consolidation-v3'
+BINDING_V2 = 'vocabulary-consolidation-v2'
+BOUND_VERSIONS = (BINDING_V2, VERSION)
 LEGACY = 'vocabulary-consolidation-v1'
 
 
@@ -32,7 +34,7 @@ def catalogue_handles(symbols):
 
 def bind_response(data, inputs, original, prior, symbols):
     """Resolve positional slots and declared handles, deriving all actual use IDs."""
-    if inputs.get('binding_version') != VERSION:
+    if inputs.get('binding_version') not in BOUND_VERSIONS:
         return data, symbols, None
     slots=inputs['accepted_commitments']['commitments']
     if len(data['formulas']) != len(slots):
@@ -82,3 +84,23 @@ def bind_response(data, inputs, original, prior, symbols):
         reuse=[dict(handle=r['handle'],name=mapping[r['handle']],
                     catalogue_key=digest(canonical(existing[r['handle']])),reason=r['reason']) for r in data['reuse']])
     return result,bound_symbols,bindings
+
+
+def screen_new_definitions(symbols):
+    """Precisely screen fresh declarations; report matches without rewriting text."""
+    from ara.runtime.commitment_provenance import (
+        PRECISE_SCREEN, content_definition, _definition_screen_text, _PRECISE_ATTRIBUTION)
+    issues=[]
+    for slot,symbol in enumerate(symbols):
+        text=symbol['definition']
+        if content_definition(text,screen=PRECISE_SCREEN):continue
+        normalized=_definition_screen_text(text)
+        views=[('raw',text)]
+        if normalized is not None and normalized!=text:views.append(('screening_view',normalized))
+        matches=[dict(view=view,match=m.group(),span=list(m.span()))
+                 for view,value in views for m in _PRECISE_ATTRIBUTION.finditer(value)]
+        reason=('attribution_frame' if matches else 'unsupported_markup' if normalized is None else 'no_textual_content')
+        issues.append(dict(declaration_slot=slot,handle=f'n{slot}',name=symbol['name'],
+            definition=text,screen=PRECISE_SCREEN,reason=reason,matched_frames=matches))
+    if issues:
+        raise BindingMismatch('consolidation symbol is not content',definition_issues=issues)

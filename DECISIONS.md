@@ -4919,3 +4919,22 @@ freeze without target generation or search. The explicit native CLI boundary
 is recorded in the log and its generated methodology. The default command
 continues into targets/search unchanged. Frozen-prefix reuse validates the same
 artifacts and receipts for either stopping policy.
+
+
+## Sigma round 19 — runtime-bound vocabulary references
+
+Per orchestrator instruction, opt-in consolidation v2 returns ordered formulas,
+positional semantic declarations and short catalogue handles with reuse reasons.
+Runtime derives commitment IDs, global names and evidence/use IDs from validated
+formula occurrences, including constant terms and nested formulas. Exact binding
+feedback uses existing bounded correction calls; meaning, consistency, scope,
+content, endpoint and capacity gates remain mandatory. V2 receipts replay the
+runtime bindings and catalogue-entry hashes. Completed v1 receipts remain readable;
+incomplete old plans refuse protocol switching. Normal construction is unchanged.
+
+New plans target eight rows, preserve intact dependency components up to the
+configured hard batch bound, and never infer semantics from lexical scheduling.
+Round 19 and its fresh freeze-only lifecycle are orchestrator instructions, not
+new operator authorizations. Standing operator approvals cover loosened token
+limits, parallel efforts and drafting all candidates. Real after-sharing metrics
+must come from an admitted freeze, not a free plan or rejected output.

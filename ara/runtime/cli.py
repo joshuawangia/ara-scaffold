@@ -145,6 +145,7 @@ def parser() -> argparse.ArgumentParser:
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
         if command == 'select':
+            cmd.add_argument('--proposal-packet', type=Path, help='paper-owned proposal and verified evidence for an OPEN route')
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path, help='audit an existing unverified draft without generating a new essay')
             cmd.add_argument('--codex-schema-preflight-log', type=Path)
@@ -618,7 +619,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         require_codex_preflight(selection_config, ROOT)
         calls = calls_factory(selection_config, log, run['topic'])
         draft = json.loads(args.draft.read_text()) if args.draft is not None else None
-        compose(calls, chosen, draft)
+        packet = json.loads(args.proposal_packet.read_text()) if args.proposal_packet else None
+        compose(calls, chosen, draft, proposal_packet=packet)
         return 0
     except Exception as exc:
         from anthropic import APIError

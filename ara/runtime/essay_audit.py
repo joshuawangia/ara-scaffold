@@ -45,7 +45,13 @@ def audit_flags(labels, inputs, draft):
         cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
         premises = {r['evidence_id'] for r in inputs['outline'].get('source_roles', [])
                     if r['role'] == 'global_premise' and r['node_id'] in item['node_ids']}
-        if role == 'unsupported_claim':
+        from ara.runtime.proposal import role_failure
+        proposal_reason = role_failure(role, sentences.get(item['sentence'], ''), inputs.get('proposal'))
+        if proposal_reason:
+            reason = proposal_reason
+        elif inputs.get('proposal') and role == 'argument_step' and inputs['root_conclusion']['node_id'] in item['node_ids']:
+            reason = 'proposal_presented_as_derivation'
+        elif role == 'unsupported_claim':
             reason = 'unsupported_claim'
         elif role == 'argument_step' and not item['node_ids']:
             reason = 'unmapped_argument_step'
@@ -79,9 +85,12 @@ def audit_result(route, draft, inputs, data):
         raise ValidationError('essay audit: sentence inventory mismatch')
     referenced = {node for item in labels for node in item['node_ids']}
     require(referenced <= ids, 'essay audit: unknown node id')
-    covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim')
+    covered = {node for item in labels if item['role'] in (('argument_step', 'source_claim', 'proposed_principle', 'argument_for_proposal')
+                                                     if inputs.get('proposal') else ('argument_step', 'source_claim'))
                for node in item['node_ids']}
     missing = ids - covered
+    if inputs.get('proposal') and not any(item['role'] == 'proposed_principle' and route.root_id in item['node_ids'] for item in labels):
+        missing.add(route.root_id)
     extra = list(dict.fromkeys(item['sentence'] for item in flags))
     markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
     result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
@@ -260,7 +269,8 @@ def audit_and_revise(calls, route, draft, *, final=False):
                                  **failure.result)
                 raise
             spans = sentence_spans(draft['body'])
-            originals = {flag['sentence']: draft['body'][slice(*spans[flag['sentence'] - 1])]
+            originals = {flag['sentence']: (draft['title'] if flag['sentence'] == len(spans)+1 and failure.inputs.get('proposal')
+                                           else draft['body'][slice(*spans[flag['sentence'] - 1])])
                          for flag in flags}
             citation_repairs = {f['sentence'] for f in failure.result['flags'] if f['reason'] == 'miscited_source_claim'}
             allowed = {b['id']: b for b in failure.inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
@@ -279,7 +289,7 @@ def audit_and_revise(calls, route, draft, *, final=False):
                 numbers = [r['sentence'] for r in replacements]
                 require(len(numbers) == len(set(numbers)) and set(numbers) == set(originals),
                         'revision must cover exactly the flagged sentences')
-                body = draft['body']
+                body, title = draft['body'], draft['title']
                 for item in sorted(replacements, key=lambda r: r['sentence'], reverse=True):
                     old, text = originals[item['sentence']], item['text']
                     require(not final or text != old, 'revision left flagged sentence unchanged')
@@ -293,9 +303,12 @@ def audit_and_revise(calls, route, draft, *, final=False):
                             require(actual == expected or addition,
                                     f'revision changed {name} in sentence {item["sentence"]}: '
                                     f'forbidden or misplaced markers {actual!r}; required exact sequence {expected!r}')
-                    start, end = spans[item['sentence'] - 1]
-                    body = body[:start] + text + body[end:]
-                revised = {**draft, 'body': body}
+                    if item['sentence'] == len(spans)+1 and failure.inputs.get('proposal'):
+                        title = text
+                    else:
+                        start, end = spans[item['sentence'] - 1]
+                        body = body[:start] + text + body[end:]
+                revised = {**draft, 'body': body, 'title': title}
                 bibliography = {b['id']: b for b in draft['bibliography']}
                 for marker in CITE.findall(body):
                     tid = marker[6:-1]

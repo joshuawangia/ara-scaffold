@@ -632,3 +632,30 @@ is not already a route premise separately as `alignment_source_evidence`, marked
 `definition_evidence_not_additional_premise`. Its omitted-support limits remain
 disclosed. Section citation coverage uses these source IDs, while the outline
 continues to disclose the bridge as a model judgment.
+
+### OPEN proposal papers
+
+`ara select --run-dir RUN --route ID --proposal-packet PACKET.json` accepts an
+explicit paper-owned proposal on an OPEN route. The immutable packet names
+`route_id`, exact `target_text`, `thesis_origin` (`ara` or `eps2`),
+`dossier_mapping`, `missing_premise`, `frozen_evidence_ids`, `local_sources`, and
+`minimum_words` (3000–4500). Supplementary sources name `id` (`proposal:` prefix),
+`pdf_path`, `pdf_sha256`, `page_start`, `page_end`, bibliography `record`, and an
+exact `excerpt`. Record fields include id/authors/year/title/venue; optional URL
+and version metadata remain disclosed inputs. Pages and matching excerpts are
+retained in the append-only log. No declaration changes T or licenses an edge.
+
+The writer, audit and publication paths share proposed_principle and
+argument_for_proposal roles. Each substantive proposal/reasoning sentence must
+explicitly identify paper ownership, expose assumptions and remain relevant to
+the supplied bridge. Source claims use separate cited sentences. An ownership
+prefix alone cannot establish semantic support. The native helper contract is
+`proposal.role_failure(role, text, proposal, *, frozen_hypothesis=None)`; a
+validated frozen-H row requires separate node binding and conditional disclosure
+by its caller, and cannot be authorized by an OPEN packet.
+
+Proposal evidence remains obligatory during citation cleanup, export and
+publication; web absence cannot erase retained local evidence. Final fresh
+unanimous audits and the existing three-round shared repair cap are unchanged.
+Resuming without `--proposal-packet` restores the logged packet, including its
+length policy and exact thesis-origin disclosure. Replacing it requires a new run.

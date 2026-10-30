@@ -13,7 +13,7 @@ CASES = [
     ('writer_correction_path', 'ara/runtime/calls.py', "if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):", "if validating and kind != 'write_essay' and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):", 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
     ('writer_exhaustion_bound', 'ara/runtime/calls.py', 'for attempt in range(attempts):', 'for attempt in range(attempts - 1):', 'tests/runtime/test_writer_validation.py::test_writer_correction_exhaustion_clean_cli_stop'),
     ('writer_failure_not_cached', 'ara/runtime/calls.py', '            if validating and not', "            if kind == 'write_essay': self.cache.put(key, {'raw': raw})\n            if validating and not", 'tests/runtime/test_writer_validation.py::test_writer_correction_exhaustion_clean_cli_stop'),
-    ('writer_projection', 'ara/runtime/calls.py', "return {'outline': self.essay_outline(route), 'word_limit':", "return {'outline': route.to_dict(), 'word_limit':", 'tests/runtime/test_essay_outline.py::test_route_status_and_cost_never_reach_writer'),
+    ('writer_projection', 'ara/runtime/calls.py', "'outline': self.essay_outline(route), 'word_limit':", "'outline': route.to_dict(), 'word_limit':", 'tests/runtime/test_essay_outline.py::test_route_status_and_cost_never_reach_writer'),
     ('shared_audit_outline', 'ara/runtime/calls.py', "'outline': self.essay_outline(route),\n                  'root_conclusion':", "'outline': {'nodes': [], 'links': []},\n                  'root_conclusion':", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
     ('scheme_name', 'ara/runtime/calls.py', "'scheme': entry.name", "'scheme': entry.id", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
     ('inference_links', 'ara/runtime/calls.py', "'premises': list(node.children)", "'premises': []", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
@@ -1831,7 +1831,7 @@ CASES += [
      '            calls.audit_essay(route, draft)', '            if round_number == 0: calls.audit_essay(route, draft)',
      'tests/runtime/test_audit_revision.py::test_audit_revision_stops_after_three_rounds'),
     ('audit_resume_draft', 'ara/runtime/cli.py',
-     '        compose(calls, chosen, draft)', '        compose(calls, chosen)',
+     '        compose(calls, chosen, draft, proposal_packet=packet)', '        compose(calls, chosen, proposal_packet=packet)',
      'tests/integration/test_cli_e2e.py'),
 ]
 
@@ -2047,7 +2047,7 @@ CASES += [
      'bibliography.get(tid) != allowed[tid]', 'False',
      'tests/runtime/test_typed_audit.py::test_source_claim_requires_correct_frozen_citation[bibliography]'),
     ('typed_audit_coverage', 'ara/runtime/essay_audit.py',
-     "if item['role'] in ('argument_step', 'source_claim')", 'if True',
+     "if item['role'] in (('argument_step', 'source_claim', 'proposed_principle', 'argument_for_proposal')\n                                                     if inputs.get('proposal') else ('argument_step', 'source_claim'))", 'if True',
      'tests/runtime/test_typed_audit.py::test_presentation_mapping_does_not_fake_route_coverage'),
     ('typed_audit_root', 'ara/runtime/calls.py',
      "'root_conclusion': {'node_id': route.root_id", "'root_conclusion': {'node_id': ''",
@@ -2147,7 +2147,7 @@ CASES += [
      "('publication_length_policy', 'publication_completed',", "('publication_completed',",
      'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
     ('publication_short_evidence', 'ara/runtime/calls.py',
-     "if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(\n                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):",
+     "if proposal or publication_context is not None or self.config['essay_min_words'] >= 4500 or any(\n                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):",
      "if False:",
      'tests/runtime/test_publication.py::test_publication_literature_sentence_scope_and_typed_support'),
     ('publication_heading_case', 'ara/runtime/publication_currency.py',
@@ -2459,7 +2459,7 @@ CASES += [('delivery_alignment_source_citations',
 
 CASES += [('delivery_alignment_reading_sources',
   'ara/runtime/publication_references.py',
-  "    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])\n"
+  "    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', []) + evidence.get('proposal_source_evidence', [])\n"
   '    supports =',
   "    sources = evidence['supporting_commitments']\n    supports =",
   'tests/runtime/test_delivery_alignment_citations.py::test_alignment_publication_preserves_definition_citations_and_judgment_role[reading]'),
@@ -2537,6 +2537,9 @@ CASES += [
      'tests/runtime/test_gap_construction.py::test_anchor_and_limits_are_disclosed_in_methodology'),
 ]
 
+
+import runpy
+CASES += runpy.run_path(str(ROOT / "tests/runtime/proposal_negative_controls.py"))["CASES"]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

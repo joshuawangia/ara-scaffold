@@ -227,9 +227,11 @@ def _save_analyses(calls, targets, results, commitments=None):
     return tuple(routes)
 
 
-def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> dict:
+def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None, *, proposal_packet: dict | None = None) -> dict:
     from ara.runtime.essay_audit import audit_and_revise, repair_rounds
     from ara.runtime.route_policy import frozen_from_events, provenance_from_events, route_contribution
+    from ara.runtime.proposal import activate
+    activate(calls, route, proposal_packet)
     events = calls.log.read()
     commitments = frozen_from_events(events)
     if commitments is not None and route.status == 'CLOSED':

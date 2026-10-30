@@ -4606,3 +4606,20 @@ receipts and methodology. New settings require a fresh construction lifecycle;
 changed plan inputs cannot authorize stale response replay or old accepted-batch
 restoration. Existing extraction reuse remains available. No source rule or route
 success is inferred from an anchor or increased capacity.
+
+## Explicit paper proposals on OPEN routes
+
+An immutable, route-bound proposal packet authorizes paper-owned principles and
+arguments without changing frozen commitments, graph status, or engine licensing.
+Thesis origin and bridge justification are disclosed separately. Exact disclosure
+is required in title, Abstract, and Methodology and survives publication/export.
+Nominated frozen evidence and retained supplementary PDF excerpts remain source
+claims with local citation obligations; neither becomes a licensed graph edge.
+The sectioned writer uses a 3,000–4,500-word profile with a 6,000-word ceiling.
+Typed adverse labels, fresh k>=3 conservative union, and the shared three-round
+repair budget remain binding. Ownership prefixes are necessary lexical cues,
+not evidence that an argument is sound: the semantic audit must still reject
+hidden unsupported assertions and source-attributed proposals. Frozen hypothesis
+authorization is a separate caller-bound helper input, never inferred from OPEN
+proposal authorization. Supplementary PDF checks establish hash-bound pages and
+excerpt membership, not independently verified metadata or semantic truth.

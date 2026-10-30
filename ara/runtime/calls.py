@@ -1240,13 +1240,17 @@ class ModelCalls:
         return outline
 
     def essay_inputs(self, route: RouteGraph) -> dict:
-        return {'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),
+        from ara.runtime.proposal import from_events
+        proposal = from_events(self.log.read(), route.id)
+        return {**({'proposal': proposal} if proposal else {}), 'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),
                 'minimum_words': self.config['essay_min_words'],
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
     def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
         validate_local(self.response_schema('write_essay', {}), data, self.config)
+        from ara.runtime.proposal import from_events, validate_disclosure
+        validate_disclosure(from_events(self.log.read(), route.id), data)
         require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
         require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
         markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
@@ -1262,7 +1266,7 @@ class ModelCalls:
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
             return self.validate_essay(route, data)
-        if self.config['essay_min_words'] >= 4500:
+        if self.config['essay_min_words'] >= 4500 or 'proposal' in self.essay_inputs(route):
             from ara.runtime.writing import sectioned_essay
             return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
@@ -1275,7 +1279,12 @@ class ModelCalls:
                   'outline': self.essay_outline(route),
                   'root_conclusion': {'node_id': route.root_id,
                                       'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
-        if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
+        from ara.runtime.proposal import from_events, validate_disclosure
+        proposal = from_events(self.log.read(), route.id)
+        if proposal:
+            validate_disclosure(proposal, draft)
+            inputs['proposal'] = proposal
+        if proposal or publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
                 e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
@@ -1286,6 +1295,8 @@ class ModelCalls:
                 sentence.update(section=section, field='body', start=start, end=end)
             inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title'],
                 section='Title', field='title', start=0, end=len(draft['title'])))
+        if proposal and publication_context is None:
+            inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title']))
         return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None, fresh=False) -> dict:

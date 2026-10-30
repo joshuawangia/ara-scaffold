@@ -112,6 +112,9 @@ def as_draft(markdown, bibliography):
 def polish(calls, route, draft, *, currency=None):
     from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
+    from ara.runtime.proposal import activate, validate_disclosure
+    proposal = activate(calls, route)
+    validate_disclosure(proposal, draft)
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -126,6 +129,7 @@ def polish(calls, route, draft, *, currency=None):
         for id,record in currency['sources'].items():
             records.setdefault(id,dict(record=record,verification='logged_currency_record'))
     def check_whole(value):
+        validate_disclosure(proposal, as_draft(value['markdown'], draft['bibliography']))
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
         validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'])
         return value
@@ -134,7 +138,7 @@ def polish(calls, route, draft, *, currency=None):
     original = '\n\n'.join(chunks)
     calls.log.record('publication_started', route_id=route.id, original_draft=draft,
                      original_sha256=digest(canonical(draft)), requested_model=MODEL)
-    base = dict(outline=calls.essay_outline(route), source_evidence=evidence,
+    base = dict(**({'proposal': proposal} if proposal else {}), outline=calls.essay_outline(route), source_evidence=evidence,
                 minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'],
                 figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'], literature_currency=currency)
     accepted = []

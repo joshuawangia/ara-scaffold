@@ -16,7 +16,11 @@ FRAMES = ['b holds **that** P', 'b states *that* P', 'b maintains: that P',
           'b holds <em>that</em> P', 'b states <strong>that</strong> P',
           'b maintains &quot;that&quot; P', 'b h&#111;lds <em>th&#97;t</em> P',
           'b h**olds** th**at** P', 'b holds<br>that P',
-          'b holds &lt;em&gt;that&lt;/em&gt; P', 'b <holds> that P']
+          'b holds &lt;em&gt;that&lt;/em&gt; P', 'b <holds> that P',
+          '![b h**olds** th**at** P](https://example.invalid/p.png)',
+          'b ![h**olds**](https://example.invalid/p.png) th**at** P',
+          '![b ![h**olds**](P) th**at** P](Q)',
+          'b <img alt="h&#111;lds" src="P"> that P']
 
 
 @pytest.mark.parametrize('text', FRAMES)
@@ -84,3 +88,13 @@ def test_markup_screen_never_rewrites_accepted_definitions_or_source(rig, monkey
     assert all(c.text == definition for c in result.commitments)
     assert all(s['definition'] == definition for s in catalogue['symbols'])
     assert all(row['source_text'] == source[id] for id,row in metadata['commitments'].items())
+
+
+@pytest.mark.parametrize('text', ['![P](https://example.invalid/p.png)',
+    '<img alt="P" src="https://example.invalid/p.png">',
+    '![P][a]\n\n[a]: https://example.invalid/p.png', '![P ![Q](R)](S)'])
+def test_images_have_explicit_content_boundary_reason(text):
+    from ara.runtime.commitment_provenance import definition_issues
+    assert not content_definition(text,screen=PRECISE_SCREEN)
+    issues = definition_issues(dict(commitments=[dict(id='P',definition=text)],new_symbols=[]),screen=PRECISE_SCREEN)
+    assert issues[0]['reason'] == 'image markup is not supported in content definitions'

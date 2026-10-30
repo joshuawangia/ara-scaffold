@@ -2628,8 +2628,14 @@ CASES += [
 
 
 CASES += [
-    ('precise_markup_normalization', 'ara/runtime/commitment_provenance.py', 'not attributed(_definition_screen_text(text))', 'not attributed(text)', 'tests/runtime/test_precise_attribution_formatting.py'),
+    ('precise_markup_normalization', 'ara/runtime/commitment_provenance.py', 'normalized = _definition_screen_text(text)', 'normalized = text', 'tests/runtime/test_precise_attribution_formatting.py'),
     ('precise_markup_raw_guard', 'ara/runtime/commitment_provenance.py', 'or not text.strip() or attributed(text):', 'or not text.strip():', 'tests/runtime/test_precise_attribution_formatting.py'),
+]
+
+
+CASES += [
+    ('precise_markdown_image_boundary', 'ara/runtime/commitment_provenance.py', "if child.type == 'image':", "if False and child.type == 'image':", 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
+    ('precise_html_image_boundary', 'ara/runtime/commitment_provenance.py', "if tag == 'img':", "if False and tag == 'img':", 'tests/runtime/test_precise_attribution_formatting.py::test_images_have_explicit_content_boundary_reason'),
 ]
 
 

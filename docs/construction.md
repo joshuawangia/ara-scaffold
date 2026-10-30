@@ -585,3 +585,9 @@ tokens plus HTML text/entity parsing. Formatting inside report words, HTML tags,
 character entities and line-break tags cannot hide the tested explicit frames.
 The normalized view is never substituted into accepted definitions, catalogue
 entries or provenance. The legacy screen remains unchanged.
+
+Under the precise screen, content definitions must be textual: Markdown image
+tokens and HTML `img` elements are refused, including nested/reference images.
+Alt text cannot serve as the definition. Correction feedback identifies this
+unsupported markup explicitly. Source material remains intact and no image or
+URL is fetched. Ordinary text formatting remains supported by the screening view.

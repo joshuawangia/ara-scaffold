@@ -35,11 +35,14 @@ class _DefinitionText(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts = []
+        self.has_image = False
 
     def handle_data(self, data):
         self.parts.append(data)
 
     def handle_starttag(self, tag, attrs):
+        if tag == 'img':
+            self.has_image = True
         if tag in {'br', 'p', 'div', 'li', 'blockquote', 'pre', 'tr', 'td', 'th',
                    'section', 'article', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
             self.parts.append(' ')
@@ -55,7 +58,9 @@ def _definition_screen_text(text):
     for token in MarkdownIt('commonmark').parse(unescape(text)):
         if token.type == 'inline':
             for child in token.children or ():
-                if child.type in ('text', 'code_inline', 'html_inline', 'image'):
+                if child.type == 'image':
+                    return None
+                if child.type in ('text', 'code_inline', 'html_inline'):
                     parts.append(child.content)
                 elif child.type in ('softbreak', 'hardbreak'):
                     parts.append(' ')
@@ -66,7 +71,7 @@ def _definition_screen_text(text):
     parser = _DefinitionText()
     parser.feed(''.join(parts))
     parser.close()
-    return ''.join(parser.parts)
+    return None if parser.has_image else ''.join(parser.parts)
 
 
 def content_definition(text: str, *, screen: str | None = None) -> bool:
@@ -77,7 +82,10 @@ def content_definition(text: str, *, screen: str | None = None) -> bool:
     attributed = _PRECISE_ATTRIBUTION.search if screen == PRECISE_SCREEN else attributed_report
     if not isinstance(text, str) or not text.strip() or attributed(text):
         return False
-    return screen != PRECISE_SCREEN or not attributed(_definition_screen_text(text))
+    if screen != PRECISE_SCREEN:
+        return True
+    normalized = _definition_screen_text(text)
+    return normalized is not None and not attributed(normalized)
 
 
 def definition_issues(data: dict, *, screen: str | None = None) -> list[dict]:
@@ -89,6 +97,8 @@ def definition_issues(data: dict, *, screen: str | None = None) -> list[dict]:
             if not content_definition(text, screen=screen):
                 issues.append(dict(kind=kind, name=entry[key],
                                    phrases=[m.group() for m in _ATTRIBUTION.finditer(text)]))
+                if screen == PRECISE_SCREEN and _definition_screen_text(text) is None:
+                    issues[-1]['reason'] = 'image markup is not supported in content definitions'
     return issues
 
 

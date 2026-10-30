@@ -173,14 +173,20 @@ def test_fixed_inventory_boundary_has_no_freeze(rig, monkeypatch, corrupt):
         message = 'drops premise/link/qualification'
     else:
         original = CommitmentSet.from_dict
+        corrupted_ids = []
         def corrupted(data):
             t = original(data)
+            if not t.commitments:
+                return t
+            corrupted_ids.append(t.commitments[0].id)
             field = {'text': 'Q'} if corrupt == 'attribution' else {'citation': 'q:pdf:1'}
             return CommitmentSet((replace(t.commitments[0], **field), *t.commitments[1:]))
         monkeypatch.setattr(CommitmentSet, 'from_dict', corrupted)
         message = 'changed content definition' if corrupt == 'attribution' else 'citation not in extracted'
     with pytest.raises(Rejected, match=message):
         prepare_commitments(calls, load_bank(ROOT / 'bank'), path.read_text(), 'P')
+    if corrupt != 'closure':
+        assert corrupted_ids
     assert not any(e['stage'] == 'commitments_frozen' for e in calls.log.read())
     assert not (calls.log.path.parent / 'commitments.json').exists()
 

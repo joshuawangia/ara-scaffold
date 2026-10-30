@@ -4682,3 +4682,19 @@ boundaries. The view is used only for screening, never persisted in place of
 content or source text. Legacy screening and codec fields remain unchanged.
 All earlier exact-head gates continue in their original isolated checkouts;
 final repaired-head evidence is separate.
+
+
+### S17-F1 image boundary and full-suite injector repair
+
+Independent review found raw Markdown image-alt text could still hide formatted
+report words. Use the operator-authorized boundary alternative: the precise
+content screen refuses Markdown image tokens and HTML img elements outright,
+including nested/reference images, rather than interpreting image alt text as a
+formal content definition. Targeted correction feedback identifies unsupported
+image markup. No image is fetched; immutable source material is unchanged.
+
+The preserved ae7db53 full suite also exposed two corruption-fixture crashes:
+the injector indexed an empty prior set introduced by recovery setup. Restrict
+the injector to nonempty sets and assert that corruption actually occurred;
+keep the original specific rejection and no-freeze assertions. No production
+gate is weakened. All final tests/controls run on the resulting committed head.

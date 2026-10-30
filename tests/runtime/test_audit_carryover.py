@@ -162,7 +162,7 @@ def test_carryover_does_not_validate_malformed_current_inventory(rig,monkeypatch
 def test_malformed_meaning_retry_retains_valid_adverse_vote(rig,monkeypatch):
     calls,route,source,_,_=setup_source(rig,monkeypatch)
     original=calls.provider.complete
-    calls.config['validation_attempts']=2
+    assert calls.config['validation_attempts']==1
     count=0
     def complete(kind,prompt,schema,maximum):
         nonlocal count
@@ -189,3 +189,71 @@ def test_alignment_exposes_exact_source_occurrence_with_markers(rig,monkeypatch)
     assert pair['raw_source_text']==source['body'][pair['source_start']:pair['source_end']]
     assert '[[node:n0]]' in pair['raw_source_text']
     assert '[[node:' not in pair['source_text']
+
+
+@pytest.mark.parametrize('resume', [False, True])
+def test_missing_meaning_inventory_keeps_all_51_adverse_votes(rig, monkeypatch, resume):
+    from ara.runtime.audit_carryover import aligned_pairs, verified_source_rows
+    from ara.runtime.calls import InvalidOutput
+    from jsonschema import ValidationError
+
+    first=' [cite:p]\n'.join(f'This paper argues that P{i:03d}, Q, and R.' for i in range(101))
+    calls,route,source,_,_=setup_source(rig,monkeypatch,first=first)
+    draft={**source, 'body': source['body'].replace('This paper argues that ', '').replace(', Q, and R.', ' together with Q and R.').replace('We argue that ', '')}
+    inputs=calls.audit_inputs(route,draft,publication_context=dict(original_draft=source,literature_currency=None))
+    bound=verified_source_rows(calls,route,draft,inputs)
+    pairs=[p for p in aligned_pairs(bound,inputs,draft) if p['method']=='meaning_check']
+    assert len(pairs)==101
+    missing={pairs[i]['sentence'] for i in (35,61,63)}
+    returned=[p for p in pairs if p['sentence'] not in missing]
+    adverse={p['sentence'] for p in returned[:51]}
+    original=calls.provider.complete
+    requests=[]
+    def complete(kind,prompt,schema,maximum):
+        if kind!='audit_meaning':return original(kind,prompt,schema,maximum)
+        request=json.loads(prompt.split('\nINPUT_JSON\n')[1]);requests.append(request)
+        selected=returned if len(requests)==1 else request['pairs']
+        rows=[dict(sentence=p['sentence'],source_sentence=p['source_sentence'],
+                   verdict='different' if len(requests)==1 and p['sentence'] in adverse else 'equivalent',reason='P') for p in selected]
+        return Response(response(dict(pairs=rows)))
+    monkeypatch.setattr(calls.provider,'complete',complete)
+    if resume:
+        request=dict(source_sha256=bound['source_sha256'],gate_sha256=bound['gate_sha256'],pairs=pairs,
+                     outline=inputs['outline'],proposal=inputs.get('proposal'))
+        def reject(data):raise ValidationError('meaning check pair inventory mismatch')
+        with pytest.raises(InvalidOutput):calls.call('audit_meaning',request,reject,fresh=True)
+    with pytest.raises(EssayAuditFailed) as exc:run(calls,route,source,draft)
+    assert calls.config['validation_attempts']==1
+    assert len(requests)==4
+    decisions=exc.value.result['verified_sentence_carryover']['meaning_checks']
+    assert len(decisions)==101
+    assert {p['sentence'] for p in decisions if not p['inherited']}==adverse
+    assert {p['sentence'] for p in decisions if p['historical_adverse']}==adverse
+    assert set(exc.value.result['extra_steps'])==adverse
+    assert all([v['verdict'] for v in p['votes']]==['equivalent']*3 for p in decisions)
+    if not resume:
+        feedback=json.dumps(requests[1]['validation_feedback'])
+        assert 'missing=' in feedback and 'extra=[]' in feedback and 'duplicates=[]' in feedback
+        for p in pairs:
+            if p['sentence'] in missing:assert str([p['sentence'],p['source_sentence']]) in feedback
+    with pytest.raises(EssayAuditFailed):run(calls,route,source,draft)
+    assert len(requests)==4  # Persisted decisions cannot be rerolled.
+
+
+def test_meaning_shape_retry_stops_after_one_correction(rig,monkeypatch):
+    from ara.runtime.calls import InvalidOutput
+    calls,route,source,_,seen=setup_source(rig,monkeypatch)
+    original=calls.provider.complete
+    requests=[]
+    def complete(kind,prompt,schema,maximum):
+        if kind!='audit_meaning':return original(kind,prompt,schema,maximum)
+        inputs=json.loads(prompt.split('\nINPUT_JSON\n')[1]);requests.append(inputs)
+        return Response(response(dict(pairs=[])))
+    monkeypatch.setattr(calls.provider,'complete',complete)
+    with pytest.raises(InvalidOutput,match='meaning check pair inventory mismatch'):
+        run(calls,route,source,revised(source,'P together with Q and R.'))
+    assert len(requests)==2
+    assert 'validation_feedback' not in requests[0]
+    assert 'validation_feedback' in requests[1]
+    assert not any(k=='audit_publication' for k,_ in seen)
+    assert not any(e['stage']=='sentence_meaning_consensus' for e in calls.log.read())

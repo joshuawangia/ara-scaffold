@@ -1,6 +1,7 @@
 """Verified sentence carry-over uses native audit receipts, never fuzzy verdicts."""
 import copy
 import json
+from itertools import chain, repeat
 
 import pytest
 
@@ -20,7 +21,7 @@ def setup_source(rig, monkeypatch, *, first='This paper argues that P, Q, and R.
     from ara.runtime.writing import source_context
     source['bibliography']=source_context(calls,route)['allowed_bibliography']
     seen=[]
-    state=dict(adverse=False, votes=iter(votes))
+    state=dict(adverse=False, votes=chain(votes, repeat('equivalent')))
     def complete(kind, prompt, schema, maximum):
         inputs=json.loads(prompt.split('\nINPUT_JSON\n')[1]);seen.append((kind,inputs))
         if kind=='audit_meaning':

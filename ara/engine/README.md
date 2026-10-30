@@ -67,6 +67,16 @@ forward premises. Each layer reads the previous layer's snapshot. The node cap
 also caps new forward consequences; an instantiation-work cap of
 node_cap × bank-entry-count × 10 prevents combinatorial enumeration from hanging.
 Both caps produce FORWARD_CAP and truncated=true, never a completeness claim.
+Fresh enumeration excludes conjunction/disjunction introduction, existential
+generalisation and double-negation wrapping. Those rules remain available in
+backward search and licensed witness steps; they cannot consume the discovery
+budget with arbitrary standalone packages. Defeasible schemes still require
+licensed CQ-supported witnesses: a schema-less rule is never guessed.
+`forward_coverage` records per-rule mode, visited layers, checked/licensed/retained
+counts, completed depth, work used/limit, and the precise cap reason. A visited
+layer may be only partially scanned if truncated. The offline report and
+methodology retain these receipts; historical results without coverage remain
+without coverage.
 
 Tier 1 compares canonical premise sets of discovered licensed steps, including
 forward deductions, and the full external support of closed routes (including

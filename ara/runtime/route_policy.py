@@ -94,7 +94,7 @@ def stance_crossings(route, provenance):
         roles += [(tid, 'cq_evidence') for a in node.cq_answers for tid in a.supporting_t_ids]
         for tid,role in roles:
             stance = provenance['commitments'].get(tid, {}).get('stance', 'unavailable')
-            if stance != 'endorsed' and not (stance == 'model_alignment' and role == 'global_premise'):
+            if stance != 'endorsed' and not (stance in ('model_alignment','proposed') and role == 'global_premise'):
                 crossings.add((tid,stance,role))
         pending.extend(node.children)
     return [dict(commitment_id=tid,stance=stance,role=role) for tid,stance,role in sorted(crossings)]
@@ -166,6 +166,11 @@ def route_contribution(route, commitments=None, provenance=None):
               for c in (commitments.commitments if commitments is not None and provenance else ())
               if formula_hash(n.proposition.formula) == formula_hash(c.formula)]
     from ara.runtime.symbol_alignment import alignment_disclosure
+    from ara.runtime.hypotheses import route_hypothesis_disclosure
+    hypotheses = route_hypothesis_disclosure(route, provenance)
+    if hypotheses['conditional_on']:
+        receipt.update(hypothesis_disclosure=hypotheses, conditional_on=hypotheses['conditional_on'],
+                       conclusion_status=hypotheses['conclusion_status'])
     return dict(**receipt, alignment_support_ids=alignment_ids, endorsed_support_ids=endorsed_ids,
                 alignment_disclosure=alignment_disclosure(provenance), paper_support=papers, scoped_source_roles=scoped, provenance_status='verified' if provenance else 'unavailable_legacy',
                 provenance_sha256=provenance['sha256'] if provenance else None,
@@ -174,6 +179,11 @@ def route_contribution(route, commitments=None, provenance=None):
 
 def route_classification(route, commitments=None, provenance=None):
     return route_contribution(route, commitments, provenance)['classification']
+
+
+def route_display_status(route, commitments=None, provenance=None):
+    receipt = route_contribution(route, commitments, provenance)
+    return receipt['classification'] + ('; ' + receipt['conclusion_status'] if receipt.get('conditional_on') else '')
 
 
 def selectable_routes(routes, commitments=None, provenance=None):

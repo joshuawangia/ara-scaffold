@@ -518,6 +518,70 @@ desired thesis do not enter the pair judgment prompt. Every selected pair still
 requires the model's relation judgment; broader retrieval never asserts an
 alignment by itself.
 
+## Proposed hypothesis premises
+
+`hypothesis_premises` is an optional run-config list, empty by default. Each entry
+has `id` (prefixed `hypothesis:`), content `text`, `rationale`, `proposer`
+(`ara-target`, `eps2`, or `operator`), and nullable `linked_gap`/`linked_target`
+(at least one is required). Supply exactly one of a normal formula AST or a
+`formalization_request` string. Optional `new_symbols` entries contain `name`,
+`kind`, `arity`, and a content `definition`; every symbol must be used and cannot
+replace an existing catalogue signature. Missing definitions refuse.
+
+For example, with P and Q already defined, a placeholder hypothesis can declare
+`(P and Q) implies R`, introduce R with an explicit definition, and link to a
+placeholder target. A supplied formula passes the normal local formula schema;
+a request passes through the logged `formalise` model boundary. Text/formula
+fidelity remains a model/operator responsibility, not a consequence of Z3.
+
+Admission follows source symbol alignment and precedes the single freeze and
+capacity check. The full combined T and H must be satisfiable; conflicts and
+solver uncertainty refuse before writing freeze artifacts. This conservative
+admission also refuses a T that already contains unrelated contradictions.
+Search still uses its existing consistent-support policy. Hypotheses cannot be
+added to a completed freeze; construct a new run. Frozen-prefix forks preserve
+existing hypotheses and their provenance bytes exactly.
+
+The four-field CommitmentSet codec and frozen-t v1 catalogue envelope are
+unchanged. Hypothesis-bearing provenance uses v4 with a replayable base snapshot,
+exact declarations/resolved formulas and consistency receipt. Its canonical hash
+binds the complete T and catalogue. A hypothesis row has `kind=hypothesis`,
+`stance=proposed`, and `source_id=null`; it never supplies paper ownership,
+bibliography entries, source-pair conflicts, or CQ source evidence.
+
+A selected route still needs two distinct source formulas assignable to two
+endorsed papers. Per-paper novelty includes used H as assumptions in both
+whole-target and essential-atom checks: if H alone or H plus one paper supplies
+the target or its claimed new atom, extra source leaves do not turn that
+restatement into a contribution. A successful using route remains mechanically
+CLOSED but its contribution receipt and human rendering say **conditional on H**.
+This neither proves H nor turns an OPEN proposal paper into a derivation.
+
+The writer must state each H in a node-marked sentence beginning “This paper
+proposes” or “We propose”, with no source citation or author attribution. The
+runtime owns the conclusion-status disclosure: after validating the authored
+argument, compose inserts a fixed **Runtime conditional disclosure** section
+first in the body, naming the exact H IDs. The insertion receipt binds the route,
+block hash and unchanged authored-body hash. Model prose must not supply or
+imitate this reserved section or its status statement.
+
+Compose, export, publication and reload require the exact first-body block and
+its matching route-bound receipt. Moving it under an authored negation, altering
+H, removing it or duplicating it refuses. Publication checks both the audit and
+reading copies after the title. Resuming a recorded draft verifies and preserves
+the existing block. Writer/revision/publication instructions explain the runtime
+boundary; an audit cannot authorize changes to it. The existing status-wording
+screen uses NFKC only for checking, without rewriting accepted text.
+
+The typed `proposed_principle` role is available only for verified hypothesis
+nodes. Other source and argument roles, three-sample adverse-union audits,
+citation verification and repair bounds stay in force. Construction receipts,
+report data, methodology, route receipts and figures retain proposed status.
+Selection summaries, CLI listings and tree headings disclose H beside the
+classification; OPEN routes retain reachable H use and state that no completed
+conclusion is established. Local assumptions and unreachable nodes do not become
+global H use. Runtime status is a mechanical disclosure, not a semantic proof of
+arbitrary authored prose.
 
 ## Shared vocabulary and wider alignment (opt-in)
 
@@ -611,3 +675,37 @@ report frame. Accepted definitions retain their exact original typography. The
 raw guard remains independent: report text in an HTML comment still refuses even
 though the display-oriented view omits that comment. This policy does not claim
 to recognize arbitrary visual confusables or determine semantic authorship.
+
+
+## New hypothesis lifecycle from completed construction
+
+Use `resume-alignment --source-run SOURCE --run-dir NEW --hypotheses-file H.json`
+to copy a verified construction/alignment prefix into a separate empty run.
+The source may already be frozen. Its original artifacts and log stay untouched;
+its old freeze, targets and search do not enter the new lifecycle. All construction
+windows must be terminal and match their retained artifacts. Accepted alignment
+judgments are reused with the recorded retrieval policy, and only unfinished
+pairs can dispatch. This does not enable reconstruction or widened alignment.
+
+`H.json` is a JSON list using the hypothesis declaration fields above. An optional
+`existing_symbols` list names mandatory exact catalogue symbols, for example
+`["P", "Q"]` for an H formula `P implies Q`. Both supplied formulas and normal
+model formalization must use each named symbol with its recorded signature.
+Unknown names, omitted required names and definition collisions refuse. The
+check also runs when loading hypothesis provenance. Names are never guessed
+from prose or silently remapped; after alignment they must still exist in the
+resulting catalogue. `new_symbols` remains available for explicitly new meanings.
+
+Before admitting H, a completed-source fork compares the restored commitments,
+provenance and catalogue with the original source freeze (excluding any old H).
+Only H entries may be appended. H remains `kind=hypothesis`, `stance=proposed`,
+with no source-paper credit, and using routes retain the runtime-owned conditional
+disclosure. The new lifecycle records one freeze after H admission. An H file
+replaces the prior lifecycle's H declarations; it does not accumulate them.
+
+Add `--plan-only --output-dir PLAN` to validate the source, required names and
+reuse inventory without creating NEW, a provider or a counter. PLAN must be
+separate from both source and destination. This check cannot promise that a model
+will formalize H faithfully, that H is consistent, or that search will close;
+those gates still run before freezing and during native search. A live continuation
+still requires current provider preflight and sufficient budgets.

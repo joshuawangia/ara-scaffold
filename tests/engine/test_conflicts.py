@@ -69,8 +69,9 @@ def test_forward_replays_textual_steps_at_their_actual_depth():
 
 
 def test_forward_cap_is_explicit():
-    e, ports = engine(table(P, Q))
-    result = forward_pass((P, Q), e.commitments, e.licenser, 2, node_cap=1)
+    pq, qr = Formula('implies', (P, Q)), Formula('implies', (Q, R))
+    e, ports = engine(table(P, pq, qr))
+    result = forward_pass((P, pq, qr), e.commitments, e.licenser, 2, node_cap=1)
     assert result.truncated
     assert len(result.consequences) == 1
     assert any(ev.decision and ev.decision.reason_code == 'FORWARD_CAP' for ev in ports.events)
@@ -136,3 +137,35 @@ def test_tier1_compares_exported_external_support_including_cqs():
     assert len(result.tier1) == 1
     assert set(result.tier1[0].premise_forms) == {P.canonical(), R.canonical()}
     assert len(ports.repairs) == 1
+
+
+def test_forward_small_cap_reaches_bank_consequence_without_packaging():
+    """Fresh forward discovery retains bank consequences, never arbitrary packages."""
+    pq = Formula('implies', (P, Q))
+    e, _ = engine(table(P, pq))
+    result = forward_pass((P, pq), e.commitments, e.licenser, 1, node_cap=2)
+    assert any(c.formula == Q and c.bank_id == 'modus_ponens' for c in result.consequences)
+    assert not any(c.bank_id in ('conjunction_introduction', 'disjunction_introduction',
+                                'existential_generalisation', 'double_negation')
+                   for c in result.consequences)
+    assert not result.truncated
+
+
+def test_forward_small_cap_reaches_defeasible_witness_after_deduction():
+    pq = Formula('implies', (P, Q))
+    cuts = {Q.canonical(): (proposal('modus_ponens', Q, conditional=pq, antecedent=P),),
+            R.canonical(): (proposal('sign', R, sign_relation=Q, observed_sign=P),)}
+    e, _ = engine(table(P, pq), cuts)
+    route = e.search(prop(R)).routes[0]
+    assert route.status == 'CLOSED'
+    result = forward_pass((P, pq), e.commitments, e.licenser, 2, node_cap=2, witnesses=(route,))
+    assert any(c.formula == R and c.bank_id == 'sign' and c.depth == 2 for c in result.consequences)
+    assert not result.truncated
+    rows = {r.bank_id: r for r in result.coverage}
+    assert rows['conjunction_introduction'].mode == 'excluded_packaging'
+    assert rows['disjunction_introduction'].attempted == 0
+    assert rows['sign'].mode == 'witness_only' and rows['sign'].retained == 1
+    assert rows['modus_ponens'].retained == 1
+    assert result.completed_depth == 2
+    assert 0 < result.work_used <= result.work_limit
+    assert type(result).from_json(result.to_json()) == result

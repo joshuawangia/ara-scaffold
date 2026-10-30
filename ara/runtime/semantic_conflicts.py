@@ -30,7 +30,7 @@ def rank_pairs(commitments, catalogue, provenance, limit):
     eligible = 0
     def candidates():
         nonlocal eligible
-        source_commitments = [c for c in commitments.commitments if rows[c.id]['stance'] != 'model_alignment']
+        source_commitments = [c for c in commitments.commitments if rows[c.id]['stance'] not in ('model_alignment','proposed')]
         for a, b in combinations(sorted(source_commitments, key=lambda c: c.id), 2):
             if rows[a.id]['source_id'] == rows[b.id]['source_id']:
                 continue

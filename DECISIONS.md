@@ -4607,6 +4607,89 @@ changed plan inputs cannot authorize stale response replay or old accepted-batch
 restoration. Existing extraction reuse remains available. No source rule or route
 success is inferred from an anchor or increased capacity.
 
+
+## Round 32 — Proposed premises and bounded forward discovery
+
+Optional `hypothesis_premises` are explicit run configuration, formalized through
+normal logged local validation before the single native freeze. Rich construction
+and exact vocabulary/provenance are required. The existing CommitmentSet and
+catalogue codecs are unchanged. Hypothesis-bearing provenance v4 binds a
+replayable pre-hypothesis snapshot and declarations; v1/v2 readers retain their
+strict validation. Proposed rows are `kind=hypothesis`, `stance=proposed`, with no
+source owner. Admission refuses inconsistent or solver-unresolved combined T.
+
+Search can use these premises, but CQ evidence, paper matching and bibliography
+never treat them as sources. Novelty tests each paper together with H, rejecting
+H restatement/padding and requiring two distinct endorsed source-paper supports.
+Every using route is disclosed as conditional on H in receipts and the writer
+outline. Proposal sentences require a dedicated `proposed_principle` role and a
+paper-owned proposal prefix, cannot carry source citations/attribution, and cannot
+cover source/inference nodes. Export and publication refuse missing disclosures.
+Forks preserve the exact frozen metadata; they do not admit new H after freeze.
+Concrete operator-requested premise drafts remain external report artifacts.
+
+Fresh forward enumeration excludes conjunction/disjunction introduction,
+existential generalisation and double-negation wrapping as standalone discoveries.
+Backward search and licensed witness steps retain the full bank. Schema-less
+schemes require CQ-supported observed witnesses; removing packaging does not
+invent conclusions or establish exhaustive scheme coverage. A two-consequence
+regression preserves a deduction then a genuine scheme consequence that packaging
+previously crowded out. Independent node and work caps remain; per-rule coverage
+records visited layers, checked/licensed/retained counts, completed depth and cap
+reason in logs, offline reports and methodology. Legacy forward records retain
+empty coverage rather than invented history. Historical packaging still passes
+through novelty checks when replayed.
+
+Offline proof includes native freeze/search/writer/audit/export/fork regression,
+source-credit and missing-disclosure mutations, strict legacy metadata and typed
+role regressions, capped forward regression and coverage reporting. Full release
+receipts and real-freeze coverage are retained in the external Round 32 report;
+no live provider, semantic-faithfulness or literature-originality claim follows.
+
+
+## Round 32b — conditional novelty and affirmative disclosure
+
+Address X32-F1/F2/F3. Essential-atom novelty uses each paper together with the
+route's proposed premises, just as whole-target novelty does. H=R, compound or
+vacuously quantified H containing R, and one-paper-plus-H derivations of R cannot
+upgrade R conjoined with source restatements to CLOSED-derived. Genuine separate
+P/Q source support with H=(P and Q) implies R remains conditional and selectable.
+
+H disclosure is an exact runtime-supplied, standalone affirmative paragraph,
+once per complete essay. A negated phrase, quotation, blockquote, code sample,
+or contradictory rendered status statement cannot satisfy it. Native writer
+validation preserves actionable correction feedback; export, publication and
+publication reload recheck the policy, including the actual reading copy.
+Node-marked paper-owned proposal sentences and typed audit roles remain required.
+This deterministic wording gate is bounded syntax validation, not a general
+semantic proof of arbitrary prose.
+
+Actual H use is collected from reachable route leaves and CQ support independently
+of closure classification. OPEN receipts explicitly disclose no completed
+conclusion; summaries and CLI/tree headings retain H alongside existing status.
+No provenance codec, source authority, licensing or source-credit rule changes.
+Red-first native regressions and production-wire controls cover padding,
+misleading text, authenticated old publications and selection/report disclosure.
+Full offline gate receipts are recorded in the external Round 32b report.
+
+
+## Round 32c — runtime-owned conditional status
+
+X32-F2 follow-up: model-authored paragraphs cannot establish the route's
+conditional status. Compose inserts a fixed first-body Runtime conditional
+disclosure section naming the actual H IDs after validating the authored draft.
+An append-only receipt binds the exact block, route and original authored body.
+Export, publication and reload require the unchanged first-body block and matching
+receipt; recorded resume preserves it without adding another. Publication checks
+both copies after the title. No draft schema or frozen provenance codec changes.
+
+Model prose cannot supply the reserved disclosure or its status assertions.
+The existing lexical status screen uses NFKC as a view only. No expanding list
+of paragraph-negation heuristics supplies authority: position, exact runtime bytes
+and recorded insertion supply it. Proposal sentences, typed audits and source
+citation requirements are unchanged. Three reviewer admissions are now native
+refusal regressions; genuine composition/resume remains positive. Controls cover
+insertion, position/integrity, receipt binding and compatibility typography.
 ## Round 16 — opt-in validated subsets and one split retry
 
 Three run-config flags default off and bind only enabled policies into the counted
@@ -4739,3 +4822,34 @@ Retain that mandatory control and add a distinguishing native/rehashed-metadata
 case containing raw attribution inside a comment omitted from the normalized
 view. The control now requires metadata rejection to fail when the raw guard is
 removed. Keep compatibility normalization under its own mutation control.
+
+
+Round 32c integration: preserve Sigma v3 precise source screening and wide
+alignment replay beneath the v4 hypothesis envelope. Reconstruct the pre-H
+commitments/symbols/rows before replaying alignment with its recorded settings;
+source rows retain their validated screen policies. Legacy v2 and v3 alignment
+fields remain mandatory when declared, including refusal of null corruption.
+Both branches' disclosures, configuration, decisions and control inventories
+are retained. A native two-paper precise/shared/aligned/H freeze and exact fork
+regression covers the combined persistence contract.
+
+
+## Round 32c addition — hypothesis admission after completed construction
+
+An explicit `resume-alignment --source-run ... --hypotheses-file ...` forks an
+authenticated pre-freeze prefix and verified construction artifacts into a new
+empty run. Completed construction and accepted alignment judgments are reused;
+no construction call or old freeze is replayed. The original source run is
+read-only, and the new lifecycle still freezes exactly once after H admission.
+A completed source freeze binds the restored source commitments, provenance and
+catalogue before H can append anything. Partial/damaged freezes refuse.
+
+Operator-named `existing_symbols` are mandatory exact catalogue signatures in
+both supplied and model-formalized H formulas, including provenance reload.
+They are not suggestions and cannot authorize renaming source symbols. The H
+file is logged as HUMAN input; its declarations remain proposed, without source
+credit, and existing runtime-owned conditional disclosure gates still apply.
+Plan-only verifies restoration and names without provider/counter creation.
+Offline regressions and production-wire controls belong to
+`test_hypothesis_construction_fork.py`; current executed evidence is recorded in
+the external Round 32c report, separately from older committed-head gates.

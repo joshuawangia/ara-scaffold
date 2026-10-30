@@ -51,7 +51,7 @@ def reading_copy(markdown, evidence, records, currency):
     from ara.runtime.publication_currency import LIT
     sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])
     supports = {s['commitment']['id']:s for s in sources
-                if not s['provenance'] or s['provenance'].get('stance') != 'model_alignment'}
+                if not s['provenance'] or s['provenance'].get('stance') not in ('model_alignment','proposed')}
     receipt = {}
     def source_citation(match):
         id = match[1]

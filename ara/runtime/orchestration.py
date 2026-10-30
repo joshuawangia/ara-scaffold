@@ -42,7 +42,7 @@ class NativeEngine:
         vocabulary = calls.search_vocabulary(commitments)
         provenance = vocabulary['commitment_provenance']
         premises = CommitmentSet(tuple(c for c in commitments.commitments
-            if provenance is None or provenance['commitments'][c.id]['stance'] in ('endorsed', 'model_alignment')))
+            if provenance is None or provenance['commitments'][c.id]['stance'] in ('endorsed', 'model_alignment', 'proposed')))
         calls.log.record('search_stance_policy', provenance_status=vocabulary['provenance_status'],
                          provenance_sha256=vocabulary['provenance_sha256'],
                          eligible_commitment_ids=[c.id for c in premises.commitments],
@@ -108,6 +108,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     """One construction lifecycle, one freeze. Search cannot observe provisional batches."""
     if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
+    from ara.runtime.hypotheses import validate_hypothesis_config
+    validate_hypothesis_config(calls.config)
     state = getattr(calls, 'alignment_resume', None)
     if state is not None:
         from ara.runtime.closure_budget import apply_context_limits
@@ -126,6 +128,11 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
             raise ValueError('frozen catalogue construction mismatch')
         from ara.runtime.symbol_alignment import align_symbols
         commitments, symbols, rows, alignment = align_symbols(calls, commitments, latest['symbols'], latest['provenance'])
+        if state is not None and state.get('expected_source') is not None:
+            from ara.runtime.construction_fork import validate_restored_source
+            validate_restored_source(state['expected_source'], commitments, symbols, rows)
+        from ara.runtime.hypotheses import admit_hypotheses
+        commitments, symbols, rows, hypotheses = admit_hypotheses(calls, commitments, symbols, rows)
         measured = calls.count_request('propose_targets', {'commitments': commitments.to_dict(),
             'count': calls.config['target_candidates'], 'named_position': None},
             purpose='commitments_only_capacity_not_target_readiness')
@@ -135,9 +142,11 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         save_immutable(calls.log.path.parent / 'frozen-t.json', canonical(artifact))
         calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
         from ara.runtime.commitment_provenance import make_commitment_provenance
-        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment)
+        provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment, hypotheses=hypotheses)
         save_immutable(calls.log.path.parent / 'commitment-provenance.json', canonical(provenance))
         calls.log.record('commitment_provenance_frozen', **provenance)
+    elif calls.config.get('hypothesis_premises'):
+        raise ValueError('hypothesis premises require rich construction and verified provenance')
     save_immutable(calls.log.path.parent / 'commitments.json', commitments.to_json())
     calls.log.record('commitments_frozen', commitments=commitments.to_dict(), bank_version=bank.bank_version)
     return commitments
@@ -240,16 +249,20 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
             raise ValueError('inconsistent or unresolved route supports cannot supply an essay')
 
     from ara.runtime.citations import restore_citations, check_coverage
+    from ara.runtime.hypotheses import insert_runtime_disclosure, validate_disclosure
     if draft is None:
-        draft = calls.write_essay(route)
+        draft = insert_runtime_disclosure(calls, route, calls.write_essay(route))
         prior_rounds = 0
     else:
         calls.screen_imported_draft(draft)
-        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision') and
+        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision', 'hypothesis_disclosure_inserted') and
                        json.loads(e['payload_json']).get('draft') == draft for e in calls.log.read())
-        calls.validate_essay(route, draft, minimum_words=0 if recorded else None)
+        calls.validate_essay(route, draft, minimum_words=0 if recorded else None, authored=not recorded)
+        if not recorded:
+            draft = insert_runtime_disclosure(calls, route, draft)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
         prior_rounds = repair_rounds(calls, route)
+    validate_disclosure(calls.log.read(), route, draft)
     calls.log.record('essay_composition_started', route_id=route.id,
                      policy='fresh-unanimous-with-adverse-history', repair_rounds=prior_rounds)
     for path in (calls.log.path.parent / 'draft.json', calls.log.path.parent / 'export/essay.txt'):

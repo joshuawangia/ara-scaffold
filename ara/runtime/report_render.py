@@ -298,7 +298,10 @@ def render(report, destination: Path):
             export = graph_export(route_dot(graph), f'{prefix}-route-{ri}', destination, graphviz)
             summary, rows = tree_summary(graph, 'route')
             trees.append(dict(kind='route', route_id=graph['id'], seq=route['seq'], file=filename, **summary, **export))
-            route_summaries.append(dict(classification=route['classification'], selectable_by_default=route['classification']=='CLOSED-derived', route_id=graph['id'], target=route['target'], polarity=route['polarity'], model_summary=preview(route['model_summary']), file=filename, **summary))
+            route_summaries.append(dict(classification=route['classification'],
+                **{key: route['contribution'][key] for key in
+                   ('conclusion_status','conditional_on','hypothesis_disclosure') if key in route['contribution']},
+                selectable_by_default=route['classification']=='CLOSED-derived', route_id=graph['id'], target=route['target'], polarity=route['polarity'], model_summary=preview(route['model_summary']), file=filename, **summary))
             tree_blocks.append(tree_block('Route ' + short(graph['id']), summary, rows, filename, export))
         for tree in trees:
             if tree['svg'] is None:

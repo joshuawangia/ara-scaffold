@@ -112,6 +112,8 @@ def as_draft(markdown, bibliography):
 def polish(calls, route, draft, *, currency=None):
     from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
+    from ara.runtime.hypotheses import validate_disclosure
+    validate_disclosure(calls.log.read(),route,draft)
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -126,6 +128,7 @@ def polish(calls, route, draft, *, currency=None):
         for id,record in currency['sources'].items():
             records.setdefault(id,dict(record=record,verification='logged_currency_record'))
     def check_whole(value):
+        validate_disclosure(calls.log.read(),route,as_draft(value['markdown'],draft['bibliography']))
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
         validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'])
         return value
@@ -238,8 +241,24 @@ def polish(calls, route, draft, *, currency=None):
     return publish(calls.log, result)
 
 
+def validate_publication_disclosure(events, result, audit_markdown, reading_markdown):
+    """Check both authenticated copies against the current hypothesis policy."""
+    if any(e['stage']=='hypotheses_admitted' for e in events):
+        routes=[json.loads(e['payload_json'])['graph'] for e in events if e['stage']=='route']
+        route=next((r for r in reversed(routes) if r['id']==result['route_id']),None)
+        require(route is not None, 'hypothesis publication requires recorded route')
+        from ara.runtime.hypotheses import validate_disclosure
+        validate_disclosure(events,RouteGraph.from_dict(route),
+            as_draft(audit_markdown,result['draft']['bibliography']))
+        from ara.runtime.hypotheses import route_disclosure, validate_conditional_statement
+        validate_conditional_statement(route_disclosure(events,RouteGraph.from_dict(route)),
+                                       as_draft(reading_markdown,result['draft']['bibliography'])['body'])
+
+
 def publish(log, result):
     """Persist a validated audit artifact and its marker-free reading copy."""
+    validate_publication_disclosure(log.read(), result, result['markdown'],
+                                   result.get('reading_markdown', result['markdown']))
     result = {**result, 'audit_markdown': result['markdown'],
               'markdown': NODE.sub('', result.get('reading_markdown',result['markdown']))}
     directory = log.path.parent/'publication'
@@ -262,7 +281,8 @@ def publish(log, result):
 
 def load_publication(run_dir):
     from ara.runtime.logging import EventLog
-    stages = [e['stage'] for e in EventLog(run_dir/'events.jsonl').read()
+    events = EventLog(run_dir/'events.jsonl').read()
+    stages = [e['stage'] for e in events
               if e['stage'] in ('publication_configuration','publication_started','publication_completed')]
     require(bool(stages) and stages[-1] == 'publication_completed',
             'latest publication attempt is incomplete; previous output cannot be reused')
@@ -272,6 +292,8 @@ def load_publication(run_dir):
     result = json.loads((directory/'publication.json').read_text())
     require(digest(canonical(result)) == pointer['sha256'],'publication digest mismatch')
     require((directory/'paper.md').read_text() == result['markdown'],'publication Markdown changed')
+    validate_publication_disclosure(events, result, result.get('audit_markdown', result['markdown']),
+                                   result['markdown'])
     return result,directory
 
 

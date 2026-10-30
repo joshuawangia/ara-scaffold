@@ -18,8 +18,13 @@ def effective_run(events):
     if len(starts)!=1:
         raise ValueError('requires one run configuration')
     run = starts[0]
-    configs = [json.loads(e['payload_json'])['config'] for e in events if e['stage']=='freeze_fork_configuration']
-    return {**run,'config':configs[-1]} if configs else run
+    for event in events:
+        if event['stage']=='construction_forked':
+            payload=json.loads(event['payload_json'])
+            run={**run,'config':{**run['config'],'hypothesis_premises':payload['hypotheses'],'cache_dir':payload['cache_dir']}}
+        elif event['stage']=='freeze_fork_configuration':
+            run={**run,'config':json.loads(event['payload_json'])['config']}
+    return run
 
 
 def fork_from_freeze(source, destination, bank):

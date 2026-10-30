@@ -161,8 +161,10 @@ def methodology(log_path: Path) -> str:
                    'target_preflights': [json.loads(e['payload_json']) for e in events if e['stage'] in ('target_triviality_preflight','target_vocabulary_preflight','target_contribution_preflight','target_own_thesis_classification')],
                    'routes': [dict(id=p['graph']['id'], **route_contribution(RouteGraph.from_dict(p['graph']), commitments, provenance_from_events(events, commitments)))
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
+        'forward_coverage': [json.loads(e['payload_json']) for e in events if e['stage']=='forward_coverage'],
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
-        'construction': {'vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_vocabulary_metrics'],
+        'construction': {'hypotheses': [json.loads(e['payload_json']) for e in events if e['stage'] == 'hypotheses_admitted'],
+                         'vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_vocabulary_metrics'],
                          'alignment_vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'alignment_vocabulary_metrics'],
                          'partial_acceptances': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_partial_acceptance'],
                          'split_retries': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_split_retry'],
@@ -254,6 +256,8 @@ def export_run(log_path: Path, output: Path, redactions: tuple[str, ...] = (), *
                 route = next((r for r in reversed(routes) if r['id'] == route_id), None)
                 if route is None:
                     raise ValueError('citation coverage: final draft has no recorded route')
+                from ara.runtime.hypotheses import validate_disclosure
+                validate_disclosure(events, RouteGraph.from_dict(route), draft)
                 check_coverage(events, RouteGraph.from_dict(route), draft)
         except ValueError:
             (output / 'essay.txt').unlink(missing_ok=True)

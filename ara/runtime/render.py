@@ -3,12 +3,12 @@ from pathlib import Path
 
 from ara.runtime.cache import digest
 from ara.types import RouteGraph
-from ara.runtime.route_policy import route_classification
+from ara.runtime.route_policy import route_display_status
 
 
 def render_tree(graph: RouteGraph, commitments=None, provenance=None) -> str:
     nodes = {n.id: n for n in graph.nodes}
-    lines = [f'{graph.id} [{route_classification(graph, commitments, provenance)}] frontier={list(graph.frontier)}']
+    lines = [f'{graph.id} [{route_display_status(graph, commitments, provenance)}] frontier={list(graph.frontier)}']
     if provenance and 'alignment' in provenance:
         from ara.runtime.symbol_alignment import alignment_disclosure
         from ara.runtime.cache import canonical
@@ -21,6 +21,8 @@ def render_tree(graph: RouteGraph, commitments=None, provenance=None) -> str:
         if node is None:
             raise ValueError(f'graph references absent node: {node_id}')
         lines.append(f'{indent}{node.id}: {node.proposition.text} [{node.kind}; T={node.t_id}]')
+        if provenance and provenance['commitments'].get(node.t_id, {}).get('stance') == 'proposed':
+            lines.append(f'{indent}  [proposed hypothesis; conditional on H; not source endorsement]')
         if provenance and provenance['commitments'].get(node.t_id, {}).get('stance') == 'model_alignment':
             lines.append(f'{indent}  [alignment_premise; model_alignment; not source endorsement]')
         for child in node.children:

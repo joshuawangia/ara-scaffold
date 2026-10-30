@@ -2,13 +2,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from collections import Counter
+import json
+from datetime import datetime, timezone
 from itertools import product
 from typing import Callable, Iterator
 
 from ara.engine.licensing import License, Licenser, emit
 from ara.engine.matching import Bindings, instantiate, match, substitute, terms
 from ara.engine.routes import cq_supported
-from ara.types import CommitmentSet, Formula, FormulaSchema, PremiseFill, Proposal, Proposition, Record, RouteGraph, Term
+from ara.types import CommitmentSet, Formula, FormulaSchema, PremiseFill, Proposal, Proposition, Record, RouteGraph, RunEvent, Term
 
 
 @dataclass(frozen=True)
@@ -20,11 +23,32 @@ class Consequence(Record):
     flagged: bool
 
 
+# These remain available to backward search and verified witness replay. Fresh
+# enumeration must not manufacture arbitrary packages as standalone discoveries.
+_PACKAGING_RULES = frozenset({'conjunction_introduction', 'disjunction_introduction',
+                              'existential_generalisation', 'double_negation'})
+
+
+@dataclass(frozen=True)
+class ForwardRuleCoverage(Record):
+    bank_id: str
+    mode: str
+    levels: tuple[int, ...] = ()
+    attempted: int = 0
+    licensed: int = 0
+    retained: int = 0
+
+
 @dataclass(frozen=True)
 class ForwardResult(Record):
     consequences: tuple[Consequence, ...]
     truncated: bool
     route_id: str | None = None
+    coverage: tuple[ForwardRuleCoverage, ...] = ()
+    work_limit: int = 0
+    work_used: int = 0
+    completed_depth: int = 0
+    cap_reason: str | None = None
 
 
 class _CanonicalFormaliser:
@@ -41,9 +65,9 @@ class _Budget:
     remaining: int
 
     def use(self):
+        if self.remaining == 0:
+            raise _WorkLimit('instantiation_work')
         self.remaining -= 1
-        if self.remaining < 0:
-            raise _WorkLimit
 
 
 def _subformulas(f: Formula) -> set[Formula]:
@@ -104,14 +128,36 @@ def forward_pass(leaves: tuple[Formula, ...], commitments: CommitmentSet, licens
     known = {f.canonical(): f.normalized() for f in leaves}
     known_depth = {key: 0 for key in known}
     consequences, attempted = [], set()
-    budget = _Budget(node_cap * max(1, len(licenser.bank.entries)) * 10)
+    work_limit = node_cap * max(1, len(licenser.bank.entries)) * 10
+    budget = _Budget(work_limit)
+    levels = {entry.id: set() for entry in licenser.bank.entries}
+    checked, licensed, retained = Counter(), Counter(), Counter()
+    completed_depth = 0
+
+    def finish(cap_reason=None):
+        coverage = tuple(ForwardRuleCoverage(entry.id,
+            'excluded_packaging' if entry.id in _PACKAGING_RULES else
+            'witness_only' if entry.formula_schema is None or entry.formula_schema.scopes else 'enumerated',
+            tuple(sorted(levels[entry.id])), checked[entry.id], licensed[entry.id], retained[entry.id])
+            for entry in licenser.bank.entries)
+        result = ForwardResult(tuple(consequences), cap_reason is not None, route_id,
+            coverage, work_limit, work_limit - budget.remaining, completed_depth, cap_reason)
+        licenser.sink.emit(RunEvent(datetime.now(timezone.utc).isoformat(), 'forward_coverage', 'ENGINE',
+            payload_json=json.dumps(dict(
+            coverage=[row.to_dict() for row in coverage], work_limit=result.work_limit,
+            work_used=result.work_used, completed_depth=completed_depth, requested_depth=depth,
+            node_cap=node_cap, retained=len(consequences), cap_reason=cap_reason,
+            note='Bounded enumeration. Packaging excluded only from fresh enumeration; '
+                 'schema-less schemes and scoped rules require licensed witnesses.'))))
+        return result
 
     def add(formula: Formula, bank_id: str, premises: tuple[Formula, ...], level: int):
         key = formula.canonical()
         if key in known:
             return
         if len(consequences) >= node_cap:
-            raise _WorkLimit
+            raise _WorkLimit('node_cap')
+        retained[bank_id] += 1
         known[key] = formula.normalized()
         known_depth[key] = level
         flagged = commitments.contains_formula(formula.negated())
@@ -163,17 +209,22 @@ def forward_pass(leaves: tuple[Formula, ...], commitments: CommitmentSet, licens
                         premises=tuple(replace(fills[s.id], text=c.proposition.formula.canonical())
                                        for s, c in zip(entry.premise_slots, children)),
                         conclusion_text=node.proposition.formula.canonical(), conclusion_ref=None)
+                    budget.use()
+                    levels[entry.id].add(level)
+                    checked[entry.id] += 1
                     license = checker.check(canonical_proposal, node.proposition)
                     if license.licensed and all(any(cq_supported(a, q.id, commitments) for a in node.cq_answers)
                                                for q in license.entry.critical_questions):
+                        licensed[entry.id] += 1
                         if on_license:
                             on_license(canonical_proposal, license)
                         support = tuple(Formula.from_json(f) for f in sorted(required))
                         add(node.proposition.formula, node.proposal.bank_id, support, level)
             for entry in licenser.bank.entries:
                 schema = entry.formula_schema
-                if schema is None or schema.scopes:
+                if entry.id in _PACKAGING_RULES or schema is None or schema.scopes:
                     continue
+                levels[entry.id].add(level)
                 for fills, conclusion in _instances(schema, snapshot, budget):
                     key = (entry.id, tuple(f.canonical() for f in fills.values()), conclusion.canonical())
                     if key in attempted or conclusion.canonical() in known:
@@ -181,14 +232,17 @@ def forward_pass(leaves: tuple[Formula, ...], commitments: CommitmentSet, licens
                     attempted.add(key)
                     proposal = Proposal(entry.id, tuple(PremiseFill(s.id, fills[s.id].canonical())
                                                         for s in entry.premise_slots), conclusion.canonical())
+                    checked[entry.id] += 1
                     result = checker.check(proposal, Proposition('forward', conclusion.canonical(), conclusion))
                     if result.licensed:
+                        licensed[entry.id] += 1
                         if on_license:
                             on_license(proposal, result)
                         add(conclusion, entry.id, tuple(fills.values()), level)
+            completed_depth = level
             if len(known) == before:
                 break
-    except _WorkLimit:
-        emit(licenser.sink, 'discarded', 'FORWARD_CAP', 'Forward node or instantiation work cap reached')
-        return ForwardResult(tuple(consequences), True, route_id)
-    return ForwardResult(tuple(consequences), False, route_id)
+    except _WorkLimit as exc:
+        emit(licenser.sink, 'discarded', 'FORWARD_CAP', 'Forward node or instantiation work cap reached: ' + str(exc))
+        return finish(str(exc))
+    return finish()

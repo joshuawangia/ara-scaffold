@@ -13,7 +13,7 @@ _FALSE = Formula('and', (_P, _P.negated()))
 def admissible_commitments(commitments, provenance):
     rows = provenance['commitments'] if provenance else None
     return tuple(sorted((c for c in commitments.commitments if rows is None or
-        rows.get(c.id, {}).get('stance') in ('endorsed', 'model_alignment')), key=lambda c: c.id))
+        rows.get(c.id, {}).get('stance') in ('endorsed', 'model_alignment', 'proposed')), key=lambda c: c.id))
 
 
 def support_consistency(commitments, support_ids):

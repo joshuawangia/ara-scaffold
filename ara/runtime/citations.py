@@ -27,6 +27,8 @@ def citation_ids(ids, provenance):
     result = set()
     for tid in ids:
         source = rows.get(tid, {})
+        if source.get('stance') == 'proposed':
+            continue
         if source.get('stance') == 'model_alignment':
             result.update(source['evidence_ids'])
         else:
@@ -130,10 +132,10 @@ def local_verdicts(calls, draft, items):
     provenance = provenance_from_events(events, frozen)
     rows = provenance['commitments'] if provenance else {}
     for entry in draft['bibliography']:
-        if rows.get(entry['id'], {}).get('stance') == 'model_alignment':
+        if rows.get(entry['id'], {}).get('stance') in ('model_alignment','proposed'):
             calls.log.record('local_citation_verification', item_id=entry['id'],
                              status='unresolved', reason='alignment_is_not_source_citation')
-            require(False, 'alignment judgment cannot be a source citation: ' + entry['id'])
+            require(False, 'alignment or hypothesis judgment cannot be a source citation: ' + entry['id'])
     entries = catalogue(events, {b['id'] for b in draft['bibliography']})
     result = {}
     for item in items:

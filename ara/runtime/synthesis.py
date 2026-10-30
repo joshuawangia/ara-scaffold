@@ -49,6 +49,7 @@ def _rank_result(commitments, eligible, provenance, result, origin):
             paper_ids=papers['paper_ids'],bank_ids=sorted(bank_ids),depth=consequence.depth,
             alignment_support_ids=sorted(tid for tid in ids if provenance['commitments'][tid]['stance']=='model_alignment'),
             endorsed_support_ids=sorted(tid for tid in ids if provenance['commitments'][tid]['stance']=='endorsed'),
+            **({'conditional_on':novelty['conditional_on']} if novelty.get('conditional_on') else {}),
             candidate_id='forward:'+digest(key),origin=origin))
     return candidates, conflicts
 
@@ -57,7 +58,7 @@ def forward_candidates(commitments, provenance, bank, sink, *, depth=2, node_cap
     if provenance is None:
         return dict(status='unavailable_legacy', candidates=[], licensed_consequences=0, truncated=False)
     rows = provenance['commitments']
-    eligible = CommitmentSet(tuple(c for c in commitments.commitments if rows[c.id]['stance'] in ('endorsed','model_alignment')))
+    eligible = CommitmentSet(tuple(c for c in commitments.commitments if rows[c.id]['stance'] in ('endorsed','model_alignment','proposed')))
     # The forward engine uses its canonical AST adapter; no model port is invoked.
     result = forward_pass(tuple(c.formula for c in eligible.commitments), eligible,
                           Licenser(bank, None, sink), depth, node_cap)
@@ -78,6 +79,8 @@ def forward_candidates(commitments, provenance, bank, sink, *, depth=2, node_cap
     available = sum(len(prior.consequences) for prior in observed)
     return dict(status='bounded_native_forward',candidates=list(unique.values()),
                 support_conflicts=conflicts,
+                coverage=[row.to_dict() for row in result.coverage], work_limit=result.work_limit,
+                work_used=result.work_used, completed_depth=result.completed_depth, cap_reason=result.cap_reason,
                 licensed_consequences=len(result.consequences),truncated=result.truncated,
                 observed_consequences=available,observed_scanned=node_cap-remaining,
                 observed_truncated=available>node_cap or any(p.truncated for p in observed),

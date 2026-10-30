@@ -4655,3 +4655,18 @@ artifacts; additional real-pair judgments and improved semantic synthesis are
 unverified. Round16 repair is checkpointed at 1ad5aca; parallel windows remain
 explicitly deferred to prioritize this round. Full combined verification belongs
 in the external round17 handoff, with its exact revision and scope.
+
+
+## Sigma round 17 review repair — formatted attribution frames
+
+Independent S17-F1 review showed that emphasis and separator punctuation around
+the complement marker bypassed the opt-in precise attribution screen. Tighten
+explicit holds/maintains/states report frames across formatting separators while
+retaining sentence boundaries and ordinary state predication. Native construction
+and persisted metadata loading share this check. Do not rewrite source text or
+relax legacy screening. The existing v3 policy marker remains valid for clean
+content; formerly admitted formatted report frames now refuse on reload.
+
+Repair is isolated from the pinned ae7db53 suite/control run. Red-first native
+freeze and metadata-reload regressions establish the defect; final exact-head
+suite/control receipts are recorded in the external round17 report.

@@ -2621,6 +2621,12 @@ CASES += [
 ]
 
 
+CASES += [
+    ('precise_formatted_report_frames', 'ara/runtime/commitment_provenance.py', 'r"(?:[^\\w.!?。！？]|_)+that(?=[\\W_]|$)|"', 'r"\\s+that\\b|"', 'tests/runtime/test_precise_attribution_formatting.py'),
+    ('precise_sentence_boundary', 'ara/runtime/commitment_provenance.py', 'r"(?:[^\\w.!?。！？]|_)+that(?=[\\W_]|$)|"', 'r"(?:[^\\w]|_)+that(?=[\\W_]|$)|"', 'tests/runtime/test_precise_attribution_formatting.py::test_ordinary_state_predication_stays_content'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

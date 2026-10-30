@@ -572,3 +572,10 @@ add one logical judgment per selected pair, each with the existing validation
 attempt allowance. Run/window/provider budgets still apply, and unresolved
 judgment limits still refuse freezing. These options may increase latency and
 are not a claim of useful cross-paper synthesis without a measured live run.
+
+
+The precise attribution screen recognizes explicit report frames even when
+emphasis, quotes, a colon or a dash separates the verb from its complement marker.
+Sentence-ending punctuation remains a boundary. This same check runs when loading
+persisted provenance; a previously admitted formatted report frame refuses rather
+than being accepted under a recorded precise-screen marker. Source text is intact.

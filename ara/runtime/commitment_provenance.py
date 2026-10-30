@@ -23,7 +23,8 @@ PRECISE_SCREEN = 'attribution-frames-v1'
 # remain conservative; this screen is not a semantic authorship judgment.
 _PRECISE_ATTRIBUTION = re.compile(
     r"\b(argues?|claims?|contends?|reports?|asserts?|suggests?|proposes?|believes?|"
-    r"defends?|endorses?|says?|thinks?)\b|\b(?:holds?|maintains?|states?)\s+that\b|"
+    r"defends?|endorses?|says?|thinks?)\b|\b(?:holds?|maintains?|states?)"
+    r"(?:[^\w.!?。！？]|_)+that(?=[\W_]|$)|"
     r"\baccording\s+to\b|\bon\s+.+?[’']s\s+account\b|"
     r"[’']s\s+(view|position|thesis|claim|belief|account)\b", re.I)
 

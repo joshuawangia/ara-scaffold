@@ -245,6 +245,19 @@ def polish(calls, route, draft, *, currency=None):
                     native_citations = dict(status='pass' if cleaned == current and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
                     if native_citations['status'] == 'pass':
                         audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                    else:
+                        failed = [item for item in verification['items'] if item['status'] != 'verified']
+                        if failed and all(item.get('kind') == 'quotation' for item in failed):
+                            from ara.runtime.publication_verification import quotation_flags, title_format_body
+                            title_format_body(current,failed,{r['record'].get('title') for r in records.values()})
+                            inputs = verifier.audit_inputs(route,current,publication_context=publication_context)
+                            flags = quotation_flags(current,inputs,failed)
+                            audit = {**audit, 'faithful': False, 'flags': flags,
+                                     'extra_steps': [f['sentence'] for f in flags],
+                                     'native_verification_issues': failed, 'title_format_only': True,
+                                     'repair_instruction': 'Only replace quotation marks around the identified work-title occurrences with Markdown italics (*title*). Preserve every other character, all title wording and every citation.'}
+                            calls.log.record('publication_verification_flags', **audit)
+                            raise EssayAuditFailed(audit,inputs,[])
                 except (ClaudeCodeError, Rejected) as exc:
                     if str(exc) != 'stage_requires_api_provider':
                         raise
@@ -270,6 +283,12 @@ def polish(calls, route, draft, *, currency=None):
                 def validate_repair(value):
                     try:
                         check_whole(value)
+                        if audit.get('title_format_only'):
+                            from ara.runtime.publication_verification import title_format_body
+                            expected = title_format_body(current,audit['native_verification_issues'],
+                                                         {r['record'].get('title') for r in records.values()})
+                            require(as_draft(value['markdown'],draft['bibliography'])['body'] == expected,
+                                    'work-title formatting repair changed wording or other occurrences')
                         validate_repair_scope(candidate['markdown'], value['markdown'], allowed_blocks)
                         validate_sentence_repair(candidate['markdown'], value['markdown'], flagged)
                     except Rejected as exc:

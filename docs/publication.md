@@ -271,3 +271,12 @@ model's original citation/node/figure inventories and indices are validated
 first; only metadata-related paragraph/figure indices are recomputed. A receipt
 binds the before/after values and retains the original model change log. Repairs
 still validate strictly and cannot use insertion to alter unflagged spans.
+
+A native unverified-quotation finding can use a remaining publication repair
+round only when its exact text is a logged work title. The quote:index inventory
+identifies its occurrence, including repeated identical strings. That repair may
+replace only those quotation delimiters with Markdown italics; all other body
+characters, title wording and citations must remain unchanged. The original
+candidate is retained instead of accepting the verifier's cleanup. The ordinary
+fresh audits and citation verification still apply. Unmatched quotations and
+other verification failures continue to refuse; this is no fidelity exemption.

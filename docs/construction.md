@@ -770,6 +770,23 @@ these again and compares them exactly. Completed v1 receipts retain their origin
 plan, response and semantic validation. A partially completed v1 consolidation
 cannot switch protocols in place: start a fresh lifecycle.
 
+New consolidation receipts use `vocabulary-consolidation-v3`. The response wire
+shape and runtime handle bindings remain the same as v2. The v3 plan additionally
+pins `definition_screen: attribution-frames-v1`. This precise policy screens
+newly introduced definitions independently of the historical source rows. Original
+source provenance, stance, text and definition-screen absence remain unchanged.
+Completed v1/v2 receipts replay their historical policies; no in-place policy
+upgrade is permitted for an unfinished plan.
+
+Refusal feedback lists the exact `declaration_slot`, `handle`, global `name`,
+original `definition`, screen, reason and `matched_frames` (raw/normalized view,
+matched text and span). Unsupported markup reports its reason without inventing
+a match. Screen normalization never rewrites persisted definitions. Exact report
+frames, disguised frames and unsupported images remain refused. Native alignment,
+freeze, reload and forks apply the precise policy only to identities authorized
+by a successfully replayed v3 receipt and bridges derived from those definitions;
+source history and unrelated/hypothesis definitions retain their existing policy.
+
 `vocabulary-consolidation.json` and the `vocabulary_consolidated` event retain
 original formulas/catalogue, evidence, immutable provenance, the batch plan,
 validated responses and before/after metrics. The SHA-256-bound provenance v5

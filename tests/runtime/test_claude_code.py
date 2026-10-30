@@ -638,7 +638,7 @@ def test_kappa2_diagnostics_never_retain_free_text(cli, diagnostic):
     receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
     assert 'stderr_first_line' not in receipt
     assert receipt['failure_subtype'] == 'error_during_execution'
-    assert receipt['error_category'] == 'unknown'
+    assert receipt['error_category'] == 'other'
     assert receipt['stderr_bytes'] == len((diagnostic+'\n').encode())
     # Inspect both provider_error and MODEL event payloads, not just the helper.
     for event in log.read():
@@ -660,7 +660,7 @@ def test_json_diagnostics_are_suppressed(cli, field):
     with pytest.raises(Rejected, match='cli_exit_error'):
         calls.formalise(Proposition('p','P'))
     receipt = json.loads(model_events(log)[-1]['payload_json'])['cli']
-    assert receipt['error_category'] == 'unknown'
+    assert receipt['error_category'] == 'other'
     if field == 'subtype':
         assert 'failure_subtype' not in receipt
     else:
@@ -675,7 +675,7 @@ def test_json_diagnostics_are_suppressed(cli, field):
     ('request timed out invalid value: P', 'timeout'),
     ('invalid schema invalid value: P', 'schema'),
     ('overloaded invalid value: P', 'transient'),
-    ('prompt too long invalid value: P', 'request'),
+    ('prompt too long invalid value: P', 'context_length'),
 ])
 def test_exit_diagnostic_retains_only_recognized_category(cli, diagnostic, category):
     make, _, _, binary = cli
@@ -727,7 +727,7 @@ def test_json_error_categories_follow_retry_policy(cli, category, code, field):
     assert sum(e['stage']=='auth_refresh_retry' for e in log.read()) == int(auth)
     assert not any(e['stage'] in ('provider_retry','unclassified_exit_retry') for e in log.read())
     receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
-    assert receipt['error_category'] == ('auth' if code == 'cli_auth_error' else 'request')
+    assert receipt['error_category'] == ('auth' if code == 'cli_auth_error' else 'context_length' if category == 'context_length_exceeded' else 'request')
     if field == 'subtype':
         assert 'failure_subtype' not in receipt
 
@@ -742,7 +742,7 @@ def test_security_rejection_suppresses_json_diagnostics(cli):
         calls.formalise(Proposition('p','P'))
     receipt=json.loads(model_events(log)[-1]['payload_json'])['cli']
     assert 'failure_subtype' not in receipt
-    assert receipt['error_category'] == 'unknown'
+    assert receipt['error_category'] == 'other'
     assert receipt['retryable'] is False
     assert 'offline-token' not in log.path.read_text()
 

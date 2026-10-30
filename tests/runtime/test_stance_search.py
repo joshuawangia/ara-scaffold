@@ -106,13 +106,18 @@ def test_report_and_selection_disclose_historical_crossing(tmp_path):
     assert run['routes'][0]['contribution']['stance_crossings'][0]['stance']=='attacked'
 
 
-def test_restored_crossing_refused_before_analysis(tmp_path):
+def test_restored_crossing_refused_before_analysis(tmp_path, monkeypatch):
     from ara.engine.search import SearchResult
+    from ara.runtime import orchestration
     calls,_=rig(tmp_path,reply)
     provenance(tmp_path,'reported')
     result=SearchResult(GOAL,(closed_graph(),),1,3,False)
+    def forbidden_search_jobs(*args, **kwargs):
+        pytest.fail('restored stance crossing reached search jobs')
+    monkeypatch.setattr(orchestration, 'run_search_jobs', forbidden_search_jobs)
     with pytest.raises(ValueError,match='restored search crosses'):
-        list(NativeEngine(load_bank(ROOT/'bank'),calls).analyse_all((GOAL,),T,1,restored={0:(result,())}))
+        orchestration.search_all(calls, NativeEngine(load_bank(ROOT/'bank'),calls),
+                                 T, (GOAL,), restored={0:(result,())})
 
 
 @pytest.mark.parametrize('stance',['reported','attacked'])

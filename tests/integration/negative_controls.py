@@ -891,8 +891,8 @@ CASES += [
      'for index, journal in reversed(list(enumerate(self.journals))):',
      'tests/runtime/test_search_publication.py::test_native_publication_order_under_reversed_schedule'),
     ('search_publication_destination', 'ara/runtime/search_publication.py',
-     'with self.log.destination(self.journals[index]):',
-     "with __import__('contextlib').nullcontext():",
+     'with self.log.destination(self.journals[index]), target_scope(goal):',
+     'with target_scope(goal):',
      'tests/runtime/test_search_publication.py::test_native_publication_order_under_reversed_schedule'),
     ('search_unpublished_resume', 'ara/runtime/budget.py',
      'if pending_search_publications(log.read()):', 'if False:',
@@ -1644,7 +1644,7 @@ CASES += [
 
 CASES += [
     ('leaf_bridge_relevance', 'ara/runtime/search_context.py',
-     '-len(leaf_symbols.intersection', 'len(leaf_symbols.intersection',
+     '-len(relevant_symbols.intersection', 'len(relevant_symbols.intersection',
      'tests/runtime/test_search_context.py::test_leaf_context_selects_ranked_bridges_and_referenced_catalogue'),
     ('leaf_bridge_bound', 'ara/runtime/search_context.py',
      "b['bridge_id']))[:bridge_limit]", "b['bridge_id']))[:]",
@@ -1722,7 +1722,7 @@ CASES += [
      " or receipt['mapping']!=mapping", '',
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_native_pipeline', 'ara/runtime/orchestration.py',
-     "align_symbols(calls, commitments, latest['symbols'], latest['provenance'])", "(commitments, latest['symbols'], latest['provenance'], None)",
+     "align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)", "(commitments, symbols, rows, None)",
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_stage_identity', 'ara/runtime/construction_stages.py',
      "return dispatch_settings(config, 'build_t_batch', correction=False)", "return dispatch_settings(config, 'build_t_batch', correction=correction)",
@@ -2394,7 +2394,8 @@ CASES += [
      'formula=items[tid].formula.to_dict()', "formula=Formula('atom', name='P').to_dict()",
      'tests/runtime/test_target_context.py::test_legacy_stance_is_unavailable_and_formulas_are_never_shortened'),
     ('target_context_mandatory_evidence', 'ara/runtime/search_context.py',
-     'max_depth=hops, mandatory=mandatory)', 'max_depth=hops, mandatory={tid:set() for tid in items})',
+     'depth_cut(items, roots, dependencies, lambda ids: True,\n                                     max_depth=hops, mandatory=mandatory)',
+     'depth_cut(items, roots, dependencies, lambda ids: True,\n                                     max_depth=hops, mandatory={tid:set() for tid in items})',
      'tests/runtime/test_target_context.py::test_alignment_bridge_requires_all_evidence_even_at_zero_hops'),
     ('target_context_no_shrink', 'ara/runtime/search_context.py',
      "data = target_slice(inputs, calls.config.get('target_context_hops', 1))", 'data = target_slice(inputs, 0)',
@@ -2826,7 +2827,7 @@ CASES += [('recovery_partial_activation',
 
 CASES += [
     ('hypothesis_precise_source_envelope', 'ara/runtime/commitment_provenance.py',
-     "value['schema_version'] != 'commitment-provenance-v4' and", 'True and',
+     "value['schema_version'] not in ('commitment-provenance-v4','commitment-provenance-v5') and", 'True and',
      'tests/runtime/test_hypothesis_sigma_integration.py'),
     ('hypothesis_pre_h_alignment_replay', 'ara/runtime/commitment_provenance.py',
      "validate_alignment(value['alignment'], source_commitments,\n                                                               source_symbols, source_rows)",
@@ -2844,6 +2845,128 @@ CASES += [
      "validate_restored_source(state['expected_source'], commitments, symbols, rows)",
      'pass  # mutation disables source preservation',
      'tests/runtime/test_hypothesis_construction_fork.py::test_source_changed_on_replay_refuses_before_h'),
+]
+
+
+CASES += [
+    ('search_evidence_prompt_projection', 'ara/runtime/search_context.py',
+     '    data.update(evidence)', '    pass  # mutation omits prompt projection',
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+    ('search_evidence_full_receipt', 'ara/runtime/search_context.py',
+     "calls.log.record('search_context_evidence', kind=kind,", "calls.log.record('disabled_search_context_evidence', kind=kind,",
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+    ('search_evidence_alias_relevance', 'ara/runtime/search_evidence.py',
+     "pair[key] in names or mapping.get(pair[key], pair[key]) in names", "False",
+     'tests/runtime/test_search_evidence.py::test_leaf_alignment_keeps_alias_related_rows_and_discloses_projection'),
+    ('search_evidence_alignment_scope', 'ara/runtime/search_evidence.py',
+     "'judgments': [row for row in judgments if relevant(row)]", "'judgments': judgments",
+     'tests/runtime/test_search_evidence.py::test_leaf_alignment_keeps_alias_related_rows_and_discloses_projection'),
+    ('search_evidence_final_basis', 'ara/runtime/search_evidence.py',
+     "[positions[tid] for tid in row]", "[]",
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+]
+
+CASES += [
+    ('search_evidence_cache_binding', 'ara/runtime/search_evidence.py',
+     "key + '_sha256': digest(canonical(value)) for key, value in evidence.items()",
+     "key + '_sha256': '0' * 64 for key, value in evidence.items()",
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+    ('consolidation_native_step', 'ara/runtime/vocabulary_consolidation.py',
+     'if policy(calls.config) is None:return original,original_symbols,rows,None',
+     'if True:return original,original_symbols,rows,None',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_then_alignment_then_one_freeze'),
+    ('consolidation_immutable_text', 'ara/runtime/vocabulary_consolidation.py',
+     "require(all(c['definition']==expected[c['id']]['text'] for c in data['commitments']),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+    ('consolidation_reuse_judgment', 'ara/runtime/vocabulary_consolidation.py',
+     "require({a['name'] for a in data['alignments']}==set(used)&old_names and", 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+    ('consolidation_receipt_hash', 'ara/runtime/vocabulary_consolidation.py',
+     "require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+    ('consolidation_working_capacity', 'ara/runtime/vocabulary_consolidation.py',
+     "require(measured.initial_input_tokens<=calls.config['working_t_token_budget'] and", 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_capacity_refuses'),
+    ('consolidation_catalogue_capacity', 'ara/runtime/vocabulary_consolidation.py',
+     "require(counted.initial_input_tokens-baseline.initial_input_tokens<=calls.config['working_t_symbol_token_budget'],", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_capacity_refuses'),
+    ('consolidation_dependency_component', 'ara/runtime/vocabulary_consolidation.py',
+     "require(all(len(u)<=settings['batch_size'] for u in units),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_topic_plan_preserves_inference_components'),
+    ('consolidation_frozen_validation', 'ara/runtime/commitment_provenance.py',
+     "if value.get('consolidation') is not None:", "if False and value.get('consolidation') is not None:",
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+]
+
+
+CASES += [
+    ('cli_context_length_category', 'ara/runtime/claude_code.py',
+     "if 'context_length' in matches:", "if False and 'context_length' in matches:",
+     'tests/runtime/test_cli_exit_categories.py::test_exit_categories_are_sanitized_and_context_is_not_retried'),
+    ('cli_exit_sanitized_category', 'ara/runtime/claude_code.py',
+     'error_category=category, stderr_bytes=len(stderr.encode())',
+     'error_category=stderr, stderr_bytes=len(stderr.encode())',
+     'tests/runtime/test_cli_exit_categories.py::test_exit_categories_are_sanitized_and_context_is_not_retried'),
+    ('consolidation_historical_unframes', 'ara/runtime/symbol_alignment.py',
+     'make_commitment_provenance(commitments,catalogue,provenance,consolidation=consolidation)',
+     'make_commitment_provenance(commitments,catalogue,provenance)',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_preserves_historical_unframes'),
+    ('consolidation_consistency', 'ara/runtime/vocabulary_consolidation.py',
+     'require(all(_consistent(CommitmentSet((c,))) for c in fresh.commitments) and', 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+    ('consolidation_conditional_endpoints', 'ara/runtime/vocabulary_consolidation.py',
+     "require(not any(i['reason']!='inference_requires_conditional' for i in metrics['issues']),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_refuses_disconnected_conditional'),
+]
+
+
+CASES += [
+    ('search_slots_packing', 'ara/runtime/calls.py',
+     "kind in ('map_leaf', 'propose_cuts', 'formalise_slots') and 'commitments' in inputs",
+     "kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs",
+     'tests/runtime/test_search_evidence.py::test_native_slot_formalization_projects_provenance_and_keeps_all_bindings'),
+    ('search_slots_mandatory_bindings', 'ara/runtime/search_context.py',
+     '    selected.update(binding_ids)', '    pass  # mutation drops mandatory slot evidence',
+     'tests/runtime/test_search_evidence.py::test_native_slot_formalization_projects_provenance_and_keeps_all_bindings'),
+    ('consolidation_h_only_source_identity', 'ara/runtime/orchestration.py',
+     "if consolidation is None or not state.get('reformalizing_source', False):", 'if consolidation is None:',
+     'tests/runtime/test_vocabulary_consolidation.py::test_h_only_refork_must_not_reinterpret_consolidated_source'),
+]
+
+
+CASES += [
+    ('consolidated_fork_packed_history', 'ara/runtime/search_context.py',
+     "data = {k: v for k, v in inputs.items() if k != 'commitment_provenance'}",
+     "data = dict(inputs)",
+     'tests/runtime/test_consolidated_search_fork.py::test_native_v5_fork_keeps_history_out_of_search_prompts'),
+    ('native_stop_at_freeze', 'ara/runtime/cli.py',
+     "if args.stop_at == 'freeze':", 'if False:',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_stop_at_freeze_excludes_targets_and_search'),
+]
+
+
+CASES += [
+    ('search_declared_basis', 'ara/runtime/search_context.py',
+     '    selected.update(mandatory_ids)', '    pass  # mutation drops required target evidence',
+     'tests/runtime/test_search_basis.py::test_declared_six_support_basis_survives_native_leaf_packing'),
+    ('search_basis_neighbourhood', 'ara/runtime/search_context.py',
+     'depth_cut(signatures, set(basis), dependencies, lambda ids: True,\n                                    max_depth=hops, mandatory=mandatory)',
+     'depth_cut(signatures, set(basis), dependencies, lambda ids: True,\n                                    max_depth=0, mandatory=mandatory)',
+     'tests/runtime/test_search_basis.py::test_distinct_targets_seed_distinct_formal_neighbourhoods'),
+    ('search_basis_job_scope', 'ara/runtime/search_publication.py',
+     'with self.log.destination(self.journals[index]), target_scope(goal):',
+     'with self.log.destination(self.journals[index]):',
+     'tests/runtime/test_search_basis.py::test_parallel_child_leaves_keep_their_own_target_basis'),
+    ('search_basis_refusal', 'ara/runtime/search_context.py',
+     '    selected.update(mandatory_ids)', '    pass  # mutation drops evidence to fit',
+     'tests/runtime/test_search_basis.py::test_oversized_mandatory_basis_refuses_with_breakdown'),
+    ('search_alignment_basis_evidence', 'ara/runtime/search_context.py',
+     "mandatory = {tid: set(rows.get(tid, {}).get('evidence_ids', [])) for tid in signatures}",
+     'mandatory = {tid: set() for tid in signatures}',
+     'tests/runtime/test_search_basis.py::test_alignment_neighbourhood_keeps_source_evidence_and_disclosed_relations'),
+    ('search_open_slot_vocabulary', 'ara/runtime/search_context.py',
+     '    if open_slots:', '    if False:',
+     'tests/runtime/test_search_evidence.py::test_open_slot_definition_is_mandatory'),
 ]
 
 

@@ -244,6 +244,10 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
         'symbol_token_budget': calls.config['working_t_symbol_token_budget'],
         'working_t_token_budget': calls.config['working_t_token_budget']}
+    from ara.runtime.vocabulary_consolidation import policy as consolidation_policy
+    consolidation = consolidation_policy(calls.config)
+    if consolidation:
+        metadata['consolidation_policy'] = consolidation
     if shared_policy:
         metadata['shared_vocabulary_policy'] = shared_policy
     if recovery:

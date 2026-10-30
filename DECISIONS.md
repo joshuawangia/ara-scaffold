@@ -4853,3 +4853,76 @@ Plan-only verifies restoration and names without provider/counter creation.
 Offline regressions and production-wire controls belong to
 `test_hypothesis_construction_fork.py`; current executed evidence is recorded in
 the external Round 32c report, separately from older committed-head gates.
+
+
+## Search packing and sanitized subscription failures — after Xi Round 32c
+
+Prompt size is not a reason to weaken novelty, consistency or route gates.
+Leaf requests project the full logged novelty receipt into final exact basis
+membership (an indexed commitment-ID table), target closure checks and essential
+atoms. Intermediate greedy consistency traces remain hash/count-linked in the
+unmodified full evidence event. Alignment projection retains full rows relevant
+to the leaf and selected supports, including canonical aliases, while disclosing
+full counts, scope and hash. Full evidence affects cache identity. Every retry is
+rebuilt and counted, and mandatory oversized context still refuses job-locally.
+Neither context windows nor token caps are increased by packing.
+Rich-source joint slot formalization uses the same counted projection; all bound
+slot IDs survive every shrink, and full frozen-slot validation remains unchanged.
+
+Subscription exit diagnostics use fixed categories only. Explicit context-length
+failures are nonretryable invalid requests; ordinary rate/auth retry limits and
+unknown-actual accounting are preserved. The residual category is `other`, not an
+inferred context failure. Raw diagnostics and credentials never cross into logs.
+Native placeholder regressions and mutation controls cover both boundaries.
+## Accepted-content vocabulary consolidation (2026-10-30)
+
+An opt-in native step re-formalizes terminal-complete source commitments before
+alignment and a single freeze. A new construction fork authenticates and copies
+the original accepted receipts, retaining their plan identity, but drops old
+alignment judgments. Deterministic cross-source lexical batching keeps accepted
+dependency components intact. Only formulas may change; source content, citations,
+stance and provenance are immutable. Atoms remain allowed. Shared vocabulary and
+formula interpretation are disclosed model judgments, never deterministic proof
+of semantic equivalence or faithful translation.
+
+The consolidation receipt retains originals, batch evidence/inputs, responses and
+metrics, bound by canonical SHA-256 and embedded in provenance v5. Reload replays
+the formula gates, then verifies the complete frozen envelope; earlier provenance
+versions and CommitmentSet/frozen-t codecs remain readable unchanged. Existing
+alignment and proposed-hypothesis contracts apply after consolidation. No provider
+calls occur in plan-only mode, so real after-metrics are unavailable there.
+
+
+A post-consolidation H-only fork retains the existing exact-source invariant.
+The formula-change exemption is bound to an explicit consolidation configuration
+on the current fork, not an inherited run-level flag. A changed alignment outcome
+on replay must refuse before H admission rather than alter an existing source T.
+
+
+## Packed search after a consolidated v5 freeze
+
+The consolidation and search-packing branches are integrated without changing
+frozen codecs or gate authority. Native fork-from-freeze validates and copies the
+v5 envelope, keeps the embedded consolidation receipt and preserves the source.
+Search receives only the bounded consolidation disclosure; full history stays in
+the verified provenance and log. The native placeholder regression proceeds
+through target/semantic classification and packed search without reconstruction,
+consolidation or alignment calls, and checks all frozen artifacts byte-for-byte.
+This integration proof does not certify a future real consolidated freeze or its
+request sizes; verify that artifact through the native fork and counter after it
+exists. Main publication still requires the independent merge verdict.
+## Explicit native freeze boundary (2026-10-30)
+
+`resume-alignment --stop-at freeze` runs the normal commitment preparation,
+including optional consolidation, alignment and H, then stops after the sole
+freeze without target generation or search. The explicit native CLI boundary
+is recorded in the log and its generated methodology. The default command
+continues into targets/search unchanged. Frozen-prefix reuse validates the same
+artifacts and receipts for either stopping policy.
+
+
+## Search packing 2 — mandatory per-target evidence
+
+Leaf mapping, cut proposal and joint-slot formalization retain the target's entire declared basis as full frozen commitment rows. Complete formal/alignment neighbourhood hops use target_context_hops; model-alignment evidence bundles are retained with their disclosure. Whole basis neighbourhoods, exact leaf matches and bound slots are mandatory at every budget-shrinking step. Optional leads rank against both the leaf and mandatory neighbourhood. Invalid basis IDs refuse; counted mandatory overflow refuses job-locally with the full selection and field-byte breakdown. It never drops basis rows to fit.
+
+A job-local target scope carries basis context into child leaves and retries without sharing it across concurrent jobs. The exact target and basis receipt enter prompt/cache identity. Open slot text has no complete symbolic dependency inventory: retain the full frozen symbol catalogue, including definitions and signatures, and count/refuse it instead of guessing relevance. Frozen artifacts, codecs, stance rules and full-input novelty/licensing validation remain unchanged. Placeholder native regressions cover both polarities, k=0, neighbourhoods, independent concurrent targets, child leaves, invalid IDs and overflow; mutation controls prove these paths. Offline real-request replay is external evidence and does not claim successful semantic search.

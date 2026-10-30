@@ -46,9 +46,10 @@ FAILURE_SUBTYPES = (
 )
 FAILURE_PATTERNS = (
     ('schema', r'invalid.{0,30}schema|schema.{0,30}(?:invalid|unsupported)'),
-    ('auth', r'authentication.{0,20}(?:failed|error)|authorization_error|permission_error|invalid api key|not logged in'),
-    ('request', r'invalid_request_error|context_length_exceeded|prompt too long'),
-    ('rate_limit', r'rate[ _-]limit'),
+    ('auth', r'authentication.{0,20}(?:failed|error)|authorization_error|permission_error|invalid api key|not logged in|session expired|please log[ -]?in again'),
+    ('context_length', r'context[_ -]length[_ -]exceeded|(?:maximum|max) context (?:length|window)|(?:input|prompt).{0,40}exceeds?.{0,40}context (?:window|length)|context (?:window|length).{0,30}exceeded|(?:input|prompt).{0,20}too long'),
+    ('request', r'invalid_request_error'),
+    ('rate_limit', r'rate[ _-]limit|too many requests|(?:http|status)[ :_-]*429\b'),
     ('usage_limit', r'usage[ _-]limit|you.ve hit your limit'),
     ('timeout', r'etimedout|request timed out'),
     ('transient', r'overloaded_error|overloaded|econnreset|econnrefused|socket hang up|connection reset'),
@@ -65,6 +66,8 @@ def classify_failure(data, stderr):
         return 'cli_invalid_schema', False, 'schema'
     if status in (401, 403) or 'auth' in matches:
         return 'cli_auth_error', True, 'auth'
+    if 'context_length' in matches:
+        return 'cli_invalid_request', False, 'context_length'
     if (type(status) is int and 400 <= status < 500 and status != 429) or 'request' in matches:
         return 'cli_invalid_request', False, 'request'
     if subtype == 'error_max_budget_usd':
@@ -77,7 +80,7 @@ def classify_failure(data, stderr):
         return 'cli_transient_error', True, 'timeout'
     if (type(status) is int and 500 <= status <= 599) or 'transient' in matches:
         return 'cli_transient_error', True, 'transient'
-    return 'cli_exit_error', False, 'unknown'
+    return 'cli_exit_error', False, 'other'
 
 
 def failure_receipt(data, stderr, receipt):

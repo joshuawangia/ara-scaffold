@@ -316,3 +316,13 @@ a smaller or larger supported window. Clearing an inherited override with
 `model_context_window: null` refuses, including after a provider is cached; it
 never falls back to the provider's default while keeping the larger run bound.
 The parent run configuration remains unchanged by stage normalization.
+
+
+CLI failure receipts retain only fixed diagnostic categories and byte counts,
+never raw stdout/stderr or error messages. Explicit context-overflow wording maps
+to `context_length` / `cli_invalid_request` and is not retried. Recognized rate,
+auth, schema and other existing categories retain their bounded retry policies.
+Unrecognized failures use `other` (older receipts may say `unknown`); this is no
+claim about backend capacity. Historical suppressed errors cannot be diagnosed
+retrospectively from this category. Unknown-actual reservation accounting remains
+unchanged, and failure text never enters prompts, cache entries or exported logs.

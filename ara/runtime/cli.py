@@ -62,7 +62,9 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
     alignment = sub.add_parser('resume-alignment', help='continue unfinished alignment from verified completed construction')
     alignment.add_argument('--run-dir', type=Path, required=True)
+    alignment.add_argument('--stop-at', choices=('freeze',), help='stop after the single freeze, before target generation or search')
     alignment.add_argument('--source-run', type=Path, help='copy verified completed construction into a new lifecycle')
+    alignment.add_argument('--consolidation-config', type=Path, help='opt-in JSON vocabulary policy; requires --source-run')
     alignment.add_argument('--hypotheses-file', type=Path, help='JSON list of proposed H entries; requires --source-run')
     alignment.add_argument('--plan-only', action='store_true', help='verify restoration only; no provider or counter')
     alignment.add_argument('--output-dir', type=Path, help='separate empty directory for free resume receipts')
@@ -308,8 +310,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             source=args.source_run or args.run_dir
             if not (source / 'events.jsonl').is_file():
                 raise ValueError('alignment run log does not exist')
-            if bool(args.source_run) != bool(args.hypotheses_file):
-                raise ValueError('--source-run and --hypotheses-file must be supplied together')
+            if bool(args.source_run) != bool(args.hypotheses_file or args.consolidation_config):
+                raise ValueError('--source-run requires --hypotheses-file or --consolidation-config')
             if args.plan_only:
                 if (args.output_dir is None or args.output_dir.resolve().is_relative_to(args.run_dir.resolve()) or
                         args.run_dir.resolve().is_relative_to(args.output_dir.resolve())):
@@ -320,15 +322,20 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 raise ValueError('--output-dir requires --plan-only')
             if args.source_run:
                 from ara.runtime.construction_fork import inspect_construction_fork, write_construction_fork
-                hypotheses_text=args.hypotheses_file.read_text()
+                hypotheses_text=args.hypotheses_file.read_text() if args.hypotheses_file else '[]'
                 hypotheses=json.loads(hypotheses_text)
-                plan=inspect_construction_fork(source,args.run_dir,load_bank(ROOT/'bank'),hypotheses)
+                consolidation=json.loads(args.consolidation_config.read_text()) if args.consolidation_config else None
+                plan=inspect_construction_fork(source,args.run_dir,load_bank(ROOT/'bank'),hypotheses,consolidation=consolidation)
                 if args.plan_only:
                     if (args.output_dir.resolve().is_relative_to(source.resolve()) or
                             source.resolve().is_relative_to(args.output_dir.resolve())):
                         raise ValueError('plan-only output must be separate from source')
                     summary={**resume_summary(plan['state']),
                         'hypothesis_ids':[h['id'] for h in hypotheses], 'construction_fork':plan['receipt']}
+                    if consolidation is not None:
+                        summary.update(candidate_count=None,remaining_candidates=None,accepted_judgments=0,
+                            planned_consolidation_calls=len(plan['receipt']['consolidation_plan']['batches']),
+                            alignment_call_cap=plan['state']['run']['config'].get('construction_alignment_candidates',150))
                     log=EventLog(args.output_dir/'events.jsonl')
                     log.human('resume-alignment-plan',json.dumps(raw_args),reported_minutes=args.human_minutes)
                     log.record('alignment_resume_plan',**summary)
@@ -336,7 +343,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                     print(json.dumps(summary))
                     return 0
                 fork_log=write_construction_fork(plan)
-                fork_log.human('hypothesis-premises-file',hypotheses_text,source=str(args.hypotheses_file))
+                if args.hypotheses_file:
+                    fork_log.human('hypothesis-premises-file',hypotheses_text,source=str(args.hypotheses_file))
+                if args.consolidation_config:
+                    fork_log.human('consolidation-config',args.consolidation_config.read_text(),source=str(args.consolidation_config))
             with construction_resume_lock(args.run_dir):
                 source_log=EventLog(args.run_dir / 'events.jsonl')
                 bank=load_bank(ROOT / 'bank')
@@ -364,6 +374,15 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 calls=calls_factory(config,log,run['topic'])
                 calls.alignment_resume=state
                 human=next((json.loads(e['payload_json']) for e in log.read() if e['stage']=='run' and e['label']=='HUMAN'),{})
+                if args.stop_at == 'freeze':
+                    from ara.runtime.orchestration import prepare_commitments
+                    commitments=prepare_commitments(calls,bank,run['literature'],run['audience'])
+                    log.record('run_stopped_at_freeze', controller='native_cli', command='resume-alignment',
+                               commitments=len(commitments.commitments),
+                               note='Operator requested --stop-at freeze; target generation and search were not started.')
+                    log.record('run_finished',state='frozen')
+                    print(str(args.run_dir))
+                    return 0
                 commitments,targets=prepare(calls,bank,run['literature'],run['audience'],human.get('named_position'))
                 routes=search_all(calls,engine_factory(bank,calls),commitments,targets)
                 log.record('awaiting_selection',route_ids=[r.id for r in routes],search=disclose_search(log))

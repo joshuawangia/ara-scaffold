@@ -205,7 +205,8 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
                 ('commitment-provenance-v2', frozenset(FIELDS | {'alignment'})),
                 ('commitment-provenance-v3', frozenset(FIELDS)),
                 ('commitment-provenance-v3', frozenset(FIELDS | {'alignment'})),
-                ('commitment-provenance-v4', frozenset(FIELDS | {'alignment','hypotheses'}))) or
+                ('commitment-provenance-v4', frozenset(FIELDS | {'alignment','hypotheses'})),
+                ('commitment-provenance-v5', frozenset(FIELDS | {'alignment','hypotheses','consolidation'}))) or
             value['definition_semantics'] != 'content'):
         raise ValueError('invalid commitment provenance schema')
     if (not isinstance(catalogue, dict) or not isinstance(catalogue.get('symbols'), list) or
@@ -219,9 +220,11 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         raise ValueError('commitment provenance hash mismatch')
     if not isinstance(value['commitments'], dict) or set(value['commitments']) != {c.id for c in commitments.commitments}:
         raise ValueError('commitment provenance inventory mismatch')
+    if value['schema_version']=='commitment-provenance-v5' and not isinstance(value.get('consolidation'),dict):
+        raise ValueError('consolidation provenance requires its receipt')
     source_commitments, source_symbols = commitments, catalogue['symbols']
     source_rows = value['commitments']
-    if value['schema_version'] == 'commitment-provenance-v4':
+    if value['schema_version']=='commitment-provenance-v4' or value.get('hypotheses') is not None:
         from ara.runtime.hypotheses import validate_hypotheses
         source_commitments, source_symbols, source_rows = validate_hypotheses(
             value['hypotheses'], commitments, source_symbols, source_rows)
@@ -230,6 +233,10 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         from ara.runtime.symbol_alignment import validate_alignment
         source_commitments, source_symbols = validate_alignment(value['alignment'], source_commitments,
                                                                source_symbols, source_rows)
+    if value.get('consolidation') is not None:
+        from ara.runtime.vocabulary_consolidation import validate_receipt
+        source_commitments, source_symbols = validate_receipt(
+            value['consolidation'], source_commitments, source_symbols, source_rows)
     for source in source_commitments.commitments:
         id, row = source.id, value['commitments'][source.id]
         _validate_source(id, row)
@@ -239,7 +246,7 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
                 raise ValueError('unframed symbol lacks evidence binding')
     policies = {row.get('definition_screen') for row in value['commitments'].values() if 'source_text' in row}
     # v4 wraps H around the source set; source rows retain their precise policy.
-    if (value['schema_version'] != 'commitment-provenance-v4' and
+    if (value['schema_version'] not in ('commitment-provenance-v4','commitment-provenance-v5') and
             (PRECISE_SCREEN in policies) != (value['schema_version'] == 'commitment-provenance-v3')):
         raise ValueError('commitment definition screen version mismatch')
     def definition_ok(text, ids):
@@ -256,7 +263,7 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
     return value
 
 
-def make_commitment_provenance(commitments: CommitmentSet, catalogue: dict, provenance: dict, *, alignment: dict | None = None, hypotheses: dict | None = None) -> dict:
+def make_commitment_provenance(commitments: CommitmentSet, catalogue: dict, provenance: dict, *, alignment: dict | None = None, hypotheses: dict | None = None, consolidation: dict | None = None) -> dict:
     payload = dict(schema_version='commitment-provenance-v1', definition_semantics='content',
                    commitments_sha256=digest(canonical(commitments.to_dict())),
                    catalogue_sha256=catalogue['sha256'], commitments=provenance)
@@ -266,6 +273,8 @@ def make_commitment_provenance(commitments: CommitmentSet, catalogue: dict, prov
         payload['schema_version'] = 'commitment-provenance-v3'
     if hypotheses is not None:
         payload.update(schema_version='commitment-provenance-v4', alignment=alignment, hypotheses=hypotheses)
+    if consolidation is not None:
+        payload.update(schema_version='commitment-provenance-v5', alignment=alignment, hypotheses=hypotheses, consolidation=consolidation)
     return validate_commitment_provenance({**payload, 'sha256': digest(canonical(payload))}, commitments, catalogue)
 
 

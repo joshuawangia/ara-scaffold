@@ -23,11 +23,14 @@ def separate_destination(source, destination):
     return source, destination
 
 
-def inspect_construction_fork(source, destination, bank, hypotheses):
+def inspect_construction_fork(source, destination, bank, hypotheses, *, consolidation=None):
     """Read-only plan: validate retained construction, accepted judgments and freeze."""
     source,destination=separate_destination(source,destination)
     validate_hypothesis_config(dict(hypothesis_premises=hypotheses))
-    require(bool(hypotheses),'construction fork requires proposed hypotheses')
+    if consolidation is not None:
+        from ara.runtime.vocabulary_consolidation import config_override
+        consolidation=config_override(consolidation)
+    require(bool(hypotheses) or consolidation is not None,'construction fork requires proposed hypotheses or consolidation')
     path=source/'events.jsonl'
     lock=source/'events.lock'
     with lock.open('rb') if lock.exists() else nullcontext() as stream:
@@ -46,7 +49,7 @@ def inspect_construction_fork(source, destination, bank, hypotheses):
     state=_load_alignment_resume(source,events[:count],bank)
     plan_id=state['plan_id']
     artifacts={name:p.read_bytes() for p in source.iterdir() if p.is_file() and
-        ((name:=p.name)==f'build-t-plan-{plan_id}.json' or name==f'working-t-{plan_id}.json' or
+        ((name:=p.name)=='vocabulary-consolidation.json' or name==f'build-t-plan-{plan_id}.json' or name==f'working-t-{plan_id}.json' or
          (name.startswith(f'build-t-{plan_id}-') and name.endswith('.json')))}
     expected=None
     freezes=[json.loads(e['payload_json']) for e in events if e['stage']=='commitments_frozen']
@@ -77,17 +80,30 @@ def inspect_construction_fork(source, destination, bank, hypotheses):
             validate_restored_source(dict(commitments=t.to_dict(),symbols=symbols,provenance=rows),
                                      state['commitments'],state['symbols'],state['provenance'])
         expected=dict(commitments=t.to_dict(),symbols=symbols,provenance=rows)
-        for value in hypotheses:required_symbols(value,symbols)
+        if consolidation is None:
+            for value in hypotheses:required_symbols(value,symbols)
     elif any((source/name).exists() for name in ('commitments.json','frozen-t.json','commitment-provenance.json')):
         raise ValueError('construction fork refuses partial freeze artifacts')
     else:
-        for value in hypotheses:required_symbols(value,state['symbols'])
+        if consolidation is None:
+            for value in hypotheses:required_symbols(value,state['symbols'])
+    if consolidation is not None:
+        require(not any(e['stage']=='vocabulary_consolidated' for e in events),
+                're-consolidation of an already consolidated lifecycle is not supported')
+        count=next(i+1 for i,e in enumerate(events) if e['stage']=='build_t_merged')
+        state=_load_alignment_resume(source,events[:count],bank)
+        state['run']={**state['run'],'config':{**state['run']['config'],**consolidation}}
+        from ara.runtime.vocabulary_consolidation import make_plan
+        consolidation_plan=make_plan(state['commitments'],state['symbols'],state['provenance'],
+                                    state['run']['config'],state['run']['literature'])
     prefix=b''.join(lines[:count])
     receipt=dict(source_run=str(source),source_tail=records[-1]['hash'],records=count,
         prefix_sha256=digest(prefix.decode()),
         artifacts={name:digest(data.decode()) for name,data in artifacts.items()},
         hypotheses=hypotheses,expected_source=expected,cache_dir=str(destination.resolve()/'cache'),
         note='New lifecycle imports completed construction and accepted alignment only; hypotheses precede its single freeze.')
+    if consolidation is not None:
+        receipt.update(consolidation_config=consolidation,consolidation_plan=consolidation_plan)
     with path.open('rb') as stream:
         unchanged_prefix=stream.read(len(prefix))==prefix
     prefix_anchor=''.join(r['hash']+'\n' for r in records[:count]).encode()

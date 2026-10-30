@@ -263,7 +263,7 @@ class ModelCalls:
     def response_schema(self, kind: str, inputs: dict) -> dict | None:
         if kind == 'isolation_canary':
             from ara.runtime.claude_code import CANARY_SCHEMA
-            return CANARY_SCHEMA
+            return getattr(self.provider, 'canary_schema', CANARY_SCHEMA)
         if kind == 'search_evidence':
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())

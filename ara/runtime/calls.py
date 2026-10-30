@@ -301,7 +301,7 @@ class ModelCalls:
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
         if kind == 'build_t_batch' and inputs.get('mode') == 'vocabulary_consolidation':
             from ara.runtime.shared_vocabulary import SHARED_CONTRACT
-            template = (self.root / 'prompts/consolidate_vocabulary.txt').read_text() + SHARED_CONTRACT
+            template = (self.root / 'prompts/consolidate_vocabulary_legacy.txt').read_text() + SHARED_CONTRACT
         elif kind == 'build_t_batch':
             from ara.runtime.shared_vocabulary import vocabulary_policy, SHARED_CONTRACT
             if vocabulary_policy(self.config):
@@ -430,7 +430,7 @@ class ModelCalls:
         template, prompt = self.render(kind, inputs)
         schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
-        if kind == 'build_t_batch':
+        if kind in ('build_t_batch', 'consolidate_vocabulary'):
             maximum = self.config['extracted_build_t_max_output_tokens']
         if kind == 'isolation_canary':
             maximum = 4096
@@ -578,7 +578,7 @@ class ModelCalls:
             if unknown_usage:
                 self.budget.after(kind, subscription=self._subscription())
                 from ara.runtime.providers import terminal_request_refusal
-                if kind in ('select_t_roots', 'build_t_batch') and terminal_request_refusal(exc):
+                if kind in ('select_t_roots', 'build_t_batch', 'consolidate_vocabulary') and terminal_request_refusal(exc):
                     self.log.record('construction_provider_refusal', kind=kind, cache_key=key,
                                     policy='count-at-reservation', terminal=True,
                                     evidence=provider_error_evidence(exc),
@@ -591,6 +591,7 @@ class ModelCalls:
                 raise
             if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': reason if isinstance(exc, ValidationError) or kind == 'extract_paper' else str(exc),
+                    **({'reference_constraints': exc.reference_constraints} if hasattr(exc, 'reference_constraints') else {}),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.',
                     **({'construction_candidate': data} if kind == 'build_t_batch' and
@@ -653,7 +654,7 @@ class ModelCalls:
             return scoped.count_request(kind, inputs, maximum=maximum, admission=admission, purpose=purpose)
         if maximum is None:
             maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
-            if kind == 'build_t_batch':
+            if kind in ('build_t_batch', 'consolidate_vocabulary'):
                 maximum = self.config['extracted_build_t_max_output_tokens']
         if kind == 'isolation_canary':
             maximum = 4096

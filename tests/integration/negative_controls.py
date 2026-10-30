@@ -704,7 +704,7 @@ CASES += [
 
 CASES += [
     ('construction_terminal_provider_skip', 'ara/runtime/calls.py',
-     "if kind in ('select_t_roots', 'build_t_batch') and terminal_request_refusal(exc):", 'if False:',
+     "if kind in ('select_t_roots', 'build_t_batch', 'consolidate_vocabulary') and terminal_request_refusal(exc):", 'if False:',
      'tests/runtime/test_construction_shares.py::test_terminal_provider_request_refusal_skips_window_at_reservation[200-select_t_roots]'),
     ('provider_size_diagnostic', 'ara/runtime/providers.py',
      'if size:', 'if False:',
@@ -2877,10 +2877,10 @@ CASES += [
      'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_then_alignment_then_one_freeze'),
     ('consolidation_immutable_text', 'ara/runtime/vocabulary_consolidation.py',
      "require(all(c['definition']==expected[c['id']]['text'] for c in data['commitments']),", 'require(True,',
-     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+     'tests/runtime/test_consolidation_handles.py::test_legacy_semantic_gates_remain_enforced'),
     ('consolidation_reuse_judgment', 'ara/runtime/vocabulary_consolidation.py',
      "require({a['name'] for a in data['alignments']}==set(used)&old_names and", 'require(True or',
-     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+     'tests/runtime/test_consolidation_handles.py::test_legacy_semantic_gates_remain_enforced'),
     ('consolidation_receipt_hash', 'ara/runtime/vocabulary_consolidation.py',
      "require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),", 'require(True,',
      'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
@@ -2983,6 +2983,43 @@ CASES += [
     ('search_pause_retry_count', 'ara/runtime/search_jobs.py', 'completed += 1', 'completed += attempt', 'tests/runtime/test_search_pause.py::test_retry_completion_counts_once'),
 ]
 
+
+
+
+CASES += [
+    ('consolidation_binding_terms', 'ara/runtime/consolidation_bindings.py',
+     "terms=tuple(replace(t, name=mapping[t.name]) if t.kind=='constant' else t for t in formula.terms),", 'terms=formula.terms,',
+     'tests/runtime/test_consolidation_handles.py::test_native_consolidation_derives_ids_and_all_symbol_uses'),
+    ('consolidation_binding_replay', 'ara/runtime/vocabulary_consolidation.py',
+     "require(batch['bindings']==bindings, 'consolidation runtime binding mismatch')", "require(True, 'consolidation runtime binding mismatch')",
+     'tests/runtime/test_consolidation_handles.py::test_rehashed_runtime_binding_tampering_refuses'),
+    ('consolidation_exact_feedback', 'ara/runtime/calls.py',
+     "**({'reference_constraints': exc.reference_constraints} if hasattr(exc, 'reference_constraints') else {}),", '**{},',
+     'tests/runtime/test_consolidation_handles.py::test_native_exact_feedback_corrects_same_slots'),
+    ('consolidation_small_batches', 'ara/runtime/vocabulary_consolidation.py',
+     "settings['target_batch_size']=min(size,8)", "settings['target_batch_size']=size",
+     'tests/runtime/test_consolidation_handles.py::test_small_batches_are_versioned_and_keep_components'),
+]
+
+
+
+CASES += [
+    ('consolidation_precise_fresh_screen', 'ara/runtime/consolidation_bindings.py',
+     'if content_definition(text,screen=PRECISE_SCREEN):continue', 'if content_definition(text,screen=None):continue',
+     'tests/runtime/test_consolidation_screen.py::test_fresh_definitions_do_not_inherit_legacy_lexicon'),
+    ('consolidation_definition_refusal', 'ara/runtime/consolidation_bindings.py',
+     'if content_definition(text,screen=PRECISE_SCREEN):continue', 'if True:continue',
+     'tests/runtime/test_consolidation_screen.py::test_exact_definition_feedback_allows_bounded_correction'),
+    ('consolidation_definition_feedback', 'ara/runtime/consolidation_bindings.py',
+     'definition_issues=issues)', 'definition_issues=[])',
+     'tests/runtime/test_consolidation_screen.py::test_exact_definition_feedback_allows_bounded_correction'),
+    ('consolidation_frozen_precise_authority', 'ara/runtime/commitment_provenance.py',
+     "precise_symbols={symbol_identity(s) for s in value['consolidation']['symbols']}", 'precise_symbols=set()',
+     'tests/runtime/test_consolidation_screen.py::test_precise_definitions_survive_alignment_and_frozen_fork'),
+    ('consolidation_definition_policy_pin', 'ara/runtime/vocabulary_consolidation.py',
+     "settings['definition_screen']=PRECISE_SCREEN", "settings['definition_screen']=None",
+     'tests/runtime/test_consolidation_screen.py::test_fresh_definitions_do_not_inherit_legacy_lexicon'),
+]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

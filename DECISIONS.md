@@ -4931,3 +4931,37 @@ A job-local target scope carries basis context into child leaves and retries wit
 ## Native zero-inference search pause
 
 Operator rule: search_zero_inference_pause_after defaults to10 successful polarity jobs,0 disables. Failed attempts do not count; successful retries count once. Until a bank-licensed inference is observed, bound dispatch to the remaining allowance. An explicit native resume starts a new window for unfinished jobs; verified restored licenses prevent a false zero. Pause publishes durable journals/results and sanitized per-job diagnostics before further analysis, with exit2 and a receipt path. Actual packed prompts establish target-basis coverage and cross-paper formal symbol overlap; model acceptance is not inference acceptance, and symbol overlap is not semantic alignment. Existing license, provenance, accounting and resume verification remain authoritative. Latest-phase reporting excludes historical incomplete-analysis events without deleting them.
+
+## Sigma round 19 — runtime-bound vocabulary references
+
+Per orchestrator instruction, opt-in consolidation v2 returns ordered formulas,
+positional semantic declarations and short catalogue handles with reuse reasons.
+Runtime derives commitment IDs, global names and evidence/use IDs from validated
+formula occurrences, including constant terms and nested formulas. Exact binding
+feedback uses existing bounded correction calls; meaning, consistency, scope,
+content, endpoint and capacity gates remain mandatory. V2 receipts replay the
+runtime bindings and catalogue-entry hashes. Completed v1 receipts remain readable;
+incomplete old plans refuse protocol switching. Normal construction is unchanged.
+
+New plans target eight rows, preserve intact dependency components up to the
+configured hard batch bound, and never infer semantics from lexical scheduling.
+Round 19 and its fresh freeze-only lifecycle are orchestrator instructions, not
+new operator authorizations. Standing operator approvals cover loosened token
+limits, parallel efforts and drafting all candidates. Real after-sharing metrics
+must come from an admitted freeze, not a free plan or rejected output.
+
+
+## Sigma round 20 — screen fresh definitions under a bound precise policy
+
+Per orchestrator instruction, consolidation v3 pins attribution-frames-v1 for
+new declarations, independently of source-row screen metadata. Keep imported
+source text, provenance, stance and absent historical markers unchanged. V1/v2
+receipts retain their historical validation. Exact report frames remain refused,
+including formatting disguises and unsupported markup. Bounded correction
+feedback names each declaration slot/handle and the raw/normalized screen match.
+No model text is repaired. Frozen validation obtains precise authority only from
+a successfully replayed v3 receipt, including deterministic alignment bridges.
+Native handle binding, consistency, endpoints, capacity and the sole freeze remain
+mandatory. The fresh freeze-only lifecycle is an orchestrator instruction; the
+operator's standing approvals remain loosened limits, parallel efforts and drafting
+all candidates.

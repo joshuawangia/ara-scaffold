@@ -90,3 +90,9 @@ def test_legacy_clean_source_without_new_scope_metadata_can_inherit(rig,monkeypa
     inputs=calls.audit_inputs(route,current,publication_context=dict(original_draft=source))
     assert any(row['label']['role']=='proposed_principle' and row['text']=='P.'
                for row in inputs['verified_sentence_carryover']['sentences'])
+
+
+def test_clean_source_gate_with_nonadverse_schema_retry_can_inherit(rig,monkeypatch):
+    calls,route,source,_,seen=setup_source(rig,monkeypatch,source_shape_retry=True)
+    assert sum(kind=='audit_essay' for kind,_ in seen)==4
+    assert run(calls,route,source,revised(source))['faithful']

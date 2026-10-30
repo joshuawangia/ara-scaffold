@@ -36,6 +36,8 @@ def sentence_spans(body, *, literature=False):
 
 def audit_flags(labels, inputs, draft):
     """Apply the three typed failure rules; semantic role/support comes from audit."""
+    from ara.runtime.audit_carryover import effective_labels
+    labels = effective_labels(labels, inputs)
     sentences = {s['sentence']: s['text'] for s in inputs['sentences']}
     scopes = {s['sentence']: s.get('proposal_scope') for s in inputs['sentences']}
     allowed = {b['id']: b for b in inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
@@ -88,6 +90,8 @@ def audit_result(route, draft, inputs, data):
         raise ValidationError('essay audit: sentence inventory mismatch')
     referenced = {node for item in labels for node in item['node_ids']}
     require(referenced <= ids, 'essay audit: unknown node id')
+    from ara.runtime.audit_carryover import effective_labels
+    labels = effective_labels(labels, inputs)
     covered = {node for item in labels if item['role'] in (('argument_step', 'source_claim', 'proposed_principle', 'argument_for_proposal')
                                                      if inputs.get('proposal') else ('argument_step', 'source_claim'))
                for node in item['node_ids']}
@@ -102,6 +106,8 @@ def audit_result(route, draft, inputs, data):
               'extra_steps': extra, 'flags': flags,
               'role_counts': dict(Counter(item['role'] for item in labels)),
               'faithful': not missing and not extra and markers == ids}
+    if 'verified_sentence_carryover' in inputs:
+        result['verified_sentence_carryover'] = inputs['verified_sentence_carryover']
     return result
 
 
@@ -114,7 +120,10 @@ def _same_audit_request(previous_prompt, prompt):
         template, current_input = prompt.split('\nINPUT_JSON\n', 1)
         previous = json.loads(previous_input)
         previous.pop('validation_feedback', None)
-        return previous_template.split('\n', 1)[0] == template.split('\n', 1)[0] and previous == json.loads(current_input)
+        current = json.loads(current_input)
+        previous.pop('verified_sentence_carryover', None)
+        current.pop('verified_sentence_carryover', None)
+        return previous_template.split('\n', 1)[0] == template.split('\n', 1)[0] and previous == current
     except (ValueError, TypeError, AttributeError):
         return False
 
@@ -127,6 +136,8 @@ def _proposal_metadata_request(previous_prompt, prompt):
         template, current_json = prompt.split('\nINPUT_JSON\n', 1)
         old, current = json.loads(old_json), json.loads(current_json)
         old.pop('validation_feedback', None)
+        old.pop('verified_sentence_carryover', None)
+        current.pop('verified_sentence_carryover', None)
         if old_template.split('\n', 1)[0] != template.split('\n', 1)[0] or not current.get('proposal'):
             return None
         if {k:v for k,v in old.items() if k != 'sentences'} != {k:v for k,v in current.items() if k != 'sentences'}:
@@ -202,6 +213,9 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
     context = {} if publication_context is None else dict(publication_context=publication_context)
     kind = 'audit_publication' if publication_context is not None else 'audit_essay'
     inputs = calls.audit_inputs(route, draft, **context)
+    from ara.runtime.audit_carryover import prepare_meaning_checks
+    if prepare_meaning_checks(calls, route, draft, inputs):
+        inputs = calls.audit_inputs(route, draft, **context)
     scoped = calls._for_construction_stage(kind, inputs)
     prompt = scoped.render(kind, inputs)[1]
     prompt_hash = digest(prompt)
@@ -230,6 +244,12 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                         updated['proposal_scope'] = scope
                     rows.append(updated)
                 history_inputs = {**history_inputs, 'sentences': rows}
+                if 'verified_sentence_carryover' in inputs:
+                    inverse = {new:old for old,new in remap[1].items()}
+                    carryover = inputs['verified_sentence_carryover']
+                    history_inputs['verified_sentence_carryover'] = {**carryover, 'sentences': [
+                        {**p, 'sentence':inverse[p['sentence']], 'label':{**p['label'], 'sentence':inverse[p['sentence']]}}
+                        for p in carryover['sentences'] if p['sentence'] in inverse]}
             data = None
             schema = scoped.response_schema(kind, inputs)
             try:
@@ -238,7 +258,7 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                     data = scoped.provider.normalize_output(schema, data)
                 validate_local(schema, data, calls.config)
                 result = audit_result(route, draft, history_inputs, data)
-                if recorded is not None and remap is None and event['prompt'].split('\nINPUT_JSON\n', 1)[0] == prompt.split('\nINPUT_JSON\n', 1)[0]:
+                if recorded is not None and remap is None and 'verified_sentence_carryover' not in inputs and event['prompt'].split('\nINPUT_JSON\n', 1)[0] == prompt.split('\nINPUT_JSON\n', 1)[0]:
                     result = {key: recorded[key] for key in result}
             except (ValueError, TypeError, KeyError, ValidationError) as exc:
                 ignored.append(dict(event=index, reason=type(exc).__name__))
@@ -300,6 +320,8 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
         missing_node_ids=sorted({n for s in all_results for n in s['missing_node_ids']}),
         extra_steps=sorted({f['sentence'] for f in flags}), flags=flags,
         faithful=all(s['faithful'] for s in all_results))
+    if 'verified_sentence_carryover' in inputs:
+        result['verified_sentence_carryover'] = inputs['verified_sentence_carryover']
     calls.log.record('essay_audit_consensus', **result)
     if not result['faithful']:
         labels = {}

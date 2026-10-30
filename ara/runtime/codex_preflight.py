@@ -13,8 +13,8 @@ from ara.runtime.providers import stage_settings
 def manifest(config, root):
     cases = []
     for path in sorted((root / 'schemas').glob('*.json')):
-        if path.stem in ('formula', 'extract_paper', 'polish_essay', 'audit_publication'):
-            continue  # Utility schema and API-only extraction; web retrieval has no JSON schema.
+        if path.stem in ('formula', 'extract_paper', 'polish_essay', 'audit_publication', 'audit_meaning'):
+            continue  # Utility/extraction and separately exercised publication audit schemas.
         kind = path.stem
         for correction in ((False, True) if kind in KINDS else (False,)):
             _, overrides, scoped = dispatch_settings(config, kind, correction=correction)

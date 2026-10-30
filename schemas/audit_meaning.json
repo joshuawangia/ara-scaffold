@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "audit_meaning",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "pairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sentence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_sentence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "equivalent",
+              "different",
+              "uncertain"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "sentence",
+          "source_sentence",
+          "verdict",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": [
+    "pairs"
+  ]
+}

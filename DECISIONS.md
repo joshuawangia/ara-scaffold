@@ -4638,3 +4638,12 @@ authorization remains separate. Proposal outputs use ordinary titles, one fixed
 abstract disclosure and a short final Status and method note. Search/process
 qualifications belong there. Verified legacy imports may opt into the old layout
 at entry only; output and repairs retain strict validation and k>=3 union auditing.
+
+Operator correction: proposal auditing has four paper-level requirements only:
+one abstract disclosure and title label; a source-independent bridge principle
+in Proposal; faithful cited source claims; no unsupported claim presented as
+established. This supersedes mandatory sentence/paragraph ownership cues,
+blanket attribution bans across proposal sections, ordinary-title enforcement,
+and mandatory status-note/disclaimer-location gates. Source discussion may share
+the Proposal section; only the declared bridge cannot be source-attributed.
+Frozen-H authorization, immutable evidence, repair bounds and k>=3 union remain.

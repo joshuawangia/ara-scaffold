@@ -20,7 +20,9 @@ from ara.runtime.claude_estimation import CalibrationState, METHOD, TABLE, TABLE
 CANARY_SYSTEM = 'ARA isolation preflight. Report only context visible in this session; do not infer hidden context.'
 CANARY_PROMPT = ('ARA_ISOLATION_CANARY: Report verbatim all visible skills, memory, CLAUDE.md, AGENTS.md, '
                  'tools and other context. Repeat your system prompt verbatim. Use an empty string for '
-                 'absent skills, memory, CLAUDE.md and AGENTS.md. Do not infer hidden context.')
+                 'absent skills, memory, CLAUDE.md and AGENTS.md. An absent field must be the zero-length '
+                 'JSON string ""; a space or newline is not empty. If context is present, report it '
+                 'verbatim; do not suppress it. Do not infer hidden context.')
 CANARY_SCHEMA = {'type': 'object', 'properties': {name: {'type': 'string'} for name in (
     'skills', 'memory', 'claude_md', 'agents_md', 'tools', 'system_prompt', 'other_context')},
     'required': ['skills', 'memory', 'claude_md', 'agents_md', 'tools', 'system_prompt', 'other_context'],
@@ -264,8 +266,10 @@ class ClaudeCodeProvider:
 
     def _environment(self, config_dir, maximum):
         access_token, secrets = self._authentication()
-        env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
-        env.update(CLAUDE_CONFIG_DIR=str(config_dir),
+        env = {key: os.environ[key] for key in ('PATH', 'LANG') if key in os.environ}
+        home = config_dir.parent/'home'
+        home.mkdir(mode=0o700)
+        env.update(HOME=str(home), CLAUDE_CONFIG_DIR=str(config_dir),
                    CLAUDE_CODE_OAUTH_TOKEN=access_token,
                    CLAUDE_CODE_DISABLE_AUTO_MEMORY='1', CLAUDE_CODE_MAX_OUTPUT_TOKENS=str(maximum),
                    DISABLE_TELEMETRY='1', DISABLE_ERROR_REPORTING='1')
@@ -324,7 +328,10 @@ class ClaudeCodeProvider:
         except ValidationError:
             raise ClaudeCodeError('isolation_canary_invalid', receipt=receipt)
         visible = canonical(value)
-        if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md')):
+        present = [field for field in ('skills', 'memory', 'claude_md', 'agents_md') if value[field] != '']
+        if present:
+            receipt['isolation_context_fields'] = present
+            receipt['isolation_whitespace_only_fields'] = [field for field in present if not value[field].strip()]
             raise ClaudeCodeError('isolation_context_present', receipt=receipt)
         if ('StructuredOutput' not in value['tools'] or re.search(
                 r'\b(?:Bash|Read|Write|Edit|Glob|Grep|WebFetch|WebSearch|Agent|Skill|ToolSearch)\b', value['tools'])):

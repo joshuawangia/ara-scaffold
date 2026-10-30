@@ -110,7 +110,7 @@ credential file and may inspect the child environment; this is not a promise abo
 `ps` visibility. Credentials are excluded from argv, logs and caches.
 
 It creates a
-separate empty cwd for every process, checks ancestor instruction files, and uses
+separate empty cwd and private empty HOME for every process, checks ancestor instruction files, and uses
 safe mode, no user setting sources, no MCP, no slash commands, no session
 persistence, no browser, and an empty built-in tool list. It does not refresh or
 rotate the original login. An expired token requires operator login maintenance
@@ -118,6 +118,12 @@ outside ARA.
 
 Every newly opened run context performs an uncached, budgeted isolation canary.
 The visible-context report must show no skills, memory, CLAUDE.md or AGENTS.md.
+These fields must be exactly empty: whitespace still rejects. Rejection receipts
+retain only the names of populated fields and which contain only whitespace,
+never the rejected context itself. A fresh config directory alone does not
+isolate HOME-based discovery; both locations are isolated for every invocation,
+including the version probe. Host credentials are read before constructing this
+environment and are never copied into either directory.
 Debug markers must prove skipped skill discovery, disabled installed plugins and
 MCP, and disabled project memory. Both visible context and debug output are
 scanned for runtime-discovered user skill names, project names and memory paths.

@@ -4668,3 +4668,15 @@ supersedes mandatory paragraph cues, blanket citation exclusions from Proposal,
 fixed literature/disclaimer placement and repeated status disclosures. Placement
 labels alone are advisory for proposals; actual support/fidelity failures and
 fresh conservative union auditing remain binding. Ordinary-route policy remains.
+
+## Private HOME for the Claude publication transport
+
+The Claude transport's fresh config and cwd previously retained the operator's
+HOME. Give each invocation an empty private HOME as well, including version
+probes, while preserving fresh read-only host authentication and the existing
+no-discovery flags. A contaminated-home production-wire regression must reject
+without this boundary. Canary nonempty fields, including whitespace, still
+refuse without retry or cache acceptance; record only fixed field names and
+whitespace categories so a refusal is diagnosable without retaining context.
+This closes an exposed discovery path, not proof that a particular host file
+was read by a historical failed call. Live diagnostic evidence stays in runs.

@@ -774,7 +774,7 @@ def test_auth_reread_retry_is_once_and_accounted(cli,recovers,retries,measured,a
     config['claude_code']['retries']=retries
     calls,log=make()
     injection=("if not canary and (token == 'offline-token' or not "+repr(recovers)+"):\n"
-               " source=Path.home()/'.claude/.credentials.json'\n"
+               " source=Path(__file__).parent/'home/.claude/.credentials.json'\n"
                " auth=json.loads(source.read_text()); auth['claudeAiOauth']['accessToken']='offline-replaced-token'\n"
                " replacement=source.with_suffix('.replacement'); replacement.write_text(json.dumps(auth)); replacement.chmod(0o600); replacement.replace(source)\n"
                " result.update(subtype='error_during_execution',is_error=True,api_error_status=401)\n"
@@ -799,7 +799,7 @@ def test_inflight_credential_is_scanned_after_host_replacement(cli,monkeypatch):
     calls,log=make()
     monkeypatch.delenv('CLAUDE_CODE_OAUTH_TOKEN')
     injection=("if not canary:\n"
-               " source=Path.home()/'.claude/.credentials.json'\n"
+               " source=Path(__file__).parent/'home/.claude/.credentials.json'\n"
                " auth=json.loads(source.read_text()); auth['claudeAiOauth']['accessToken']='offline-replaced-token'\n"
                " source.write_text(json.dumps(auth))\n"
                " result['result']=json.dumps({'P':token})\n")
@@ -807,3 +807,64 @@ def test_inflight_credential_is_scanned_after_host_replacement(cli,monkeypatch):
     with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
     assert 'offline-token' not in log.path.read_text()
     assert not list(calls.cache.path.glob('*.json'))
+
+
+def test_operator_home_is_not_discoverable_by_child(cli, monkeypatch):
+    """A clean config alone must not expose HOME-based instruction discovery."""
+    make, _, _, binary = cli
+    home = Path.home()
+    (home/'.claude/CLAUDE.md').write_text('P')
+    (home/'.claude/projects').mkdir()
+    (home/'.claude/projects/memory.md').write_text('Q')
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(home/'.claude'))
+    monkeypatch.setenv('CLAUDE_MEMORY_PATH', str(home/'.claude/projects'))
+    source = binary.read_text()
+    needle = "if mode=='bad_canary': value['agents_md']='P'"
+    replacement = """if (Path.home()/'.claude/CLAUDE.md').exists(): value['claude_md']='P'
+ assert 'CLAUDE_MEMORY_PATH' not in os.environ
+ """ + needle
+    binary.write_text(source.replace(needle, replacement))
+    calls, log = make()
+    calls.formalise(Proposition('p', 'P'))
+    calls.formalise(Proposition('q', 'Q'))
+    assert len(model_events(log)) == 3
+    assert (home/'.claude/CLAUDE.md').read_text() == 'P'
+
+
+@pytest.mark.parametrize('context', ['\n', 'P'])
+def test_canary_context_diagnostics_do_not_relax_rejection(cli, context):
+    make, _, _, binary = cli
+    binary.write_text(binary.read_text().replace(
+        "if mode=='bad_canary': value['agents_md']='P'",
+        "value['claude_md']=" + repr(context)))
+    with pytest.raises(Rejected, match='isolation_context_present'):
+        make()
+    log = EventLog(binary.parent/'run/events.jsonl')
+    errors = [json.loads(e['payload_json']) for e in log.read() if e['stage']=='provider_error']
+    receipt = errors[-1]['cli']
+    assert receipt['isolation_context_fields'] == ['claude_md']
+    assert receipt['isolation_whitespace_only_fields'] == (['claude_md'] if context == '\n' else [])
+    assert not list((binary.parent/'cache').glob('*.json'))
+
+
+def test_every_cli_invocation_has_private_empty_home(cli, monkeypatch):
+    import subprocess
+    make, _, _, binary = cli
+    original = subprocess.Popen
+    homes = []
+    class Observe(original):
+        def __init__(self, command, *args, **kwargs):
+            if command[0] == str(binary):
+                env = kwargs['env']
+                home = Path(env['HOME'])
+                assert home != Path.home()
+                assert home.parent == Path(env['CLAUDE_CONFIG_DIR']).parent
+                assert home.stat().st_mode & 0o777 == 0o700
+                assert not list(home.iterdir())
+                homes.append(str(home))
+            super().__init__(command, *args, **kwargs)
+    monkeypatch.setattr(subprocess, 'Popen', Observe)
+    calls, _ = make()
+    calls.formalise(Proposition('p', 'P'))
+    assert len(homes) == 3  # Version + canary share one process directory; next call is fresh.
+    assert homes[0] == homes[1] and homes[1] != homes[2]

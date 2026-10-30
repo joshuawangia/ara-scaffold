@@ -98,7 +98,7 @@ def _definition_screen_text(text):
     normalized = ''.join(parser.parts)
     if parser.unsupported_markup or _unsupported_definition_formatting(normalized):
         return None
-    return normalized
+    return unicodedata.normalize('NFKC', normalized)
 
 
 def content_definition(text: str, *, screen: str | None = None) -> bool:

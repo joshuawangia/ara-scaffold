@@ -4724,3 +4724,18 @@ emphasis, raw attribution screening and unchanged accepted source/artifact text.
 Native freeze and rehashed metadata regressions reproduce hidden/style/directional
 and invisible-word escapes before repair. Separate controls disable attribute and
 Unicode guards. Default screening and provenance codec fields remain unchanged.
+
+
+## Sigma S17-F1/F2 — compatibility view and distinguishing raw-guard proof
+
+Add NFKC to the decoded formatting-free screening view; preserve original text
+and the raw guard. Bold/full-width report words, including entity and emphasis
+variants, now receive the same explicit-frame check. Ordinary typographic content
+stays unchanged through freeze/reload. This does not transliterate arbitrary
+confusables or infer authorship.
+
+The unknown-tag boundary made the earlier raw-guard mutation test redundant.
+Retain that mandatory control and add a distinguishing native/rehashed-metadata
+case containing raw attribution inside a comment omitted from the normalized
+view. The control now requires metadata rejection to fail when the raw guard is
+removed. Keep compatibility normalization under its own mutation control.

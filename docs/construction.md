@@ -603,3 +603,11 @@ presentation is not interpreted. Tags with special rendering behavior, including
 and fillers refuse rather than split a reporting word in the screening view.
 Ordinary Markdown emphasis and links remain supported. This is a conservative
 textual boundary, not a browser renderer or semantic attribution proof.
+
+
+The decoded formatting-free screening view also uses Unicode NFKC compatibility
+normalization, so bold/full-width typographic letters cannot conceal an explicit
+report frame. Accepted definitions retain their exact original typography. The
+raw guard remains independent: report text in an HTML comment still refuses even
+though the display-oriented view omits that comment. This policy does not claim
+to recognize arbitrary visual confusables or determine semantic authorship.

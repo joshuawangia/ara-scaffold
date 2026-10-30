@@ -34,7 +34,11 @@ FRAMES = ['b holds **that** P', 'b states *that* P', 'b maintains: that P',
           'b holds <details>Q</details> that P',
           'b ho\u200blds that P', 'b ho&#x200b;lds that P',
           'b ho\u034flds that P', 'b ho\ufe0flds that P',
-          'b ho\u00adlds that P', 'b \u202esdloh\u202c that P']
+          'b ho\u00adlds that P', 'b \u202esdloh\u202c that P',
+          'b 𝐡𝐨𝐥𝐝𝐬 that P', 'b ｈｏｌｄｓ that P',
+          'b &#x1d421;&#x1d428;&#x1d425;&#x1d41d;&#x1d42c; that P',
+          'b <em>ｈｏｌｄｓ</em> <strong>ｔｈａｔ</strong> P',
+          'b <!-- holds that P --> Q']
 
 
 @pytest.mark.parametrize('text', FRAMES)
@@ -76,12 +80,12 @@ def test_formatted_report_frame_rejected_when_loading_metadata(text):
 @pytest.mark.parametrize('text', ['P holds', 'P and Q hold', 'P states are Q',
     'P maintains Q', 'P holds. That Q holds is R.',
     'P <em>holds</em>', 'P <span>states</span> are Q',
-    'P &lt; Q', 'P holds.<br>That Q holds is R.'])
+    'P &lt; Q', 'P holds.<br>That Q holds is R.', 'P 𝐡𝐨𝐥𝐝𝐬', 'Ｐ ｈｏｌｄｓ'])
 def test_ordinary_state_predication_stays_content(text):
     assert content_definition(text,screen=PRECISE_SCREEN)
 
 
-@pytest.mark.parametrize('definition', ['P <em>holds</em>', 'P [holds](Q)', 'P **holds**'])
+@pytest.mark.parametrize('definition', ['P <em>holds</em>', 'P [holds](Q)', 'P **holds**', 'P 𝐡𝐨𝐥𝐝𝐬', 'Ｐ ｈｏｌｄｓ'])
 def test_markup_screen_never_rewrites_accepted_definitions_or_source(rig, monkeypatch, definition):
     from ara.runtime.extraction import HEADER
     from ara.runtime.commitment_provenance import load_commitment_provenance

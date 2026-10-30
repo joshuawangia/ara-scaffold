@@ -2629,7 +2629,7 @@ CASES += [
 
 CASES += [
     ('precise_markup_normalization', 'ara/runtime/commitment_provenance.py', 'normalized = _definition_screen_text(text)\n    return normalized', 'normalized = text\n    return normalized', 'tests/runtime/test_precise_attribution_formatting.py'),
-    ('precise_markup_raw_guard', 'ara/runtime/commitment_provenance.py', 'or not text.strip() or attributed(text):', 'or not text.strip():', 'tests/runtime/test_precise_attribution_formatting.py'),
+    ('precise_markup_raw_guard', 'ara/runtime/commitment_provenance.py', 'or not text.strip() or attributed(text):', 'or not text.strip():', 'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
 ]
 
 
@@ -2652,6 +2652,13 @@ CASES += [
      'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
     ('precise_invisible_formatting_boundary', 'ara/runtime/commitment_provenance.py',
      'return any(unicodedata.category(c)', 'return False and any(unicodedata.category(c)',
+     'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
+]
+
+
+CASES += [
+    ('precise_compatibility_typography', 'ara/runtime/commitment_provenance.py',
+     "return unicodedata.normalize('NFKC', normalized)", 'return normalized',
      'tests/runtime/test_precise_attribution_formatting.py::test_formatted_report_frame_rejected_when_loading_metadata'),
 ]
 

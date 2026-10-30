@@ -6,6 +6,7 @@ from hashlib import sha256
 from ara.runtime.calls import require
 
 HEADING = 'Related work and scope of the novelty claim'
+PROPOSAL_HEADING = 'Status and method'
 LIT = re.compile(r'\[lit:([^\]]+)\]')
 
 
@@ -60,18 +61,18 @@ def load_currency(paths, log):
     return result
 
 
-def related_text(markdown):
-    found = re.findall(r'^## \d+\. '+re.escape(HEADING)+r'\s*\n(.*?)(?=^## |\Z)', markdown, re.M|re.S|re.I)
+def related_text(markdown, heading=HEADING):
+    found = re.findall(r'^## \d+\. '+re.escape(heading)+r'\s*\n(.*?)(?=^## |\Z)', markdown, re.M|re.S|re.I)
     require(len(found) == 1, 'publication needs one related-work section')
     return found[0]
 
 
-def check_currency(markdown, currency):
+def check_currency(markdown, currency, *, proposal=None):
     used = set(LIT.findall(markdown))
     if currency is None:
         require(not used, 'literature citation without currency input')
         return
-    related = related_text(markdown)
+    related = related_text(markdown, PROPOSAL_HEADING if proposal else HEADING)
     require(used <= currency['evidence'].keys(), 'unrecorded literature citation')
     require(used and any(currency['evidence'][id]['kind']=='bounded_search_record' for id in used),
             'related-work section missing search-scope citation')

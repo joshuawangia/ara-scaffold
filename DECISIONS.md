@@ -4638,3 +4638,13 @@ authorization remains separate. Proposal outputs use ordinary titles, one fixed
 abstract disclosure and a short final Status and method note. Search/process
 qualifications belong there. Verified legacy imports may opt into the old layout
 at entry only; output and repairs retain strict validation and k>=3 union auditing.
+
+### Proposal publication ownership and status placement
+
+For explicitly authorized OPEN proposals, publication inherits the native scoped
+ownership contract, allowing natural argument prose without repetitive sentence
+prefixes. Source attribution stays outside proposal scopes. The single abstract
+disclosure and final Status and method note retain status and bounded-search
+qualifications. Only a current, exact accepted export with a matching clean k≥3
+gate qualifies for legacy metadata import; final text and repairs remain strict.
+The conservative audit and occurrence-bound repair rules are unchanged.

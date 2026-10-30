@@ -48,7 +48,7 @@ def length_policy(minimum_words=3000):
                 editorial_preference='prefer a tight supported paper over padding')
 
 
-def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None, minimum_words=3000):
+def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None, minimum_words=3000, proposal=None):
     markdown = value['markdown']
     body = paragraphs(strip_figures(markdown))
     if whole:
@@ -61,14 +61,18 @@ def validate_polish(value, original, figure_ids, *, whole=False, currency=None, 
         headings = re.findall(r'^## (\d+)\. (.+)$',markdown,re.M)
         require([int(n) for n,_ in headings] == list(range(1,len(headings)+1)), 'publication numbered sections invalid')
         labels = ' '.join(h.lower() for _,h in headings)
-        require(all(term in labels for term in ('introduction','argument','objection','repl','limit','conclusion')), 'publication required section missing')
+        required = ('introduction','proposal','objection','repl','conclusion','status and method') if proposal else (
+            'introduction','argument','objection','repl','limit','conclusion')
+        require(all(term in labels for term in required), 'publication required section missing')
+        if proposal:
+            require(headings[-1][1].casefold() == 'status and method', 'proposal status note must be last')
     require([x['paragraph'] for x in value['change_log']] == list(range(len(body))), 'publication paragraph change log incomplete')
     require(set(CITATION.findall(markdown)) == set(CITATION.findall(original)), 'publication citation inventory changed')
     require(set(NODE.findall(markdown)) == set(NODE.findall(original)), 'publication node coverage changed')
     if whole:
         require(not NODE.findall(body[0]), 'publication abstract must not duplicate node markers')
         from ara.runtime.publication_currency import check_currency
-        check_currency(markdown,currency)
+        check_currency(markdown,currency,proposal=proposal)
     found = FIGURE.findall(markdown)
     placements = value['figure_placements']
     require(found == [p['id'] for p in placements] and len(found) == len(set(found)) and set(found) <= figure_ids,
@@ -109,12 +113,34 @@ def as_draft(markdown, bibliography):
     return dict(title=lines[0].removeprefix('# ').strip(), body='\n'.join(lines[1:]).strip(), bibliography=bibliography)
 
 
+def verified_legacy_import(events, route, draft):
+    """Legacy metadata is import-compatible only for the current accepted draft."""
+    start = max((i for i,e in enumerate(events) if e['stage'] == 'essay_composition_started'), default=0)
+    active = events[start:]
+    finals = [(i,json.loads(e['payload_json'])) for i,e in enumerate(active) if e['stage'] == 'final_draft']
+    if not finals:
+        return False
+    index, final = finals[-1]
+    if final.get('route_id') != route.id or final.get('draft') != draft:
+        return False
+    gates = [json.loads(e['payload_json']) for e in active[:index] if e['stage'] == 'essay_audit_consensus']
+    if not gates:
+        return False
+    gate = gates[-1]
+    return (gate.get('audit_kind') == 'audit_essay' and gate.get('status') == 'complete'
+            and gate.get('route_id') == route.id and gate.get('faithful') is True
+            and gate.get('flags') == [] and gate.get('k',0) >= 3
+            and len(gate.get('samples',[])) >= 3
+            and all(s.get('faithful') is True and s.get('flags') == [] for s in gate['samples'])
+            and gate.get('draft_sha256') == digest(canonical(draft)))
+
+
 def polish(calls, route, draft, *, currency=None):
     from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
     from ara.runtime.proposal import activate, validate_disclosure
     proposal = activate(calls, route)
-    validate_disclosure(proposal, draft)
+    validate_disclosure(proposal, draft, allow_legacy=bool(proposal) and verified_legacy_import(calls.log.read(), route, draft))
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -131,7 +157,7 @@ def polish(calls, route, draft, *, currency=None):
     def check_whole(value):
         validate_disclosure(proposal, as_draft(value['markdown'], draft['bibliography']))
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
-        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'])
+        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'],proposal=proposal)
         return value
     figure_ids = {f['id'] for f in figures}
     chunks = sections(draft,calls.log.read())

@@ -1,7 +1,7 @@
 """Publication-only scope checks around the native typed sentence audit."""
 import re
 
-from ara.runtime.publication_currency import HEADING, LIT
+from ara.runtime.publication_currency import HEADING, PROPOSAL_HEADING, LIT
 
 
 def sentence_sections(body, spans):
@@ -20,7 +20,8 @@ def publication_flags(labels, inputs, native_flags):
         cited = LIT.findall(sentence.get('text', ''))
         reasons = []
         if cited:
-            if sentence.get('section', '').casefold() != HEADING.casefold():
+            heading = PROPOSAL_HEADING if inputs.get('proposal') else HEADING
+            if sentence.get('section', '').casefold() != heading.casefold():
                 reasons.append('literature_scope')
             if not label['citation_supported'] or any(id not in evidence for id in cited):
                 reasons.append('miscited_literature_claim')

@@ -206,3 +206,26 @@ response remains binding even when the corrected response is clean. Invalid
 responses never count as clean samples; the gate still requires at least three
 complete fresh samples. Receipts distinguish recovered adverse evidence from
 those sample verdicts.
+
+## Scoped proposal publications
+
+An explicitly authorized OPEN proposal uses a substantive title, one disclosure
+sentence in its abstract, an Introduction, Proposal, Objections and replies,
+Conclusion, and a short final Status and method note. The native proposal
+validator owns disclosure and scope semantics. The note retains the exact
+proposal status and process qualifications; the ordinary route layout is
+unchanged. Proposal ownership does not establish source support or derivation.
+
+The editor uses natural prose within the native section/paragraph scopes. Cited
+source discussion remains outside those scopes. The publication audit receives
+the same deterministic ownership metadata as the writer audit, with its existing
+fresh k≥3 union and adverse-history policy. Only the exact current accepted
+export, bound to a clean complete k≥3 writer gate, may use the legacy disclosure
+format on import. Whole-paper output and every repair use strict disclosure
+validation. The retained original export is not normalized or rewritten.
+
+For proposals, imported literature-currency citations and search/novelty
+positioning belong in Status and method. Source discussion elsewhere uses the
+original source citations. Currency records still cannot supply route-node
+coverage, and their search bounds, verified locations and access limitations
+remain mandatory. Ordinary route papers retain the separate related-work section.

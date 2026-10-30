@@ -33,6 +33,28 @@ retry uses the same pre-repair candidate, flagged occurrences and round number.
 Only flagged sentence spans may change, including within an allowed paragraph;
 all intervening spans remain byte-identical. The editor must preserve length and
 support without padding. A second invalid response ends the attempt honestly.
+
+`--inline-repairs` enables the operator's bounded continuation path. It resumes
+the latest accepted candidate, including after three whole-paper rounds, without
+resetting that count. Unsupported claims and elaborations get up to three
+separate, persistent inline passes. A pass is charged before dispatch; a crash or
+invalid response cannot replenish it. Only the flagged prose occurrences change.
+Accepted verified-source carry-over can restore source wording; an alignment
+suggestion alone cannot. Otherwise the isolated editor returns one sentence (or
+deletes it), using the same evidence and whole-paper validation. Every occurrence
+retains its citation/node inventory, and surrounding bytes are assembled locally.
+Miscitation keeps the normal targeted repair path. Each changed candidate goes
+through fresh conservative k≥3 auditing, native verification and the final gate.
+
+In this continuation mode, a quotation-fidelity failure consisting solely of
+exact logged bibliographic titles permits deterministic quotation-delimiter to
+italics replacement. It spends neither semantic repair budget and changes no
+other bytes. The failed items, before hash and candidate are logged, then native
+verification and the final audit run again. Other quotation failures still refuse.
+`--title-format-only` limits an existing accepted candidate to this deterministic
+formatting path, followed by native verification and the fresh final audit. It
+cannot invoke the editor or repair a semantic audit failure. It is exclusive with
+`--inline-repairs`.
 These retries never reset or increase the three-round semantic repair limit
 (at most six repair proposals). Transport retries keep their existing policy.
 Attempted and accepted repair counts and the structural-attempt bound are recorded

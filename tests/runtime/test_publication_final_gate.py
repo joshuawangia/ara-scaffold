@@ -50,9 +50,11 @@ def final_editor(rig, monkeypatch, *, all_rounds=False, interrupt=False):
     return calls, route, seen, repairs, state
 
 
-def test_final_gate_flag_gets_targeted_repair_and_fresh_gates(rig, monkeypatch):
+@pytest.mark.parametrize('inline', [False, True])
+def test_final_gate_flag_gets_targeted_repair_and_fresh_gates(rig, monkeypatch, inline):
     from ara.runtime.publication import polish
     calls, route, seen, repairs, _ = final_editor(rig, monkeypatch)
+    calls.config['publication_inline_repairs'] = inline
     result, _ = polish(calls, route, paper())
     assert result['polished'] and result['native_citations']['status']=='pass'
     assert result['repair_rounds']==result['accepted_repair_rounds']==1

@@ -136,6 +136,8 @@ def parser() -> argparse.ArgumentParser:
         if command == 'polish':
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--inline-repairs', action='store_true', help='enable up to three persistent occurrence-only repair passes; whole-paper rounds are not replenished')
+            cmd.add_argument('--title-format-only', action='store_true', help='resume only exact logged title-delimiter formatting, native verification and final audit; no semantic repairs')
             cmd.add_argument('--audit-provider', choices=('claude_code', 'codex_cli'), default='claude_code')
             cmd.add_argument('--audit-model', help='audit model; defaults to the run writer model for Codex')
             cmd.add_argument('--min-words', type=int, help='ARA publication floor; defaults to publication_min_words in the run config or 3000')

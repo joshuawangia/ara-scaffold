@@ -4716,3 +4716,20 @@ stages would change their request identities and unnecessarily regenerate accept
 editing outputs. A real cache-replay regression against legacy metadata and a
 production mutation control enforce this compatibility boundary; preflight remains
 fresh and uncached independently of content reuse.
+
+## Bounded inline publication continuation
+
+An explicit publication continuation may audit a saved candidate after its three
+whole-paper repairs are spent without replenishing them. Unsupported prose gets
+a separate three-pass ledger charged before dispatch; direct offset patches
+preserve all surrounding bytes and each occurrence's citation/node inventory.
+Verified-source reversion consumes accepted native carry-over receipts only;
+other edits use a logged isolated single-sentence call. Mixed miscitation and
+non-prose failures retain normal targeted repair. Whole-document validation,
+native verification and fresh conservative audits remain binding.
+
+A separately selected title-format-only continuation cannot dispatch an editor.
+It replaces only quotation delimiters of exact logged work titles identified by
+native verification, then re-verifies and audits. It spends neither semantic
+budget and cannot cure a substantive failure. Existing verified originals remain
+available independently of publication acceptance.

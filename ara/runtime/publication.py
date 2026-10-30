@@ -159,7 +159,12 @@ def polish(calls, route, draft, *, currency=None):
     proposal = activate(calls, route)
     validate_disclosure(proposal, draft, allow_legacy=bool(proposal) and verified_legacy_import(calls.log.read(), route, draft))
     from ara.runtime.publication_resume import repair_state
-    resumed = repair_state(calls.log.read(), route.id, digest(canonical(draft)))
+    inline_enabled = calls.config.get('publication_inline_repairs', False)
+    title_only = calls.config.get('publication_title_format_only', False)
+    require(not (inline_enabled and title_only), 'choose inline repairs or title formatting only')
+    resumed = repair_state(calls.log.read(), route.id, digest(canonical(draft)), inline=inline_enabled or title_only)
+    require(not title_only or resumed['candidate'] is not None,
+            'title formatting requires an accepted publication candidate')
     if resumed['candidate'] is not None:
         calls.screen_imported_draft(as_draft(resumed['candidate']['markdown'], draft['bibliography']),
                                     kind='audit_publication')
@@ -181,6 +186,21 @@ def polish(calls, route, draft, *, currency=None):
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
         validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'],proposal=proposal)
         return value
+    def repair_failure(exc, before_value, after_value):
+        from ara.runtime.publication_audit import repair_length_feedback
+        feedback = dict(validator_failure=str(exc), minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'])
+        try:
+            before = reading_copy(before_value['markdown'],evidence,records,currency)[0]
+            after = reading_copy(after_value['markdown'],evidence,records,currency)[0]
+            feedback.update(repair_length_feedback(before, after))
+        except Rejected as length_error:
+            feedback['length_diagnostics_unavailable'] = str(length_error)
+        return Rejected(canonical(feedback))
+    def check_inline(value):
+        try:
+            return check_whole(value)
+        except Rejected as exc:
+            raise repair_failure(exc, candidate, value) from exc
     def check_composed(value):
         from ara.runtime.proposal import insert_disclosure
         before = as_draft(value['markdown'], draft['bibliography'])
@@ -202,12 +222,27 @@ def polish(calls, route, draft, *, currency=None):
                          before_sha256=digest(canonical(value)), after_sha256=digest(canonical(normalized)),
                          model_change_log=value['change_log'], semantic_repair_rounds_unchanged=True)
         return normalized
+    def format_titles(value, failed, origin):
+        from ara.runtime.publication_verification import title_format_body
+        from ara.runtime.publication_inline import with_markdown
+        current = as_draft(value['markdown'], draft['bibliography'])
+        formatted = title_format_body(current, failed, {r['record'].get('title') for r in records.values()})
+        body_start = value['markdown'].index(current['body'])
+        markdown = (value['markdown'][:body_start] + formatted
+                    + value['markdown'][body_start+len(current['body']):])
+        updated = with_markdown(value, markdown,
+            'Exact cited work-title delimiters changed to italics; wording retained.')
+        check_whole(updated)
+        calls.log.record('publication_title_format_repair', before_sha256=digest(canonical(value)),
+            failed_items=failed, diagnosis_origin=origin, whole_paper_rounds_unchanged=True,
+            inline_passes_unchanged=True, **updated)
+        return updated
     figure_ids = {f['id'] for f in figures}
     chunks = sections(draft,calls.log.read())
     original = '\n\n'.join(chunks)
     calls.log.record('publication_started', route_id=route.id, original_draft=draft,
                      original_sha256=digest(canonical(draft)), requested_model=MODEL,
-                     resumed_repair_rounds=resumed['repair_rounds'])
+                     resumed_repair_rounds=resumed['repair_rounds'], resumed_inline_passes=resumed['inline_passes'])
     base = dict(**({'proposal': proposal} if proposal else {}), outline=calls.essay_outline(route), source_evidence=evidence,
                 minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'],
                 figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'], literature_currency=currency)
@@ -219,8 +254,14 @@ def polish(calls, route, draft, *, currency=None):
     failure = None
     repair_rounds = resumed['repair_rounds']
     accepted_repair_rounds = resumed['accepted_repair_rounds']
+    inline_passes = resumed['inline_passes']
     native_citations = dict(status='not_run',reason='polish failed; original draft retained')
     try:
+        if title_only:
+            from ara.runtime.publication_verification import logged_title_failures
+            failed = logged_title_failures(calls.log.read(), as_draft(candidate['markdown'], draft['bibliography']))
+            if failed:
+                candidate = format_titles(candidate, failed, 'exact_logged_request')
         if candidate is None:
             for index,chunk in enumerate(chunks):
                 result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
@@ -232,11 +273,13 @@ def polish(calls, route, draft, *, currency=None):
             candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
                 original_markdown=original,paragraphs=paragraphs(merged)),
                 check_composed)
-        for attempt in range(repair_rounds, 4):
+            calls.log.record('publication_candidate', **candidate)
+        while True:
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
             try:
-                audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                if not title_only:
+                    audit = audit_consensus(calls,route,current,publication_context=publication_context)
                 try:
                     verifier = calls._for_construction_stage('audit_publication', {})
                     calls.log.record('publication_verification_provider',
@@ -249,6 +292,9 @@ def polish(calls, route, draft, *, currency=None):
                         failed = [item for item in verification['items'] if item['status'] != 'verified']
                         if failed and all(item.get('kind') == 'quotation' for item in failed):
                             from ara.runtime.publication_verification import quotation_flags, title_format_body
+                            if inline_enabled or title_only:
+                                candidate = format_titles(candidate, failed, 'current_verification')
+                                continue
                             title_format_body(current,failed,{r['record'].get('title') for r in records.values()})
                             inputs = verifier.audit_inputs(route,current,publication_context=publication_context)
                             flags = quotation_flags(current,inputs,failed)
@@ -266,14 +312,24 @@ def polish(calls, route, draft, *, currency=None):
                 break
             except EssayAuditFailed as rejection:
                 audit = rejection.result
-                if attempt == 3 or not audit.get('flags'):
+                if title_only:
+                    raise
+                if inline_enabled:
+                    from ara.runtime.publication_inline import LIMIT, repair, eligible_sentences
+                    eligible = eligible_sentences(candidate['markdown'], rejection)
+                    if eligible:
+                        require(inline_passes < LIMIT, 'publication inline pass budget exhausted')
+                        inline_passes += 1
+                        candidate = repair(calls, candidate, rejection, base, check_inline, inline_passes)
+                        continue
+                if repair_rounds == 3 or not audit.get('flags'):
                     raise
                 inputs = rejection.inputs
                 flagged = [dict(**sentence,
                     role=next(f['role'] for f in audit['flags'] if f['sentence']==sentence['sentence']),
                     reasons=[f['reason'] for f in audit['flags'] if f['sentence']==sentence['sentence']])
                     for sentence in inputs['sentences'] if sentence['sentence'] in audit['extra_steps']]
-                from ara.runtime.publication_audit import repair_locations, validate_repair_scope, validate_sentence_repair, repair_length_feedback
+                from ara.runtime.publication_audit import repair_locations, validate_repair_scope, validate_sentence_repair
                 prior = paragraphs(candidate['markdown'])
                 flagged = repair_locations(candidate['markdown'], flagged)
                 allowed_blocks = sorted({s['location']['block_index'] for s in flagged})
@@ -292,16 +348,9 @@ def polish(calls, route, draft, *, currency=None):
                         validate_repair_scope(candidate['markdown'], value['markdown'], allowed_blocks)
                         validate_sentence_repair(candidate['markdown'], value['markdown'], flagged)
                     except Rejected as exc:
-                        feedback = dict(validator_failure=str(exc), minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'])
-                        try:
-                            before = reading_copy(candidate['markdown'],evidence,records,currency)[0]
-                            after = reading_copy(value['markdown'],evidence,records,currency)[0]
-                            feedback.update(repair_length_feedback(before, after))
-                        except Rejected as length_error:
-                            feedback['length_diagnostics_unavailable'] = str(length_error)
-                        raise Rejected(canonical(feedback)) from exc
+                        raise repair_failure(exc, candidate, value) from exc
                     return value
-                repair_rounds = attempt + 1
+                repair_rounds += 1
                 candidate = calls.call('polish_essay',dict(**base,mode='repair',repair_round=repair_rounds,markdown=candidate['markdown'],
                     original_markdown=original,paragraphs=prior,allowed_paragraphs=allowed,allowed_blocks=allowed_blocks,
                     flagged_sentences=flagged,audit_failures=audit['flags'],audit=audit),validate_repair,
@@ -327,6 +376,7 @@ def polish(calls, route, draft, *, currency=None):
     result = dict(route_id=route.id,route_sha256=digest(route.to_json()),polished=success,audit=audit,polish_failure=failure,
         local_citations=local_citations,native_citations=native_citations,word_limits=policy,
         repair_rounds=repair_rounds,accepted_repair_rounds=accepted_repair_rounds,
+        inline_passes=inline_passes,
         repair_validation_attempts=REPAIR_VALIDATION_ATTEMPTS,
         words=len(NODE.sub('',FIGURE.sub('',reading)).split()),
         audit_words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
@@ -355,6 +405,7 @@ def publish(log, result):
         local_citations=result['local_citations'],native_citations=result['native_citations'],words=result['words'],
         bibliographic_records=result['bibliographic_records'],repair_rounds=result['repair_rounds'],
         accepted_repair_rounds=result['accepted_repair_rounds'],word_limits=result['word_limits'],
+        inline_passes=result.get('inline_passes',0),
         repair_validation_attempts=result['repair_validation_attempts'])
     (directory/'latest.json').write_text(canonical(dict(path=name,sha256=digest(canonical(result)))))
     return result,target
@@ -402,6 +453,8 @@ def publication_command(args, log, root, calls_factory):
         minimum = args.min_words if args.min_words is not None else config.get('publication_min_words', 3000)
         length_policy(minimum)
         config.update(provider='claude_code',model=MODEL,stages={},fallbacks=[],validation_attempts=1,
+                      publication_inline_repairs=getattr(args,'inline_repairs',False),
+                      publication_title_format_only=getattr(args,'title_format_only',False),
                       publication_min_words=minimum,essay_min_words=minimum,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
         # A writer's Codex client window belongs to the separately selected

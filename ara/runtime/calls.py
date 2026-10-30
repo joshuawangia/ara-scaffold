@@ -1303,6 +1303,10 @@ class ModelCalls:
                 section='Title', field='title', start=0, end=len(draft['title'])))
         if proposal and publication_context is None:
             inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title']))
+        from ara.runtime.audit_carryover import carryover_receipt
+        carryover = carryover_receipt(self, route, draft, inputs)
+        if carryover is not None:
+            inputs['verified_sentence_carryover'] = carryover
         return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None, fresh=False) -> dict:

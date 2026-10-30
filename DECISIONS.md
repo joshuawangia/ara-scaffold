@@ -4647,3 +4647,15 @@ blanket attribution bans across proposal sections, ordinary-title enforcement,
 and mandatory status-note/disclaimer-location gates. Source discussion may share
 the Proposal section; only the declared bridge cannot be source-attributed.
 Frozen-H authorization, immutable evidence, repair bounds and k>=3 union remain.
+
+## Verified sentence carry-over and native meaning checks (2026-10-30)
+
+Operator-authorized prefix removal preserves a verified source sentence verdict
+without sentence-level ownership rituals. Other wording changes require three
+native meaning-preservation votes: any dissent or uncertainty returns to ordinary
+audit. Similarity suggests alignment only. Source identity, original clean k>=3
+gate and raw roles are bound to retained receipts; citations remain required.
+Accepted carry-over re-evaluates old labels under the same narrow authorization,
+while all unrelated adverse history stays binding. Persisted meaning decisions
+prevent rerolls. No repair counter or publication dispatch is changed here.
+The owning contract and evidence limits are in [sentence carry-over](docs/audit-carryover.md).

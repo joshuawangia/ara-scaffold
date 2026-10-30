@@ -37,6 +37,7 @@ def sentence_spans(body, *, literature=False):
 def audit_flags(labels, inputs, draft):
     """Apply the three typed failure rules; semantic role/support comes from audit."""
     sentences = {s['sentence']: s['text'] for s in inputs['sentences']}
+    scopes = {s['sentence']: s.get('proposal_scope') for s in inputs['sentences']}
     allowed = {b['id']: b for b in inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
     bibliography = {b['id']: b for b in draft.get('bibliography', [])}
     from ara.runtime.proposal import role_failure, author_names
@@ -47,7 +48,7 @@ def audit_flags(labels, inputs, draft):
         cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
         premises = {r['evidence_id'] for r in inputs['outline'].get('source_roles', [])
                     if r['role'] == 'global_premise' and r['node_id'] in item['node_ids']}
-        proposal_reason = role_failure(role, sentences.get(item['sentence'], ''), inputs.get('proposal'), source_authors=authors)
+        proposal_reason = role_failure(role, sentences.get(item['sentence'], ''), inputs.get('proposal'), source_authors=authors, proposal_scope=scopes.get(item['sentence']))
         if proposal_reason:
             reason = proposal_reason
         elif inputs.get('proposal') and role == 'argument_step' and inputs['root_conclusion']['node_id'] in item['node_ids']:
@@ -132,6 +133,8 @@ def _proposal_metadata_request(previous_prompt, prompt):
             rows = []
             for sentence in data['sentences']:
                 text = sentence['text']
+                if text == 'Status and method':
+                    text = 'Methodology'
                 if label in text:
                     text = text.replace(label, '').replace('Disclosure:', '')
                     text = text.strip(' \t\n."“”\'—-:;')

@@ -5,6 +5,14 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
 CASES=[
+ ('scope_attribution','ara/runtime/proposal.py',
+  "    if scoped and (role == 'source_claim' or source_attribution(text, source_authors)):",
+  '    if False:',
+  'tests/runtime/test_proposal_scopes.py::test_in_scope_attribution_fails_regardless_of_role[framing]'),
+ ('outside_scope_claim','ara/runtime/proposal.py',
+  "    if not scoped and not re.match(prefix+r'\\b', text, re.I):",
+  '    if False:',
+  'tests/runtime/test_proposal_scopes.py::test_outside_scope_unmarked_claim_fails'),
  ('metadata_adverse_history','ara/runtime/essay_audit.py',
   "            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)",
   '            remap = None',
@@ -13,9 +21,9 @@ CASES=[
   'tests/runtime/test_proposal_mode.py::test_resume_inserts_disclosure_and_restores_cleanup_without_spending_repair'),
  ('unmarked','ara/runtime/proposal.py',"return 'unmarked_proposal'",'return None',
   'tests/runtime/test_proposal_mode.py::test_unmarked_or_source_attributed_proposal_still_fails[P.-proposed_principle]'),
- ('source_attribution','ara/runtime/proposal.py',"            return 'source_attributed_proposal'",'            return None',
+ ('source_attribution','ara/runtime/proposal.py',"    if source_attribution(remainder, source_authors):",'    if False:',
   'tests/runtime/test_proposal_mode.py::test_source_attribution_without_citation_cannot_hide_in_proposal_role'),
- ('disclosure','ara/runtime/proposal.py',"require(label in draft['title'],",'require(True,',
+ ('disclosure','ara/runtime/proposal.py',"require(abstract.count(label) == 1 and 'Disclosure: ' + label + '.' in abstract,",'require(True,',
   'tests/runtime/test_proposal_mode.py::test_proposal_mode_cannot_erase_citations_or_disclosure_on_export'),
 ]
 

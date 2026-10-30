@@ -4628,3 +4628,13 @@ Proposal disclosure is deterministic provenance metadata, not model-authored
 source material. Composition, resume and post-verification cleanup restore the
 fixed unquoted sentence before the gate. This does not regenerate substantive
 prose, consume semantic repair rounds, or reset prior adverse audit history.
+
+Scoped proposal ownership supersedes per-sentence ownership-prefix requirements.
+Explicit section or paragraph scope is computed from the draft, carried to the
+audit as trusted sentence metadata, and permits natural prose. It is never a
+source-support exemption: attribution inside scope and uncited source claims
+outside scope still fail, as do unsupported claims in either location. Frozen-H
+authorization remains separate. Proposal outputs use ordinary titles, one fixed
+abstract disclosure and a short final Status and method note. Search/process
+qualifications belong there. Verified legacy imports may opt into the old layout
+at entry only; output and repairs retain strict validation and k>=3 union auditing.

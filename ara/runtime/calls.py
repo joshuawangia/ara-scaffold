@@ -1286,6 +1286,10 @@ class ModelCalls:
         if proposal:
             validate_disclosure(proposal, draft)
             inputs['proposal'] = proposal
+            from ara.runtime.proposal_scopes import sentence_scopes
+            for sentence, scope in zip(inputs['sentences'], sentence_scopes(draft['body'], spans)):
+                if scope is not None:
+                    sentence['proposal_scope'] = scope
         if proposal or publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
                 e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):
             from ara.runtime.writing import source_context

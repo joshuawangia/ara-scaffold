@@ -1,5 +1,5 @@
 {
-  "audit_essay:ad76170680eadbfb448f9c918dc651976ee622576f95e0d72f6a51034c3aef61": {
+  "audit_essay:e8903e3ec4441921e51d819162c441ef51ea767490ef5abf507b98342d40474c": {
     "content": [
       {
         "text": "{\"labels\":[{\"citation_supported\":true,\"node_ids\":[\"n:p\",\"n:p:c\",\"n:p:a\"],\"role\":\"argument_step\",\"sentence\":1}]}",
@@ -209,7 +209,7 @@
       "output_tokens": 3
     }
   },
-  "write_essay:f94d00e1c7bce54b0468fcf03692268c7a9e8d38879803032ea0f84e0f75f490": {
+  "write_essay:e59f4c6d429db37dd0b54f6eada8caf01e4944bfb671602aa795808c52e1fbb2": {
     "content": [
       {
         "text": "{\"bibliography\":[],\"body\":\"[[node:n:p]][[node:n:p:c]][[node:n:p:a]] P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P P\",\"title\":\"P\"}",

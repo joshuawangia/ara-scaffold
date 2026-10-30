@@ -645,14 +645,21 @@ exact `excerpt`. Record fields include id/authors/year/title/venue; optional URL
 and version metadata remain disclosed inputs. Pages and matching excerpts are
 retained in the append-only log. No declaration changes T or licenses an edge.
 
-The writer, audit and publication paths share proposed_principle and
-argument_for_proposal roles. Each substantive proposal/reasoning sentence must
-explicitly identify paper ownership, expose assumptions and remain relevant to
-the supplied bridge. Source claims use separate cited sentences. An ownership
-prefix alone cannot establish semantic support. The native helper contract is
-`proposal.role_failure(role, text, proposal, *, frozen_hypothesis=None)`; a
-validated frozen-H row requires separate node binding and conditional disclosure
-by its caller, and cannot be authorized by an OPEN packet.
+The writer and audit share proposed_principle and argument_for_proposal roles.
+Ownership may be inherited from a section headed Proposal, The bridge principle,
+or Objections and replies, ending at the next heading. A paragraph beginning
+`Proposal:` or `**Proposal:**` ends at the next blank line. This permits natural
+prose; it does not establish support. Attributions and citation markers inside a
+scope fail regardless of the assigned role. Source claims belong in separate,
+unscoped cited text. Outside scope, new claims still need explicit ownership.
+Semantic unsupported claims fail both inside and outside scope.
+
+`proposal_scopes.sentence_scopes(body, spans)` derives ownership from the draft;
+`calls.audit_inputs` adds `proposal_scope` to the affected sentence rows. The model
+cannot supply this authorization. `proposal.role_failure` accepts the optional
+`proposal_scope` keyword alongside `frozen_hypothesis` and `source_authors`.
+OPEN scope never authorizes frozen H; H still needs separate validated node
+binding and conditional disclosure. Publication owns its own layout integration.
 
 Proposal evidence remains obligatory during citation cleanup, export and
 publication; web absence cannot erase retained local evidence. Final fresh
@@ -660,9 +667,17 @@ unanimous audits and the existing three-round shared repair cap are unchanged.
 Resuming without `--proposal-packet` restores the logged packet, including its
 length policy and exact thesis-origin disclosure. Replacing it requires a new run.
 
-Composition and resumed drafts insert an unquoted fixed disclosure sentence in
-Abstract and Methodology and add the candidate label to the title. The same
-metadata normalization runs after verification cleanup, followed by the existing
-disclosure gate and fresh audits. Corrections have their own hash-linked receipt
-and never consume or reset a semantic repair round. Existing quoted copies of
-the exact mode label are unquoted so they cannot be mistaken for source quotations.
+Composition, resume and post-verification cleanup insert exactly one fixed,
+unquoted disclosure sentence in Abstract and a final Status and method note.
+The title uses ordinary prose. Abstract budgets are 100–250 words; status-note
+budgets are 50–150 words, with a final note ceiling of 250. Search/currency and
+process qualifications belong in the final note, not the abstract/introduction.
+Metadata normalization removes duplicate exact labels, renames a legacy Methodology
+heading, and retains substantive text. It does not summarize or erase qualifications.
+The strict gate can therefore refuse legacy prose needing a real quality revision.
+
+`validate_disclosure(proposal, draft, allow_legacy=True)` is an opt-in for callers
+that first verify an imported legacy export and its accepted audit receipt. It
+allows the former title/Abstract/Methodology layout only at import. New output and
+repairs use the strict default. Hash-linked metadata corrections never consume or
+reset a semantic repair round; unchanged adverse history remains binding.

@@ -110,8 +110,17 @@ def sectioned_essay(calls, route, inputs, validate):
     def check_plan(data):
         sections = data['sections']
         if 'proposal' in inputs:
-            require({'abstract', 'methodology'} <= {s['heading'].casefold() for s in sections},
-                    'proposal plan needs Abstract and Methodology sections')
+            headings = {s['heading'].casefold() for s in sections}
+            require({'abstract', 'status and method'} <= headings and
+                    bool({'proposal', 'the bridge principle'} & headings) and
+                    sections[-1]['heading'].casefold() == 'status and method',
+                    'proposal plan needs Abstract, Proposal and final Status and method sections')
+            for section in sections:
+                heading, words = section['heading'].casefold(), section['word_budget']
+                low, high = (100, 250) if heading == 'abstract' else (50, 150) if heading == 'status and method' else (400, 1200)
+                require(low <= words <= high, 'proposal section budget outside its purpose')
+        else:
+            require(all(s['word_budget'] >= 400 for s in sections), 'ordinary essay section budget below 400')
         require(len({s['id'] for s in sections}) == len(sections), 'duplicate essay section id')
         require(budget_min <= sum(s['word_budget'] for s in sections) <= budget_max,
                 'essay section budgets outside requested range')

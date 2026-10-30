@@ -25,8 +25,8 @@ def setup(calls, log):
 
 
 def draft():
-    return dict(title='P — '+DISCLOSURE,
-                body='Abstract\n'+DISCLOSURE+'.\n[[node:n0]] [[node:n1]] This paper proposes P.\nMethodology\n'+DISCLOSURE+'.',
+    return dict(title='P',
+                body='Abstract\nDisclosure: '+DISCLOSURE+'.\n[[node:n0]] [[node:n1]] This paper proposes P.\nStatus and method\nDisclosure: '+DISCLOSURE+'.',
                 bibliography=[])
 
 
@@ -73,7 +73,7 @@ def test_proposal_mode_cannot_erase_citations_or_disclosure_on_export(rig):
     with pytest.raises(ValueError, match='citation coverage'):
         check_coverage(log.read(), r, draft())
     with pytest.raises(Rejected, match='disclosure'):
-        calls.validate_essay(r, {**draft(), 'title':'P'}, minimum_words=0)
+        calls.validate_essay(r, {**draft(), 'body':draft()['body'].replace(DISCLOSURE, '', 1)}, minimum_words=0)
 
 
 def test_proposal_packet_is_bound_to_route_and_immutable(rig):
@@ -95,16 +95,16 @@ def test_proposal_writer_uses_native_proportional_sections(rig, monkeypatch):
         inputs=json.loads(prompt.split('INPUT_JSON\n')[1]);seen.append((kind,inputs))
         if kind=='outline_essay':
             assert 3000 <= inputs['budget_min'] < inputs['budget_max'] <= 4500
-            value=dict(title='P', sections=[dict(id=f's{i}',heading=h,purpose='P',word_budget=800,node_ids=['n0','n1'])
-                for i,h in enumerate(['Abstract','P','Q','Methodology'])])
+            value=dict(title='P', sections=[dict(id=f's{i}',heading=h,purpose='P',word_budget=w,node_ids=['n0','n1'])
+                for i,(h,w) in enumerate([('Abstract',200),('Introduction',800),('Proposal',1000),('Objections and replies',700),('Conclusion',400),('Status and method',100)])])
         else:
             assert inputs['mode']=='section'
-            value=dict(title=inputs['section']['heading'],body='[[node:n0]] [[node:n1]] '+('P '*800),bibliography=[])
+            value=dict(title=inputs['section']['heading'],body='[[node:n0]] [[node:n1]] '+('P '*inputs['section']['word_budget']),bibliography=[])
         return Response(response(value))
     monkeypatch.setattr(provider,'complete',complete)
     result=calls.write_essay(r)
-    assert DISCLOSURE in result['title']
-    assert [k for k,_ in seen]==['outline_essay']+['write_essay']*4
+    assert result['title']=='P'
+    assert [k for k,_ in seen]==['outline_essay']+['write_essay']*6
 
 
 def test_source_attribution_without_citation_cannot_hide_in_proposal_role(rig):
@@ -207,20 +207,20 @@ def test_proposal_title_repair_uses_title_field_and_shared_round_budget(rig, mon
     from ara.runtime.essay_audit import audit_and_revise
     calls, provider, log = rig
     r,_=setup(calls,log)
-    d=draft(); d['body']+='\n'+'P '*3000
-    d['title']='Q — '+DISCLOSURE
+    d=draft(); d['body']=d['body'].replace('\nStatus and method', '\nIntroduction\n'+'P '*3000+'\nStatus and method')
+    d['title']='Q'
     seen=[]
     def complete(kind,prompt,schema,maximum):
         inputs=json.loads(prompt.split('INPUT_JSON\n')[1]);seen.append(kind)
         if kind=='revise_essay':
-            return Response(response(dict(revisions=[dict(sentence=inputs['flags'][0]['sentence'],text='P — '+DISCLOSURE)])))
+            return Response(response(dict(revisions=[dict(sentence=inputs['flags'][0]['sentence'],text='P')])))
         labels=[label(s['sentence'], 'proposed_principle' if s['sentence']==3 else
                       'unsupported_claim' if s['text']==d['title'] else 'framing',
                       ('n0','n1') if s['sentence']==3 else ()) for s in inputs['sentences']]
         return Response(response(dict(labels=labels)))
     monkeypatch.setattr(provider,'complete',complete)
     fixed=audit_and_revise(calls,r,d)
-    assert fixed['body']==d['body'] and fixed['title']=='P — '+DISCLOSURE
+    assert fixed['body']==d['body'] and fixed['title']=='P'
     assert seen==['audit_essay','revise_essay','audit_essay']
     assert [json.loads(e['payload_json'])['round'] for e in log.read() if e['stage']=='essay_audit_revision']==[1]
 
@@ -262,9 +262,9 @@ def test_resume_inserts_disclosure_and_restores_cleanup_without_spending_repair(
         return {**value,'body':value['body'].replace('Disclosure: '+DISCLOSURE+'. ',''),'title':'P'},dict(items=[],originality=dict(assessment='unverified',detail='P',evidence_urls=[]))
     monkeypatch.setattr(calls,'verify_originality_citations',cleanup)
     result=compose(calls,r,original)
-    assert result['title']=='P — '+DISCLOSURE
+    assert result['title']=='P'
     assert result['body'].count('Disclosure: '+DISCLOSURE+'.')==2
-    assert result['body'].replace('Disclosure: '+DISCLOSURE+'. ','')==body
+    assert 'This paper proposes P.' in result['body'] and 'Status and method' in result['body']
     assert seen==['audit_essay']*4 and repair_rounds(calls,r)==3
     assert (log.path.parent/'export/essay.txt').exists()
     corrections=[json.loads(e['payload_json']) for e in log.read() if e['stage']=='essay_proposal_disclosure_inserted']
@@ -289,7 +289,10 @@ def test_metadata_insertion_does_not_erase_unchanged_adverse_history(rig, monkey
     from ara.runtime.essay_audit import audit_consensus
     calls,provider,log=rig
     r,_=setup(calls,log)
-    old=draft();old['body']+='\nThis paper argues Q.'
+    old=dict(title='P — '+DISCLOSURE, body='Abstract\n'+DISCLOSURE+'.\n[[node:n0]] [[node:n1]] This paper proposes P.\nMethodology\n'+DISCLOSURE+'.\nThis paper argues Q.', bibliography=[])
+    import ara.runtime.proposal as proposal_module
+    validate=proposal_module.validate_disclosure
+    monkeypatch.setattr(proposal_module,'validate_disclosure',lambda p,d:validate(p,d,allow_legacy=True))
     inputs=calls.audit_inputs(r,old)
     labels=[label(s['sentence'], 'proposed_principle' if s['sentence']==3 else
                   'unsupported_claim' if s['text']=='This paper argues Q.' else 'framing',
@@ -306,6 +309,7 @@ def test_metadata_insertion_does_not_erase_unchanged_adverse_history(rig, monkey
         else: labels[0] = {**labels[0], 'node_ids':['unknown']}
         log.emit(RunEvent(now(), 'audit_essay', 'MODEL', prompt=calls.render('audit_essay',inputs)[1],
                           response=canonical(response(dict(labels=labels)))))
+    monkeypatch.setattr(proposal_module,'validate_disclosure',validate)
     current=retain_disclosure(calls,r,old,phase='resume')
     def complete(kind,prompt,schema,maximum):
         data=json.loads(prompt.split('INPUT_JSON\n')[1])

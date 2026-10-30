@@ -128,24 +128,39 @@ def _read_source(source):
                 authority='related_literature_not_frozen_T')
 
 
-def validate_disclosure(proposal, draft):
+def validate_disclosure(proposal, draft, *, allow_legacy=False):
     from ara.runtime.calls import require
+    from ara.runtime.proposal_scopes import sections, misplaced_status
     if proposal is None:
         return
     label = proposal['disclosure']
-    require(label in draft['title'], 'proposal disclosure missing from title page')
-    for heading in ('Abstract', 'Methodology'):
-        block = re.search(r'^(?:#{1,6}\s*)?(?:\d+\.\s*)?'+heading+r'\s*\n(.*?)(?=^(?:#{1,6}\s|[A-Z][^\n.!?]{0,100}\n)|\Z)',
-                          draft['body'], re.M|re.S|re.I)
-        require(block is not None and label in block[1], 'proposal disclosure missing from '+heading.lower())
+    blocks = sections(draft['body'])
+    by_name = {s['heading'].casefold(): draft['body'][s['content_start']:s['end']] for s in blocks}
+    if allow_legacy and label in draft['title'] and all(label in by_name.get(h, '') for h in ('abstract','methodology')):
+        return
+    require(not any(value in draft['title'] for value in LABELS.values()), 'proposal title must be ordinary prose; disclosure belongs in abstract and Status and method')
+    require(sum(s['heading'].casefold() == 'abstract' for s in blocks) == 1,
+            'proposal needs one Abstract section')
+    abstract = by_name.get('abstract', '')
+    require(abstract.count(label) == 1 and 'Disclosure: ' + label + '.' in abstract,
+            'proposal needs exactly one abstract disclosure')
+    note = by_name.get('status and method', '')
+    require(blocks and blocks[-1]['heading'].casefold() == 'status and method' and note.count(label) == 1,
+            'proposal disclosure missing from final Status and method note')
+    require(sum(s['heading'].casefold() == 'status and method' for s in blocks) == 1 and len(note.split()) <= 250,
+            'proposal Status and method note must be unique and short')
+    require(not misplaced_status(draft['body']), 'proposal search qualifications belong in Status and method')
 
 
-def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors=()):
+def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors=(), proposal_scope=None):
     """Caller binds frozen_hypothesis to a validated H node; never infer it from OPEN mode."""
+    scoped = proposal is not None and proposal_scope is not None
+    if scoped and (role == 'source_claim' or source_attribution(text, source_authors)):
+        return 'source_attributed_proposal'
     if role not in ROLES:
         return None
     if frozen_hypothesis is not None:
-        if (proposal is not None or role != 'proposed_principle' or
+        if (proposal is not None or proposal_scope is not None or role != 'proposed_principle' or
                 frozen_hypothesis.get('kind') != 'hypothesis' or
                 frozen_hypothesis.get('stance') != 'proposed' or
                 frozen_hypothesis.get('source_id') is not None or
@@ -154,17 +169,21 @@ def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors
     elif proposal is None:
         return 'proposal_mode_required'
     prefix = r'(?:This paper|We) (?:proposes?|propose)' if role == 'proposed_principle' else r'(?:This paper|We) (?:argues?|argue|reasons?|reason|objects?|object|replies|reply)'
-    if not re.match(prefix+r'\b', text, re.I):
+    if not scoped and not re.match(prefix+r'\b', text, re.I):
         return 'unmarked_proposal'
     # Source reports belong in their own cited sentence. The semantic auditor also
     # rejects indirect attribution and unargued substantive claims under these roles.
     remainder = re.sub(prefix+r'\b', '', text, count=1, flags=re.I)
-    if re.search(r'\[(?:cite|lit):|\baccording to\b|\battributed to\b', remainder, re.I):
+    if source_attribution(remainder, source_authors):
         return 'source_attributed_proposal'
-    for author in source_authors:
-        if re.search(r'\b'+re.escape(author)+r'\s+(?:argues?|claims?|proposes?|establishes?|maintains?|writes?|endorses?|says?|holds?)\b', remainder, re.I):
-            return 'source_attributed_proposal'
     return None
+
+
+def source_attribution(text, source_authors):
+    if re.search(r'\[(?:cite|lit):|\baccording to\b|\battributed to\b', text, re.I):
+        return True
+    return any(re.search(r'\b'+re.escape(author)+r'\s+(?:argues?|claims?|proposes?|establishes?|maintains?|writes?|endorses?|says?|holds?)\b', text, re.I)
+               for author in source_authors)
 
 
 def author_names(evidence):
@@ -186,30 +205,34 @@ def author_names(evidence):
 
 
 def insert_disclosure(proposal, draft):
-    """Deterministic provenance metadata; leave substantive text and citations intact."""
+    """Normalize exact metadata only; substantive qualifications require author editing."""
     if proposal is None:
         return draft
+    from ara.runtime.proposal_scopes import sections
     label = proposal['disclosure']
     sentence = 'Disclosure: ' + label + '.'
-    title = draft['title']
-    for left, right in (('"', '"'), ('“', '”')):
-        title = title.replace(left + label + right, label)
-    if label not in title:
-        title += ' — ' + label
+    title = draft['title'].replace(label, '').strip(' \t\n—-:."“”')
     body = draft['body']
-    for left, right in (('"', '"'), ('“', '”')):
-        body = body.replace(left + label + right, label)
-    body = body.replace('Disclosure: .', sentence)
-    for heading in ('Abstract', 'Methodology'):
-        pattern = r'^(?:#{1,6}[ \t]*)?(?:\d+\.[ \t]*)?' + heading + r'[ \t]*\n(?:[ \t]*\n)*'
-        match = re.search(pattern, body, re.M | re.I)
-        if match is None:
-            section = heading + '\n\n' + sentence + '\n\n'
-            body = section + body if heading == 'Abstract' else body + '\n\n' + section.rstrip()
-        elif not body[match.end():].startswith(sentence):
-            rest = body[match.end():]
-            separator = '\n\n' if not rest.strip() or re.match(r'^(?:#{1,6}\s|Methodology\s*\n)', rest, re.I) else ' '
-            body = body[:match.end()] + sentence + separator + rest
+    blocks = sections(body)
+    edits, note = [], None
+    for block in blocks:
+        heading = block['heading'].casefold()
+        if heading not in ('abstract', 'methodology', 'status and method'):
+            continue
+        content = body[block['content_start']:block['end']]
+        content = re.sub(r'(?:Disclosure:[ \t]*)?["“]?' + re.escape(label) + r'["”]?[.]?', '', content)
+        content = content.replace('Disclosure: .', '').strip()
+        replacement = sentence + (' ' + content if content else '')
+        if heading == 'abstract':
+            edits.append((block['start'], block['end'], 'Abstract\n\n'+replacement+'\n\n'))
+        else:
+            note = replacement if note is None else note + '\n\n' + content
+            edits.append((block['start'], block['end'], ''))
+    for start,end,text in reversed(edits):
+        body = body[:start] + text + body[end:]
+    if not any(b['heading'].casefold() == 'abstract' for b in blocks):
+        body = 'Abstract\n\n' + sentence + '\n\n' + body
+    body = body.rstrip() + '\n\nStatus and method\n\n' + (note or sentence)
     return {**draft, 'title': title, 'body': body}
 
 

@@ -134,7 +134,7 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         if consolidation is not None and state is not None and state.get('consolidation') is None:
             # Prior alignment judgments bind the original formulas/catalogue and cannot be replayed.
             calls.alignment_resume = None
-        commitments, symbols, rows, alignment = align_symbols(calls, commitments, symbols, rows)
+        commitments, symbols, rows, alignment = align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)
         if state is not None and state.get('expected_source') is not None:
             from ara.runtime.construction_fork import validate_restored_source
             if consolidation is None:

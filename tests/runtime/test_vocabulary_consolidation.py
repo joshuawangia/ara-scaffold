@@ -90,6 +90,7 @@ def test_native_consolidation_then_alignment_then_one_freeze(rig,monkeypatch,tmp
 @pytest.mark.parametrize('damage',[
     lambda d,v:d['commitments'][0].update(definition='Q'),
     lambda d,v:d['commitments'].pop(),
+    lambda d,v:d['commitments'][0].update(formula=dict(op='not',args=[d['commitments'][0]['formula']])),
     lambda d,v:d['commitments'].append(deepcopy(d['commitments'][0])),
     lambda d,v:d['new_symbols'][0].update(definition='b holds that P') if d['new_symbols'] else None,
     lambda d,v:d.update(alignments=[]) if v['shared_symbols'] else None,
@@ -300,3 +301,33 @@ def test_consolidation_alignment_and_hypothesis_refork(rig,monkeypatch,tmp_path,
     h_meta=catalogue_inputs(fork_log.path.parent,result)['commitment_provenance']
     assert h_meta['consolidation']==meta['consolidation']
     assert h_meta['commitments']['hypothesis:h']['stance']=='proposed'
+
+
+def test_native_consolidation_preserves_historical_unframes(rig,monkeypatch):
+    from test_symbol_alignment import fixture
+    from ara.runtime.orchestration import prepare_commitments
+    from ara.runtime.search_alignment import catalogue_inputs
+    calls=rig[0];calls.config.update(options());t,symbols,rows=fixture()
+    rows['Q']['definition_unframes']=[dict(kind='symbol',name='Q',author='b',original_definition='b holds that P Q',definition='P Q')]
+    monkeypatch.setattr(calls,'build_t',lambda *_:t)
+    calls.log.record('build_t_merged',commitments=t.to_dict(),symbols=symbols,provenance=rows)
+    provider(calls,monkeypatch)
+    result=prepare_commitments(calls,load_bank(ROOT/'bank'),'P','P')
+    meta=catalogue_inputs(calls.log.path.parent,result)['commitment_provenance']
+    assert meta['commitments']['Q']['definition_unframes']==rows['Q']['definition_unframes']
+
+
+def test_consolidation_refuses_disconnected_conditional(rig,monkeypatch):
+    from test_symbol_alignment import fixture
+    from ara.runtime.vocabulary_consolidation import consolidate
+    calls=rig[0];calls.config.update(options());calls.config['consolidation_batch_size']=3
+    t,symbols,rows=fixture()
+    items={id:dict(id=id,kind='premise',premise_ids=[],conclusion_id=None,qualification_ids=[],applies_to=[]) for id in rows}
+    items['R'].update(kind='inference',premise_ids=['P'],conclusion_id='Q')
+    def disconnected(data,inputs):
+        c=next(c for c in data['commitments'] if c['id']=='R');f=c['formula']
+        c['formula']=dict(op='implies',args=[f,dict(op='implies',args=[f,f])])
+    provider(calls,monkeypatch,disconnected)
+    with pytest.raises(ValueError,match='conditional endpoint mismatch'):
+        consolidate(calls,t,symbols,rows,items)
+    assert not any(e['stage']=='vocabulary_consolidated' for e in calls.log.read())

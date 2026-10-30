@@ -1722,7 +1722,7 @@ CASES += [
      " or receipt['mapping']!=mapping", '',
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_native_pipeline', 'ara/runtime/orchestration.py',
-     "align_symbols(calls, commitments, symbols, rows)", "(commitments, symbols, rows, None)",
+     "align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)", "(commitments, symbols, rows, None)",
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_stage_identity', 'ara/runtime/construction_stages.py',
      "return dispatch_settings(config, 'build_t_batch', correction=False)", "return dispatch_settings(config, 'build_t_batch', correction=correction)",
@@ -2873,6 +2873,20 @@ CASES += [
     ('consolidation_frozen_validation', 'ara/runtime/commitment_provenance.py',
      "if value.get('consolidation') is not None:", "if False and value.get('consolidation') is not None:",
      'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+]
+
+
+CASES += [
+    ('consolidation_historical_unframes', 'ara/runtime/symbol_alignment.py',
+     'make_commitment_provenance(commitments,catalogue,provenance,consolidation=consolidation)',
+     'make_commitment_provenance(commitments,catalogue,provenance)',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_preserves_historical_unframes'),
+    ('consolidation_consistency', 'ara/runtime/vocabulary_consolidation.py',
+     'require(all(_consistent(CommitmentSet((c,))) for c in fresh.commitments) and', 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+    ('consolidation_conditional_endpoints', 'ara/runtime/vocabulary_consolidation.py',
+     "require(not any(i['reason']!='inference_requires_conditional' for i in metrics['issues']),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_refuses_disconnected_conditional'),
 ]
 
 

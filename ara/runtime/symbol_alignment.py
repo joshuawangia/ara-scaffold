@@ -256,13 +256,13 @@ def _validate_unresolved(rows):
             raise ValueError('invalid alignment unresolved outcome')
 
 
-def align_symbols(calls, commitments, symbols, provenance):
+def align_symbols(calls, commitments, symbols, provenance, *, consolidation=None):
     from ara.runtime.calls import InvalidOutput, require
     limit=calls.config.get('construction_alignment_candidates',150)
     max_unresolved=unresolved_limit(calls.config)
     catalogue=make_catalogue(commitments,symbols)
     from ara.runtime.commitment_provenance import make_commitment_provenance
-    make_commitment_provenance(commitments,catalogue,provenance)
+    make_commitment_provenance(commitments,catalogue,provenance,consolidation=consolidation)
     inventory=candidate_inventory(symbols,provenance,limit,**retrieval_settings(calls.config))
     candidates=inventory['candidates']
     retrieval={k:v for k,v in inventory.items() if k!='candidates'}

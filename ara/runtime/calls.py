@@ -374,7 +374,7 @@ class ModelCalls:
             return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
         if kind != 'isolation_canary':
             self._ensure_provider_ready()
-        if not schema_smoke and kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs:
+        if not schema_smoke and kind in ('map_leaf', 'propose_cuts', 'formalise_slots') and 'commitments' in inputs:
             from ara.runtime.search_context import fit_leaf_request
             inputs = fit_leaf_request(self, kind, inputs)
         if not schema_smoke and kind == 'answer_cq' and 'commitments' in inputs:
@@ -1164,6 +1164,8 @@ class ModelCalls:
                       slot_bindings=bindings,
                       shared_metavariables=metavariable_bindings(entry, goal, bindings),
                       **vocabulary)
+        if vocabulary['commitment_provenance'] is not None:
+            inputs['commitments'] = commitments.to_dict()
         return self.call('formalise_slots', inputs,
                          lambda d: validate_slots(d, proposal, entry, bindings, vocabulary['symbol_catalogue']))
 

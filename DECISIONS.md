@@ -4853,3 +4853,24 @@ Plan-only verifies restoration and names without provider/counter creation.
 Offline regressions and production-wire controls belong to
 `test_hypothesis_construction_fork.py`; current executed evidence is recorded in
 the external Round 32c report, separately from older committed-head gates.
+
+
+## Search packing and sanitized subscription failures — after Xi Round 32c
+
+Prompt size is not a reason to weaken novelty, consistency or route gates.
+Leaf requests project the full logged novelty receipt into final exact basis
+membership (an indexed commitment-ID table), target closure checks and essential
+atoms. Intermediate greedy consistency traces remain hash/count-linked in the
+unmodified full evidence event. Alignment projection retains full rows relevant
+to the leaf and selected supports, including canonical aliases, while disclosing
+full counts, scope and hash. Full evidence affects cache identity. Every retry is
+rebuilt and counted, and mandatory oversized context still refuses job-locally.
+Neither context windows nor token caps are increased by packing.
+Rich-source joint slot formalization uses the same counted projection; all bound
+slot IDs survive every shrink, and full frozen-slot validation remains unchanged.
+
+Subscription exit diagnostics use fixed categories only. Explicit context-length
+failures are nonretryable invalid requests; ordinary rate/auth retry limits and
+unknown-actual accounting are preserved. The residual category is `other`, not an
+inferred context failure. Raw diagnostics and credentials never cross into logs.
+Native placeholder regressions and mutation controls cover both boundaries.

@@ -27,6 +27,8 @@ def leaf_slice(inputs, bridge_limit):
     selected = {c.id for c in ranked[:seed_limit]}
     selected.update(tid for b in bridges for tid in b['commitment_ids'])
     selected.update(exact_ids)
+    binding_ids = sorted({b['t_id'] for b in inputs.get('slot_bindings', []) if b['t_id'] != 'open'})
+    selected.update(binding_ids)
     selected.update(c.id for c in [c for c in ranked if roles.get(c.id, {}).get('stance') in ('model_alignment','proposed')][:bridge_limit])
     referenced = leaf_symbols | set().union(*(signatures[tid] for tid in selected))
     catalogue = inputs.get('symbol_catalogue')
@@ -47,6 +49,7 @@ def leaf_slice(inputs, bridge_limit):
                          if catalogue is not None else None,
         search_slice=dict(version='leaf-context-v1', bridge_limit=bridge_limit,
                           exact_match_commitment_ids=exact_ids,
+                          **({'mandatory_binding_ids': binding_ids} if 'slot_bindings' in inputs else {}),
                           ranking='shared_leaf_symbols_then_bridge_id',
                           seed_limit=seed_limit, total_commitments=len(commitments.commitments),
                           total_bridges=len(inputs.get('candidate_bridges', [])),
@@ -58,6 +61,11 @@ def leaf_slice(inputs, bridge_limit):
         dict(bank_id=s['bank_id'], premise_slots=[dict(id=p['id']) for p in s['premise_slots']],
              conclusion_slot=dict(id=s['conclusion_slot']['id']), critical_questions=s['critical_questions'])
         for s in inputs.get('scheme_signatures', [])]
+    from ara.runtime.search_evidence import project_evidence
+    evidence, receipt = project_evidence(inputs, referenced)
+    data.update(evidence)
+    if receipt is not None:
+        data['search_slice']['evidence_projection'] = receipt
     if 'goal_novelty' in data:
         data['goal_novelty'] = {k: v for k, v in data['goal_novelty'].items() if k != 'basis_commitment_ids'}
         data['goal_novelty']['basis_commitments_sha256'] = inputs['commitments_sha256']
@@ -66,6 +74,16 @@ def leaf_slice(inputs, bridge_limit):
 
 def fit_leaf_request(calls, kind, inputs):
     """Rebuild from the same full inputs at every level, including retry feedback."""
+    from ara.runtime.search_evidence import full_evidence
+    evidence = full_evidence(inputs)
+    if evidence:
+        calls.log.record('search_context_evidence', kind=kind,
+            goal_id=(inputs.get('goal') or inputs['leaf'])['id'],
+            goal_sha256=digest(canonical(inputs.get('goal') or inputs['leaf'])),
+            field_bytes={key: len(canonical(value).encode()) for key, value in evidence.items()},
+            **evidence, **{key + '_sha256': digest(canonical(value)) for key, value in evidence.items()},
+            commitments_sha256=inputs['commitments_sha256'],
+            catalogue_sha256=inputs.get('catalogue_sha256'), provenance_sha256=inputs.get('provenance_sha256'))
     for bridge_limit in (8, 4, 2, 1, 0):
         data = leaf_slice(inputs, bridge_limit)
         count = calls.count_request(kind, data)
@@ -78,8 +96,13 @@ def fit_leaf_request(calls, kind, inputs):
                          total_tokens=total, limit=calls.config['model_context_token_bound'],
                          exact_match_commitment_ids=data['search_slice']['exact_match_commitment_ids'],
                          bridge_ids=[b['bridge_id'] for b in data['candidate_bridges']],
+                         **({'mandatory_binding_ids': data['search_slice']['mandatory_binding_ids']}
+                            if 'mandatory_binding_ids' in data['search_slice'] else {}),
                          commitment_ids=[c['id'] for c in data['commitments']['commitments']],
-                         catalogue_count=len(data['symbol_catalogue'] or []), inputs_sha256=digest(canonical(data)))
+                         catalogue_count=len(data['symbol_catalogue'] or []), inputs_sha256=digest(canonical(data)),
+                         **({'evidence_projection': data['search_slice']['evidence_projection'],
+                             'field_bytes': {key: len(canonical(value).encode()) for key, value in data.items()}}
+                            if 'evidence_projection' in data['search_slice'] else {}))
         if fits:
             return data
     calls.count_request(kind, data, admission=True)

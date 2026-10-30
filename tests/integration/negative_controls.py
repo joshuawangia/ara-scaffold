@@ -2847,6 +2847,54 @@ CASES += [
 ]
 
 
+CASES += [
+    ('search_evidence_prompt_projection', 'ara/runtime/search_context.py',
+     '    data.update(evidence)', '    pass  # mutation omits prompt projection',
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+    ('search_evidence_full_receipt', 'ara/runtime/search_context.py',
+     "calls.log.record('search_context_evidence', kind=kind,", "calls.log.record('disabled_search_context_evidence', kind=kind,",
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+    ('search_evidence_alias_relevance', 'ara/runtime/search_evidence.py',
+     "pair[key] in names or mapping.get(pair[key], pair[key]) in names", "False",
+     'tests/runtime/test_search_evidence.py::test_leaf_alignment_keeps_alias_related_rows_and_discloses_projection'),
+    ('search_evidence_alignment_scope', 'ara/runtime/search_evidence.py',
+     "'judgments': [row for row in judgments if relevant(row)]", "'judgments': judgments",
+     'tests/runtime/test_search_evidence.py::test_leaf_alignment_keeps_alias_related_rows_and_discloses_projection'),
+    ('search_evidence_final_basis', 'ara/runtime/search_evidence.py',
+     "[positions[tid] for tid in row]", "[]",
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+]
+
+CASES += [
+    ('search_evidence_cache_binding', 'ara/runtime/search_evidence.py',
+     "key + '_sha256': digest(canonical(value)) for key, value in evidence.items()",
+     "key + '_sha256': '0' * 64 for key, value in evidence.items()",
+     'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+]
+
+
+CASES += [
+    ('cli_context_length_category', 'ara/runtime/claude_code.py',
+     "if 'context_length' in matches:", "if False and 'context_length' in matches:",
+     'tests/runtime/test_cli_exit_categories.py::test_exit_categories_are_sanitized_and_context_is_not_retried'),
+    ('cli_exit_sanitized_category', 'ara/runtime/claude_code.py',
+     'error_category=category, stderr_bytes=len(stderr.encode())',
+     'error_category=stderr, stderr_bytes=len(stderr.encode())',
+     'tests/runtime/test_cli_exit_categories.py::test_exit_categories_are_sanitized_and_context_is_not_retried'),
+]
+
+
+CASES += [
+    ('search_slots_packing', 'ara/runtime/calls.py',
+     "kind in ('map_leaf', 'propose_cuts', 'formalise_slots') and 'commitments' in inputs",
+     "kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs",
+     'tests/runtime/test_search_evidence.py::test_native_slot_formalization_projects_provenance_and_keeps_all_bindings'),
+    ('search_slots_mandatory_bindings', 'ara/runtime/search_context.py',
+     '    selected.update(binding_ids)', '    pass  # mutation drops mandatory slot evidence',
+     'tests/runtime/test_search_evidence.py::test_native_slot_formalization_projects_provenance_and_keeps_all_bindings'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

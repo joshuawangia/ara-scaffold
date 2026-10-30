@@ -657,3 +657,10 @@ is not already a route premise separately as `alignment_source_evidence`, marked
 `definition_evidence_not_additional_premise`. Its omitted-support limits remain
 disclosed. Section citation coverage uses these source IDs, while the outline
 continues to disclose the bridge as a model judgment.
+
+
+### Mandatory target evidence in search requests
+
+Each target's declared `basis_commitment_ids` stays in the model-visible frozen commitment rows for mapping, cut proposal and joint-slot formalization. Search expands complete formal/alignment neighbourhoods using `target_context_hops` (default 1), including alignment evidence bundles. Child leaves inherit their search job's target scope; concurrent targets and retries keep separate contexts. Optional bridges and leads rank by symbols shared with the leaf and this required neighbourhood.
+
+Shrinking optional guidance never removes the basis, configured neighbourhood, exact leaf matches or fixed slot bindings. Every `search_context_slice` logs the basis IDs, neighbourhood, actual basis coverage, selected rows, frozen hash bindings, field bytes and counted input/output totals. If mandatory context cannot fit, the job refuses before dispatch with that breakdown; sibling jobs can continue. An open formalization slot retains the entire frozen catalogue because arbitrary text does not provide a complete formal dependency set. Its definitions/signatures are mandatory even at k=0. Gates still use full verified frozen inputs.

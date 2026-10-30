@@ -22,7 +22,8 @@ class SearchPublication:
                          for i, (goal, journal) in enumerate(zip(goals, self.journals, strict=True))])
 
     def run(self, index, search, goal, *, attempt=1):
-        with self.log.destination(self.journals[index]):
+        from ara.runtime.search_context import target_scope
+        with self.log.destination(self.journals[index]), target_scope(goal):
             if attempt > 1:
                 self.log.record('search_job_retry', job_index=index, attempt=attempt,
                                 policy='one retry after the initial queue drains')

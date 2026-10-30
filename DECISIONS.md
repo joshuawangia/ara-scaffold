@@ -4919,3 +4919,10 @@ freeze without target generation or search. The explicit native CLI boundary
 is recorded in the log and its generated methodology. The default command
 continues into targets/search unchanged. Frozen-prefix reuse validates the same
 artifacts and receipts for either stopping policy.
+
+
+## Search packing 2 — mandatory per-target evidence
+
+Leaf mapping, cut proposal and joint-slot formalization retain the target's entire declared basis as full frozen commitment rows. Complete formal/alignment neighbourhood hops use target_context_hops; model-alignment evidence bundles are retained with their disclosure. Whole basis neighbourhoods, exact leaf matches and bound slots are mandatory at every budget-shrinking step. Optional leads rank against both the leaf and mandatory neighbourhood. Invalid basis IDs refuse; counted mandatory overflow refuses job-locally with the full selection and field-byte breakdown. It never drops basis rows to fit.
+
+A job-local target scope carries basis context into child leaves and retries without sharing it across concurrent jobs. The exact target and basis receipt enter prompt/cache identity. Open slot text has no complete symbolic dependency inventory: retain the full frozen symbol catalogue, including definitions and signatures, and count/refuse it instead of guessing relevance. Frozen artifacts, codecs, stance rules and full-input novelty/licensing validation remain unchanged. Placeholder native regressions cover both polarities, k=0, neighbourhoods, independent concurrent targets, child leaves, invalid IDs and overflow; mutation controls prove these paths. Offline real-request replay is external evidence and does not claim successful semantic search.

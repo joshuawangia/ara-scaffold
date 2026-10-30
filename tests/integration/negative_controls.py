@@ -891,8 +891,8 @@ CASES += [
      'for index, journal in reversed(list(enumerate(self.journals))):',
      'tests/runtime/test_search_publication.py::test_native_publication_order_under_reversed_schedule'),
     ('search_publication_destination', 'ara/runtime/search_publication.py',
-     'with self.log.destination(self.journals[index]):',
-     "with __import__('contextlib').nullcontext():",
+     'with self.log.destination(self.journals[index]), target_scope(goal):',
+     'with target_scope(goal):',
      'tests/runtime/test_search_publication.py::test_native_publication_order_under_reversed_schedule'),
     ('search_unpublished_resume', 'ara/runtime/budget.py',
      'if pending_search_publications(log.read()):', 'if False:',
@@ -1644,7 +1644,7 @@ CASES += [
 
 CASES += [
     ('leaf_bridge_relevance', 'ara/runtime/search_context.py',
-     '-len(leaf_symbols.intersection', 'len(leaf_symbols.intersection',
+     '-len(relevant_symbols.intersection', 'len(relevant_symbols.intersection',
      'tests/runtime/test_search_context.py::test_leaf_context_selects_ranked_bridges_and_referenced_catalogue'),
     ('leaf_bridge_bound', 'ara/runtime/search_context.py',
      "b['bridge_id']))[:bridge_limit]", "b['bridge_id']))[:]",
@@ -2394,7 +2394,8 @@ CASES += [
      'formula=items[tid].formula.to_dict()', "formula=Formula('atom', name='P').to_dict()",
      'tests/runtime/test_target_context.py::test_legacy_stance_is_unavailable_and_formulas_are_never_shortened'),
     ('target_context_mandatory_evidence', 'ara/runtime/search_context.py',
-     'max_depth=hops, mandatory=mandatory)', 'max_depth=hops, mandatory={tid:set() for tid in items})',
+     'depth_cut(items, roots, dependencies, lambda ids: True,\n                                     max_depth=hops, mandatory=mandatory)',
+     'depth_cut(items, roots, dependencies, lambda ids: True,\n                                     max_depth=hops, mandatory={tid:set() for tid in items})',
      'tests/runtime/test_target_context.py::test_alignment_bridge_requires_all_evidence_even_at_zero_hops'),
     ('target_context_no_shrink', 'ara/runtime/search_context.py',
      "data = target_slice(inputs, calls.config.get('target_context_hops', 1))", 'data = target_slice(inputs, 0)',
@@ -2941,6 +2942,31 @@ CASES += [
     ('native_stop_at_freeze', 'ara/runtime/cli.py',
      "if args.stop_at == 'freeze':", 'if False:',
      'tests/runtime/test_vocabulary_consolidation.py::test_native_stop_at_freeze_excludes_targets_and_search'),
+]
+
+
+CASES += [
+    ('search_declared_basis', 'ara/runtime/search_context.py',
+     '    selected.update(mandatory_ids)', '    pass  # mutation drops required target evidence',
+     'tests/runtime/test_search_basis.py::test_declared_six_support_basis_survives_native_leaf_packing'),
+    ('search_basis_neighbourhood', 'ara/runtime/search_context.py',
+     'depth_cut(signatures, set(basis), dependencies, lambda ids: True,\n                                    max_depth=hops, mandatory=mandatory)',
+     'depth_cut(signatures, set(basis), dependencies, lambda ids: True,\n                                    max_depth=0, mandatory=mandatory)',
+     'tests/runtime/test_search_basis.py::test_distinct_targets_seed_distinct_formal_neighbourhoods'),
+    ('search_basis_job_scope', 'ara/runtime/search_publication.py',
+     'with self.log.destination(self.journals[index]), target_scope(goal):',
+     'with self.log.destination(self.journals[index]):',
+     'tests/runtime/test_search_basis.py::test_parallel_child_leaves_keep_their_own_target_basis'),
+    ('search_basis_refusal', 'ara/runtime/search_context.py',
+     '    selected.update(mandatory_ids)', '    pass  # mutation drops evidence to fit',
+     'tests/runtime/test_search_basis.py::test_oversized_mandatory_basis_refuses_with_breakdown'),
+    ('search_alignment_basis_evidence', 'ara/runtime/search_context.py',
+     "mandatory = {tid: set(rows.get(tid, {}).get('evidence_ids', [])) for tid in signatures}",
+     'mandatory = {tid: set() for tid in signatures}',
+     'tests/runtime/test_search_basis.py::test_alignment_neighbourhood_keeps_source_evidence_and_disclosed_relations'),
+    ('search_open_slot_vocabulary', 'ara/runtime/search_context.py',
+     '    if open_slots:', '    if False:',
+     'tests/runtime/test_search_evidence.py::test_open_slot_definition_is_mandatory'),
 ]
 
 

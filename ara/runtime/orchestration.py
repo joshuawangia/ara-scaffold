@@ -56,7 +56,9 @@ class NativeEngine:
     def analyse(self, target: Proposition, commitments: CommitmentSet) -> AnalysisResult:
         if target.formula is None:
             target = replace(target, formula=self.calls.formalise(target, commitments=commitments))
-        return self._engine(commitments).analyse(target)
+        from ara.runtime.search_context import target_scope
+        with target_scope(target):
+            return self._engine(commitments).analyse(target)
 
     def analyse_all(self, targets, commitments, concurrency, *, restored=None):
         restored = restored or {}

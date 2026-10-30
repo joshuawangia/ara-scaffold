@@ -152,3 +152,33 @@ def test_native_slot_formalization_projects_provenance_and_keeps_all_bindings(tm
     if force_zero:
         assert data['search_slice']['bridge_limit'] == 0
     assert all(b['formula'] == T.get(b['t_id']).formula.to_dict() for b in data['slot_bindings'])
+
+
+@pytest.mark.parametrize('force_zero',[False,True])
+def test_open_slot_definition_is_mandatory(tmp_path,monkeypatch,force_zero):
+    from ara.bank import load_bank
+    from ara.types import Commitment, CommitmentSet, Formula, PremiseFill, Proposal
+    from test_cross_paper import frozen_metadata
+    from test_search_alignment import rig, ROOT, P, Q
+    s=Formula('atom',name='S')
+    t=CommitmentSet(tuple(Commitment(f't{i:02}','P','a:1',P) for i in range(20))+
+        (Commitment('z','P -> R','a:1',Formula('implies',(P,s))),))
+    artifact,metadata=frozen_metadata(t,('a',)*21,{'S':'R'})
+    seen=[]
+    def reply(kind,inputs):
+        assert kind=='formalise_slots';seen.append(inputs)
+        symbol=next((row['name'] for row in inputs['symbol_catalogue'] if row['definition']=='R'),'R')
+        f=Formula('atom',name=symbol)
+        return {'slots':[dict(slot='conditional',formula=Formula('implies',(f,Q)).to_dict()),dict(slot='antecedent',formula=f.to_dict())]}
+    calls,_=rig(tmp_path,reply)
+    (tmp_path/'frozen-t.json').write_text(canonical(artifact));(tmp_path/'commitment-provenance.json').write_text(canonical(metadata))
+    if force_zero:
+        calls.config['model_context_token_bound']=20000
+        def estimate(kind,prompt,schema,maximum):
+            inputs=json.loads(prompt.split('\nINPUT_JSON\n')[1])
+            return TokenUsage(input_tokens=20001 if inputs.get('search_slice',{}).get('bridge_limit',0) else 100,output_tokens=maximum)
+        monkeypatch.setattr(calls.provider,'estimate',estimate)
+    proposal=Proposal('modus_ponens',(PremiseFill('conditional','R -> Q','open',None),PremiseFill('antecedent','R','open',None)),'Q','current_goal')
+    actual=calls.formalise_slots(proposal,Proposition('q','Q',Q),load_bank(ROOT/'bank').get('modus_ponens'),t)
+    assert any(row['name']=='S' and row['definition']=='R' for row in seen[-1]['symbol_catalogue'])
+    assert actual[1].formula==s

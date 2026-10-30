@@ -1,20 +1,66 @@
 """Deterministic, counted leaf guidance; full frozen inputs stay authoritative."""
+from contextlib import contextmanager
+from contextvars import ContextVar
 from ara.runtime.cache import canonical, digest
 from ara.runtime.search_alignment import symbols
 from ara.types import CommitmentSet, Formula
 
 
 SEARCH_STAGES = frozenset(('map_leaf', 'propose_cuts', 'formalise_slots', 'answer_cq', 'tier1_repair', 'classify_conflict'))
+_target = ContextVar('search_context_target', default=None)
 
 
-def leaf_slice(inputs, bridge_limit):
+@contextmanager
+def target_scope(target):
+    """Keep a job's declared basis on child leaves without crossing threads/retries."""
+    token = _target.set(target.to_dict())
+    try:
+        yield
+    finally:
+        _target.reset(token)
+
+
+def basis_neighbourhood(inputs, signatures, hops):
+    from ara.runtime.closure_budget import depth_cut
+    if type(hops) is not int or hops < 0:
+        raise ValueError('target_context_hops must be a nonnegative integer')
+    target = inputs.get('search_target') or inputs.get('goal') or inputs['leaf']
+    basis = sorted(set(target.get('basis_commitment_ids', [])))
+    if not set(basis) <= signatures.keys():
+        raise ValueError('target basis contains unknown frozen commitment IDs')
+    if not basis:
+        return set(), None
+    rows = (inputs.get('commitment_provenance') or {}).get('commitments', {})
+    mandatory = {tid: set(rows.get(tid, {}).get('evidence_ids', [])) for tid in signatures}
+    if any(not ids <= signatures.keys() for ids in mandatory.values()):
+        raise ValueError('alignment basis contains unknown frozen commitment IDs')
+    names = {tid: {name for name, _, _ in sigs} for tid, sigs in signatures.items()}
+    alignment = inputs.get('alignment_disclosure', {})
+    pairs = [(p['left'], p['right']) for p in alignment.get('judgments', [])
+             if alignment.get('status') == 'accepted' and p['relation'] != 'unrelated']
+    aligned_names = {tid: {other for left, right in pairs for name, other in ((left, right), (right, left))
+                          if name in group} for tid, group in names.items()}
+    dependencies = {tid: {other for other in signatures if other != tid and (
+        signatures[tid] & signatures[other] or aligned_names[tid] & names[other])}
+        for tid in signatures}
+    full, boundary, depth = depth_cut(signatures, set(basis), dependencies, lambda ids: True,
+                                    max_depth=hops, mandatory=mandatory)
+    return full, dict(target_id=target['id'], basis_commitment_ids=basis,
+        mandatory_commitment_ids=sorted(full), neighbourhood_commitment_ids=sorted(full-set(basis)),
+        hops=hops, reached_depth=depth, unexpanded_neighbours=boundary,
+        policy='Declared basis and complete formal/alignment hops are mandatory; retrieval is not endorsement.')
+
+
+def leaf_slice(inputs, bridge_limit, *, hops=1):
     commitments = CommitmentSet.from_dict(inputs['commitments'])
     goal = inputs.get('goal') or inputs['leaf']
     formula = Formula.from_dict(goal['formula']) if goal.get('formula') else None
     leaf_symbols = set(symbols(formula)) if formula else set()
     signatures = {c.id: set(symbols(c.formula)) for c in commitments.commitments}
+    mandatory_ids, basis = basis_neighbourhood(inputs, signatures, hops)
+    relevant_symbols = leaf_symbols | set().union(*(signatures[tid] for tid in mandatory_ids))
     bridges = sorted(inputs.get('candidate_bridges', []), key=lambda b: (
-        -len(leaf_symbols.intersection(set().union(*(signatures[tid] for tid in b['commitment_ids'])))),
+        -len(relevant_symbols.intersection(set().union(*(signatures[tid] for tid in b['commitment_ids'])))),
         b['bridge_id']))[:bridge_limit]
     provenance = inputs.get('commitment_provenance')
     roles = provenance['commitments'] if provenance else {}
@@ -22,16 +68,24 @@ def leaf_slice(inputs, bridge_limit):
                    key=lambda c: (roles.get(c.id, {}).get('stance') != 'endorsed', c.id))
     exact_ids = [c.id for c in exact]
     ranked = sorted(commitments.commitments, key=lambda c: (
-        c.formula != formula, -len(leaf_symbols & signatures[c.id]), c.id))
+        c.formula != formula, -len(relevant_symbols & signatures[c.id]), c.id))
     seed_limit = 0 if bridges else 2 * bridge_limit
     selected = {c.id for c in ranked[:seed_limit]}
     selected.update(tid for b in bridges for tid in b['commitment_ids'])
     selected.update(exact_ids)
     binding_ids = sorted({b['t_id'] for b in inputs.get('slot_bindings', []) if b['t_id'] != 'open'})
     selected.update(binding_ids)
+    selected.update(mandatory_ids)
+    if basis is not None:
+        basis['basis_coverage'] = len(set(basis['basis_commitment_ids']) & selected) / len(basis['basis_commitment_ids'])
     selected.update(c.id for c in [c for c in ranked if roles.get(c.id, {}).get('stance') in ('model_alignment','proposed')][:bridge_limit])
     referenced = leaf_symbols | set().union(*(signatures[tid] for tid in selected))
     catalogue = inputs.get('symbol_catalogue')
+    open_slots = [b['slot'] for b in inputs.get('slot_bindings', []) if b['t_id'] == 'open']
+    if open_slots:
+        # Open text has no complete symbolic dependency inventory. Preserve the
+        # full definitions/signatures, count them, and refuse instead of guessing.
+        referenced.update((s['name'], s['kind'], s['arity']) for s in catalogue or [])
     data = {k: v for k, v in inputs.items() if k != 'commitment_provenance'}
     data.update(
         commitments=CommitmentSet(tuple(exact) + tuple(c for c in commitments.commitments
@@ -49,6 +103,8 @@ def leaf_slice(inputs, bridge_limit):
                          if catalogue is not None else None,
         search_slice=dict(version='leaf-context-v1', bridge_limit=bridge_limit,
                           exact_match_commitment_ids=exact_ids,
+                          **({'basis_context': basis} if basis is not None else {}),
+                          **({'mandatory_open_slots': open_slots, 'catalogue_scope': 'full_frozen_for_open_slots'} if open_slots else {}),
                           **({'mandatory_binding_ids': binding_ids} if 'slot_bindings' in inputs else {}),
                           ranking='shared_leaf_symbols_then_bridge_id',
                           seed_limit=seed_limit, total_commitments=len(commitments.commitments),
@@ -75,6 +131,9 @@ def leaf_slice(inputs, bridge_limit):
 def fit_leaf_request(calls, kind, inputs):
     """Rebuild from the same full inputs at every level, including retry feedback."""
     from ara.runtime.search_evidence import full_evidence
+    target = _target.get()
+    if target and target.get('basis_commitment_ids'):
+        inputs = {**inputs, 'search_target': target}
     evidence = full_evidence(inputs)
     if evidence:
         calls.log.record('search_context_evidence', kind=kind,
@@ -85,7 +144,7 @@ def fit_leaf_request(calls, kind, inputs):
             commitments_sha256=inputs['commitments_sha256'],
             catalogue_sha256=inputs.get('catalogue_sha256'), provenance_sha256=inputs.get('provenance_sha256'))
     for bridge_limit in (8, 4, 2, 1, 0):
-        data = leaf_slice(inputs, bridge_limit)
+        data = leaf_slice(inputs, bridge_limit, hops=calls.config.get('target_context_hops', 1))
         count = calls.count_request(kind, data)
         total = count.initial_input_tokens + count.context_output_tokens
         fits = total <= calls.config['model_context_token_bound']
@@ -96,12 +155,14 @@ def fit_leaf_request(calls, kind, inputs):
                          total_tokens=total, limit=calls.config['model_context_token_bound'],
                          exact_match_commitment_ids=data['search_slice']['exact_match_commitment_ids'],
                          bridge_ids=[b['bridge_id'] for b in data['candidate_bridges']],
+                         **{key: data['search_slice'][key] for key in ('basis_context', 'mandatory_open_slots', 'catalogue_scope')
+                            if key in data['search_slice']},
                          **({'mandatory_binding_ids': data['search_slice']['mandatory_binding_ids']}
                             if 'mandatory_binding_ids' in data['search_slice'] else {}),
                          commitment_ids=[c['id'] for c in data['commitments']['commitments']],
                          catalogue_count=len(data['symbol_catalogue'] or []), inputs_sha256=digest(canonical(data)),
-                         **({'evidence_projection': data['search_slice']['evidence_projection'],
-                             'field_bytes': {key: len(canonical(value).encode()) for key, value in data.items()}}
+                         field_bytes={key: len(canonical(value).encode()) for key, value in data.items()},
+                         **({'evidence_projection': data['search_slice']['evidence_projection']}
                             if 'evidence_projection' in data['search_slice'] else {}))
         if fits:
             return data

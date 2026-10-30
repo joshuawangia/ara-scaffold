@@ -4878,3 +4878,13 @@ A post-consolidation H-only fork retains the existing exact-source invariant.
 The formula-change exemption is bound to an explicit consolidation configuration
 on the current fork, not an inherited run-level flag. A changed alignment outcome
 on replay must refuse before H admission rather than alter an existing source T.
+
+
+## Explicit native freeze boundary (2026-10-30)
+
+`resume-alignment --stop-at freeze` runs the normal commitment preparation,
+including optional consolidation, alignment and H, then stops after the sole
+freeze without target generation or search. The explicit native CLI boundary
+is recorded in the log and its generated methodology. The default command
+continues into targets/search unchanged. Frozen-prefix reuse validates the same
+artifacts and receipts for either stopping policy.

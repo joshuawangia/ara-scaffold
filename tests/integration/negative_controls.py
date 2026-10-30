@@ -2897,6 +2897,13 @@ CASES += [
 ]
 
 
+CASES += [
+    ('native_stop_at_freeze', 'ara/runtime/cli.py',
+     "if args.stop_at == 'freeze':", 'if False:',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_stop_at_freeze_excludes_targets_and_search'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

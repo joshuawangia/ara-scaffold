@@ -39,14 +39,15 @@ def audit_flags(labels, inputs, draft):
     sentences = {s['sentence']: s['text'] for s in inputs['sentences']}
     allowed = {b['id']: b for b in inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
     bibliography = {b['id']: b for b in draft.get('bibliography', [])}
+    from ara.runtime.proposal import role_failure, author_names
+    authors = author_names(inputs.get('source_evidence', {}))
     flags = []
     for item in labels:
         role, reason = item['role'], None
         cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
         premises = {r['evidence_id'] for r in inputs['outline'].get('source_roles', [])
                     if r['role'] == 'global_premise' and r['node_id'] in item['node_ids']}
-        from ara.runtime.proposal import role_failure
-        proposal_reason = role_failure(role, sentences.get(item['sentence'], ''), inputs.get('proposal'))
+        proposal_reason = role_failure(role, sentences.get(item['sentence'], ''), inputs.get('proposal'), source_authors=authors)
         if proposal_reason:
             reason = proposal_reason
         elif inputs.get('proposal') and role == 'argument_step' and inputs['root_conclusion']['node_id'] in item['node_ids']:

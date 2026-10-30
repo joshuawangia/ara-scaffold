@@ -223,3 +223,15 @@ def test_proposal_title_repair_uses_title_field_and_shared_round_budget(rig, mon
     assert fixed['body']==d['body'] and fixed['title']=='P — '+DISCLOSURE
     assert seen==['audit_essay','revise_essay','audit_essay']
     assert [json.loads(e['payload_json'])['round'] for e in log.read() if e['stage']=='essay_audit_revision']==[1]
+
+
+def test_plural_claims_in_owned_reasoning_is_not_author_attribution(rig):
+    calls, provider, log = rig
+    r,_=setup(calls,log)
+    d=draft();d['body']+='\nThis paper argues that the cited claims require Q if P.'
+    inputs=calls.audit_inputs(r,d)
+    labels=[label(s['sentence'], 'proposed_principle' if s['sentence']==3 else
+                  'argument_for_proposal' if s['text'].startswith('This paper argues') else 'framing',
+                  ('n0','n1') if s['sentence']==3 else ()) for s in inputs['sentences']]
+    register(calls,provider,'audit_essay',inputs,dict(labels=labels))
+    assert calls.audit_essay(r,d)['faithful']

@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[2]
 CASES=[
  ('unmarked','ara/runtime/proposal.py',"return 'unmarked_proposal'",'return None',
   'tests/runtime/test_proposal_mode.py::test_unmarked_or_source_attributed_proposal_still_fails[P.-proposed_principle]'),
- ('source_attribution','ara/runtime/proposal.py',"return 'source_attributed_proposal'",'return None',
+ ('source_attribution','ara/runtime/proposal.py',"            return 'source_attributed_proposal'",'            return None',
   'tests/runtime/test_proposal_mode.py::test_source_attribution_without_citation_cannot_hide_in_proposal_role'),
  ('disclosure','ara/runtime/proposal.py',"require(label in draft['title'],",'require(True,',
   'tests/runtime/test_proposal_mode.py::test_proposal_mode_cannot_erase_citations_or_disclosure_on_export'),

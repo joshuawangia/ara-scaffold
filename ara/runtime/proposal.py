@@ -140,7 +140,7 @@ def validate_disclosure(proposal, draft):
         require(block is not None and label in block[1], 'proposal disclosure missing from '+heading.lower())
 
 
-def role_failure(role, text, proposal, *, frozen_hypothesis=None):
+def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors=()):
     """Caller binds frozen_hypothesis to a validated H node; never infer it from OPEN mode."""
     if role not in ROLES:
         return None
@@ -159,6 +159,27 @@ def role_failure(role, text, proposal, *, frozen_hypothesis=None):
     # Source reports belong in their own cited sentence. The semantic auditor also
     # rejects indirect attribution and unargued substantive claims under these roles.
     remainder = re.sub(prefix+r'\b', '', text, count=1, flags=re.I)
-    if re.search(r'\[(?:cite|lit):|\baccording to\b|\battributed to\b|\b\w+ (?:argues|claims|establishes|maintains|writes|endorses)\b', remainder, re.I):
+    if re.search(r'\[(?:cite|lit):|\baccording to\b|\battributed to\b', remainder, re.I):
         return 'source_attributed_proposal'
+    for author in source_authors:
+        if re.search(r'\b'+re.escape(author)+r'\s+(?:argues?|claims?|proposes?|establishes?|maintains?|writes?|endorses?|says?|holds?)\b', remainder, re.I):
+            return 'source_attributed_proposal'
     return None
+
+
+def author_names(evidence):
+    """Known source author names, not arbitrary nouns before the word 'claims'."""
+    names = set()
+    for key in ('supporting_commitments', 'alignment_source_evidence', 'proposal_source_evidence'):
+        for item in evidence.get(key, []):
+            source = item.get('provenance') or {}
+            authors = source.get('source_authors', [])
+            if isinstance(authors, str):
+                authors = authors.split(';')
+            for author in authors:
+                if isinstance(author, str) and author.strip():
+                    names.add(author.split(',')[0].strip() if ',' in author else author.split()[-1])
+            attributed = source.get('attributed_to')
+            if isinstance(attributed, str) and attributed.strip():
+                names.add(attributed.strip())
+    return tuple(sorted(names))

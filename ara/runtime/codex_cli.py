@@ -73,6 +73,8 @@ class CodexCLIError(ClaudeCodeError):
 class CodexCLIProvider(ClaudeCodeProvider):
     """Reuse admission/calibration/scanning, with a distinct wire and isolation."""
     provider_kind = 'codex_cli'
+    canary_schema = CANARY_SCHEMA
+    canary_report_format = 'context-strings-v1'
     canary_prompt = CANARY_PROMPT + ' In tools, list visible tool definition names only, comma-separated, preserving namespace prefixes; use an empty string if none are visible. Do not invoke any tool. Generic built-in tool definitions may be visible; do not infer operator customizations from them.'
     estimate_method = 'API-receipt UTF-8 calibration seed; different Codex tokenizer; upward-only like-for-like correction; no free counter'
 

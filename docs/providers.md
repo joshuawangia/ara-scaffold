@@ -117,10 +117,14 @@ rotate the original login. An expired token requires operator login maintenance
 outside ARA.
 
 Every newly opened run context performs an uncached, budgeted isolation canary.
-The visible-context report must show no skills, memory, CLAUDE.md or AGENTS.md.
-These fields must be exactly empty: whitespace still rejects. Rejection receipts
-retain only the names of populated fields and which contain only whitespace,
-never the rejected context itself. A fresh config directory alone does not
+The Claude visible-context report uses `context-lists-v1`: skills, memory,
+CLAUDE.md and AGENTS.md are four required lists of strings. Only `[]` means absent.
+Every nonempty list rejects, including `[""]` and `["\n"]`; strings, nulls, wrong
+item types and missing fields reject schema validation. No entry is trimmed,
+filtered or defaulted. Rejection receipts retain fixed field names and entry
+counts, never the rejected context itself. The system-prompt, tool, debug-marker,
+forbidden-content, credential and identity checks remain unchanged. Codex retains
+its explicit legacy string schema and reports `context-strings-v1`. A fresh config directory alone does not
 isolate HOME-based discovery; both locations are isolated for every invocation,
 including the version probe. Host credentials are read before constructing this
 environment and are never copied into either directory.

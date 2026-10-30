@@ -2540,6 +2540,7 @@ CASES += [
 
 import runpy
 CASES += runpy.run_path(str(ROOT / "tests/runtime/proposal_negative_controls.py"))["CASES"]
+CASES += runpy.run_path(str(ROOT / "tests/runtime/claude_canary_negative_controls.py"))["CASES"]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

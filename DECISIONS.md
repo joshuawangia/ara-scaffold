@@ -4691,3 +4691,22 @@ The root declaration remains required under Proposal at document level, includin
 nested subsections. Source fidelity, unsupported-claim enforcement, conservative
 sampling and adverse-history retention are unchanged. A corrected prompt does
 not discard prior raw labels, reset repair budgets, or prove improved live output.
+
+## Approved Claude list-format isolation canary
+
+The operator approved changing only the four Claude context-report fields to
+required lists of strings. Only literal empty lists establish absence; every
+nonempty list rejects, including empty or whitespace-only entries. Schema
+validation rejects missing fields and wrong types before any presence decision.
+There is no trimming, filtering, inferred absence or default insertion. Other
+canary checks and output screening remain unchanged. Safe refusal receipts retain
+field names/counts, not context contents. A fresh native canary must pass before
+publication content dispatch; the canary remains uncached for every new context.
+
+The shared call boundary selects a provider's explicit canary schema, retaining
+its legacy fallback. Because Codex subclasses Claude, Codex explicitly pins the
+legacy string schema and report-format receipt. This avoids accidental inheritance
+of the Claude-specific wire change. Red-first subprocess regressions and
+production controls cover presence, types, missing fields and this inheritance
+boundary. Changing a reporting format does not establish that historical failed
+calls read ambient files or weaken the fail-closed preflight.

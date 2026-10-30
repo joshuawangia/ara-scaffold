@@ -335,7 +335,7 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:c9d23d1397c632fd9808567f5b953055c97ac1669c55bf1f5cdcf09ee9b07764": {
+  "audit_essay:13521d99976d80978b9c7446698f799a422645acf75b03b02874545c8dcb0665": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [

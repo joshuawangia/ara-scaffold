@@ -2970,6 +2970,20 @@ CASES += [
 ]
 
 
+CASES += [
+    ('search_pause_native_wiring', 'ara/runtime/orchestration.py', "pause_after=self.calls.config.get('search_zero_inference_pause_after', 10),", 'pause_after=0,', 'tests/runtime/test_search_pause.py::test_zero_inference_pause_preserves_exact_completed_prefix'),
+    ('search_pause_dispatch_bound', 'ara/runtime/search_jobs.py', 'slots = concurrency if not pause_after or accepted else min(concurrency, pause_after - completed)', 'slots = concurrency', 'tests/runtime/test_search_pause.py::test_zero_inference_pause_preserves_exact_completed_prefix[4]'),
+    ('search_pause_counts_inference', 'ara/runtime/search_jobs.py', 'accepted = accepted_inferences(publication.journals[index])', 'accepted = 0', 'tests/runtime/test_search_pause.py::test_native_accepted_inference_prevents_pause'),
+    ('search_pause_missing_basis', 'ara/runtime/search_diagnostics.py', 'basis_present=(set(basis) <= rows.keys())', 'basis_present=True', 'tests/runtime/test_search_pause.py::test_diagnostic_missing_basis_and_sanitized_rejections'),
+    ('search_pause_shared_symbols', 'ara/runtime/search_diagnostics.py', 'if len(set(members.values())) >= 2', 'if len(set(members.values())) >= 999', 'tests/runtime/test_search_pause.py::test_pause_diagnoses_actual_packed_basis_and_cross_paper_symbols'),
+    ('search_pause_sanitized_reasons', 'ara/runtime/search_diagnostics.py', "reasons[code if code in REJECTION_CODES else 'OTHER_ENGINE_REJECTION'] += 1", 'reasons[code] += 1', 'tests/runtime/test_search_pause.py::test_diagnostic_missing_basis_and_sanitized_rejections'),
+    ('search_pause_artifact', 'ara/runtime/search_diagnostics.py', "stream.write(canonical(receipt) + '\\n')", "stream.write(canonical({**receipt, 'jobs': []}) + '\\n')", 'tests/runtime/test_search_pause.py::test_zero_inference_pause_preserves_exact_completed_prefix[1]'),
+    ('search_pause_resume_status', 'ara/runtime/search_publication.py', 'current = events[phase_positions[-1] + 1:] if phase_positions else events', 'current = events', 'tests/runtime/test_search_pause.py::test_pause_cli_resume_keeps_sealed_jobs_and_fresh_window'),
+    ('search_pause_default', 'config.yaml', 'search_zero_inference_pause_after: 10', 'search_zero_inference_pause_after: 0', 'tests/runtime/test_search_pause.py::test_default_ten_and_disabled'),
+    ('search_pause_retry_count', 'ara/runtime/search_jobs.py', 'completed += 1', 'completed += attempt', 'tests/runtime/test_search_pause.py::test_retry_completion_counts_once'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

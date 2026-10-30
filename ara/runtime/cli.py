@@ -672,7 +672,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
                 log.record('provider_error', **evidence)
             exc = RuntimeError(json.dumps(evidence))
         if log is not None:
-            if not isinstance(exc, BudgetStop):
+            from ara.runtime.search_diagnostics import SearchPaused
+            if not isinstance(exc, (BudgetStop, SearchPaused)):
                 log.record('runtime_error', error_type=type(exc).__name__, message=str(exc))
             # Methodology and partial graphs survive even a clean budget stop.
             export_run(log.path, log.path.parent / 'export', strict=False)

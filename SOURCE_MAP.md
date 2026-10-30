@@ -37,6 +37,12 @@ All paths below are under `ara/runtime/` unless stated otherwise.
 
 ## Fixtures, tools and generated data
 
+`ara/runtime/search_diagnostics.py` owns the native zero-inference pause receipt
+and sanitized per-job packed-request/model evidence. `search_jobs.py` owns bounded
+dispatch and completion counting; `search_publication.py` reports the latest
+phase. Proof: `tests/runtime/test_search_pause.py` plus native resume/publication
+and concurrency tests.
+
 | Path | Purpose |
 | --- | --- |
 | `tests/fixtures/runtime/` | Placeholder smoke text and finite canned responses |

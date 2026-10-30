@@ -24,6 +24,31 @@ positive then negative. Interrupted publication leaves accounting explicitly
 incomplete and refuses paid resume until reconciled. In-flight model reservations
 count against the run caps.
 
+`search_zero_inference_pause_after` defaults to **10 completed polarity jobs**;
+set it to `0` to disable. Until a bank-licensed inference is observed, dispatch
+is limited to the remaining allowance. Failed attempts do not count as completed
+jobs; a successful retry counts once. Accepted model JSON, frozen membership and
+closed routes without an inference do not disable the pause. Accepted inferences
+in observed failed attempts or verified restored results also prevent a false
+zero-inference pause.
+
+At the threshold, the native command returns exit 2 after publishing journals
+and saving completed routes, before paired analysis or further model work. It
+prints the batch receipt path under `search-diagnostics/`. The same receipt is
+recorded as `search_zero_inference_pause` in the event log. Each job records its
+state, actual packed-request basis coverage, formal symbols shared across source
+papers among those premises, model outcomes and sanitized rejection categories.
+Missing basis declarations, unavailable paper metadata and undispatched requests
+remain explicit. Restored jobs refer to previous-batch evidence; their requests
+are not presented as fresh dispatches. Shared symbols do not prove semantic
+alignment, faithful translation or useful derivation.
+
+After inspecting the receipt, explicitly run `uv run ara resume-search --run-dir
+runs/pilot`. Resume verifies and retains sealed jobs and starts a new completion
+window for unfinished work. Even if the threshold coincided with the last job,
+explicit resume is required to proceed to paired analysis. Successful completion
+reports the latest phase; earlier pause/failure events remain in the log.
+
 Target proposal permits an initial batch and at most two corrections. Passing
 candidates remain retained in stable attempt/response order; later batches fill
 remaining places. Each candidate receives the own-thesis classification below. If all ten candidates pass, there are 20 polarity

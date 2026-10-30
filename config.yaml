@@ -154,6 +154,7 @@ working_t_symbol_growth_tokens_per_item: 0
 construction_window_cap_multiplier: 2
 # Independent target/polarity searches; 1 preserves sequential execution.
 search_concurrency: 4
+search_zero_inference_pause_after: 10  # 0 disables; explicit resume starts a new job window
 
 # Opt-in subscription transport: select provider: claude_code and a full model id.
 # Each run starts with a live isolation canary; extraction keeps its API workflow.

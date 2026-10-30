@@ -761,3 +761,9 @@ symbols against the resulting catalogue; pre-consolidation symbol names are not
 guessed or silently remapped. Alternatively, fork the consolidated freeze with H
 after inspecting its final catalogue. Live execution still requires provider
 preflight, budgets, context capacity and an empty separate destination.
+
+A later H-only fork preserves the consolidated and aligned source T exactly. If
+alignment replay changes it, including a prior solver refusal becoming acceptance,
+the fork refuses before H instead of reopening source interpretation. The
+formula-change exemption is bound to an explicit consolidation request on the
+current construction fork, not an inherited run configuration.

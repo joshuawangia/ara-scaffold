@@ -140,6 +140,7 @@ def _load_alignment_resume(directory, events, bank):
                 plan_id=state['plan_id'],completed_windows=len(outcomes),restored_receipts=restored_receipts,
                 merged_receipt=digest(canonical(events[offset])),source_tail=digest(canonical(events[-1])),
                 expected_source=forks[-1]['expected_source'] if forks else None,
+                reformalizing_source=bool(forks and forks[-1].get('consolidation_config')),
                 consolidation=consolidated,consolidation_original=original_commitments,consolidation_symbols=original_symbols)
 
 

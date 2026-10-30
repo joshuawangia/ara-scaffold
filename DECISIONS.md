@@ -4872,3 +4872,9 @@ the formula gates, then verifies the complete frozen envelope; earlier provenanc
 versions and CommitmentSet/frozen-t codecs remain readable unchanged. Existing
 alignment and proposed-hypothesis contracts apply after consolidation. No provider
 calls occur in plan-only mode, so real after-metrics are unavailable there.
+
+
+A post-consolidation H-only fork retains the existing exact-source invariant.
+The formula-change exemption is bound to an explicit consolidation configuration
+on the current fork, not an inherited run-level flag. A changed alignment outcome
+on replay must refuse before H admission rather than alter an existing source T.

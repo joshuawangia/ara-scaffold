@@ -331,3 +331,48 @@ def test_consolidation_refuses_disconnected_conditional(rig,monkeypatch):
     with pytest.raises(ValueError,match='conditional endpoint mismatch'):
         consolidate(calls,t,symbols,rows,items)
     assert not any(e['stage']=='vocabulary_consolidated' for e in calls.log.read())
+
+
+def test_h_only_refork_must_not_reinterpret_consolidated_source(rig,monkeypatch,tmp_path):
+    relation="entails_left_right"
+    calls=rig[0];finish_source(calls,monkeypatch)
+    from ara.runtime.construction_fork import inspect_construction_fork,write_construction_fork
+    from ara.runtime.alignment_resume import load_alignment_resume
+    from ara.runtime.orchestration import prepare_commitments
+    from ara.runtime.search_alignment import catalogue_inputs
+    bank=load_bank(ROOT/'bank')
+    plan=inspect_construction_fork(calls.log.path.parent,tmp_path/'aligned',bank,[],consolidation=options())
+    log=write_construction_fork(plan);state=load_alignment_resume(log,bank)
+    new=ModelCalls(state['run']['config'],calls.provider,log,Cache(tmp_path/'aligned-cache'),ROOT,'P')
+    new.alignment_resume=state
+    def separate_symbol(data,inputs):
+        if inputs['batch_index']==1:
+            ids=[c['id'] for c in data['commitments']]
+            for c in data['commitments']:c['formula']['name']='G'
+            data['new_symbols']=[dict(name='G',kind='predicate',arity=1,definition='F(a)',evidence_ids=ids)]
+            data['alignments']=[dict(name='a',reason='a')]
+    provider(new,monkeypatch,separate_symbol);complete=new.provider.complete
+    def judge(kind,prompt,schema,maximum):
+        if kind=='judge_symbol_alignment':return Response(response(dict(relation=relation,reason='F(a)')))
+        return complete(kind,prompt,schema,maximum)
+    monkeypatch.setattr(new.provider,'complete',judge)
+    import ara.runtime.symbol_alignment as alignment
+    apply=alignment.apply_judgments
+    def unavailable(*args):raise ValueError(alignment.CONSISTENCY_REFUSAL)
+    monkeypatch.setattr(alignment,'apply_judgments',unavailable)
+    t=prepare_commitments(new,bank,'P','P')
+    meta=catalogue_inputs(log.path.parent,t)['commitment_provenance']
+    assert meta['alignment']['judgments'][0]['relation']==relation
+    assert meta['alignment']['status']=='refused'
+    monkeypatch.setattr(alignment,'apply_judgments',apply)
+    assert meta['consolidation']['after']['shared_symbols']==2
+    h=dict(id='hypothesis:h',text='F(a)',proposer='operator',rationale='P',linked_gap='P',linked_target=None,
+           existing_symbols=['F','a'],formula=dict(op='predicate',name='F',terms=[dict(kind='constant',name='a')]))
+    fork=inspect_construction_fork(log.path.parent,tmp_path/'after-h',bank,[h])
+    fork_log=write_construction_fork(fork);fork_state=load_alignment_resume(fork_log,bank)
+    h_calls=ModelCalls(fork_state['run']['config'],calls.provider,fork_log,Cache(tmp_path/'after-h-cache'),ROOT,'P')
+    h_calls.alignment_resume=fork_state
+    monkeypatch.setattr(h_calls.provider,'complete',lambda *a:pytest.fail('validated consolidation and alignment must replay'))
+    with pytest.raises(ValueError,match='construction fork changed source'):
+        prepare_commitments(h_calls,bank,'P','P')
+    assert not (fork_log.path.parent/'commitments.json').exists()

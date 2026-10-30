@@ -137,7 +137,7 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         commitments, symbols, rows, alignment = align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)
         if state is not None and state.get('expected_source') is not None:
             from ara.runtime.construction_fork import validate_restored_source
-            if consolidation is None:
+            if consolidation is None or not state.get('reformalizing_source', False):
                 validate_restored_source(state['expected_source'], commitments, symbols, rows)
             else:
                 from ara.runtime.vocabulary_consolidation import validate_receipt

@@ -2890,6 +2890,13 @@ CASES += [
 ]
 
 
+CASES += [
+    ('consolidation_h_only_source_identity', 'ara/runtime/orchestration.py',
+     "if consolidation is None or not state.get('reformalizing_source', False):", 'if consolidation is None:',
+     'tests/runtime/test_vocabulary_consolidation.py::test_h_only_refork_must_not_reinterpret_consolidated_source'),
+]
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

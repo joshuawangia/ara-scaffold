@@ -1722,7 +1722,7 @@ CASES += [
      " or receipt['mapping']!=mapping", '',
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_native_pipeline', 'ara/runtime/orchestration.py',
-     "align_symbols(calls, commitments, latest['symbols'], latest['provenance'])", "(commitments, latest['symbols'], latest['provenance'], None)",
+     "align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)", "(commitments, symbols, rows, None)",
      'tests/runtime/test_symbol_alignment.py::test_native_freeze_persists_alignment_receipt_and_validates_replay'),
     ('alignment_stage_identity', 'ara/runtime/construction_stages.py',
      "return dispatch_settings(config, 'build_t_batch', correction=False)", "return dispatch_settings(config, 'build_t_batch', correction=correction)",
@@ -2826,7 +2826,7 @@ CASES += [('recovery_partial_activation',
 
 CASES += [
     ('hypothesis_precise_source_envelope', 'ara/runtime/commitment_provenance.py',
-     "value['schema_version'] != 'commitment-provenance-v4' and", 'True and',
+     "value['schema_version'] not in ('commitment-provenance-v4','commitment-provenance-v5') and", 'True and',
      'tests/runtime/test_hypothesis_sigma_integration.py'),
     ('hypothesis_pre_h_alignment_replay', 'ara/runtime/commitment_provenance.py',
      "validate_alignment(value['alignment'], source_commitments,\n                                                               source_symbols, source_rows)",
@@ -2870,6 +2870,31 @@ CASES += [
      "key + '_sha256': digest(canonical(value)) for key, value in evidence.items()",
      "key + '_sha256': '0' * 64 for key, value in evidence.items()",
      'tests/runtime/test_search_evidence.py::test_native_search_packs_basis_traces_but_logs_full_evidence'),
+    ('consolidation_native_step', 'ara/runtime/vocabulary_consolidation.py',
+     'if policy(calls.config) is None:return original,original_symbols,rows,None',
+     'if True:return original,original_symbols,rows,None',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_then_alignment_then_one_freeze'),
+    ('consolidation_immutable_text', 'ara/runtime/vocabulary_consolidation.py',
+     "require(all(c['definition']==expected[c['id']]['text'] for c in data['commitments']),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+    ('consolidation_reuse_judgment', 'ara/runtime/vocabulary_consolidation.py',
+     "require({a['name'] for a in data['alignments']}==set(used)&old_names and", 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+    ('consolidation_receipt_hash', 'ara/runtime/vocabulary_consolidation.py',
+     "require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+    ('consolidation_working_capacity', 'ara/runtime/vocabulary_consolidation.py',
+     "require(measured.initial_input_tokens<=calls.config['working_t_token_budget'] and", 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_capacity_refuses'),
+    ('consolidation_catalogue_capacity', 'ara/runtime/vocabulary_consolidation.py',
+     "require(counted.initial_input_tokens-baseline.initial_input_tokens<=calls.config['working_t_symbol_token_budget'],", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_capacity_refuses'),
+    ('consolidation_dependency_component', 'ara/runtime/vocabulary_consolidation.py',
+     "require(all(len(u)<=settings['batch_size'] for u in units),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_topic_plan_preserves_inference_components'),
+    ('consolidation_frozen_validation', 'ara/runtime/commitment_provenance.py',
+     "if value.get('consolidation') is not None:", "if False and value.get('consolidation') is not None:",
+     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
 ]
 
 
@@ -2881,6 +2906,16 @@ CASES += [
      'error_category=category, stderr_bytes=len(stderr.encode())',
      'error_category=stderr, stderr_bytes=len(stderr.encode())',
      'tests/runtime/test_cli_exit_categories.py::test_exit_categories_are_sanitized_and_context_is_not_retried'),
+    ('consolidation_historical_unframes', 'ara/runtime/symbol_alignment.py',
+     'make_commitment_provenance(commitments,catalogue,provenance,consolidation=consolidation)',
+     'make_commitment_provenance(commitments,catalogue,provenance)',
+     'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_preserves_historical_unframes'),
+    ('consolidation_consistency', 'ara/runtime/vocabulary_consolidation.py',
+     'require(all(_consistent(CommitmentSet((c,))) for c in fresh.commitments) and', 'require(True or',
+     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+    ('consolidation_conditional_endpoints', 'ara/runtime/vocabulary_consolidation.py',
+     "require(not any(i['reason']!='inference_requires_conditional' for i in metrics['issues']),", 'require(True,',
+     'tests/runtime/test_vocabulary_consolidation.py::test_consolidation_refuses_disconnected_conditional'),
 ]
 
 
@@ -2892,6 +2927,17 @@ CASES += [
     ('search_slots_mandatory_bindings', 'ara/runtime/search_context.py',
      '    selected.update(binding_ids)', '    pass  # mutation drops mandatory slot evidence',
      'tests/runtime/test_search_evidence.py::test_native_slot_formalization_projects_provenance_and_keeps_all_bindings'),
+    ('consolidation_h_only_source_identity', 'ara/runtime/orchestration.py',
+     "if consolidation is None or not state.get('reformalizing_source', False):", 'if consolidation is None:',
+     'tests/runtime/test_vocabulary_consolidation.py::test_h_only_refork_must_not_reinterpret_consolidated_source'),
+]
+
+
+CASES += [
+    ('consolidated_fork_packed_history', 'ara/runtime/search_context.py',
+     "data = {k: v for k, v in inputs.items() if k != 'commitment_provenance'}",
+     "data = dict(inputs)",
+     'tests/runtime/test_consolidated_search_fork.py::test_native_v5_fork_keeps_history_out_of_search_prompts'),
 ]
 
 

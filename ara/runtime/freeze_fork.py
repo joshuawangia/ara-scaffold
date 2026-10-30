@@ -21,7 +21,7 @@ def effective_run(events):
     for event in events:
         if event['stage']=='construction_forked':
             payload=json.loads(event['payload_json'])
-            run={**run,'config':{**run['config'],'hypothesis_premises':payload['hypotheses'],'cache_dir':payload['cache_dir']}}
+            run={**run,'config':{**run['config'],**payload.get('consolidation_config',{}),'hypothesis_premises':payload['hypotheses'],'cache_dir':payload['cache_dir']}}
         elif event['stage']=='freeze_fork_configuration':
             run={**run,'config':json.loads(event['payload_json'])['config']}
     return run

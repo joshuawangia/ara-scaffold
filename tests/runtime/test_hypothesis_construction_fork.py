@@ -124,14 +124,14 @@ def test_h_formalization_cannot_ignore_required_existing_symbol(rig,monkeypatch)
     assert not any(e['stage']=='hypotheses_admitted' for e in calls.log.read())
 
 
-def test_source_changed_on_replay_refuses_before_h(rig,monkeypatch,tmp_path):
+def test_source_changed_on_replay_refuses_before_h(rig,monkeypatch,tmp_path,capsys):
     from dataclasses import replace
     from ara.runtime import symbol_alignment
     from ara.types import CommitmentSet
     calls=rig[0];finish_source(calls,monkeypatch);source=calls.log.path.parent
     original=symbol_alignment.align_symbols
-    def altered(*args):
-        t,symbols,rows,receipt=original(*args)
+    def altered(*args,**kwargs):
+        t,symbols,rows,receipt=original(*args,**kwargs)
         return CommitmentSet((replace(t.commitments[0],text='Q P'),*t.commitments[1:])),symbols,rows,receipt
     monkeypatch.setattr(symbol_alignment,'align_symbols',altered)
     value=entry();value.pop('formalization_request');value['formula']=Formula('implies',(Formula('atom',name='P'),Formula('atom',name='Q'))).to_dict()
@@ -143,6 +143,7 @@ def test_source_changed_on_replay_refuses_before_h(rig,monkeypatch,tmp_path):
         return result
     assert main(['resume-alignment','--source-run',str(source),'--run-dir',str(destination),
                  '--hypotheses-file',str(hypotheses)],calls_factory=factory)==2
+    assert 'construction fork changed source commitments, provenance or catalogue' in capsys.readouterr().err
     assert not (destination/'commitments.json').exists()
     assert not any(e['stage']=='hypotheses_admitted' for e in EventLog(destination/'events.jsonl').read())
 

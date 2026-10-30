@@ -709,3 +709,61 @@ separate from both source and destination. This check cannot promise that a mode
 will formalize H faithfully, that H is consistent, or that search will close;
 those gates still run before freezing and during native search. A live continuation
 still requires current provider preflight and sufficient budgets.
+
+
+## Re-formalize completed construction into a shared vocabulary
+
+`resume-alignment --source-run SOURCE --run-dir NEW --consolidation-config C.json`
+opts into a new lifecycle: reuse verified completed construction, re-formalize its
+accepted commitments, run fresh alignment, optionally admit H, then freeze once
+and use the native target/search path. SOURCE remains unchanged, even if frozen.
+The construction plan and accepted-window receipts keep their original identity;
+old alignment judgments are excluded because they bind the old formulas. This
+option permits a new alignment retrieval policy without mutating the source plan.
+
+`C.json` must explicitly set `construction_consolidate_vocabulary: true`. It may
+set `consolidation_batch_size` (1–64, default 16) and the existing
+`construction_alignment_candidates`, `construction_alignment_top_k`,
+`construction_alignment_min_score`, `construction_alignment_paper_diversity`,
+and `construction_alignment_max_unresolved` settings. Other override fields
+refuse. Consolidation settings are run-level only. Ordinary runs retain their
+existing behavior unless enabled. An enabled fresh rich-construction run uses
+the same step after its terminal merge.
+
+Scheduling is deterministic: keep accepted inference/dependency components
+intact, then prefer cross-source components and lexical overlap. Oversize
+components refuse instead of splitting dependencies. This is a lexical heuristic,
+not a semantic topic classifier. Each batch sees the growing shared catalogue and
+accepted new formulas. IDs, text, citations and all source provenance/stance stay
+unchanged; only formulas change. Normal schema, AST/scope, catalogue, consistency,
+content-definition and counted capacity checks apply. Selected conditional
+endpoints must agree; faithful atomic outputs remain allowed. Every reused
+predicate requires a model judgment. Neither reuse nor solver consistency proves
+translation fidelity.
+
+`vocabulary-consolidation.json` and the `vocabulary_consolidated` event retain
+original formulas/catalogue, evidence, immutable provenance, the batch plan,
+validated responses and before/after metrics. The SHA-256-bound provenance v5
+envelope embeds this receipt, alignment and optional H. Readers validate in
+reverse order (H, alignment, consolidation); source-history checks use the original
+catalogue. Legacy commitments.json and frozen-t.json formats stay unchanged.
+Methodology, reports and search context disclose consolidation. Frozen forks and
+later hypothesis forks retain the receipt. Re-consolidating an already consolidated
+source is refused. A paused batch sequence reuses validated cache entries; completed
+consolidation resumes from its validated event/artifact without generation.
+
+Add `--plan-only --output-dir PLAN` for a free source-integrity check and batch
+inventory. It creates no destination lifecycle, provider or token counter. Before
+metrics are measured; after metrics and exact fresh alignment inventory are unknown
+until generation. The configured alignment cap and planned batch count are not
+predictions of useful closure. Optional `--hypotheses-file H.json` binds required
+symbols against the resulting catalogue; pre-consolidation symbol names are not
+guessed or silently remapped. Alternatively, fork the consolidated freeze with H
+after inspecting its final catalogue. Live execution still requires provider
+preflight, budgets, context capacity and an empty separate destination.
+
+A later H-only fork preserves the consolidated and aligned source T exactly. If
+alignment replay changes it, including a prior solver refusal becoming acceptance,
+the fork refuses before H instead of reopening source interpretation. The
+formula-change exemption is bound to an explicit consolidation request on the
+current construction fork, not an inherited run configuration.

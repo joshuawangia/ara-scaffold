@@ -288,6 +288,9 @@ def construction(records, evidence):
         values = {item.get(field) for item in commitment['source_evidence']}
         return next(iter(values)) if len(values) == 1 and None not in values else '(unknown or ambiguous)'
     return dict(commitments=enriched,
+                consolidation=[dict(plan_id=v['plan']['plan_id'],before=v['before'],after=v['after'],sha256=v['sha256'],
+                    note='Disclosed model re-formalization; source text/citations/stance unchanged.')
+                    for e in events if e['stage']=='vocabulary_consolidated' for v in [payload(e)]],
                 hypotheses=[payload(r['event']) for r in records if r['event']['stage']=='hypotheses_admitted'],
                 alignment=alignment_summary(records),
                 by_source=dict(Counter(classification(c, 'source_id') for c in enriched)),
@@ -297,7 +300,7 @@ def construction(records, evidence):
                               commitments_sha256=digest(canonical(payload(r['event'])['commitments'])),
                               hash_note='SHA-256 of canonical logged commitments, computed by reporter; event_hash is the chain freeze receipt.',
                               payload=payload(r['event'])) for r in freezes],
-                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_', 'alignment_', 'hypotheses_'))])
+                receipts=[compact(r) for r in records if r['event']['stage'].startswith(('build_t_', 'construction_', 'symbol_alignment_', 'alignment_', 'hypotheses_', 'vocabulary_'))])
 
 
 def route_details(row, commitments, provenance=None):

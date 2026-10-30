@@ -4874,3 +4874,40 @@ failures are nonretryable invalid requests; ordinary rate/auth retry limits and
 unknown-actual accounting are preserved. The residual category is `other`, not an
 inferred context failure. Raw diagnostics and credentials never cross into logs.
 Native placeholder regressions and mutation controls cover both boundaries.
+## Accepted-content vocabulary consolidation (2026-10-30)
+
+An opt-in native step re-formalizes terminal-complete source commitments before
+alignment and a single freeze. A new construction fork authenticates and copies
+the original accepted receipts, retaining their plan identity, but drops old
+alignment judgments. Deterministic cross-source lexical batching keeps accepted
+dependency components intact. Only formulas may change; source content, citations,
+stance and provenance are immutable. Atoms remain allowed. Shared vocabulary and
+formula interpretation are disclosed model judgments, never deterministic proof
+of semantic equivalence or faithful translation.
+
+The consolidation receipt retains originals, batch evidence/inputs, responses and
+metrics, bound by canonical SHA-256 and embedded in provenance v5. Reload replays
+the formula gates, then verifies the complete frozen envelope; earlier provenance
+versions and CommitmentSet/frozen-t codecs remain readable unchanged. Existing
+alignment and proposed-hypothesis contracts apply after consolidation. No provider
+calls occur in plan-only mode, so real after-metrics are unavailable there.
+
+
+A post-consolidation H-only fork retains the existing exact-source invariant.
+The formula-change exemption is bound to an explicit consolidation configuration
+on the current fork, not an inherited run-level flag. A changed alignment outcome
+on replay must refuse before H admission rather than alter an existing source T.
+
+
+## Packed search after a consolidated v5 freeze
+
+The consolidation and search-packing branches are integrated without changing
+frozen codecs or gate authority. Native fork-from-freeze validates and copies the
+v5 envelope, keeps the embedded consolidation receipt and preserves the source.
+Search receives only the bounded consolidation disclosure; full history stays in
+the verified provenance and log. The native placeholder regression proceeds
+through target/semantic classification and packed search without reconstruction,
+consolidation or alignment calls, and checks all frozen artifacts byte-for-byte.
+This integration proof does not certify a future real consolidated freeze or its
+request sizes; verify that artifact through the native fork and counter after it
+exists. Main publication still requires the independent merge verdict.

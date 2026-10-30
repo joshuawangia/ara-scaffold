@@ -163,7 +163,10 @@ def methodology(log_path: Path) -> str:
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
         'forward_coverage': [json.loads(e['payload_json']) for e in events if e['stage']=='forward_coverage'],
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
-        'construction': {'hypotheses': [json.loads(e['payload_json']) for e in events if e['stage'] == 'hypotheses_admitted'],
+        'construction': {'consolidation': [dict(plan_id=v['plan']['plan_id'],before=v['before'],after=v['after'],sha256=v['sha256'],
+                             original_commitments=v['original_commitments'],note='Disclosed model re-formalization of unchanged source content.')
+                             for e in events if e['stage']=='vocabulary_consolidated' for v in [json.loads(e['payload_json'])]],
+                         'hypotheses': [json.loads(e['payload_json']) for e in events if e['stage'] == 'hypotheses_admitted'],
                          'vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_vocabulary_metrics'],
                          'alignment_vocabulary_metrics': [json.loads(e['payload_json']) for e in events if e['stage'] == 'alignment_vocabulary_metrics'],
                          'partial_acceptances': [json.loads(e['payload_json']) for e in events if e['stage'] == 'construction_partial_acceptance'],

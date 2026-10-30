@@ -37,8 +37,8 @@ def _load_alignment_resume(directory, events, bank):
     require(run['bank_version']==bank.bank_version,'alignment resume bank version mismatch')
     config=run['config']
     forks=[json.loads(e['payload_json']) for e in events if e['stage']=='construction_forked']
-    if forks:
-        config={**config,'hypothesis_premises':forks[-1]['hypotheses'],'cache_dir':forks[-1]['cache_dir']}
+    for fork in forks:
+        config={**config,**fork.get('consolidation_config',{}),'hypothesis_premises':fork['hypotheses'],'cache_dir':fork['cache_dir']}
         run={**run,'config':config}
     log=SimpleNamespace(path=directory/'events.jsonl',read=lambda:events)
     state=load_construction_resume(SimpleNamespace(log=log,config=config),completed_only=True)
@@ -60,6 +60,20 @@ def _load_alignment_resume(directory, events, bank):
             'alignment resume terminal merge mismatch')
     catalogue=make_catalogue(commitments,symbols)
     make_commitment_provenance(commitments,catalogue,rows)
+    original_commitments,original_symbols=commitments,symbols
+    from ara.runtime.vocabulary_consolidation import policy, restored_receipt
+    consolidated=None
+    if policy(config):
+        consolidated=restored_receipt(events,commitments,symbols,rows,config,run['literature'])
+        if consolidated:
+            require(json.loads((directory/'vocabulary-consolidation.json').read_text())==consolidated,
+                    'consolidation artifact receipt mismatch')
+            commitments=CommitmentSet.from_dict(consolidated['commitments']);symbols=consolidated['symbols']
+            catalogue=make_catalogue(commitments,symbols)
+            offset=next(i for i,e in enumerate(events) if e['stage']=='vocabulary_consolidated')
+        else:
+            require(not any(e['stage']=='symbol_alignment_candidates' for e in events[offset+1:]),
+                    'alignment cannot precede consolidation')
     inventory=candidate_inventory(symbols,rows,config.get('construction_alignment_candidates',150),**retrieval_settings(config))
     candidates=inventory.pop('candidates')
     names={s['name']:s for s in symbols}
@@ -125,7 +139,9 @@ def _load_alignment_resume(directory, events, bank):
                 unresolved=[unresolved[p] for p in pairs if p in unresolved],
                 plan_id=state['plan_id'],completed_windows=len(outcomes),restored_receipts=restored_receipts,
                 merged_receipt=digest(canonical(events[offset])),source_tail=digest(canonical(events[-1])),
-                expected_source=forks[-1]['expected_source'] if forks else None)
+                expected_source=forks[-1]['expected_source'] if forks else None,
+                reformalizing_source=bool(forks and forks[-1].get('consolidation_config')),
+                consolidation=consolidated,consolidation_original=original_commitments,consolidation_symbols=original_symbols)
 
 
 def resume_summary(state):

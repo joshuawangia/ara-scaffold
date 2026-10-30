@@ -33,6 +33,10 @@ def catalogue_inputs(directory, commitments):
                 provenance_sha256=provenance['sha256'] if provenance else None,
                 provenance_status='verified' if provenance else 'unavailable_legacy',
                 alignment_disclosure=alignment_disclosure(provenance),
+                **({'consolidation_disclosure':dict(sha256=provenance['consolidation']['sha256'],
+                    before=provenance['consolidation']['before'],after=provenance['consolidation']['after'],
+                    note='Formulas and predicate reuse are disclosed model judgments over unchanged source content.')}
+                    if provenance and provenance.get('consolidation') else {}),
                 **({'hypothesis_disclosure': hypothesis_disclosure(provenance)} if provenance and provenance.get('hypotheses') else {}),
                 definition_semantics='content' if provenance else 'unavailable_legacy',
                 **bridge_context(commitments,catalogue['symbols'] if catalogue else None,provenance))

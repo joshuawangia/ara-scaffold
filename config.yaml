@@ -21,6 +21,8 @@ target_candidates: 30
 target_context_hops: 1  # full gap/formal neighbourhood; remaining T stays compact and citable
 semantic_conflict_pair_limit: 60
 classify_conflict_max_output_tokens: 1024
+publication_min_words: 3000
+essay_audit_samples: 3
 cache_dir: cache
 runs_dir: runs
 web_search_max_uses: 5

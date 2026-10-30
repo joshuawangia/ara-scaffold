@@ -51,13 +51,103 @@ This does not bypass context/token/USD admission or unresolved dispatched calls.
 
 The pilot sets a 6,000-word hard maximum and rejects drafts below 4,500 words,
 using the existing title-and-body whitespace count (bibliography excluded). The
-writer targets about 5,400 words to leave counting margin. Pilot output allowances
-are 20,000 tokens for the writer, 24,000 for each audit, 64,000 for evidence
-search and 48,000 for citation/originality classification. These calls stream
-through the SDK. Other calls retain 8,192 tokens. Per-kind
-`<kind>_max_output_tokens` settings override the global limit in reservation,
-dispatch and cache identity. DECISIONS.md records the observed token ratios and
-sizing arithmetic.
+writer first produces a schema-checked 4–10 section plan with word budgets totalling
+4,800–5,600. Each section is a separate logged `write_essay` call containing the
+plan, content outline, exact supporting T commitments and attributed source text,
+page citations, CQ answers, disclosed limits and all previously accepted sections.
+Nearby grounded source items are bounded context only, never additional premises.
+The same evidence reaches the audit. Missing source graphs are disclosed; missing
+frozen support or oversized required evidence refuses instead of truncating it.
+
+Assembly preserves section order and deduplicates exact T bibliography entries.
+If the title/body count is outside the limits, up to three revision rounds expand
+the largest section deficits or condense the largest excesses. Expansion returns new paragraphs which the runtime appends to the section,
+preserving all accepted prose verbatim. Condensation replaces only the selected
+section when it becomes shorter. No whole-essay regeneration occurs. The original coverage, body, word-count, audit, citation and
+originality checks still follow assembly; provider isolation/output scans remain
+in force. Partial sections persist under `writing/`; they are not final exports.
+
+This path applies whenever `essay_min_words >= 4500`. Short smoke requests retain
+the small whole-essay workflow. Sections are bounded at 1,800 words and 24,000
+body characters, with at most six nearby source items / 12,000 characters per
+support and 80,000 characters of required evidence overall. Full provider context
+and budget admission still applies to every call. These are failure bounds, not
+promises that every route can support a useful long essay.
+
+Pilot output allowances remain 20,000 tokens for each writer call, 24,000 for each
+audit, 64,000 for evidence search and 48,000 for citation/originality classification.
+The outline uses the ordinary 8,192-token allowance and writing-stage routing.
+Per-kind `<kind>_max_output_tokens` settings override the global limit in
+reservation, dispatch and cache identity. A changed schema requires a fresh Codex
+schema preflight. Codex uses web-only `search_evidence`; reaching the
+first audit does not imply completion of originality/citation checks or export.
+
+Audit sentence boundaries retain citation markers immediately following terminal
+punctuation with the preceding sentence, including across transparent node
+markers. Original text offsets drive repairs; splitting never rewrites the draft.
+A typed audit distinguishes source claims, argument steps, presentation
+(framing/exposition/signposts), objections/replies, and unsupported claims.
+Unsupported substantive claims fail. Source claims require the auditor's positive
+support judgment plus an actual citation marker and matching frozen-T bibliography
+entry; miscited or missing citations fail. Argument steps require a known route
+node/inference/CQ mapping. The root conclusion is explicit audit input, and a
+faithful restatement maps to its node. A marker alone proves no semantic match.
+Presentation roles cannot introduce new substance or satisfy route coverage;
+objections/replies must be clearly marked and consistent with the route's CQs,
+otherwise the auditor must label them unsupported. Role classification and source
+fidelity remain model judgments. Sentence inventory, known ids and full route
+coverage remain mandatory. Receipts retain role counts and typed failure reasons.
+
+A complete adverse audit can trigger at most three targeted revision rounds. Each
+`revise_essay` call receives exactly the audit's evidence, its flagged labels and
+the corresponding original spans and exact citation/node marker sequences. It returns replacements only for those sentence
+numbers. Retained replacements preserve citation/node markers exactly, in order;
+an empty replacement cuts a whole unsupported sentence. Bibliography and all
+unflagged bytes remain unchanged. Each replacement is capped at 8,000 characters
+and at the greater of 1,000 or twice its original character length. Length, body
+and node coverage checks run before the entire draft is audited again. Malformed
+audits and provider failures are not eligible for this repair loop. Missing-node
+failures with no flagged sentences stop because there is no authorized edit span.
+Validation feedback identifies the sentence and offending/required marker sequences,
+including markers added to previously uncited sentences. A valid T id still cannot
+be added to a retained replacement. Remaining flags after three rounds stop the
+run and are logged explicitly.
+
+Use `ara select --run-dir PATH --route ID --draft PATH/draft.unverified.json` to
+resume an existing draft without outlining or writing it again. The draft is
+screened by the provider's identity/credential scanner before validation, logging,
+saving or audit dispatch, then schema/length/coverage checked. Revised partials retain
+the unverified filename. Citation/originality checks and the final re-audit still
+follow a faithful first audit. The final gate uses `essay_audit_samples` independent
+fresh requests (default 3, integer at least 3), with identical audit inputs and no
+response-cache reads or writes. Independent requests do not establish statistical
+independence or semantic correctness. A single substantive dissent or missing-node
+verdict blocks export. The gate unions current flags with valid adverse verdicts
+already logged for the same prompt; favourable cached responses cannot erase them.
+Malformed historical responses are disclosed as unusable, never counted as clean
+samples. Current samples retain bounded schema correction; uncorrected malformed responses
+or provider failures stop with an incomplete receipt.
+
+Repairs target the union and share the existing three-round allowance with initial
+repairs. Resuming an imported draft carries forward this route's used repair rounds
+from the latest composition; it cannot reset the allowance.
+A final repair must change every flagged sentence; unchanged replacements
+refuse. Each edited draft goes through citation/originality verification again,
+then another fresh sample batch. The writer/import length target remains in force
+before verification; final cleanup and final repairs may shorten below that target.
+The 6,000-word cap, schema, nontrivial body, marker coverage and citation checks
+remain in force, without lowering the configuration that selects full source context.
+No automatic majority adjudication is performed;
+unresolved findings must be repaired. Receipts, methodology and route reports
+retain each sample, per-sentence dissent/clean sample ids, agreement, historical
+flags and the prompt/draft hashes. Agreement is the larger vote share for the
+binary substantive-flag judgment; unanimous adverse labels still block export.
+
+Starting a new validated composition invalidates the run's previous final artifact
+and essay export. Log-derived export considers only final drafts after that start,
+so a failed new gate cannot republish an earlier successful draft. Historical
+final-draft events remain in the append-only log. No paid-provider fallback or
+automatic provider switch is introduced.
 
 Edit `pilot.cost_cap_usd` and `pilot.token_cap` in `config.yaml`, or supply your
 own file with `--config`. Older custom configurations must add `essay_min_words`
@@ -496,3 +586,49 @@ Generation is disabled; this does not rerun discovery or prove source fidelity,
 novelty, successful routes, or live serving capacity. `--context-token-bound`
 changes only the planning comparison. For a coordinated Codex window change use
 `--model-context-window` as described in [providers](providers.md).
+
+
+## Frozen-source citations and export
+
+The writer and auditor share bibliography entries derived from each route's frozen
+support commitments and retained paper records, including physical PDF page numbers.
+Bibliography IDs identify commitments; several entries can refer to one paper.
+A corpus paper that supplies no support to the route is not added for coverage.
+
+Verification checks frozen citations against the retained extraction page text,
+PDF identity, grounding hash and commitment provenance before supplementary web
+search. Web absence cannot delete a locally supported citation. Missing local
+evidence refuses verification; a positive bibliography, source or quotation mismatch
+is removed with its reason in methodology. Lexical grounding and recorded identity
+do not prove faithful paraphrase; sentence support remains an audit judgment.
+
+Resumed drafts missing route citations receive a logged citation-only pass. It can
+append approved markers and canonical bibliography entries but cannot change prose
+or reset the shared three-round semantic repair allowance. Ordinary miscitation
+repairs may add only approved frozen markers, followed by a full audit. Source
+premises mapped as argument steps still require their source citations.
+
+Final export independently requires all source-bearing route supports in both the
+body markers and matching locally verified bibliography. Failure is explicit and
+non-zero, and removes stale final essays. Legacy runs without frozen provenance
+retain their existing export behavior and cannot claim local source verification; an explicitly cited frozen commitment without provenance refuses verification. Originality
+and references outside frozen T still use the configured web-evidence path. The
+fresh k-sample union audit remains mandatory after verification.
+
+
+An incomplete historical audit can still contain valid adverse evidence. The final
+union retains each individually valid, in-range substantive flag even when the
+response has a missing/duplicate sentence or an invalid neighboring label/node.
+These receipts disclose partial adverse history and cannot count as clean coverage.
+Three later clean responses do not erase them on unchanged-draft resume. Feedback
+added solely to correct response validation does not change the underlying audited
+request. Unparseable historical responses remain disclosed as unusable.
+
+
+Alignment bridge premises have no source-paper ownership and cannot appear as
+bibliography entries. Their underlying definition evidence supplies locally
+verified source citations. The writer and auditor receive any such evidence that
+is not already a route premise separately as `alignment_source_evidence`, marked
+`definition_evidence_not_additional_premise`. Its omitted-support limits remain
+disclosed. Section citation coverage uses these source IDs, while the outline
+continues to disclose the bridge as a model judgment.

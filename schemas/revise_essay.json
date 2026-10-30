@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "revise_essay",
+  "type": "object",
+  "properties": {
+    "revisions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "sentence": {"type": "integer", "minimum": 1},
+          "text": {"type": "string", "maxLength": 8000}
+        },
+        "required": ["sentence", "text"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["revisions"],
+  "additionalProperties": false
+}

@@ -188,7 +188,7 @@ def stage_settings(config: dict, kind: str) -> dict:
         kind = 'build_t_batch'
     stage = ('extraction' if kind == 'extract_paper' else
              'construction' if kind in ('build_t', 'select_t_roots', 'build_t_batch', 'reconcile_t') else
-             'writing' if kind in ('write_essay', 'audit_essay', 'search_evidence', 'verify_originality_citations') else
+             'writing' if kind in ('outline_essay', 'write_essay', 'revise_essay', 'audit_essay', 'search_evidence', 'verify_originality_citations') else
              'search')
     stages = config.get('stages', {})
     return {**config, **stages.get(stage, {}), **stages.get(kind, {})}

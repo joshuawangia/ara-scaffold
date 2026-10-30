@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "audit_publication",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sentence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "node_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "source_claim",
+              "argument_step",
+              "framing",
+              "exposition",
+              "signpost",
+              "objection",
+              "reply",
+              "unsupported_claim"
+            ]
+          },
+          "citation_supported": {
+            "type": "boolean"
+          },
+          "publication_issue": {
+            "type": "string",
+            "enum": [
+              "none",
+              "literature_scope",
+              "thesis_placement",
+              "unsupported_elaboration",
+              "original_draft_fidelity"
+            ]
+          }
+        },
+        "required": [
+          "sentence",
+          "node_ids",
+          "role",
+          "citation_supported",
+          "publication_issue"
+        ]
+      }
+    }
+  },
+  "required": [
+    "labels"
+  ]
+}

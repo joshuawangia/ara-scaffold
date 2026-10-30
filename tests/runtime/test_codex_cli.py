@@ -28,6 +28,9 @@ def codex(tmp_path, monkeypatch):
         'access_token':'offline-access', 'refresh_token':'offline-refresh', 'id_token':'offline-id',
         'account_id':'offline-account'}, 'last_refresh':'2026-10-24T00:00:00Z'}))
     binary = tmp_path/'fake-codex'
+    helper = tmp_path/'codex-code-mode-host'
+    helper.write_text('#!/usr/bin/env python3\nprint("P")\n')
+    helper.chmod(0o700)
     config = yaml.safe_load((ROOT/'config.yaml').read_text())
     config.update(provider='codex_cli', model='gpt-5.4', stages={}, fallbacks=[], token_cap=500000,
                   cost_cap_usd=0, cache_dir=str(tmp_path/'cache'),
@@ -74,8 +77,42 @@ mode=__MODE__ if not canary else 'ok'
 def emit(d): print(json.dumps(d))
 emit({'type':'thread.started','thread_id':'11111111-1111-4111-8111-111111111111'})
 emit({'type':'turn.started','model':arg('-m')})
+if mode.startswith('web'):
+ import subprocess
+ assert subprocess.check_output(['/run/codex-code-mode-host'],text=True).strip()=='P'
+ try: Path('/run/codex-code-mode-host').write_text('R')
+ except OSError: pass
+ else: raise AssertionError('tool host writable')
+ assert 'web_search="live"' in args
+ assert 'tools.web_search=true' in args
+ assert 'web_search="disabled"' not in args
+ assert 'features.shell_tool=false' in args and 'features.unified_exec=false' in args
+ assert 'mcp_servers={}' in args
+ value={'text':'P Q', 'sources':[{'url':'https://example.org/P','title':'P','snippets':['P Q']}]}
+ if mode != 'web_no_event':
+  for phase in ('started','updated','completed'):
+   action={'type':'search','query':'P','queries':['P','Q']}
+   if mode=='web_pending' and phase!='completed': action={'type':'other'}
+   if mode=='web_other_completed': action={'type':'other'}
+   if mode=='web_other_payload' and phase=='completed': action={'type':'other','command':'PRIVATE_CONTEXT_SENTINEL'}
+   emit({'type':'item.'+phase,'item':{'id':'web_1','type':'web_search','query':'P','action':action}})
+ if mode=='web_commentary': emit({'type':'item.completed','item':{'id':'msg_1','type':'agent_message','text':'P'}})
+ if mode=='web_bad_url': value['sources'][0]['url']='file://example.org/P'
+ if mode=='web_bad_schema': value={'sources':[]}
+ if mode=='web_unknown_action': emit({'type':'item.completed','item':{'id':'web_2','type':'web_search','action':{'type':'shell','command':'PRIVATE_CONTEXT_SENTINEL'}}})
+ if mode.startswith('web_tool:'):
+  emit({'type':'item.completed','item':{'type':mode.split(':',1)[1],'text':'PRIVATE_CONTEXT_SENTINEL'}})
+if mode=='verify_web':
+ assert 'web_search="disabled"' in args
+ data=json.loads(prompt.split('INPUT_JSON'+chr(10),1)[1])
+ assert data['evidence']['urls']==['https://example.org/P']
+ assert any(b.get('citations') for b in data['evidence']['content'])
+ value={'originality':{'assessment':'possible_overlap','evidence_urls':['https://example.org/P'],'detail':'P'},
+        'items':[{**i,'status':'verified','action':'retain','detail':'P','evidence_urls':['https://example.org/P'],'source_excerpt':'P Q'} for i in data['items']]}
 if mode.startswith('tool:'):
- emit({'type':'item.completed','item':{'type':mode.split(':',1)[1],'command':'PRIVATE_CONTEXT_SENTINEL','text':'P'}})
+ item={'id':'tool_1','type':mode.split(':',1)[1],'command':'PRIVATE_CONTEXT_SENTINEL','text':'P'}
+ if item['type']=='web_search': item['action']={'type':'search','query':'P'}
+ emit({'type':'item.completed','item':item})
 if mode=='unknown': emit({'type':'future.event','text':'PRIVATE_CONTEXT_SENTINEL'})
 if mode=='warning': emit({'type':'item.completed','item':{'type':'error','message':'P'}})
 if mode=='item_error':
@@ -133,6 +170,9 @@ def test_tool_event_rejected_without_echo(codex, tool):
     text=log.path.read_text()
     assert 'PRIVATE_CONTEXT_SENTINEL' not in text and 'offline-access' not in text
     assert not list((tmp/'cache').rglob('*.json'))
+    row = json.loads([e for e in log.read() if e['label']=='MODEL'][-1]['payload_json'])
+    assert row['cli']['rejected_event'] == {'event_type':'item.completed', 'item_type':tool,
+                                           'action_type':'search' if tool=='web_search' else None, 'tool_name':None}
 
 
 def test_fresh_credential_and_read_only_link(codex):
@@ -281,14 +321,15 @@ def test_stage_model_pin(codex):
     assert rows[1]['model_id']==rows[1]['model_version']=='gpt-5.3-codex'
 
 
-def test_extraction_and_web_refuse(codex):
+def test_extraction_refuses_but_web_estimates(codex):
     from ara.runtime.codex_cli import CodexCLIProvider
     from ara.runtime.claude_code import ClaudeCodeError
     config,auth,write,tmp=codex
     provider=CodexCLIProvider(config)
-    for kind in ('extract_paper','search_evidence'):
+    for kind in ('extract_paper',):
         with pytest.raises(ClaudeCodeError,match='stage_requires_api_provider'):
             provider.estimate(kind,'P',{},10)
+    assert provider.estimate('search_evidence','P',None,10).input_tokens > 0
 
 
 def test_nonfatal_warning_retains_only_count(codex):
@@ -409,8 +450,10 @@ def test_codex_preflight_gate_complete_and_stale(codex):
     write('preflight');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
     with pytest.raises(ValueError,match='requires a successful'):require_codex_preflight(config,ROOT)
     result=codex_schema_preflight(calls)
-    assert result['passed'] and result['accepted']==result['total']==18
+    assert result['passed'] and result['accepted']==result['total']==20
     assert any(e['stage']=='classify_conflict' and e['label']=='MODEL' for e in log.read())
+    assert 'outline_essay' in {case['case'] for case in result['manifest']['cases']}
+    assert 'revise_essay' in {case['case'] for case in result['manifest']['cases']}
     config['codex_cli']['schema_preflight_log']=str(log.path)
     require_codex_preflight(config,ROOT)
     config['stages']={'construction_correction':{'effort':'low'}}
@@ -447,8 +490,8 @@ def test_codex_preflight_failure_tests_every_case(codex):
     config, auth, write, tmp = codex
     write('bad_schema');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
     result=codex_schema_preflight(calls)
-    assert not result['passed'] and result['accepted']==0 and result['total']==18
-    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==18
+    assert not result['passed'] and result['accepted']==0 and result['total']==20
+    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==20
     config['codex_cli']['schema_preflight_log']=str(log.path)
     with pytest.raises(ValueError):require_codex_preflight(config,ROOT)
 
@@ -492,6 +535,106 @@ def test_codex_resume_can_supply_new_proof_without_editing_history(codex):
     assert reached==[str(proof.path)]
     stored=json.loads(history.read()[0]['payload_json'])['config']
     assert stored['codex_cli'].get('schema_preflight_log') is None
+
+
+@pytest.mark.parametrize('mode', ['web', 'web_commentary', 'web_pending', 'web_other_completed'])
+def test_web_search_evidence_receipt_and_methodology(codex, mode):
+    from ara.runtime.export import methodology
+    config, auth, write, tmp = codex
+    log = EventLog(tmp/'events.jsonl'); calls = make_calls(config, log, 'P')
+    calls.config['token_cap'] = 3000000
+    write(mode)
+    evidence = calls.search_evidence({}, [])
+    assert evidence['urls'] == ['https://example.org/P']
+    assert 'P Q' in evidence['text']
+    excerpts = [c for b in evidence['content'] for c in b.get('citations', [])]
+    assert excerpts == [{'type':'web_search_result_location', 'url':'https://example.org/P', 'cited_text':'P Q'}]
+    rows = [json.loads(e['payload_json']) for e in log.read() if e['label']=='MODEL']
+    assert rows[0]['isolation']['status'] == 'proven'
+    web = rows[-1]['cli']['web_search']
+    assert web['queries'] == (['P'] if mode == 'web_other_completed' else ['P', 'Q'])
+    assert web['result_urls'] == evidence['urls']
+    assert len(web['events']) == 1
+    if mode == 'web_other_completed':
+        assert web['events'][0]['action'] == {'type':'other'}
+    assert web['source_provenance'] == 'model-reported from Codex web search; not raw tool results'
+    report = methodology(log.path)
+    summary = json.loads(report.split('```json\n', 1)[1].split('\n```', 1)[0])
+    assert summary['provider_methodology']['evidence_retrieval'][0]['method'] == 'Codex web search'
+    assert 'https://example.org/P' in report
+    assert 'web_search="disabled"' in rows[0]['isolation_flags']
+    assert 'web_search="live"' in rows[-1]['isolation_flags']
+    before = calls.budget.used_tokens
+    assert calls.search_evidence({}, []) == evidence
+    assert calls.budget.used_tokens == before
+
+
+@pytest.mark.parametrize('mode,code', [
+    *[('web_tool:'+t, 'cli_tool_event') for t in ('command_execution','file_read','file_change','mcp_tool_call','tool_call','function_call')],
+    ('web_no_event','cli_web_search_missing'), ('web_bad_url','cli_invalid_web_evidence'),
+    ('web_bad_schema','cli_invalid_web_evidence'), ('web_unknown_action','cli_tool_event'),
+    ('web_other_payload','cli_tool_event'),
+    *[('web_tool:'+t, 'cli_tool_event') for t in ('sentinel@example.invalid', 'offline-access',
+                                                'https://example.org/?token=offline-access')],
+])
+def test_web_search_fails_closed(codex, mode, code):
+    from ara.runtime.calls import Rejected
+    config, auth, write, tmp = codex
+    log = EventLog(tmp/'events.jsonl'); calls = make_calls(config, log, 'P')
+    calls.config['token_cap'] = 3000000
+    write(mode)
+    with pytest.raises(Rejected, match=code): calls.search_evidence({}, [])
+    assert 'PRIVATE_CONTEXT_SENTINEL' not in log.path.read_text()
+    assert not list((tmp/'cache').rglob('*.json'))
+    if code == 'cli_tool_event':
+        row = json.loads([e for e in log.read() if e['label']=='MODEL'][-1]['payload_json'])
+        rejected = row['cli']['rejected_event']
+        assert rejected['event_type'] == 'item.completed'
+        if mode in ('web_unknown_action', 'web_other_payload'):
+            assert rejected['item_type'] == 'web_search'
+            assert rejected['action_type'] == ('shell' if mode=='web_unknown_action' else 'other')
+        else:
+            tool = mode.split(':',1)[1]
+            expected = tool if tool in ('command_execution','file_read','file_change','mcp_tool_call','tool_call','function_call') else 'unknown'
+            assert rejected['item_type'] == expected
+        assert 'offline-access' not in log.path.read_text()
+        assert 'sentinel@example.invalid' not in log.path.read_text()
+
+
+@pytest.mark.parametrize('quote,retained', [('P Q', True), ('P S', False)])
+def test_web_evidence_reaches_native_verifier(codex, quote, retained):
+    config, auth, write, tmp = codex
+    config['token_cap'] = 3000000
+    calls = make_calls(config, EventLog(tmp/'events.jsonl'), 'P')
+    draft = {'title':'P', 'body':'"'+quote+'"', 'bibliography':[]}
+    write('web')
+    # Cache the real transport response, then run the native search/classification path.
+    calls.search_evidence(draft, calls.verification_items(draft))
+    write('verify_web')
+    cleaned, result = calls.verify_originality_citations(draft)
+    assert (quote in cleaned['body']) is retained
+    assert result['items'][0]['status'] == ('verified' if retained else 'unverified')
+    assert result['originality']['assessment'] == 'possible_overlap'
+
+
+def test_web_admission_separates_initial_context_from_replay(codex):
+    config, auth, write, tmp = codex
+    calls = make_calls(config, EventLog(tmp/'events.jsonl'), 'P')
+    count = calls.count_request('search_evidence', {'draft':{},'items':[]}, maximum=32, admission=True)
+    assert count.initial_input_tokens < 10000
+    assert count.reservation.server_tool_uses == config['web_search_max_uses']
+    assert count.reservation.input_tokens == count.initial_input_tokens * 2 + 32 + config['model_context_token_bound'] * config['web_search_max_uses']
+
+
+def test_web_requires_packaged_tool_host(codex):
+    from ara.runtime.calls import Rejected
+    config, auth, write, tmp = codex
+    calls = make_calls(config, EventLog(tmp/'events.jsonl'), 'P')
+    calls.config['token_cap'] = 3000000
+    (tmp/'codex-code-mode-host').unlink()
+    write('web')
+    with pytest.raises(Rejected, match='cli_web_helper_unavailable'):
+        calls.search_evidence({}, [])
 
 
 def test_context_window_override_reaches_isolated_canary_and_calls(codex, monkeypatch):

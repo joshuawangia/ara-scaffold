@@ -38,6 +38,13 @@ class Rejected(ValueError):
     pass
 
 
+class EssayAuditFailed(Rejected):
+    """A complete adverse audit, with the exact evidence and labels retained."""
+    def __init__(self, result, inputs, labels):
+        super().__init__('essay audit failed')
+        self.result, self.inputs, self.labels = result, inputs, labels
+
+
 class RejectedCutBatch(Rejected, InvalidProposalBatch):
     pass
 
@@ -185,10 +192,9 @@ def extraction_failure_reason(exc):
 
 class ModelCalls:
     def __init__(self, config: dict, provider: Provider, log: EventLog, cache: Cache,
-                 root: Path, topic: str, *, provider_factory=None):
+                 root: Path, topic: str, *, provider_factory=None, imported_draft=None):
         self.config, self.provider, self.log, self.cache = config, provider, log, cache
         self.root, self.topic = Path(root), topic
-        self.budget = Budget(config, log)
         self._paper_budget = None
         self.construction_resume = False
         self._key_lock = Lock()
@@ -203,7 +209,17 @@ class ModelCalls:
             provider.calibration_state = self._calibration_state
         self._stage_provider_lock = RLock()
         self._reservations = threading.local()
+        if imported_draft is not None:
+            self.screen_imported_draft(imported_draft, kind='audit_publication')
+        self.budget = Budget(config, log)
         self._ensure_provider_ready(force=True)
+
+    def screen_imported_draft(self, draft, *, kind='audit_essay'):
+        """One input screen shared by resumed writing and publication."""
+        providers = [self.provider, self._for_construction_stage(kind, {}).provider]
+        for provider in {id(p): p for p in providers}.values():
+            if hasattr(provider, 'scan_output'):
+                provider.scan_output(draft)
 
     def _subscription(self):
         return getattr(self.provider, 'provider_kind', None) in ('claude_code', 'codex_cli')
@@ -291,33 +307,34 @@ class ModelCalls:
         # JSON input is data, never interpreted as a format template.
         return template, template + '\nINPUT_JSON\n' + canonical({'topic': self.topic, **inputs})
 
-    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None) -> Any:
-        attempts = self.config.get('validation_attempts', 1)
+    def call(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, fresh: bool = False, validation_attempts: int | None = None) -> Any:
+        attempts = self.config.get('validation_attempts', 1) if validation_attempts is None else validation_attempts
         if type(attempts) is not int or not 1 <= attempts <= 3:
             raise ValueError('validation_attempts must be between 1 and 3')
-        if kind == 'write_essay':
+        whole_essay = kind == 'write_essay' and 'mode' not in inputs
+        if whole_essay:
             attempts = 4
         request_inputs = inputs
         for attempt in range(attempts):
             try:
-                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1)
+                return self._transport_call(kind, request_inputs, check, attempt=attempt + 1, fresh=fresh)
             except InvalidOutput as exc:
                 if attempt + 1 == attempts:
                     raise
                 self.log.record('validation_retry', kind=kind, next_attempt=attempt + 2,
                                 reason=str(exc))
-                if kind != 'write_essay':
+                if not whole_essay:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
         raise AssertionError('unreachable')
 
-    def _transport_call(self, kind, inputs, check, *, attempt):
+    def _transport_call(self, kind, inputs, check, *, attempt, fresh=False):
         from ara.runtime.claude_code import ClaudeCodeError
         provider = self._for_construction_stage(kind, inputs, attempt=attempt).provider
         unclassified_retries = 0
         auth_retries = 0
         for retry in range(getattr(provider, 'retries', 0) + 1):
             try:
-                return self._call_once(kind, inputs, check, attempt=attempt)
+                return self._call_once(kind, inputs, check, attempt=attempt, fresh=fresh)
             except ClaudeCodeError as exc:
                 unclassified = exc.code == 'cli_exit_error' and exc.receipt.get('exit_status') == 1
                 auth = exc.code == 'cli_auth_error'
@@ -335,10 +352,10 @@ class ModelCalls:
                 time.sleep(delay)
         raise AssertionError('unreachable')
 
-    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False) -> Any:
+    def _call_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, fresh: bool = False) -> Any:
         scoped = self._for_construction_stage(kind, inputs, attempt=attempt)
         if scoped is not self:
-            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return scoped._call_once(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
         if kind != 'isolation_canary':
             self._ensure_provider_ready()
         if not schema_smoke and kind in ('map_leaf', 'propose_cuts') and 'commitments' in inputs:
@@ -355,16 +372,16 @@ class ModelCalls:
         with self._key_lock:
             lock = self._key_locks.setdefault(key, RLock())
         with lock:
-            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke)
+            return self._call_reserved(kind, inputs, check, attempt=attempt, schema_smoke=schema_smoke, fresh=fresh)
 
-    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke):
+    def _call_reserved(self, kind, inputs, check, *, attempt, schema_smoke, fresh=False):
         state = {}
         started = time.monotonic()
         previous_call_id = getattr(self._reservations, 'call_id', None)
         self._reservations.call_id = str(uuid.uuid4())
         try:
             return self._execute_once(kind, inputs, check, attempt=attempt,
-                                      schema_smoke=schema_smoke, state=state)
+                                      schema_smoke=schema_smoke, state=state, fresh=fresh)
         except Exception as exc:
             admission = state.get('admission')
             if admission is None or state.get('completed'):
@@ -390,7 +407,7 @@ class ModelCalls:
             self.budget.release(state.get('reservation'))
             self._reservations.call_id = previous_call_id
 
-    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict) -> Any:
+    def _execute_once(self, kind: str, inputs: dict, check: Callable[[dict], Any] | None = None, *, attempt: int = 1, schema_smoke: bool = False, state: dict, fresh: bool = False) -> Any:
         template, prompt = self.render(kind, inputs)
         schema = self.response_schema(kind, inputs)
         maximum = self.config.get(f'{kind}_max_output_tokens', self.config['max_output_tokens'])
@@ -418,7 +435,7 @@ class ModelCalls:
                 maximum = 4096
         key = cache_key(kind, template, identity, self.requested_model(kind), schema or {})
         saved = None
-        if not schema_smoke and kind != 'isolation_canary':
+        if not fresh and not schema_smoke and kind != 'isolation_canary':
             saved = self.cache.get(key)
         start = time.monotonic()
         raw = None
@@ -553,17 +570,19 @@ class ModelCalls:
             if not isinstance(exc, (Rejected, ValueError, ValidationError)):
                 self.log.record('validation_failed', kind=kind, reason=type(exc).__name__, cache_key=key)
                 raise
-            if validating and not (kind == 'audit_essay' and isinstance(exc, Rejected)):
+            if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):
                 raise InvalidOutput(reason, {'error': reason if isinstance(exc, ValidationError) or kind == 'extract_paper' else str(exc),
                     'rejected_response': Response(raw).text(),
                     'instruction': 'Return a new response satisfying every local schema and reference constraint.'}) from exc
             if not isinstance(exc, Rejected):
                 raise
+            if isinstance(exc, EssayAuditFailed):
+                raise
             raise Rejected(reason) from exc
         self._event(kind, prompt, raw, usage, cost, start, cached, 'accepted', None, key, attempt=attempt)
         state['completed'] = True
         self._after(kind)
-        if not cached and not schema_smoke and kind != 'isolation_canary':
+        if not fresh and not cached and not schema_smoke and kind != 'isolation_canary':
             self.cache.put(key, {'raw': raw})
         return result
 
@@ -1224,52 +1243,62 @@ class ModelCalls:
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
+    def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
+        validate_local(self.response_schema('write_essay', {}), data, self.config)
+        require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
+        require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
+        markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
+        require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
+        body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
+        text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
+        require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
+        minimum = self.config['essay_min_words'] if minimum_words is None else minimum_words
+        require(word_count(data) >= minimum,
+                'essay writer: minimum words not reached')
+        return data
+
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
-            require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
-            require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
-            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
-            require(markers == {node.id for node in route.nodes}, 'essay writer: node marker coverage mismatch')
-            body = re.sub(r'\[\[node:[^\]]+\]\]|\[cite:[^\]]+\]', '', data['body'])
-            text_tokens = [token for token in body.split() if any(char.isalnum() for char in token)]
-            require(len(text_tokens) >= 2, 'essay writer: body needs at least two text tokens')
-            require(word_count(data) >= self.config['essay_min_words'],
-                    'essay writer: minimum words not reached')
-            return data
+            return self.validate_essay(route, data)
+        if self.config['essay_min_words'] >= 4500:
+            from ara.runtime.writing import sectioned_essay
+            return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
 
-    def audit_inputs(self, route: RouteGraph, draft: dict) -> dict:
-        body = re.sub(r'\[\[node:[^\]]+\]\]', '', draft['body'])
-        parts = [part.strip() for part in re.split(r'(?<=[.!?])\s+|\n+', body) if part.strip()]
-        return {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
-                'outline': self.essay_outline(route)}
+    def audit_inputs(self, route: RouteGraph, draft: dict, *, publication_context=None) -> dict:
+        from ara.runtime.essay_audit import sentence_spans, NODE
+        spans = sentence_spans(draft['body'], literature=publication_context is not None)
+        parts = [NODE.sub('', draft['body'][start:end]).strip() for start, end in spans]
+        inputs = {'sentences': [{'sentence': i, 'text': text} for i, text in enumerate(parts, 1)],
+                  'outline': self.essay_outline(route),
+                  'root_conclusion': {'node_id': route.root_id,
+                                      'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
+        if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
+                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):
+            from ara.runtime.writing import source_context
+            inputs['source_evidence'] = source_context(self, route)
+        if publication_context is not None:
+            from ara.runtime.publication_audit import sentence_sections
+            inputs['publication_context'] = publication_context
+            for sentence, section, (start, end) in zip(inputs['sentences'], sentence_sections(draft['body'], spans), spans):
+                sentence.update(section=section, field='body', start=start, end=end)
+            inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title'],
+                section='Title', field='title', start=0, end=len(draft['title'])))
+        return inputs
 
-    def audit_essay(self, route: RouteGraph, draft: dict) -> dict:
-        inputs = self.audit_inputs(route, draft)
+    def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None, fresh=False) -> dict:
+        from ara.runtime.essay_audit import audit_result
+        inputs = self.audit_inputs(route, draft, publication_context=publication_context)
+        kind = 'audit_publication' if publication_context is not None else 'audit_essay'
         def check(data):
-            ids = {n.id for n in route.nodes}
-            expected = {s['sentence'] for s in inputs['sentences']}
-            labels = data['labels']
-            numbers = [item['sentence'] for item in labels]
-            if len(numbers) != len(set(numbers)) or set(numbers) != expected:
-                require(not any(item['asserts_premise_or_inference_not_in_outline'] for item in labels),
-                        'essay audit failed')
-                # An incomplete non-adverse inventory supplies no audit verdict.
-                # Correct its shape through the normal bounded validation policy;
-                # a complete adverse audit remains final below.
-                raise ValidationError('essay audit: sentence inventory mismatch')
-            covered = {node for item in labels for node in item['node_ids']}
-            require(covered <= ids, 'essay audit: unknown node id')
-            missing = ids - covered
-            extra = [item['sentence'] for item in labels if item['asserts_premise_or_inference_not_in_outline']]
-            markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
-            result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
-                      'extra_steps': extra,
-                      'faithful': not missing and not extra and markers == ids}
-            self.log.record('essay_audit', **result)
-            require(result['faithful'], 'essay audit failed')
+            result = audit_result(route, draft, inputs, data)
+            self.log.record('essay_audit', route_id=route.id,
+                            prompt_sha256=digest(self.render(kind, inputs)[1]), **result)
+            if not result['faithful']:
+                raise EssayAuditFailed(result, inputs, data['labels'])
             return result
-        return self.call('audit_essay', inputs, check)
+        return self.call(kind, inputs, check, fresh=fresh)
+
 
     def search_evidence(self, draft: dict, items: list[dict]) -> dict:
         return self.call('search_evidence', {'draft': draft, 'items': items})
@@ -1284,7 +1313,10 @@ class ModelCalls:
         return items
 
     def verify_originality_citations(self, draft: dict) -> tuple[dict, dict]:
-        items = self.verification_items(draft)
+        from ara.runtime.citations import local_verdicts
+        all_items = self.verification_items(draft)
+        local = local_verdicts(self, draft, all_items)
+        items = [item for item in all_items if item['id'] not in local]
         evidence = self.search_evidence(draft, items)
         def check(data):
             expected = {i['id']: i for i in items}
@@ -1321,16 +1353,26 @@ class ModelCalls:
                     'originality requires search evidence')
             return data
         result = self.call('verify_originality_citations', {'draft': draft, 'items': items, 'evidence': evidence}, check)
+        remote = {item['id']: item for item in result['items']}
+        result = {**result, 'items': [local[item['id']] if item['id'] in local else remote[item['id']]
+                                     for item in all_items]}
         cleaned = json.loads(canonical(draft))
         removed = []
+        removal_reasons = []
         for item in result['items']:
             if item['status'] == 'unverified':
                 removed.append(item['id'])
+                removal_reasons.append(dict(id=item['id'], reason=item.get('removal_reason', item['detail']),
+                                            basis=item.get('verification_basis', 'web_evidence')))
                 cleaned['body'] = cleaned['body'].replace(item['text'], '')
                 if item['kind'] == 'citation':
                     cleaned['bibliography'] = [b for b in cleaned['bibliography'] if b['id'] != item['id']]
                     cleaned['body'] = cleaned['body'].replace(f'[cite:{item["id"]}]', '')
                 else:
                     cleaned['body'] = cleaned['body'].replace('""', '').replace('“”', '')
-        self.log.record('verification_cleanup', removed_ids=removed, draft=cleaned, verification=result)
+            elif item.get('verification_basis') == 'local_frozen_T' and item['kind'] == 'citation':
+                cleaned['bibliography'] = [item['local_evidence']['bibliography'] if b['id'] == item['id'] else b
+                                           for b in cleaned['bibliography']]
+        self.log.record('verification_cleanup', removed_ids=removed, removal_reasons=removal_reasons,
+                        draft=cleaned, verification=result)
         return cleaned, result

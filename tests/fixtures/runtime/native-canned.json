@@ -293,7 +293,7 @@
       "output_tokens": 3
     }
   },
-  "write_essay:613c5d89c7e01ef3b063b30848061336a6a5943e718d720e6bffc048406dca10": {
+  "write_essay:e4943fa6675e04bb5862cc696c9e85690da97cf1a3426dcaecd578a3be11e1b5": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -307,21 +307,7 @@
       "output_tokens": 3
     }
   },
-  "audit_essay:5f882116cd012cfe11f0457541cc0b97feddf83b840f65583c6132d3f175803b": {
-    "model": "claude-opus-5",
-    "stop_reason": "end_turn",
-    "content": [
-      {
-        "type": "text",
-        "text": "{\"labels\":[{\"asserts_premise_or_inference_not_in_outline\":false,\"node_ids\":[\"n0\",\"n1\",\"n2\"],\"sentence\":1}]}"
-      }
-    ],
-    "usage": {
-      "input_tokens": 5,
-      "output_tokens": 3
-    }
-  },
-  "write_essay:7ef9f90232b490803be048fd51070c06f815c995295d63c8d531a8a66e0ad130": {
+  "write_essay:f1d8668d3bf49b076de15490f2649068828c41510f3d251a01926c018b6b74b5": {
     "model": "claude-opus-5",
     "stop_reason": "end_turn",
     "content": [
@@ -342,6 +328,20 @@
       {
         "type": "text",
         "text": "{\"targets\":[{\"formula\":{\"args\":[],\"name\":\"P\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"p\",\"text\":\"P\"},{\"formula\":{\"args\":[],\"name\":\"Q\",\"op\":\"atom\",\"terms\":[],\"variable\":null},\"id\":\"q\",\"text\":\"Q\"}]}"
+      }
+    ],
+    "usage": {
+      "input_tokens": 5,
+      "output_tokens": 3
+    }
+  },
+  "audit_essay:3c663f411b0dfd7ddcd6f2670377daab9e139c7eb61c42d366b40dc42d951a30": {
+    "model": "claude-opus-5",
+    "stop_reason": "end_turn",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"labels\":[{\"citation_supported\":true,\"node_ids\":[\"n0\",\"n1\",\"n2\"],\"role\":\"argument_step\",\"sentence\":1}]}"
       }
     ],
     "usage": {

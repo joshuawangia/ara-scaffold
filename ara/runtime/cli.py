@@ -130,11 +130,23 @@ def parser() -> argparse.ArgumentParser:
     report = sub.add_parser('report', help='render verified run receipts offline; no model calls')
     report.add_argument('--run-dir', type=Path, action='append', required=True)
     report.add_argument('--out', type=Path, required=True)
+    for command in ('polish', 'figures', 'render-pdf'):
+        cmd = sub.add_parser(command)
+        cmd.add_argument('--run-dir', type=Path, required=True)
+        if command == 'polish':
+            cmd.add_argument('--route')
+            cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--audit-provider', choices=('claude_code', 'codex_cli'), default='claude_code')
+            cmd.add_argument('--audit-model', help='audit model; defaults to the run writer model for Codex')
+            cmd.add_argument('--min-words', type=int, help='ARA publication floor; defaults to publication_min_words in the run config or 3000')
+            cmd.add_argument('--literature-currency', type=Path, action='append', default=[])
+            cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
     for command in ('select', 'feedback', 'export'):
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
         if command == 'select':
             cmd.add_argument('--route')
+            cmd.add_argument('--draft', type=Path, help='audit an existing unverified draft without generating a new essay')
             cmd.add_argument('--codex-schema-preflight-log', type=Path)
             cmd.add_argument('--unknown-usage-policy', choices=('refuse', 'count-at-reservation'))
         if command == 'feedback':
@@ -163,13 +175,13 @@ def make_provider(config: dict, root: Path = ROOT):
     return provider
 
 
-def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT) -> ModelCalls:
+def make_calls(config: dict, log: EventLog, topic: str, root: Path = ROOT, *, imported_draft=None) -> ModelCalls:
     from ara.runtime.codex_window import apply_context_window
     decision = apply_context_window(config)
     if decision is not None:
         log.record('operator_context_window', **decision)
     return ModelCalls(config, make_provider(config, root), log, Cache(Path(config['cache_dir'])), root, topic,
-                      provider_factory=lambda settings: make_provider(settings, root))
+                      provider_factory=lambda settings: make_provider(settings, root), imported_draft=imported_draft)
 
 
 def configure_window(config, args):
@@ -559,6 +571,9 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         log = EventLog(args.run_dir / 'events.jsonl')
         log.human(args.command + '_command', json.dumps(raw_args, ensure_ascii=False),
                   argv=raw_args, reported_minutes=args.human_minutes)
+        if args.command in ('polish', 'figures', 'render-pdf'):
+            from ara.runtime.publication import publication_command
+            return publication_command(args, log, ROOT, calls_factory)
         if args.command == 'feedback':
             start = time.monotonic()
             text = args.text if args.text is not None else input('Feedback: ')
@@ -602,7 +617,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         from ara.runtime.codex_preflight import require_codex_preflight
         require_codex_preflight(selection_config, ROOT)
         calls = calls_factory(selection_config, log, run['topic'])
-        compose(calls, chosen)
+        draft = json.loads(args.draft.read_text()) if args.draft is not None else None
+        compose(calls, chosen, draft)
         return 0
     except Exception as exc:
         from anthropic import APIError
@@ -616,7 +632,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if not isinstance(exc, BudgetStop):
                 log.record('runtime_error', error_type=type(exc).__name__, message=str(exc))
             # Methodology and partial graphs survive even a clean budget stop.
-            export_run(log.path, log.path.parent / 'export')
+            export_run(log.path, log.path.parent / 'export', strict=False)
         print(f'ara: {exc}', file=sys.stderr)
         return 2
     finally:
@@ -627,7 +643,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             if args.command != 'feedback':
                 destination = (args.output if args.command == 'export' else None) or log.path.parent / 'export'
                 redactions = tuple(args.redact) if args.command == 'export' else ()
-                export_run(log.path, destination, redactions)
+                export_run(log.path, destination, redactions, strict=False)
 
 
 if __name__ == '__main__':

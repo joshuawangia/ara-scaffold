@@ -4147,6 +4147,311 @@ judgments establish plumbing only, not semantic alignment quality or originality
   future model acceptance, consistency, budgets or useful synthesis. Canonical
   operating instructions are in docs/construction.md.
 
+
+### Round 29 integration — Sigma round 12 and S12-F1
+
+Integrated the exact Sigma round-12 construction/alignment recovery head with
+consistent-support novelty. Shared decision, source-map and control additions
+are retained from both branches. The native forward regression uses the new
+relation/reason-only alignment response, requires no unresolved pairs and an
+accepted P/Q entailment, and retains the rendered R lead and frozen-byte checks.
+Runtime supplies candidate identities; the schema must not accept echoed IDs.
+Combined-tree full gates supersede the interrupted pre-integration controls.
+
+
+### Round 29 verification repair — Z3 object lifetime
+
+The combined full mutation run exposed a native abort in a restored parallel
+search test. Boolean equivalence serialized Z3 calls but retained compiler/solver
+locals until after releasing the shared lock. Their destructors could race with
+another search thread using Z3's default context. A deterministic real-object
+finalization regression failed on that implementation. As with entailment, a
+private helper now owns and releases every Z3 object before its locked caller
+returns. A control removes the lock boundary; native alignment search is rerun.
+The interrupted gate evidence is retained, and final gates use the repaired head.
+
+## nu4 — sectioned competition writer (2026-10-28)
+
+Eight historical whole-essay attempts failed the 4,500-word minimum before any
+audit. Identical-input validation retries did not communicate measured shortfalls.
+Competition-length writing now uses a checked 4,800–5,600-word section plan,
+individually logged section calls and deterministic assembly. Up to three targeted
+revision rounds retain accepted sections and communicate measured section/total
+length. The short smoke path stays small. This extends `ModelCalls.write_essay`
+and `compose`, without changing the engine or freezing additional commitments.
+
+Exact frozen support, attributed source text and page citations accompany each
+section and the audit. Bounded neighboring grounded source items remain context,
+not additional premises. Exact T citations are checked locally; semantic fidelity
+remains model-assessed. Required evidence is never silently truncated. Section
+and context bounds, missing-context disclosures, plan/section/revision receipts
+and partial artifacts are described in docs/search.md. The normal final word,
+coverage, audit, originality/citation and isolation checks remain in place.
+
+Offline coverage includes order, retained sections, shortage/excess correction,
+three-round exhaustion, plan budgets, source context and unsupported citations,
+plus production-wire controls. Full-suite, control and live receipts belong in
+`/home/dev/ara-work/reports/nu4-writer.md` with the exact tested revision. A live
+length-valid draft with an audit result is not a verified essay or proof of
+novelty. Codex's API-only evidence-retrieval restriction is outside this repair;
+no API/Claude fallback is introduced. No push; non-author review follows.
+
+The first nu4 live experiment still ended at 3,213 words after three rounds:
+whole-section replacement often returned roughly the same length or shortened
+accepted text. Expansion therefore returns additional paragraphs, which runtime
+appends deterministically while preserving the original text verbatim. Measured
+remaining section capacity bounds each addition; condensation still replaces one
+section. The revised regression fails against replacement semantics. The failed
+live attempt remains logged and is not presented as successful evidence.
+
+## nu4 round 2 — audit citation ownership and targeted repair (2026-10-28)
+
+Trailing citation markers previously became part of the next numbered sentence.
+The deterministic splitter now retains them with the preceding terminal
+punctuation. Original-text offsets are shared by audit input and revision, with
+node markers transparent to splitting. The draft itself is not normalized.
+
+A complete adverse audit retains its exact evidence and labels in a typed
+rejection. Native composition can request up to two rounds of replacements for
+only its flagged sentences, then audits the complete result again. Each accepted
+patch preserves unflagged bytes and bibliography; retained sentences keep exact
+citation/node markers. An empty replacement removes an unsupported sentence.
+Schema, size, body, length and node-coverage checks remain binding. No missing-node
+repair is invented when the auditor identifies no sentence to change. Malformed
+inventories and transport failures do not authorize revisions. The post-citation
+audit remains final, so repair cannot alter text after its citations were checked.
+
+`select --draft` admits a saved unverified draft through the same checks, logging
+the input and avoiding fresh outlining/writing. The new revision kind uses writing
+stage routing and the standard logging/cache/budget/isolation boundary. Codex
+schema proof now includes 18 cases. No API fallback or provider-switching change
+is made. Live outcomes and the unexecuted API alternative's estimate belong in
+the external nu4 report, with remaining claims and the exact tested revision.
+
+## nu4 round 3 — default Codex web evidence retrieval (2026-10-28)
+
+For a Codex main provider, `search_evidence` uses live Codex web search by
+default. There is no API fallback. Extraction and Claude Code's retrieval refusal
+remain unchanged. Only the evidence stage enables web search; the event parser
+accepts its search/open-page/find-in-page events and rejects every other tool or
+unknown event. The existing content-free isolation canary and filesystem,
+credential and identity boundaries remain active. No completed web event means
+no accepted evidence, even if the model returns a plausible summary.
+
+The transport retains queries, web actions, result URLs and quoted snippets.
+This adapter converts the structured final answer rather than raw search-result
+bodies. URLs and passages are therefore explicitly model-reported,
+locally schema-validated evidence, not independently authenticated source text.
+The native citation/originality verifier receives those URL-bound excerpts;
+exact quotation checks, unsupported-item removal and post-verification audit
+remain authoritative. Methodology derives the Codex retrieval disclosure from
+actual receipts. A rejected or absent search is not reported as successful.
+
+Admission separates the initial prompt from reserved search replay. Configured
+search/output limits are reservation assumptions, not hard CLI execution caps;
+measured aggregate tokens and completed web events are retained. Offline tests
+and production-wire mutations cover accepted web events, non-web rejection,
+query/URL receipts, excerpt verification, methodology and initial-context sizing.
+Live execution, remaining limitations and exact tested revision are recorded in
+the external nu4 report; schema-valid text alone does not prove web retrieval.
+
+An isolated live diagnostic exposed two transport requirements: the vendor's
+`codex-code-mode-host` companion must remain reachable in the mount namespace,
+and searches start with a pending `other` action before resolving. The evidence
+stage mounts only that sibling executable read-only under `/run`; a missing
+helper refuses explicitly. The parser allows the exact pending placeholder but
+still requires a recognized completed action. Unknown completed actions and
+non-web tools continue to reject. Fake subprocess regressions execute the
+mounted helper and prove it is not writable. Live search-result payloads were
+observed in diagnostics; they are not used as authenticated source text by this
+adapter, and the model-reported provenance limitation remains explicit.
+
+Kappa4 W1 identified that imported drafts could reach the resume event, artifact
+and first audit without the generated-output scan. `compose(draft=...)` now calls
+the effective provider's identity/credential scanner before even schema
+validation, so malformed imports cannot expose sensitive content in validation
+diagnostics. Identity violations retain `operator_identity_in_output`; credentials
+retain the existing sanitized `credential_in_cli_output`. Clean imports keep the
+native audit and verification lifecycle. The review's content-sensitive fake CLI
+reproduction covers body, title, bibliography and invalid encoded content, with
+unchanged log/anchor/artifact and no audit dispatch on refusal. Its production
+scan-removal control must fail and restore green.
+
+## nu4 round 4 — typed sentence audit and actionable revision feedback (2026-10-29)
+
+The binary extra-inference label conflated presentation with substantive route
+content and supplied little repair guidance. The audit now classifies each
+sentence as a source claim, argument step, framing, exposition, signpost,
+objection, reply or unsupported claim. Unsupported claims fail. Source claims
+need a positive semantic citation judgment and actual markers matching the exact
+frozen-T bibliography; argument steps need a known node mapping. The root
+conclusion is explicit input and a faithful restatement maps to that node, while
+extra unsupported substance in the same sentence still fails. Presentation cannot
+satisfy route coverage. Objections/replies must be marked and CQ-consistent;
+otherwise the model must classify them unsupported. These semantic classifications
+remain model judgments, not deterministic proof. Structural inventory, node
+coverage, source stance, scoped qualifications and downstream verification remain.
+
+Complete adverse audits permit three accepted targeted-revision rounds, with a
+full audit after each; malformed inventories and provider failures do not grant
+repair authority. Each flagged span carries exact ordered citation/node markers.
+Validation feedback names the sentence and observed/required sequences, so a
+retry can remove a forbidden addition instead of repeating it. Retained sentences
+may not add even a valid T marker; whole unsupported spans can be deleted subject
+to word/coverage checks. Bibliography and unflagged bytes remain immutable. Typed
+failure reasons and role counts are logged. Original draft comparisons and live
+verification/export outcomes belong in the external round-4 report.
+
+## 2026-10-28 — Publication after drafting
+
+Publication uses the native ModelCalls isolation, validation, accounting and audit
+boundaries with a pinned subscription model. Frozen citations and paragraph order
+remain invariant; the model may improve prose and choose deterministic figure
+positions. Pure-Python SVG avoids a system graph-layout dependency. PDF rendering
+is local and blocks network requests. Publication artifacts are separate from
+final_draft: a polished or rendered document does not imply successful external
+citation/originality verification. The subscription retrieval refusal is retained
+as blocked status without an API fallback. See [publication](docs/publication.md).
+
+Reference metadata is joined from logged extraction inputs through frozen T source
+IDs and matching PDF hashes. A mutable checkout bibliography is not run evidence.
+The recorded title, authors, year and venue remain independently unverified until
+the native external citation path completes; source identity does not prove them.
+
+
+## 2026-10-29 — Publication evidence and reading citations
+
+The publication-only currency input retains exact operator-provided records and
+verification receipts. Its page-linked claims can support related-work positioning
+but never enlarge frozen route support. A separate publication prompt uses native
+audit labels to check both original-draft fidelity and bounded literature claims;
+pilot audit prompts and schemas remain unchanged.
+
+Editorial quality requires merging redundant paragraphs rather than preserving
+every repeated marker occurrence. Distinct citation/node inventories remain local
+invariants; claim preservation and qualifications remain audit judgments. Reading
+citations are deterministic author–year displays of provenance, with physical PDF
+pages explicitly labelled. The raw identifiers remain in accompanying receipts.
+
+Publication reading word count (quality followup): enforce the 4,500–6,000 bound on the reading text with rendered citations, excluding references and internal markers. Raw citation IDs make the annotated copy shorter; its count remains diagnostic, not a second minimum. This supersedes the dual-count gate noted above.
+
+
+## Publication typed audit and bounded repairs (2026-10-29)
+
+Publication adopts the writer's typed sentence audit. Presentation roles do not
+require route mappings and never establish coverage; source, inference and
+unsupported-claim checks retain their native semantics. The separate publication
+schema adds reason categories for placement, unsupported elaboration and draft
+fidelity. Logged currency claims remain a related-work-only exception, never
+route evidence. Publication passes the exact adverse inputs and reason categories
+into up to three targeted rounds, auditing after each and retaining original
+fallback after exhaustion. Each round keeps unflagged paragraphs unchanged.
+Attempted and accepted round counts remain distinct in artifacts and events.
+This supersedes the original publication stage's single-repair limit.
+
+
+## Publication length profile (2026-10-29)
+
+The publication minimum is an ARA profile choice, separate from the writer's
+minimum. It now defaults to 3,000 reading words and can be configured in the run
+or overridden by the publication CLI. The 6,000-word maximum stays fixed.
+Prompts prefer concise supported writing over padding. The effective bounds,
+counting basis and profile status are logged and included in methodology.
+Publication audit evidence is independent of the writer's length threshold.
+Related-work section matching ignores capitalization while retaining scope,
+citation and route-isolation checks. This supersedes the publication-only
+4,500-word minimum in earlier decisions; the writer profile is unchanged.
+
+## nu4 round 5 — observable web refusal and the pinned Other variant (2026-10-29)
+
+Native retrieval rejected a completed `web_search` event whose action was the
+exact object `{"type":"other"}`. The previous guard accepted that object only
+while pending. The pinned CLI's locally generated protocol schema includes Other
+as a named web-search variant, and the native reproduction confirmed completion
+uses it. The adapter now accepts that exact variant only inside the existing
+web-search stage boundary and preserves the opaque action in receipts. It does
+not relabel Other as a known page operation, accept arbitrary future action names,
+or allow additional payload fields on Other. Shell, file, patch, MCP and generic
+tool events still refuse, as do web events in non-retrieval calls.
+
+Refusal receipts now retain fixed allowlisted event, item, action and tool-name
+labels. Unrecognized values become `unknown`; no arbitrary event text, arguments,
+URL or diagnostic content crosses this boundary. Production-wire controls cover
+the diagnostic, completed/pending Other variants, unexpected Other payloads,
+shell/file refusal and the web-only stage restriction. A fully formed web event
+drives the non-retrieval regression so malformed event data cannot mask a broken
+stage guard. Native outcomes and protocol-generation evidence belong in the
+external round-5 report; this transport change proves no semantic verification
+or final export by itself.
+
+
+## 2026-10-29 — Publication import and repair boundaries (quality 4)
+
+Imported publication drafts share the writer-resume sensitive-content screen;
+both effective publication providers screen the entire object before preflight,
+validation diagnostics or content-bearing effects. Direct publication repeats the
+screen before logging. Rejected imports never become fallback artifacts.
+
+Publication audits label the current title as well as current body/headings.
+Title-only changes therefore invalidate audit cache identity. Flagged sentence
+field offsets bind permission to one owning block and paragraph occurrence;
+duplicate text does not enlarge permission. Only flagged title/heading/prose
+blocks may change; every unflagged block and all separators remain byte-identical.
+The three-round repair limit and complete re-audit remain in force.
+
+An explicit publication audit provider selects isolated Codex while editing stays
+on pinned Opus. Native scoped dispatch shares budget/log/cache and runs each
+provider's isolation canary. This integrates writer round 5 without claiming to
+solve the separately recorded audit-instability redesign. Native outcomes and
+external-verification limits are reported outside tracked source.
+## nu4 round 6 — conservative final audit evidence (2026-10-29)
+
+A final audit is now a batch of at least three fresh requests, configurable through
+`essay_audit_samples` (default 3). Fresh requests retain ordinary admission,
+validation, identity scanning and accounting but neither read nor write the
+response cache. Substantive failures are unioned across samples and valid adverse
+history for the identical audit prompt. No sampled majority silently overrides a
+dissent; no automatic adjudication is implemented. Fresh requests are separate
+provider invocations, not evidence of statistical independence.
+
+The initial and final audit paths share at most three targeted repair rounds.
+After a final repair, citation/originality verification runs again before another
+fresh batch. Per-sentence binary agreement, sample flags, historical findings,
+prompt/draft hashes and incomplete batches are retained in logged receipts and
+methodology; route reports consume those receipts. Starting a new composition
+invalidates previous final artifacts, and log-based export ignores earlier final
+entries for that attempt. Existing history remains immutable. Native outcomes and
+semantic limits belong in the external round-6 report.
+
+The writer's minimum is a construction target, not an export floor after evidence
+cleanup. Final cleanup and final repairs retain the maximum, schema, nontrivial
+body and marker checks without requiring padding back to that target. The run's
+configuration stays unchanged so full source context remains available. Imported
+resumes carry used repair rounds from this route's latest composition; a stopped
+attempt cannot silently obtain another three rounds. Existing pre-policy history
+has no such marker and starts with zero used rounds.
+
+
+## Publication quality 5: bounded structural correction and conservative audit reuse
+
+The publication repair loop now permits two structural attempts inside each of at
+most three audit-driven rounds. It reuses the native validation-feedback transport,
+with a per-call attempt bound rather than changing the global retry policy. A
+rejected candidate never becomes the next baseline or reaches semantic audit.
+Exact validator failure, rendered counts and shrinking sections guide the retry.
+The existing occurrence binding is tightened to preserve unflagged sentence spans
+inside flagged paragraphs. The editor must preserve length and supported content.
+
+Publication uses the same conservative consensus gate introduced by nu4 round 6,
+parameterized by publication context and its effective provider. At least three
+fresh samples are required; flags are unioned with adverse history for the same
+input. Favourable cached results cannot approve publication. Titles, headings,
+source evidence and logged currency evidence remain in the audited input. The
+post-verification audit uses the same gate. This reuses one semantic gate rather
+than creating a separate publication voting rule. Offline checks establish the
+enforcement mechanics; live publication is explicitly deferred by the operator.
+
+
 ## Round 13 — complete target index and coordinated provider window
 
 Target generation now projects only prompt context. All gap IDs/support groups,
@@ -4172,28 +4477,81 @@ Unconfigured historical runs retain their existing behaviour. Neither a local
 estimate nor an offline fake transport establishes real serving capacity or
 semantic success.
 
+## nu4 round 7 — retain citations against local frozen evidence (2026-10-29)
 
-### Round 29 integration — Sigma round 12 and S12-F1
+Frozen-route references are checked first against retained extraction inputs and
+frozen provenance. PDF identity, page-text hash, source text, attribution and page
+bounds must match. Bibliography entries use the retained paper metadata and physical
+PDF pages, with commitment IDs preserved. Unavailable local evidence is a refusal,
+not a negative web verdict. Positive mismatches may remove a citation or quotation;
+methodology records each removal reason. Supplementary web retrieval still assesses
+external references and originality. Local lexical evidence is not semantic proof.
 
-Integrated the exact Sigma round-12 construction/alignment recovery head with
-consistent-support novelty. Shared decision, source-map and control additions
-are retained from both branches. The native forward regression uses the new
-relation/reason-only alignment response, requires no unresolved pairs and an
-accepted P/Q entailment, and retains the rendered R lead and frozen-byte checks.
-Runtime supplies candidate identities; the schema must not accept echoed IDs.
-Combined-tree full gates supersede the interrupted pre-integration controls.
+A citation-only restoration pass can append allowed markers to original sentence
+bytes and rebuild the canonical bibliography; it cannot rewrite prose or renew the
+semantic repair budget. Typed repairs can add frozen citations to miscited claims.
+Mapped source premises require citations even under an argument-step label. The
+existing fresh conservative final audit remains in force. Export independently
+checks route support coverage and canonical locally verified bibliography entries,
+refuses empty or partial support, and removes a stale essay on refusal. Legacy
+runs without source provenance cannot claim this local verification. Evidence and
+native route results are retained in the external round-7 report.
 
 
-### Round 29 verification repair — Z3 object lifetime
+Round 7 also closes review R2-F1: incomplete or structurally invalid historical
+audit responses cannot discard valid adverse labels on an unchanged draft. The
+history reader salvages individually schema-valid, in-range labels with known
+node references, retains their substantive flags in the union, and discloses that
+these are partial adverse facts rather than complete coverage verdicts. An invalid
+neighbor or a duplicate inventory cannot make three later clean calls erase them.
+Validation-feedback retries are matched to the same underlying prompt and input;
+a changed draft remains a different audit obligation. Current malformed responses
+still refuse. Unparseable history cannot supply labels and remains explicitly
+unusable. R2-F2 is the frozen-citation retention/export policy above. Native resume
+regressions and production-wire mutations cover both review reproductions.
 
-The combined full mutation run exposed a native abort in a restored parallel
-search test. Boolean equivalence serialized Z3 calls but retained compiler/solver
-locals until after releasing the shared lock. Their destructors could race with
-another search thread using Z3's default context. A deterministic real-object
-finalization regression failed on that implementation. As with entailment, a
-private helper now owns and releases every Z3 object before its locked caller
-returns. A control removes the lock boundary; native alignment search is rerun.
-The interrupted gate evidence is retained, and final gates use the repaired head.
+Missing local metadata cannot be treated as a positive bibliography mismatch.
+Unresolved local evidence refuses before any mismatch-based removal, including a
+known frozen reference with no recorded provenance. This preserves the distinction
+between absence and a proven mismatch even when bibliography wording is unfamiliar.
+
+
+### Publication quality5 round-7 integration (2026-10-29)
+
+- Merge the writer's retained-page citation verification and malformed-history
+  recovery without duplicating either mechanism in publication. Preserve the
+  shared imported-draft screen and publication's effective audit-provider scope.
+- Calculate native and publication-specific flags in one shared path so partial
+  historical inventories retain valid adverse publication labels. Partial
+  recovery supplies adverse evidence only. Keep fresh minimum-three consensus
+  before and after verification, with no favourable cache replay.
+- Publication fixtures now retain hash-bound pages and use the canonical exported
+  bibliography. A native publication regression checks that absent web evidence
+  cannot erase locally verified frozen citations; source-premise mappings require
+  their sentence-level citations. Preserve the existing structural retry bound,
+  exact flagged occurrence permissions, title/heading audit and length profile.
+- This round is code and offline verification only. No live publication run or
+  accepted-paper claim is authorized by these implementation receipts. Full
+  verification and remaining limits belong in the external quality5 report.
+
+
+## Xi Round 30 — Delivery integration
+
+Combine writer citation retention and conservative adverse-history audits with
+publication repair/consensus, consistency-aware search and complete target context.
+Retain all branch decisions and production-wire controls. Alignment bridge
+commitments remain model judgments, never source bibliography entries: resolve
+their verified evidence IDs for local citation coverage and section writing.
+Expose non-premise definition evidence separately, including its omitted support
+limits, without adding it to the route. Explicit bridge citations refuse before
+external verification. Native freeze, composition/export and sectioned-writing
+regressions use placeholder sources and leave frozen artifacts unchanged.
+Final combined verification and upstream inclusion receipt are recorded externally
+in reports/xi-round30.md; historical branch results are not combined-head proof.
+
+Publication reading copies include the separately disclosed definition evidence,
+and figure labels distinguish model alignment judgments from attributed source
+support. Both raw and reading-citation figure paths retain that distinction.
 
 
 ## Round 14 — normalize stage admission before provider reuse
@@ -4212,3 +4570,16 @@ its target_bases argument when mutating the full frozen commitment argument in
 the target-context negative control. Anchor uniqueness remains mandatory; both
 mutation and restoration must execute on the combined source. Regenerate only
 combined target prompt keys, retaining all recorded response values.
+
+
+## Publication quality5: retain adverse schema-retry evidence in the same gate
+
+The shared conservative gate must include valid adverse labels from malformed
+responses generated during its own fresh sample calls, not only pre-existing
+history. Scan the newly appended receipts before deriving the union and verdict;
+complete sample verdicts remain represented once. This closes favorable schema
+retry replacement without changing the sample minimum, repair budget, citation
+verification, provider routing or draft identity. Offline writer and publication
+regressions cover first/last-sample retries and non-adverse invalid responses;
+production-wire controls disable the receipt scan and require rejection tests to
+fail. No live publication outcome is implied.

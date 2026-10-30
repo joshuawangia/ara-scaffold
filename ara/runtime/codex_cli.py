@@ -21,6 +21,8 @@ from ara.runtime.cache import canonical, digest
 from ara.runtime.claude_code import ClaudeCodeError, ClaudeCodeProvider, CANARY_SCHEMA, CANARY_PROMPT, _positive, failure_receipt
 from ara.runtime.claude_estimation import CalibrationState
 from ara.runtime.providers import Response, stage_settings
+from ara.types import TokenUsage
+from ara.runtime import codex_web
 
 # These controls are verified for this CLI version. Fail closed after upgrades.
 from ara.runtime.codex_window import CLI_VERSION, apply_context_window, context_window_decision
@@ -41,6 +43,27 @@ ISOLATION_FLAGS = ['--ephemeral', '--ignore-user-config', '--ignore-rules', '--s
 SAFE_EVENTS = frozenset(('thread.started', 'turn.started', 'turn.completed', 'turn.failed',
                          'error', 'item.started', 'item.updated', 'item.completed', 'model.changed'))
 SAFE_ITEMS = frozenset(('agent_message', 'reasoning', 'error'))
+
+
+def rejected_event(event):
+    """Protocol labels only: diagnostic recognition never authorizes a tool."""
+    def label(value, allowed):
+        return None if value is None else value if isinstance(value, str) and value in allowed else 'unknown'
+    item = event.get('item') if isinstance(event.get('item'), dict) else {}
+    action = item.get('action') if isinstance(item.get('action'), dict) else {}
+    return {
+        'event_type': label(event.get('type'), SAFE_EVENTS),
+        'item_type': label(item.get('type'), SAFE_ITEMS | {
+            'web_search', 'web_fetch', 'open_page', 'find_in_page', 'todo_list', 'plan',
+            'command_execution', 'file_read', 'file_change', 'mcp_tool_call',
+            'tool_call', 'function_call', 'custom_tool_call', 'collab_tool_call', 'image_generation'}),
+        'action_type': label(action.get('type'), {'search', 'open_page', 'find_in_page',
+                                                'other', 'shell', 'open', 'find', 'fetch'}),
+        'tool_name': label(item.get('name', item.get('tool_name')), {
+            'web.run', 'web_search', 'web_fetch', 'open_page', 'find_in_page',
+            'functions.exec_command', 'functions.apply_patch', 'functions.update_plan',
+            'functions.read_mcp_resource', 'functions.spawn_agent'}),
+    }
 
 
 class CodexCLIError(ClaudeCodeError):
@@ -116,10 +139,31 @@ class CodexCLIProvider(ClaudeCodeProvider):
 
     def estimate(self, kind, prompt, schema, maximum):
         from ara.runtime.codex_schema import strict_schema
+        if kind == 'extract_paper':
+            raise CodexCLIError('stage_requires_api_provider')
+        if kind == 'search_evidence':
+            size = len((prompt + self.system_for(kind) + codex_web.INSTRUCTIONS + canonical(strict_schema(codex_web.SCHEMA))).encode())
+            initial = self.calibration_state.initial(self.model_for(kind), kind, size)
+            # CLI does not impose a hard search/output cap. Reserve the configured
+            # search envelope, as on the API path; retain measured usage afterward.
+            searches = self.config['web_search_max_uses']
+            return TokenUsage(input_tokens=initial * 2 + maximum + self.config['model_context_token_bound'] * searches,
+                              output_tokens=maximum * 2, server_tool_uses=searches)
         return super().estimate(kind, prompt, strict_schema(schema) if schema else schema, maximum)
+
+    def initial_context_tokens(self, estimate):
+        replay = self.config['model_context_token_bound'] * estimate.server_tool_uses
+        return (estimate.input_tokens - replay - estimate.output_tokens // 2) // 2
 
     def observe(self, kind, prompt, schema, estimate, raw):
         from ara.runtime.codex_schema import strict_schema
+        if kind == 'search_evidence':
+            usage = Response(raw).usage
+            actual = usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens
+            size = len((prompt + self.system_for(kind) + codex_web.INSTRUCTIONS + canonical(strict_schema(codex_web.SCHEMA))).encode())
+            result = self.calibration_state.observe(self.model_for(kind), kind, size,
+                self.initial_context_tokens(estimate), estimate.input_tokens, actual, first_turn=False)
+            return {**result, 'reserved_input_tokens': estimate.input_tokens}
         return super().observe(kind, prompt, strict_schema(schema) if schema else schema, estimate, raw)
 
     def normalize_output(self, schema, value):
@@ -129,20 +173,29 @@ class CodexCLIProvider(ClaudeCodeProvider):
     def metadata(self, kind):
         from ara.runtime.codex_schema import VERSION
         metadata = super().metadata(kind)
-        metadata.update(isolation_flags=ISOLATION_FLAGS, max_cli_turns=1,
+        metadata.update(isolation_flags=self.isolation_flags(kind), max_cli_turns=1,
+            web_retrieval='Codex web search (live), only search_evidence; all other tools rejected' if kind == 'search_evidence' else 'disabled for this stage',
+            web_search_limits='Configured uses bound admission only; CLI has no hard per-call search limit.',
+            web_evidence_schema_hash=digest(canonical(codex_web.SCHEMA)) if kind == 'search_evidence' else None,
             context_window_decision=context_window_decision(self.config, self.model_for(kind)),
             schema_transform=VERSION,
             schema_transport='Versioned OpenAI-strict projection passed to --output-schema; optional nulls normalized before authoritative local Draft202012Validator.',
             effective_prompt_note='Minimal task-only model instructions replace coding-agent defaults; stage developer instructions and native stage prompt retained; not API byte-identical.',
             auth_transport='Per-call read-only bind of current host auth file, linked from temporary in-memory CODEX_HOME; no credential copy.',
             auth_threat_model='Linux mount/PID namespace hides operator homes; auth writes denied; refresh endpoint disabled; no credential rotation.',
-            visible_tool_policy='Generic built-in definitions may be visible; visible definitions do not authorize use; any tool event rejects the response.',
+            visible_tool_policy='Generic built-in definitions may be visible; only web_search events during search_evidence are allowed; every other tool event rejects the response.',
             served_model_policy='CLI model event when reported; otherwise explicitly unverified, never inferred from -m.',
             tokenizer_note='Seed table measured Anthropic API tokens, not the Codex tokenizer. Codex usage corrects estimates upward only.',
             subscription_cost_note='Codex JSON reports tokens, not list-price USD; cost equivalent unavailable, never treated as measured zero.',
             output_bound_note='Admission reserves the configured output allowance twice; CLI has no hard output-token flag. Actual usage can stop the run after receipt.',
             host_context_isolation='Home directories and host /tmp /run hidden; fresh HOME and CODEX_HOME; project docs disabled; user config ignored.')
         return metadata
+
+    @staticmethod
+    def isolation_flags(kind):
+        flags = [flag.replace('web_search="disabled"', 'web_search="live"')
+                 if kind == 'search_evidence' else flag for flag in ISOLATION_FLAGS]
+        return flags + (['-c', 'tools.web_search=true'] if kind == 'search_evidence' else [])
 
     def _check_canary(self, value, debug, receipt):
         from ara.runtime.validation import validate_local
@@ -165,7 +218,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 'global_agents_and_memories':'host home hidden by mount namespace',
                 'evidence':'visible context scan plus enforced filesystem/CLI isolation'}
 
-    def _parse(self, stdout, stderr, receipt, model, secrets, *, canary=False):
+    def _parse(self, stdout, stderr, receipt, model, secrets, *, canary=False, web=False):
         events = []
         try:
             for line in stdout.splitlines():
@@ -178,10 +231,19 @@ class CodexCLIProvider(ClaudeCodeProvider):
             raise CodexCLIError(code, receipt=receipt, retryable=retryable) from None
         # Only enum labels survive rejection, including unseen future event types.
         rejection = None
+        web_items = {}
         for event in events:
             kind = event.get('type')
             if kind in ('item.started','item.updated','item.completed'):
                 item = event.get('item')
+                if web and isinstance(item, dict) and item.get('type') == 'web_search':
+                    try:
+                        checked = codex_web.web_event(item)
+                    except ValueError:
+                        rejection = 'cli_tool_event'
+                        break
+                    if kind == 'item.completed': web_items[item['id']] = checked
+                    continue
                 if not isinstance(item, dict) or not isinstance(item.get('type'), str) or item['type'] not in SAFE_ITEMS:
                     rejection = 'cli_tool_event'
                     break
@@ -196,13 +258,17 @@ class CodexCLIProvider(ClaudeCodeProvider):
             counts = [reported.get(k) for k in ('input_tokens','cached_input_tokens','output_tokens')]
             if all(type(n) is int and n >= 0 for n in counts) and counts[1] <= counts[0]:
                 usage = {'input_tokens':counts[0]-counts[1], 'cache_read_input_tokens':counts[1], 'output_tokens':counts[2]}
+        if usage is not None and web:
+            usage['server_tool_use'] = {'web_search_requests': len(web_items)}
         raw = {'provider':self.provider_kind, 'model':'unverified', 'stop_reason':'end_turn', 'content':[],
                'cli':receipt, 'usage':usage or {},
                'subscription_usage':{'cost_equivalent_usd':None, 'basis':'unavailable; Codex reports tokens only; not measured API USD'}}
         def reject(code, retryable=False):
             receipt.update(failure_class=code, retryable=retryable)
             raise CodexCLIError(code, receipt=receipt, response=raw if usage is not None else None, retryable=retryable)
-        if rejection: reject(rejection)
+        if rejection:
+            receipt['rejected_event'] = rejected_event(event)
+            reject(rejection)
         failures = [e for e in events if e.get('type') in ('error','turn.failed')]
         warnings = [e for e in events if e.get('type') in ('item.started','item.updated','item.completed')
                     and e['item']['type']=='error']
@@ -235,17 +301,32 @@ class CodexCLIProvider(ClaudeCodeProvider):
         raw['model'] = model if models else 'unverified'
         messages = [e['item'].get('text') for e in events if e.get('type')=='item.completed'
                     and e['item']['type']=='agent_message']
-        if len(messages)!=1 or not isinstance(messages[0],str): reject('cli_incomplete_output')
+        if not messages or (not web and len(messages)!=1) or not all(isinstance(m,str) for m in messages): reject('cli_incomplete_output')
         try:
-            value = json.loads(messages[0])
+            value = json.loads(messages[-1])
         except ValueError: reject('cli_invalid_output')
         raw['content'] = [{'type':'text','text':canonical(value)}]
+        if web:
+            if not web_items: reject('cli_web_search_missing')
+            try:
+                from jsonschema import ValidationError
+                content, web_receipt = codex_web.evidence_content(value, list(web_items.values()))
+            except (ValueError, TypeError, ValidationError):
+                reject('cli_invalid_web_evidence')
+            raw['content'] = content
+            receipt['web_search'] = web_receipt
+            receipt['messages'] = messages
         return raw, value
 
     def complete(self, kind, prompt, schema, maximum):
         canary = kind=='isolation_canary'
         if not canary and not self.ready: raise CodexCLIError('isolation_preflight_required')
-        if kind in ('extract_paper','search_evidence'): raise CodexCLIError('stage_requires_api_provider')
+        if kind == 'extract_paper': raise CodexCLIError('stage_requires_api_provider')
+        web = kind == 'search_evidence'
+        tool_host = Path(self.binary).with_name('codex-code-mode-host')
+        if web and (not tool_host.is_file() or not os.access(tool_host, os.X_OK)):
+            raise CodexCLIError('cli_web_helper_unavailable')
+        if web: schema = codex_web.SCHEMA
         if schema is None: raise CodexCLIError('response_schema_required')
         model = self.model_for(kind)
         window = context_window_decision(self.config, model)
@@ -255,7 +336,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
             cwd, home, config = base/'cwd', base/'home', base/'config'
             for path in (cwd, home, config): path.mkdir()
             instructions_path = base/'instructions.txt'
-            instructions_path.write_text(MODEL_INSTRUCTIONS)
+            instructions_path.write_text(codex_web.INSTRUCTIONS if web else MODEL_INSTRUCTIONS)
             schema_path = base/'schema.json'
             from ara.runtime.codex_schema import strict_schema, VERSION
             wire = strict_schema(schema)
@@ -271,6 +352,11 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 '--ro-bind',self.binary,'/run/ara-codex',
                 '--ro-bind',f'/proc/self/fd/{credential.fileno()}','/run/ara-auth.json']
             if Path('/etc/codex').exists(): wrapper += ['--tmpfs','/etc/codex']
+            if web:
+                # Preserve the vendor's companion executable inside the isolated
+                # namespace; exposing its package directory would expose home.
+                wrapper += ['--ro-bind', str(tool_host), '/run/codex-code-mode-host']
+                env['PATH'] += ':/run'
             wrapper += ['--chdir',str(cwd),'--','/run/ara-codex']
             if self.version is None:
                 try:
@@ -279,7 +365,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 if version.returncode or version.stdout.strip()!=CLI_VERSION:
                     raise CodexCLIError('cli_version_unsupported')
                 self.version=CLI_VERSION
-            command = [*wrapper,'exec',*ISOLATION_FLAGS,*window_args,'-C',str(cwd),'-m',model,
+            command = [*wrapper,'exec',*self.isolation_flags(kind),*window_args,'-C',str(cwd),'-m',model,
                 '--output-schema',str(schema_path),'-c','model_instructions_file='+canonical(str(instructions_path)),
                 '-c','developer_instructions='+canonical(self.system_for(kind)),
                 '-c','model_reasoning_effort='+canonical(stage_settings(self.config,kind)['effort']),'-']
@@ -293,7 +379,7 @@ class CodexCLIProvider(ClaudeCodeProvider):
                 raise CodexCLIError('cli_timeout',receipt=receipt,retryable=True) from None
             except OSError: raise CodexCLIError('cli_launch_failed',receipt=receipt) from None
             receipt.update(exit_status=result.returncode,wall_seconds=time.monotonic()-started)
-            raw,value=self._parse(result.stdout,result.stderr,receipt,model,secrets,canary=canary)
+            raw,value=self._parse(result.stdout,result.stderr,receipt,model,secrets,canary=canary,web=web)
             if canary:
                 try: raw['isolation']=self._check_canary(value,'',receipt)
                 except CodexCLIError as exc:

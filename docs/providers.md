@@ -60,6 +60,10 @@ final refusals, transport failures, output-token stops, negative essay audits or
 bank-license failures. CLI transport retries and final search-job attempts have
 separate policies below and in [search](search.md).
 
+A complete adverse first audit may start the separate, bounded sentence-revision
+workflow described in [search](search.md). Each revision is a new logged call with
+the auditor's exact evidence and flags; it does not retry or weaken that verdict.
+
 Web admission reserves the
 configured 200,000-token context bound for each potential server iteration. Prices
 and that bound are explicit configuration assumptions; actual provider usage is
@@ -84,7 +88,8 @@ a local configuration file. `stages.construction`, `stages.search`, and
 call-kind override takes precedence. Existing extraction configuration and API
 receipts are retained. This provider refuses extraction and `search_evidence`: it
 has no external retrieval tools, so it cannot replace web verification. Provider
-switching applies only to the rich construction stages. A run with `claude_code`
+switching applies to rich construction and explicitly selected publication audits
+(see [publication](publication.md)). A run with `claude_code`
 as its main provider cannot complete the web-verification stage through a per-kind
 API provider setting. Native symbolic search, construction, and writing calls with
 response schemas use fresh `claude -p` sessions through the usual `ModelCalls`
@@ -177,26 +182,46 @@ configuration for output screening. A different CLI version refuses pending
 revalidation. Each call uses a fresh process, empty working directory and
 temporary HOME/CODEX_HOME. The mount and PID namespaces hide host homes, `/tmp`,
 `/run` and process state. User settings, project instructions, skills, memory,
-MCP, web and other tools are disabled. Minimal task instructions replace
+MCP and local tools are disabled. Web search is enabled only for `search_evidence`. Minimal task instructions replace
 coding-agent defaults; stage instructions and ARA's prompt remain. This prompt
 differs from the API path.
 
 The budgeted isolation canary checks visible context. Generic built-in tool
-definitions may be visible; any actual tool event rejects the response. Unknown
-events also reject. Only validated output and typed receipts are retained;
+definitions may be visible; outside evidence retrieval any actual tool event rejects
+the response. During `search_evidence`, only `web_search` events (search, open page,
+find in page) are accepted. Unknown events and every non-web tool event reject. Only validated output and typed receipts are retained;
 reasoning and free-text diagnostics are discarded. Output and cache replay are
 screened for credentials and Git identity.
 
-Construction, symbolic search and writing calls can use Codex. Extraction and
-`search_evidence` refuse on this transport. Extract separately using the API.
-Provider switching is implemented for rich construction stages only; setting
-`stages.search_evidence.provider` does not create an API transport. A run whose
-main provider is Codex cannot complete web verification through this
-configuration. To retain the full API lifecycle while using subscription
-construction, keep the main provider `anthropic` and override the rich
-construction stages. See `ara/runtime/construction_stages.py:5` and
-`ara/runtime/calls.py:212`. API extraction uses the model resolved from the chosen
-profile: Sonnet in the ordinary extraction profile, Opus in `extraction-full`.
+Construction, symbolic search, writing and evidence retrieval can use Codex.
+Extraction still requires the API. `search_evidence` enables `web_search="live"`
+inside the same isolated filesystem and records queries, completed web actions,
+source URLs and quoted snippets. The no-tool isolation canary still runs before
+operator content is sent. A response without a completed web event refuses.
+The installed CLI's sibling `codex-code-mode-host` executable is also required
+for this stage and mounted read-only under `/run`, without exposing its host
+directory. The pinned protocol's exact `{"type":"other"}` web-search action is
+accepted while pending or completed and retained as opaque in the receipt; it
+does not identify a specific search/open-page/find-in-page operation. This is a
+named web-search variant, not a fallback for unknown action names or payloads.
+Every non-web tool event and every web event outside `search_evidence` still
+refuses. Refusal receipts contain fixed, allowlisted event/item/action/tool-name
+labels only; unrecognized strings become `unknown`, without content or URLs.
+
+The evidence wire is locally schema-validated. URLs must be HTTP(S), without
+embedded credentials. Source URLs and snippets are model-reported from web search,
+not raw search-result payloads; receipts and methodology disclose that boundary.
+The existing verifier receives URL-bound excerpts, checks exact quotation wording,
+removes unverified items and re-audits the cleaned essay before publication.
+Web-search usage counts completed web events. The configured search allowance
+bounds token admission, but the CLI has no hard per-call search/output limit.
+Actual aggregate tokens are retained and can stop later calls. Web results are
+untrusted evidence, never operator instructions.
+
+Provider switching remains implemented for rich construction stages only; setting
+`stages.search_evidence.provider` does not create an API transport. A Codex main
+provider routes evidence retrieval through Codex web search by default, without an API fallback. Claude Code's retrieval
+refusal and the API path are unchanged.
 
 A requested model pin is not a serving receipt. When the CLI omits serving model
 identity, ARA records `unverified`; it does not infer identity from the request.
@@ -228,8 +253,8 @@ constraints authoritative; it does
 not prove pilot success. API-only extraction and web retrieval are not Codex
 schema cases. Use the separate ChatGPT auth file; never the worker login.
 
-The current contract includes `classify_target`: older 15-case proofs must be
-refreshed to cover all 16 cases. This is schema-acceptance evidence, not proof of
+The current contract includes `outline_essay` and `revise_essay`: older proofs must
+be refreshed to cover all 18 cases. This is schema-acceptance evidence, not proof of
 originality or successful new targets.
 
 For an existing run, pass `--codex-schema-preflight-log PATH` to

@@ -27,44 +27,75 @@ box(ax,.37,.23,.25,.15,'Search both polarities\nClosed / open\nroute records')
 box(ax,.16,.015,.68,.13,'Human selection → writing → audit → retrieval → re-audit → export\nRejected calls, omissions and decisions remain\nin append-only logs')
 for a,b in [((.165,.80),(.42,.64)),((.495,.80),(.495,.64)),((.825,.80),(.825,.64)),((.70,.565),(.62,.565)),((.18,.64),(.40,.80)),((.495,.49),(.495,.38)),((.495,.23),(.495,.145))]:arrow(ax,a,b)
 save(fig,'architecture','ARA separates the source of a license (L), the premises available to a run (T), and model-suggested hypotheses or cuts (H). Models propose; the deterministic engine decides formal admissibility. The final export path remains gated.',{'source':['scaffold/PLAN.md','scaffold/CLAUDE.md','scaffold/SOURCE_MAP.md'],'nodes':['L','T','H','extraction','engine','runtime','search','selection-writing-verification']})
-# Common extraction evidence, then explicitly separate historical/recovery lineages.
-gap=D['gap_pilot_1']; rec=D['gap_recovery']
-fig,ax=plt.subplots(figsize=(8.4,7.4));ax.set(xlim=(0,10),ylim=(0,10));ax.axis('off')
+# Concepts connect each mechanism to observed or explicitly pending work.
+rows=D['unified_update']['concepts']
+fig,ax=plt.subplots(figsize=(9,6.7));ax.axis('off');ax.set(xlim=(0,100),ylim=(0,100))
+for x,w,title in [(0,25,'Base concept'),(29,33,'Mechanism'),(66,34,'Runs / candidates')]:
+ ax.text(x+w/2,96,title,ha='center',va='center',fontsize=11,color=ACC)
+for i,row in enumerate(rows):
+ y=82-i*11.6
+ for x,w,key,wrap in [(0,25,'concept',23),(29,33,'mechanism',30),(66,34,'instances',30)]:
+  pending=any(t in row[key] for t in ['pending','running','stop requested'])
+  ax.add_patch(FancyBboxPatch((x+.4,y-4.7),w-.8,9.6,boxstyle='round,pad=.1',fc=PALE if key=='concept' else 'white',ec=ACC if pending or key=='concept' else GRAY,linestyle='--' if pending else '-'))
+  ax.text(x+w/2,y,'\n'.join(textwrap.wrap(row[key],wrap)),ha='center',va='center',fontsize=9)
+ for x1,x2 in [(25.3,28.5),(62.3,65.5)]:ax.add_patch(FancyArrowPatch((x1,y),(x2,y),arrowstyle='-|>',mutation_scale=10,color=GRAY))
+ax.text(50,1,'Dashed cells include pending work; arrows describe responsibility, not proven success.',ha='center',fontsize=9)
+save(fig,'concepts','One architecture organizes the experiments and extensions. Source construction determines T; L licenses search; H includes targets and, in a pending extension, disclosed proposed premises. Arguing for a bridge principle differs from deriving a result conditional on it. Pending mechanisms receive no success count.',{'rows':rows,'checkpoint':D['scope']['correspondence_end'],'sources':['briefs/meta-v5.md','briefs/xi-round-32.md','briefs/nu4-proposal-mode.md','briefs/fwd-sweep.md']})
+# Independently measured formal vocabulary of the shared gap1r freeze.
+v=D['vocabulary_bottleneck']
+fig,axes=plt.subplots(1,2,figsize=(8.4,2.8))
+for ax,total,base,extra,title in [(axes[0],v['frozen_commitments'],v['bare_paper_prefixed_atoms'],v['non_atomic_formulas'],'Commitment formulas'),(axes[1],v['catalogue_symbols'],v['symbols_not_shared'],v['symbols_shared_including_alignment_provenance'],'Symbols across papers')]:
+ ax.barh(0,base,height=.28,color=GRAY);ax.barh(0,extra,left=base,height=.28,color=ACC)
+ ax.set(xlim=(0,total),ylim=(-.65,.8));ax.set_yticks([]);ax.set_xticks([0,total//2,total]);ax.set_title(title,fontsize=11,pad=8);ax.spines['left'].set_visible(False);ax.set_xlabel('Count',fontsize=9)
+ ax.text(base/2,0,str(base),ha='center',va='center',fontsize=11)
+axes[0].text(v['bare_paper_prefixed_atoms']+v['non_atomic_formulas']/2,0,'19',ha='center',va='center',color='white',fontsize=10)
+axes[0].text(80,.48,'141 bare paper-prefixed atoms / 160',ha='center',fontsize=9)
+axes[0].text(80,-.48,'19 structured: 18 implications + 1 conjunction',ha='center',fontsize=8.5)
+axes[1].text(73.5,.48,'145 not shared / 147 symbols',ha='center',fontsize=9)
+axes[1].annotate('2',xy=(146,.14),xytext=(131,.28),ha='center',fontsize=10,color=ACC,arrowprops={'arrowstyle':'-','color':ACC,'lw':.8})
+axes[1].text(73.5,-.48,'2 bridge-linked; 0 source-only shared',ha='center',fontsize=8.5)
+fig.subplots_adjust(wspace=.35,bottom=.21,top=.82)
+save(fig,'vocabulary','The same gap1r freeze underlies A/B/C and the forward sweep. Structured means non-atomic syntax, not established faithful formalization. Every catalogue symbol is a zero-arity atom. Cross-paper sharing counts formula occurrences using their source provenance; only the two symbols in the alignment bridge span papers. Excluding that bridge, source-only sharing is zero. Alignment tested 150 pairs (149 unrelated, one directional entailment) and merged no symbols. This quantifies the missing common formal vocabulary; it is not an impossibility theorem.',v)
+# Separate source and writing lineages; no single successful end-to-end funnel is implied.
+gap=D['gap_pilot_1'];rec=D['gap_recovery']
+fig,ax=plt.subplots(figsize=(8.4,8.5));ax.set(xlim=(0,10),ylim=(0,13));ax.axis('off')
 funnel=[('Chosen works',53),('Original PDFs / rich graphs',26),('Extracted items',5659),('Eligible after quarantine',5296)]
 for i,(label,n) in enumerate(funnel):
- y=9.5-i*.62;w=8.7-i*.43;x=(10-w)/2
- ax.add_patch(Polygon([[x,y+.23],[x+w,y+.23],[x+w-.15,y-.23],[x+.15,y-.23]],closed=True,fc=PALE,ec=GRAY))
+ y=12.5-i*.57;w=8.7-i*.43;x=(10-w)/2
+ ax.add_patch(Polygon([[x,y+.21],[x+w,y+.21],[x+w-.15,y-.21],[x+.15,y-.21]],closed=True,fc=PALE,ec=GRAY))
  ax.text(x+.3,y,label,ha='left',va='center',fontsize=10);ax.text(x+w-.3,y,f'{n:,}',ha='right',va='center',fontsize=11,color=ACC)
-ax.text(5,7.14,'363 quarantined: 312 direct + 51 dependent',ha='center',fontsize=9)
-ax.text(2.5,6.65,'Earlier writing lineage',ha='center',fontsize=11,color=ACC)
-ax.text(7.5,6.65,'Gap1 → gap1r recovery',ha='center',fontsize=11,color=ACC)
-left=[('Pilot 5 frozen T','169 commitments / 22 papers'),('Fork 3 targets → searches','3 targets → 6 polarity searches'),('Selected derived routes','2, each supported by one paper'),('Round 4 writer checkpoint','0 native verified exports'),('Rounds 5–6 writer checkpoint','2 exports; R6 bibliography = 0 each'),('Substantive novelty established','0; source-fidelity repair pending')]
-right=[('Gap1 construction','74 windows / 159 commitments / 22 papers'),('Gap1 STOP: alignment 36/150','35 accepted; altered ID correctly refused'),('Gap1r recovery → frozen T','160 = 159 source + 1 bridge; 0 unresolved'),('Forward pass: truncated at 500','2 packaging leads; 0 contributions'),('Gap1r STOP: target admission','328,169 total > 200,000; not dispatched'),('NOT REACHED in gap1r','Targets → routes → essays; A/B pending')]
+ax.text(5,10.3,'363 quarantined: 312 direct + 51 dependent',ha='center',fontsize=9)
+ax.text(2.5,9.8,'Routes → writing → output gates',ha='center',fontsize=11,color=ACC)
+ax.text(7.5,9.8,'Construction → freeze → search',ha='center',fontsize=11,color=ACC)
+left=[('Earlier pilot 5 frozen T','169 commitments / 22 papers'),('Fork 3 → selected routes','3 targets / 6 searches; 2 single-paper derived'),('Round 4 writer','0 native verified exports'),('R6 → R7 audit STOP','R6 bib=0; R7 restores refs, exports 0/2'),('B sign candidate: audit STOP','18 final flags; 4,790 words; no export'),('B sign short: writer STOP','1,203 rejected words < 2,500 floor'),('Separate T2 analysis PDF','10 pages / 17 refs; not ARA-derived'),('Proposal-mode candidates','PENDING at 06:28:53 UTC; no export credited')]
+right=[('Gap1 construction','74 windows / 159 commitments / 22 papers'),('Gap1 STOP: alignment 36/150','35 accepted; altered ID correctly refused'),('Gap1r recovery → one freeze','160 = 159 source + 1 bridge; 0 unresolved'),('Gap1r STOP: target admission','328,169 total > 200,000; not dispatched'),('Later A / B / C forks','50 targets → 100 OPEN; 0 derived'),('Gap2 STOP before freeze','3/13 accepted; 57 commitments / 3 papers'),('Gap3: PENDING at 06:22:42 UTC','13 accepted / 7 skipped of 77; T70 / 9 papers'),('Next freeze/search outcomes','PENDING; working counts are not a freeze')]
 for col,items in enumerate([left,right]):
  x=.15 if col==0 else 5.15;w=4.7
  for i,(title,detail) in enumerate(items):
-  y=6.03-i*.90;accent=(col==1 and i in [1,4])
-  ax.add_patch(FancyBboxPatch((x,y-.32),w,.68,boxstyle='round,pad=.03,rounding_size=.05',fc=PALE if accent else 'white',ec=ACC if accent else GRAY,lw=1.4 if accent else 1))
-  ax.text(x+w/2,y+.12,title,ha='center',va='center',fontsize=9.6,color=ACC if accent else DARK)
-  ax.text(x+w/2,y-.13,detail,ha='center',va='center',fontsize=8.5)
-  if i<5:ax.add_patch(FancyArrowPatch((x+w/2,y-.36),(x+w/2,y-.51),arrowstyle='-|>',mutation_scale=9,color=GRAY,linestyle='--' if col==1 and i in [1,4] else '-'))
-ax.text(5,.65,'Later acquisition: 54 PDFs; new texts outside these pilot freezes',ha='center',fontsize=9)
-save(fig,'funnel','Separate lineages share extraction evidence; areas are not proportional. Gap1 stopped before freeze. Gap1r reused construction and accepted judgments, froze T, then refused the first L3 target request before dispatch (311,785 input + 16,384 output allowance). Two later writer exports belong to the earlier route lineage; both lost all citations in R6. A/B fork outcomes remain pending.',{'stages':funnel,'historical_path':left,'gap_path':right,'source':['reports/overnight/gap1/handoff.md','reports/overnight/gap1r/handoff.md','reports/nu4-writer.md'],'quarantine':{'direct':312,'dependent':51,'total':363}})
+  y=9.15-i*1.04;accent='STOP' in title;pending='PENDING' in title or 'PENDING' in detail
+  ax.add_patch(FancyBboxPatch((x,y-.37),w,.77,boxstyle='round,pad=.03,rounding_size=.05',fc=PALE if accent else 'white',ec=ACC if accent or pending else GRAY,lw=1.3,linestyle='--' if pending else '-'))
+  ax.text(x+w/2,y+.13,title,ha='center',va='center',fontsize=9.1,color=ACC if accent else DARK)
+  ax.text(x+w/2,y-.15,detail,ha='center',va='center',fontsize=8.2)
+  if i<7:ax.add_patch(FancyArrowPatch((x+w/2,y-.42),(x+w/2,y-.62),arrowstyle='-|>',mutation_scale=8,color=GRAY,linestyle='--'))
+ax.text(5,.3,'Rows distinguish experiments, not one continuous successful run. Areas are not proportional.',ha='center',fontsize=8.5)
+save(fig,'funnel','Shared historical extraction feeds distinct lifecycles and output attempts. Gap1 stopped at alignment; recovery froze T but stopped at target admission. A/B/C later completed without derived closure. Gap2 stopped before freeze; gap3 counts are live at 30 October 06:22:42 UTC. R7 and both sign drafts refused. The separate analysis PDF is not a native export. Proposal-mode outputs remain pending at 06:28:53 UTC.',{'stages':funnel,'writing_path':left,'construction_path':right,'source':['reports/overnight/gap1/handoff.md','reports/overnight/gap1r/handoff.md','reports/overnight/gap2/pre-freeze-check.md','reports/overnight/gap3/live-status.md','reports/candidates/gap1pu-B-sign/status.json','reports/candidates/gap1pu-B-sign-short/status.json']})
 # Logged episode spans, not time spent working.
 timeline=[('Extraction','2026-10-21T00:26:58Z','2026-10-22T23:59:23Z','Rich graph → grounded union'),('Construction','2026-10-21T03:37:29Z','2026-10-23T19:39:01Z','Closure budgets → soft shares'),('Providers / isolation','2026-10-23T10:02:43Z','2026-10-26T06:23:00Z','Credit stop → Claude → Codex'),('Structure / vocabulary','2026-10-26T15:09:34Z','2026-10-27T14:05:42Z','Atomic T → conditionals + stance'),('Novelty / cross-paper','2026-10-26T23:07:41Z','2026-10-29T06:19:53Z','Trivial closure → per-paper gate'),('Writing / audit','2026-10-28T16:52:30Z','2026-10-29T18:45:24Z','44→0 flags; k=3; exports lose citations'),('Literature currency','2026-10-28T21:03:17Z','2026-10-29T06:17:05Z','Historical gaps → qualified L3'),('Gap1 stop',gap['started_utc'],gap['stopped_utc'],'Alignment 36/150: correct refusal')]
 iso=lambda t:datetime.datetime.fromtimestamp(t,datetime.timezone.utc).isoformat()
 timeline += [('Gap1r recovery',iso(rec['supervisor']['started_epoch']),iso(rec['supervisor']['ended_epoch']),'Frozen T 160 → L3 admission STOP'),('Context / packing','2026-10-29T19:09:07Z','2026-10-29T19:46:10Z','Window override + 122k offline plan'),('Independent review','2026-10-29T15:24:58Z','2026-10-29T20:05:31Z','s12 / np / r2 / s13: findings ledger')]
+timeline += [('Completed A/B/C','2026-10-29T19:46:10Z','2026-10-30T01:16:27Z','100 OPEN; 0 derived; B partial'),('R7 / delivery closure','2026-10-29T21:35:27Z','2026-10-30T01:53:47Z','0/2 exports; gate repairs reviewed'),('All-candidates instruction','2026-10-30T02:09:23Z','2026-10-30T02:09:23Z','Draft all; final selection reserved')]
+timeline += [('Gap2 construction STOP','2026-10-30T01:55:00Z','2026-10-30T04:04:01Z','3/13 windows; no freeze'),('Sign writing gates','2026-10-30T02:09:23Z','2026-10-30T03:42:33Z','Audit refusal; short writer refusal')]
 start=datetime.datetime.fromisoformat(D['scope']['correspondence_start'].replace('Z','+00:00'))
 hours=lambda t:(datetime.datetime.fromisoformat(t.replace('Z','+00:00'))-start).total_seconds()/3600
-fig,ax=plt.subplots(figsize=(8.4,6.5))
+fig,ax=plt.subplots(figsize=(8.4,8.7))
 for i,(label,a,b,txt) in enumerate(timeline):
  ax.barh(i,max(.3,hours(b)-hours(a)),left=hours(a),color=ACC if i>3 else GRAY,height=.38)
  ax.text(hours(b) if hours(a)>170 else hours(a),i-.29,txt,fontsize=8.1,va='bottom',ha='right' if hours(a)>170 else 'left')
  if label in ['Gap1 stop','Gap1r recovery']:ax.plot(hours(b),i,marker='D',color=ACC,markersize=4)
-ax.set_yticks(range(len(timeline)),[x[0] for x in timeline]);ax.invert_yaxis();ax.set_xticks([0,24,48,72,96,120,144,168,192,216],['21','22','23','24','25','26','27','28','29','30']);ax.set_xlabel('October 2026 (UTC); logged episode spans, not continuous labor');ax.set_xlim(-1,217);ax.grid(axis='x',alpha=.2)
+ax.set_yticks(range(len(timeline)),[x[0] for x in timeline]);ax.invert_yaxis();ax.set_xticks([0,24,48,72,96,120,144,168,192,216],['21','22','23','24','25','26','27','28','29','30']);ax.set_xlabel('October 2026 (UTC); logged episode spans, not continuous labor');ax.set_xlim(-1,224);ax.grid(axis='x',alpha=.2)
 ax.axvspan(hours('2026-10-28T12:33:41Z'),hours('2026-10-28T16:49:21Z'),facecolor='none',edgecolor=ACC,hatch='////',lw=.5)
-ax.set_title('Pending: A/B outcomes, citation/history fix, window fix, novelty dossier',fontsize=9,pad=20)
-save(fig,'iterations','Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Sigma r12 and nu4 r5 now have later results; current pending items receive no result bar. Context packing is an offline plan, and native exports do not establish source fidelity or substantive novelty.',{'episodes':timeline,'idle_start':'2026-10-28T12:33:41Z','idle_end':'2026-10-28T16:49:21Z','pending':D['pending_work'],'source':['correspondence/log.txt','reports/overnight/gap1/pilot-exit.json','reports/overnight/gap1r/pilot-exit.json']})
+ax.set_title('30 Oct 06:46:47: gap3 / r16–17 / H / proposals pending; fwd stop requested',fontsize=9,pad=20)
+save(fig,'iterations','Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Later bars record completed A/B/C and R7/delivery receipts; the all-candidates row records an instruction, not a research result. Historical packing plans preceded actual forks. Gap2 later stopped before freeze and both sign drafts refused. Gap3 and the new extensions remain pending; gate repairs do not establish semantic success.',{'episodes':timeline,'idle_start':'2026-10-28T12:33:41Z','idle_end':'2026-10-28T16:49:21Z','pending':D['pending_work'],'source':['correspondence/log.txt','reports/overnight/gap1/pilot-exit.json','reports/overnight/gap1r/pilot-exit.json']})
 # Gate incidences: candidates can have multiple reasons; no false stacked total.
 ps=D['pilots'][2:];reasons=['attributed_report','own_thesis_not_established','single_commitment_entailment','target_content_not_established','gap_resolution_not_established','duplicate_retained_target']
 labels=['Attribution screen','Own-thesis classifier','Single-support entailment','Content / restatement','Gap not resolved','Duplicate retained ID']
@@ -111,7 +142,7 @@ for i,p in enumerate(plans):
  ax.text(max(p['total'],p['bound'])/1000+9,i,f"{p['total']:,} / {p['bound']:,}",va='center',fontsize=8)
 ax.set_yticks(y,[p['label'] for p in plans]);ax.invert_yaxis();ax.set_xlim(0,1110);ax.set_xticks([0,200,400,600,800]);ax.set_xlabel('Thousands of estimated tokens; vertical ticks show admission bounds');ax.grid(axis='x',alpha=.15)
 ax.legend(loc='upper center',bbox_to_anchor=(.5,-.24),ncol=2,frameon=False,fontsize=9)
-save(fig,'context-admission','Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); fork A requests two hops and has no result here. The current unpacked template adds 299 tokens. Uniform run-window arithmetic does not close the later stage-window admission defect. A/B outcomes and live enlarged-window capacity remain pending.',{'plans':plans,'source':D['context_window']['source'],'forks':D['context_window']['forks']})
+save(fig,'context-admission','Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); the later actual two-hop A results are reported separately in §3.3. This historical unpacked template adds 299 tokens. The later stage-window defect was closed by r14 review. These plan estimates do not prove service capacity.',{'plans':plans,'source':D['context_window']['source'],'forks':D['context_window']['forks']})
 D['figures']=figures
 D['accounting_reconciliation']={}
 for cls in ['measured','unknown_at_reservation','unclassified']:

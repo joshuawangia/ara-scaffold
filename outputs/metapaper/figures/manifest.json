@@ -22,9 +22,103 @@
     }
   },
   {
+    "id": "concepts",
+    "file": "figures/concepts.svg",
+    "caption": "One architecture organizes the experiments and extensions. Source construction determines T; L licenses search; H includes targets and, in a pending extension, disclosed proposed premises. Arguing for a bridge principle differs from deriving a result conditional on it. Pending mechanisms receive no success count.",
+    "data": {
+      "rows": [
+        {
+          "concept": "L / T / H boundaries",
+          "mechanism": "Source stance, licensed rules, disclosed proposals",
+          "instances": "Frozen source T; proposed P remains H"
+        },
+        {
+          "concept": "Construction of T",
+          "mechanism": "Windows, shared formal vocabulary, alignment",
+          "instances": "Gap1 recovery; gap2 STOP; gap3 running"
+        },
+        {
+          "concept": "One freeze / forks",
+          "mechanism": "Authenticated prefix; counted context",
+          "instances": "A packed / B full / C external T2"
+        },
+        {
+          "concept": "Search through L",
+          "mechanism": "Z3, CQs, both polarities, novelty gates",
+          "instances": "100 OPEN; B partial; 0 derived"
+        },
+        {
+          "concept": "Gap discovery",
+          "mechanism": "Backward comparison / forward synthesis",
+          "instances": "T1–T9; 0 forward leads; stop requested"
+        },
+        {
+          "concept": "New bridge in H",
+          "mechanism": "Conditional-on-H / argued proposal",
+          "instances": "Xi32, proposal mode: pending"
+        },
+        {
+          "concept": "Output gates",
+          "mechanism": "Typed audit, k=3 union, local citations",
+          "instances": "Analysis PDF; sign + short refused"
+        }
+      ],
+      "checkpoint": "2026-10-30T06:46:47Z",
+      "sources": [
+        "briefs/meta-v5.md",
+        "briefs/xi-round-32.md",
+        "briefs/nu4-proposal-mode.md",
+        "briefs/fwd-sweep.md"
+      ]
+    }
+  },
+  {
+    "id": "vocabulary",
+    "file": "figures/vocabulary.svg",
+    "caption": "The same gap1r freeze underlies A/B/C and the forward sweep. Structured means non-atomic syntax, not established faithful formalization. Every catalogue symbol is a zero-arity atom. Cross-paper sharing counts formula occurrences using their source provenance; only the two symbols in the alignment bridge span papers. Excluding that bridge, source-only sharing is zero. Alignment tested 150 pairs (149 unrelated, one directional entailment) and merged no symbols. This quantifies the missing common formal vocabulary; it is not an impossibility theorem.",
+    "data": {
+      "frozen_commitments": 160,
+      "bare_paper_prefixed_atoms": 141,
+      "non_atomic_formulas": 19,
+      "root_operators": {
+        "atom": 141,
+        "and": 1,
+        "implies": 18
+      },
+      "catalogue_symbols": 147,
+      "zero_arity_atoms": 147,
+      "symbols_shared_including_alignment_provenance": 2,
+      "symbols_not_shared": 145,
+      "shared_symbol_owners": {
+        "macfarlane2014_assessment_sensitivity_framework": [
+          "macfarlane2014",
+          "schaffer2011"
+        ],
+        "schaffer2011_r2_25_n6_truth_perspectivalism": [
+          "macfarlane2014",
+          "schaffer2011"
+        ]
+      },
+      "symbols_shared_in_source_commitments_only": 0,
+      "alignment_candidate_pairs": 150,
+      "alignment_judgments": {
+        "unrelated": 149,
+        "entails_right_left": 1
+      },
+      "changed_symbol_mappings": 0,
+      "definition_of_shared": "Union the source_id/source_ids in commitment provenance for each symbol occurring recursively in the corresponding formula; repeat excluding kind=alignment for source-only reuse. Bridge source_ids belong to both papers, not an extra paper.",
+      "scope": "Syntax and provenance of authenticated gap1r freeze; non-atomic means structured syntax, not validated philosophical adequacy",
+      "measured_utc": "2026-10-30T06:51:27.772002+00:00",
+      "sources": {
+        "frozen-t.json": "160e68870b9632a3f9606a6a7693e9b2f427f67b9215ca35f8d95c755010c2cc",
+        "commitment-provenance.json": "d4f52598b38f4282de7f7ebb2aea78a1114df655ba433f49f86e34cffb45d787"
+      }
+    }
+  },
+  {
     "id": "funnel",
     "file": "figures/funnel.svg",
-    "caption": "Separate lineages share extraction evidence; areas are not proportional. Gap1 stopped before freeze. Gap1r reused construction and accepted judgments, froze T, then refused the first L3 target request before dispatch (311,785 input + 16,384 output allowance). Two later writer exports belong to the earlier route lineage; both lost all citations in R6. A/B fork outcomes remain pending.",
+    "caption": "Shared historical extraction feeds distinct lifecycles and output attempts. Gap1 stopped at alignment; recovery froze T but stopped at target admission. A/B/C later completed without derived closure. Gap2 stopped before freeze; gap3 counts are live at 30 October 06:22:42 UTC. R7 and both sign drafts refused. The separate analysis PDF is not a native export. Proposal-mode outputs remain pending at 06:28:53 UTC.",
     "data": {
       "stages": [
         [
@@ -44,33 +138,41 @@
           5296
         ]
       ],
-      "historical_path": [
+      "writing_path": [
         [
-          "Pilot 5 frozen T",
+          "Earlier pilot 5 frozen T",
           "169 commitments / 22 papers"
         ],
         [
-          "Fork 3 targets → searches",
-          "3 targets → 6 polarity searches"
+          "Fork 3 → selected routes",
+          "3 targets / 6 searches; 2 single-paper derived"
         ],
         [
-          "Selected derived routes",
-          "2, each supported by one paper"
-        ],
-        [
-          "Round 4 writer checkpoint",
+          "Round 4 writer",
           "0 native verified exports"
         ],
         [
-          "Rounds 5–6 writer checkpoint",
-          "2 exports; R6 bibliography = 0 each"
+          "R6 → R7 audit STOP",
+          "R6 bib=0; R7 restores refs, exports 0/2"
         ],
         [
-          "Substantive novelty established",
-          "0; source-fidelity repair pending"
+          "B sign candidate: audit STOP",
+          "18 final flags; 4,790 words; no export"
+        ],
+        [
+          "B sign short: writer STOP",
+          "1,203 rejected words < 2,500 floor"
+        ],
+        [
+          "Separate T2 analysis PDF",
+          "10 pages / 17 refs; not ARA-derived"
+        ],
+        [
+          "Proposal-mode candidates",
+          "PENDING at 06:28:53 UTC; no export credited"
         ]
       ],
-      "gap_path": [
+      "construction_path": [
         [
           "Gap1 construction",
           "74 windows / 159 commitments / 22 papers"
@@ -80,38 +182,44 @@
           "35 accepted; altered ID correctly refused"
         ],
         [
-          "Gap1r recovery → frozen T",
+          "Gap1r recovery → one freeze",
           "160 = 159 source + 1 bridge; 0 unresolved"
-        ],
-        [
-          "Forward pass: truncated at 500",
-          "2 packaging leads; 0 contributions"
         ],
         [
           "Gap1r STOP: target admission",
           "328,169 total > 200,000; not dispatched"
         ],
         [
-          "NOT REACHED in gap1r",
-          "Targets → routes → essays; A/B pending"
+          "Later A / B / C forks",
+          "50 targets → 100 OPEN; 0 derived"
+        ],
+        [
+          "Gap2 STOP before freeze",
+          "3/13 accepted; 57 commitments / 3 papers"
+        ],
+        [
+          "Gap3: PENDING at 06:22:42 UTC",
+          "13 accepted / 7 skipped of 77; T70 / 9 papers"
+        ],
+        [
+          "Next freeze/search outcomes",
+          "PENDING; working counts are not a freeze"
         ]
       ],
       "source": [
         "reports/overnight/gap1/handoff.md",
         "reports/overnight/gap1r/handoff.md",
-        "reports/nu4-writer.md"
-      ],
-      "quarantine": {
-        "direct": 312,
-        "dependent": 51,
-        "total": 363
-      }
+        "reports/overnight/gap2/pre-freeze-check.md",
+        "reports/overnight/gap3/live-status.md",
+        "reports/candidates/gap1pu-B-sign/status.json",
+        "reports/candidates/gap1pu-B-sign-short/status.json"
+      ]
     }
   },
   {
     "id": "iterations",
     "file": "figures/iterations.svg",
-    "caption": "Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Sigma r12 and nu4 r5 now have later results; current pending items receive no result bar. Context packing is an offline plan, and native exports do not establish source fidelity or substantive novelty.",
+    "caption": "Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Later bars record completed A/B/C and R7/delivery receipts; the all-candidates row records an instruction, not a research result. Historical packing plans preceded actual forks. Gap2 later stopped before freeze and both sign drafts refused. Gap3 and the new extensions remain pending; gate repairs do not establish semantic success.",
     "data": {
       "episodes": [
         [
@@ -179,30 +287,82 @@
           "2026-10-29T15:24:58Z",
           "2026-10-29T20:05:31Z",
           "s12 / np / r2 / s13: findings ledger"
+        ],
+        [
+          "Completed A/B/C",
+          "2026-10-29T19:46:10Z",
+          "2026-10-30T01:16:27Z",
+          "100 OPEN; 0 derived; B partial"
+        ],
+        [
+          "R7 / delivery closure",
+          "2026-10-29T21:35:27Z",
+          "2026-10-30T01:53:47Z",
+          "0/2 exports; gate repairs reviewed"
+        ],
+        [
+          "All-candidates instruction",
+          "2026-10-30T02:09:23Z",
+          "2026-10-30T02:09:23Z",
+          "Draft all; final selection reserved"
+        ],
+        [
+          "Gap2 construction STOP",
+          "2026-10-30T01:55:00Z",
+          "2026-10-30T04:04:01Z",
+          "3/13 windows; no freeze"
+        ],
+        [
+          "Sign writing gates",
+          "2026-10-30T02:09:23Z",
+          "2026-10-30T03:42:33Z",
+          "Audit refusal; short writer refusal"
         ]
       ],
       "idle_start": "2026-10-28T12:33:41Z",
       "idle_end": "2026-10-28T16:49:21Z",
       "pending": [
         {
-          "item": "Fork A/B results",
+          "item": "Gap3 freeze/coverage/search",
           "status": "pending",
-          "source": "briefs/zeta-gap-fork2.md"
+          "as_of_utc": "2026-10-30T06:22:42Z",
+          "source": "reports/overnight/gap3/live-status.md"
         },
         {
-          "item": "Nu4 R7 citation and adverse-history repairs",
+          "item": "Sigma16 construction improvements",
           "status": "pending",
-          "source": "briefs/nu4-round-7.md"
+          "as_of_utc": "2026-10-30T06:44:42.536565+00:00",
+          "source": "briefs/sigma-round-16.md"
         },
         {
-          "item": "Sigma r14 stage-window and merged-control fixes",
-          "status": "pending",
-          "source": "reports/kappa4-sigma13-review.md"
+          "item": "Forward sweep",
+          "status": "stop requested; final receipt not credited",
+          "as_of_utc": "2026-10-30T06:46:15Z",
+          "source": "briefs/fwd-sweep.md"
         },
         {
-          "item": "L3 novelty dossier",
+          "item": "Xi32 hypothesis premises / future gap4",
           "status": "pending",
-          "source": "briefs/eps2-L3-novelty.md"
+          "as_of_utc": "2026-10-30T06:28:53Z",
+          "source": "briefs/xi-round-32.md"
+        },
+        {
+          "item": "Nu4 proposal mode and pi3 polish",
+          "status": "pending",
+          "as_of_utc": "2026-10-30T06:28:53Z",
+          "source": "briefs/nu4-proposal-mode.md"
+        },
+        {
+          "item": "Operator final selection",
+          "status": "pending",
+          "as_of_utc": "2026-10-30T06:28:53Z",
+          "source": "briefs/all-candidates.md"
+        },
+        {
+          "item": "Sigma17 shared predicate catalogue and wider alignment",
+          "status": "pending",
+          "as_of_utc": "2026-10-30T06:46:47Z",
+          "source": "briefs/sigma-round-17.md"
         }
       ],
       "source": [
@@ -420,7 +580,7 @@
   {
     "id": "context-admission",
     "file": "figures/context-admission.svg",
-    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); fork A requests two hops and has no result here. The current unpacked template adds 299 tokens. Uniform run-window arithmetic does not close the later stage-window admission defect. A/B outcomes and live enlarged-window capacity remain pending.",
+    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); the later actual two-hop A results are reported separately in §3.3. This historical unpacked template adds 299 tokens. The later stage-window defect was closed by r14 review. These plan estimates do not prove service capacity.",
     "data": {
       "plans": [
         {

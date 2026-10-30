@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="495.845pt" height="183.734281pt" viewBox="0 0 495.845 183.734281" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Deterministic matplotlib rendering from data.json</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 183.734281 
+L 495.845 183.734281 
+L 495.845 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 10.38125 146.534281 
+L 209.836569 146.534281 
+L 209.836569 23.558281 
+L 10.38125 23.558281 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 10.38125 103.280654 
+L 186.15125 103.280654 
+L 186.15125 79.533564 
+L 10.38125 79.533564 
+z
+" clip-path="url(#p1e2769b7ac)" style="fill: #aeb5ba"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 186.15125 103.280654 
+L 209.836569 103.280654 
+L 209.836569 79.533564 
+L 186.15125 79.533564 
+z
+" clip-path="url(#p1e2769b7ac)" style="fill: #28677e"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="md308ac8921" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#md308ac8921" x="10.38125" y="146.534281" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="10.38125" y="161.131937" transform="rotate(-0 10.38125 161.131937)">0</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#md308ac8921" x="110.10891" y="146.534281" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="110.10891" y="161.131937" transform="rotate(-0 110.10891 161.131937)">80</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#md308ac8921" x="209.836569" y="146.534281" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="209.836569" y="161.131937" transform="rotate(-0 209.836569 161.131937)">160</text>
+     </g>
+    </g>
+    <g id="text_4">
+     <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="110.10891" y="174.372172" transform="rotate(-0 110.10891 174.372172)">Count</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2"/>
+   <g id="patch_5">
+    <path d="M 10.38125 146.534281 
+L 209.836569 146.534281 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="98.26625" y="94.264531" transform="rotate(-0 98.26625 94.264531)">141</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle; fill: #ffffff" x="197.99391" y="94.004765" transform="rotate(-0 197.99391 94.004765)">19</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="110.10891" y="50.697812" transform="rotate(-0 110.10891 50.697812)">141 bare paper-prefixed atoms / 160</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="110.10891" y="132.116405" transform="rotate(-0 110.10891 132.116405)">19 structured: 18 implications + 1 conjunction</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="110.10891" y="15.558281" transform="rotate(-0 110.10891 15.558281)">Commitment formulas</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_6">
+    <path d="M 279.645931 146.534281 
+L 479.10125 146.534281 
+L 479.10125 23.558281 
+L 279.645931 23.558281 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 279.645931 103.280654 
+L 476.387572 103.280654 
+L 476.387572 79.533564 
+L 279.645931 79.533564 
+z
+" clip-path="url(#pf0173d409f)" style="fill: #aeb5ba"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 476.387572 103.280654 
+L 479.10125 103.280654 
+L 479.10125 79.533564 
+L 476.387572 79.533564 
+z
+" clip-path="url(#pf0173d409f)" style="fill: #28677e"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#md308ac8921" x="279.645931" y="146.534281" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="279.645931" y="161.131937" transform="rotate(-0 279.645931 161.131937)">0</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#md308ac8921" x="378.695171" y="146.534281" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="378.695171" y="161.131937" transform="rotate(-0 378.695171 161.131937)">73</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#md308ac8921" x="479.10125" y="146.534281" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="479.10125" y="161.131937" transform="rotate(-0 479.10125 161.131937)">147</text>
+     </g>
+    </g>
+    <g id="text_13">
+     <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="379.37359" y="174.372172" transform="rotate(-0 379.37359 174.372172)">Count</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4"/>
+   <g id="patch_9">
+    <path d="M 279.645931 146.534281 
+L 479.10125 146.534281 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="378.016752" y="94.264531" transform="rotate(-0 378.016752 94.264531)">145</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="379.37359" y="50.697812" transform="rotate(-0 379.37359 50.697812)">145 not shared / 147 symbols</text>
+   </g>
+   <g id="patch_10">
+    <path d="M 464.205462 69.907029 
+Q 470.160154 74.140965 476.114845 78.374901 
+" style="fill: none; stroke: #28677e; stroke-width: 0.8; stroke-linecap: round"/>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; text-anchor: middle; fill: #28677e" x="457.391828" y="67.660019" transform="rotate(-0 457.391828 67.660019)">2</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="379.37359" y="132.116405" transform="rotate(-0 379.37359 132.116405)">2 bridge-linked; 0 source-only shared</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="379.37359" y="15.558281" transform="rotate(-0 379.37359 15.558281)">Symbols across papers</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p1e2769b7ac">
+   <rect x="10.38125" y="23.558281" width="199.455319" height="122.976"/>
+  </clipPath>
+  <clipPath id="pf0173d409f">
+   <rect x="279.645931" y="23.558281" width="199.455319" height="122.976"/>
+  </clipPath>
+ </defs>
+</svg>

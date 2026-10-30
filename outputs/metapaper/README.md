@@ -1,18 +1,11 @@
-# ARA methodology deliverables — version 4
+# ARA methodology — unified version 5
 
-Open **metapaper.pdf** for the report. **metapaper.md** is the editable source; **metapaper.html** is the print intermediate.
+Open metapaper.pdf. The report is organized by L/T/H boundaries, construction, freeze/forks, search, backward/forward gaps, hypothesis premises, writing gates, runtime/accounting, limits and §10 credits. The current revision supersedes the earlier v5 status addendum, preserved at ../v5-checkpoint-0229/; v1–v4 remain unchanged.
 
-- **figures/**: deterministic SVGs and the data/source manifest.
-- **data.json**: frozen correspondence and human-action summaries; source hashes; per-receipt accounting; provider/stage aggregates; pilot gate records; numerical-claim index; figure inputs; supplementary facts and finding placement.
-- **prompts.md / prompts.json**: exact recorded instruction variants, with source-receipt and prompt hashes. Dynamic source inputs, complete schemas, and effective provider instructions remain in private raw receipts; this supplement is not a complete replay package.
-- **verification.json**: PDF checks, accounting reconciliation, anonymity result and artifact hashes.
-- **preview-*.png**: contact sheets covering every PDF page.
-- **make_figures.py / render_pdf.py**: local figure and PDF reproduction helpers. Run with a Python environment containing matplotlib, numpy, playwright, pypdf, pypdfium2, markdown-it-py, and Pillow. The renderer uses the installed Chromium headless shell identified in the brief and blocks browser network access. Run the figure helper, then the PDF helper. PDF regeneration replaces the rendering receipt; rerun the private identifier scan before redistribution.
+metapaper.md is editable source; data.json records numerical claims, historical and current source hashes, human actions, credits and findings. figures/ contains deterministic SVGs and their manifest. prompts.md/json retain historical recorded prompt examples, not a complete current replay package. verification.json records executed checks and artifact hashes. preview images cover all PDF pages.
 
-The report distinguishes the frozen correspondence checkpoint, the fork-6 accounting lineage, and later local worker supplements. It does not certify an accepted competition entry, complete campaign accounting, or a resolved L3 result. Identity scans cover the delivered content; private source logs are not included as raw copies.
+Use make_figures.py then render_pdf.py in the existing local rendering environment. The PDF helper uses local Chromium with network blocked; rerendering replaces its basic verification receipt. Repeat anonymity and final evidence checks before redistribution. SVGs are byte-deterministic; no byte-determinism is claimed for Chromium PDFs.
 
-Thirty material findings are placed in the report; its closing placement record identifies each destination. The next research work belongs to the ongoing L3/integration effort, outside this document-production task.
+The report marks live work pending with timestamps. Rendering proves neither native audit/export success nor philosophical truth. Final submission selection remains with the operator. All 61 material findings have named destinations in Appendix B.
 
-Version 3 preserves the historical v2 tables and adds gap1r recovery and target-admission refusal, pinned client-window findings, offline packing versus pending A/B forks, R5–R6 audit and citation failures, an eight-finding independent review ledger with dispositions, and explicit zero-substantive-novelty status. Current pending items are in data.json and the report. V1 and v2 remain untouched. The prompt supplement retains its historical inspected scope; new task briefs are identified in the evidence register rather than presented as generation prompts. The fork-6 accounting charts keep their original scope; fresh gap1/gap1r usage is separate.
-
-Version 4 credits 39 distinct Codex worker IDs plus one Claude orchestrator. Exact worker model pins are unrecorded; campaign attribution and live-roster evidence are distinguished. Credits and human actions extend through 2026-10-29 21:09:25 UTC. The research checkpoint remains 20:41:14 UTC, with later literature/closure receipts explicitly dated in §10.4. V1–v3 remain untouched. Eight deterministic figures retain their historical scope.
+Central representation finding is independently recomputed in data.json/vocabulary_bottleneck and Figure 3:141/160 paper-prefixed atom commitments;2/147 symbols cross papers only through the alignment bridge,zero source-only sharing. Sigma17 repair pending; wider forward sweep stop requested after zero-lead truncated census.

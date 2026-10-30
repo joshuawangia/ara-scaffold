@@ -1,0 +1,21 @@
+{
+  "id": "gap-T2-analysis",
+  "stage": "pdf",
+  "words": 3879,
+  "bib": 17,
+  "markers": null,
+  "flags_per_sample": null,
+  "refusal_reason": null,
+  "pdf": "/home/dev/ara-work/reports/candidates/gap-T2-analysis/paper.pdf",
+  "kind": "analysis_of_ARA_output",
+  "native_derived_route": false,
+  "audit_status": "not run; native typed/k=3 audit not claimed",
+  "opus_polish": "not run",
+  "final_selection": "reserved to operator",
+  "native_export": false,
+  "citation_occurrences": 26,
+  "word_count_method": "Whitespace tokens in complete Markdown, including references and production statement; PDF-inclusive count checked separately",
+  "pdf_inclusive_words": 4064,
+  "verification": "verification.json",
+  "gap2_outcome": "pending at source snapshot"
+}

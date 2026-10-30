@@ -1,0 +1,74 @@
+[
+  {
+    "id": "fork-outcomes",
+    "file": "figures/fork-outcomes.svg",
+    "caption": "Recorded A/B/C terminal outcomes. B alone retains one partial sign argument, which is not L3 and remains OPEN. C tests the externally supplied biconditional and each direction; its six routes contain no accepted inference. Counts do not measure novelty or establish a causal effect of context length.",
+    "data": {
+      "forks": [
+        {
+          "id": "A",
+          "targets": 27,
+          "open_roots": 54,
+          "open_partial": 0,
+          "routes": 54,
+          "closed_derived": 0,
+          "substantive": 0
+        },
+        {
+          "id": "B",
+          "targets": 20,
+          "open_roots": 39,
+          "open_partial": 1,
+          "routes": 40,
+          "closed_derived": 0,
+          "substantive": 0
+        },
+        {
+          "id": "C",
+          "targets": 3,
+          "open_roots": 6,
+          "open_partial": 0,
+          "routes": 6,
+          "closed_derived": 0,
+          "substantive": 0
+        }
+      ],
+      "source": "reports/overnight/gap1pu/handoff.md"
+    }
+  },
+  {
+    "id": "missing-bridge",
+    "file": "figures/missing-bridge.svg",
+    "caption": "A schematic explanation of the missing links. The complete general Retraction Rule is available in the rich extraction but absent from the old freeze; it is nominated for gap2. The diagram does not assume that the missing truth bridge is true or that it is the only possible strategy. All parameters must refer to the same belief, assertion and contexts.",
+    "data": {
+      "logic": {
+        "scope": "Analyst-created propositional skeleton, not an ARA trace or a countermodel of either full philosophical theory",
+        "premises": [
+          "K implies S",
+          "F implies R"
+        ],
+        "witnesses": [
+          {
+            "K": false,
+            "S": false,
+            "F": false,
+            "R": false,
+            "fails": "not S implies R"
+          },
+          {
+            "K": false,
+            "S": true,
+            "F": false,
+            "R": true,
+            "fails": "R implies not S"
+          }
+        ]
+      },
+      "sources": [
+        "Mighty Knowledge PDF5,23–24",
+        "Assessment Sensitivity printed108–111",
+        "reports/overnight/gap2/source-anchor-review.md"
+      ]
+    }
+  }
+]

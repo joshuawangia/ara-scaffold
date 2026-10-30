@@ -27,3 +27,8 @@ Nothing here is a submission verdict. Route selection is the operator's.
 
 Not included (too large for git): event-derived methodology for pi3 quality3/4 (~400 MB each) at
 `/home/dev/ara-work/reports/papers/pi3-quality{3,4}-methodology.md`, run directories, evidence trees.
+
+## Candidates (all routes drafted; operator selects)
+
+`candidates/<id>/` holds each candidate's paper.pdf, paper.md and status.json (stage, words, citations,
+audit flags, refusal reason). `gap-T2-analysis` is an analysis of ARA output, not an ARA-derived route.

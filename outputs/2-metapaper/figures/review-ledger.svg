@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="483.12pt" height="313.776pt" viewBox="0 0 483.12 313.776" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Deterministic v6 figure from recorded evidence</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 313.776 
+L 483.12 313.776 
+L 483.12 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="table_1">
+    <g id="patch_2">
+     <path d="M 7.2 21.639357 
+L 86.8824 21.639357 
+L 86.8824 7.2 
+L 7.2 7.2 
+z
+" style="fill: #edf1f3; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_1">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="47.0412" y="17.27753" transform="rotate(-0 47.0412 17.27753)">Boundary</text>
+    </g>
+    <g id="patch_3">
+     <path d="M 86.8824 21.639357 
+L 274.3704 21.639357 
+L 274.3704 7.2 
+L 86.8824 7.2 
+z
+" style="fill: #edf1f3; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_2">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="180.6264" y="17.27753" transform="rotate(-0 180.6264 17.27753)">Failure found</text>
+    </g>
+    <g id="patch_4">
+     <path d="M 274.3704 21.639357 
+L 475.92 21.639357 
+L 475.92 7.2 
+L 274.3704 7.2 
+z
+" style="fill: #edf1f3; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_3">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="375.1452" y="17.27753" transform="rotate(-0 375.1452 17.27753)">Disposition / limit</text>
+    </g>
+    <g id="patch_5">
+     <path d="M 7.2 52.443318 
+L 86.8824 52.443318 
+L 86.8824 21.639357 
+L 7.2 21.639357 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_4">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="15.16824" y="39.899189" transform="rotate(-0 15.16824 39.899189)">Identity</text>
+    </g>
+    <g id="patch_6">
+     <path d="M 86.8824 52.443318 
+L 274.3704 52.443318 
+L 274.3704 21.639357 
+L 86.8824 21.639357 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_5">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 33.297685)">S12: fixture drift; gap1</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 46.500693)">echoed IDs</text>
+    </g>
+    <g id="patch_7">
+     <path d="M 274.3704 52.443318 
+L 475.92 52.443318 
+L 475.92 21.639357 
+L 274.3704 21.639357 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_6">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 33.298115)">Runtime binding / resume;</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 46.500263)">semantics separate</text>
+    </g>
+    <g id="patch_8">
+     <path d="M 7.2 102.499756 
+L 86.8824 102.499756 
+L 86.8824 52.443318 
+L 7.2 52.443318 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_7">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 73.727455)">Output</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 86.930463)">evidence</text>
+    </g>
+    <g id="patch_9">
+     <path d="M 86.8824 102.499756 
+L 274.3704 102.499756 
+L 274.3704 52.443318 
+L 86.8824 52.443318 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_8">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 73.727885)">NP-F1–3; R2-F1/F2;</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 86.930033)">DLV-F1</text>
+    </g>
+    <g id="patch_10">
+     <path d="M 274.3704 102.499756 
+L 475.92 102.499756 
+L 475.92 52.443318 
+L 274.3704 52.443318 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_9">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 60.525307)">Screening, titles,</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 73.727455)">occurrence IDs, citations</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 86.930463)">and retry dissent</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 100.133471)">retained</text>
+    </g>
+    <g id="patch_11">
+     <path d="M 7.2 142.929955 
+L 86.8824 142.929955 
+L 86.8824 102.499756 
+L 7.2 102.499756 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_10">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="15.16824" y="125.572707" transform="rotate(-0 15.16824 125.572707)">Novelty</text>
+    </g>
+    <g id="patch_12">
+     <path d="M 86.8824 142.929955 
+L 274.3704 142.929955 
+L 274.3704 102.499756 
+L 86.8824 102.499756 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_11">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 118.971633)">R28-F1/F2: padding /</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 132.173781)">inconsistent union</text>
+    </g>
+    <g id="patch_13">
+     <path d="M 274.3704 142.929955 
+L 475.92 142.929955 
+L 475.92 102.499756 
+L 274.3704 102.499756 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 112.369699)">Closed in reviewed xi29;</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 125.572707)">real novelty still</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 138.775715)">unproved</text>
+    </g>
+    <g id="patch_14">
+     <path d="M 7.2 173.733916 
+L 86.8824 173.733916 
+L 86.8824 142.929955 
+L 7.2 142.929955 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_13">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="15.16824" y="161.189358" transform="rotate(-0 15.16824 161.189358)">Context</text>
+    </g>
+    <g id="patch_15">
+     <path d="M 86.8824 173.733916 
+L 274.3704 173.733916 
+L 274.3704 142.929955 
+L 86.8824 142.929955 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_14">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 154.587854)">S13-F1/F2:</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 167.790861)">stage/provider mismatch</text>
+    </g>
+    <g id="patch_16">
+     <path d="M 274.3704 173.733916 
+L 475.92 173.733916 
+L 475.92 142.929955 
+L 274.3704 142.929955 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_15">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 154.588283)">Normalized before</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 167.791291)">cache/admission</text>
+    </g>
+    <g id="patch_17">
+     <path d="M 7.2 204.537878 
+L 86.8824 204.537878 
+L 86.8824 173.733916 
+L 7.2 173.733916 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_16">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 185.391815)">H</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 198.594823)">disclosure</text>
+    </g>
+    <g id="patch_18">
+     <path d="M 86.8824 204.537878 
+L 274.3704 204.537878 
+L 274.3704 173.733916 
+L 86.8824 173.733916 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_17">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 185.392245)">X32-F1–3: padding /</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 198.595253)">negation / hidden H</text>
+    </g>
+    <g id="patch_19">
+     <path d="M 274.3704 204.537878 
+L 475.92 204.537878 
+L 475.92 173.733916 
+L 274.3704 173.733916 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_18">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 185.392245)">Runtime disclosure; gap3h</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 198.595253)">not derived</text>
+    </g>
+    <g id="patch_20">
+     <path d="M 7.2 235.341839 
+L 86.8824 235.341839 
+L 86.8824 204.537878 
+L 7.2 204.537878 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_19">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="15.16824" y="222.79771" transform="rotate(-0 15.16824 222.79771)">Retrieval</text>
+    </g>
+    <g id="patch_21">
+     <path d="M 86.8824 235.341839 
+L 274.3704 235.341839 
+L 274.3704 204.537878 
+L 86.8824 204.537878 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_20">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 216.195776)">PACK-F1/F2: missing</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 229.398784)">vocabulary / bases</text>
+    </g>
+    <g id="patch_22">
+     <path d="M 274.3704 235.341839 
+L 475.92 235.341839 
+L 475.92 204.537878 
+L 274.3704 204.537878 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_21">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 216.196206)">Packing2 offline basis</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 229.399214)">coverage restored</text>
+    </g>
+    <g id="patch_23">
+     <path d="M 7.2 266.145801 
+L 86.8824 266.145801 
+L 86.8824 235.341839 
+L 7.2 235.341839 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_22">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 247.000168)">Proof</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 260.203175)">quality</text>
+    </g>
+    <g id="patch_24">
+     <path d="M 86.8824 266.145801 
+L 274.3704 266.145801 
+L 274.3704 235.341839 
+L 86.8824 235.341839 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_23">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 246.999738)">PACK-F3; N4-F1:</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 260.202746)">unrelated failure</text>
+    </g>
+    <g id="patch_25">
+     <path d="M 274.3704 266.145801 
+L 475.92 266.145801 
+L 475.92 235.341839 
+L 274.3704 235.341839 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_24">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 247.000168)">Pass retracted; causal</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 260.203175)">controls repaired</text>
+    </g>
+    <g id="patch_26">
+     <path d="M 7.2 306.576 
+L 86.8824 306.576 
+L 86.8824 266.145801 
+L 7.2 266.145801 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_25">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 282.617678)">Inline</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(15.16824 295.819826)">output</text>
+    </g>
+    <g id="patch_27">
+     <path d="M 86.8824 306.576 
+L 274.3704 306.576 
+L 274.3704 266.145801 
+L 86.8824 266.145801 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_26">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 282.617678)">Combined 3a365a5: 6/6</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(105.6312 295.819826)">seam tests</text>
+    </g>
+    <g id="patch_28">
+     <path d="M 274.3704 306.576 
+L 475.92 306.576 
+L 475.92 266.145801 
+L 274.3704 266.145801 
+z
+" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 0.5; stroke-linejoin: miter"/>
+    </g>
+    <g id="text_27">
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 276.015744)">Reviewed; live</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 289.218752)">publication verdict</text>
+     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif" transform="translate(294.52536 302.42176)">pending</text>
+    </g>
+   </g>
+  </g>
+ </g>
+</svg>

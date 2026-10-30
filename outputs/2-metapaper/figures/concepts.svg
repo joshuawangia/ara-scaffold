@@ -124,7 +124,7 @@ Q 340.1586 98.576208 340.1586 98.947656
 L 340.1586 134.606664 
 Q 340.1586 134.978112 340.6608 134.978112 
 z
-" clip-path="url(#pd31dc07be7)" style="fill: #ffffff; stroke-dasharray: 3.7,1.6; stroke-dashoffset: 0; stroke: #28677e; stroke-linejoin: miter"/>
+" clip-path="url(#pd31dc07be7)" style="fill: #ffffff; stroke: #aeb5ba; stroke-linejoin: miter"/>
    </g>
    <g id="patch_10">
     <path d="M 136.25363 117.148608 
@@ -301,7 +301,7 @@ Q 340.1586 227.840112 340.1586 228.21156
 L 340.1586 263.870568 
 Q 340.1586 264.242016 340.6608 264.242016 
 z
-" clip-path="url(#pd31dc07be7)" style="fill: #ffffff; stroke-dasharray: 3.7,1.6; stroke-dashoffset: 0; stroke: #28677e; stroke-linejoin: miter"/>
+" clip-path="url(#pd31dc07be7)" style="fill: #ffffff; stroke: #aeb5ba; stroke-linejoin: miter"/>
    </g>
    <g id="patch_25">
     <path d="M 136.25363 246.412512 
@@ -451,79 +451,75 @@ z
     <text style="font-size: 11px; font-family: 'DejaVu Serif', serif; text-anchor: middle; fill: #28677e" x="424.026" y="24.915772" transform="rotate(-0 424.026 24.915772)">Runs / candidates</text>
    </g>
    <g id="text_4">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="76.398882" transform="rotate(-0 69.975 76.398882)">L / T / H boundaries</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="76.398882" transform="rotate(-0 69.975 76.398882)">L: licensed moves</text>
    </g>
    <g id="text_5">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(167.369203 70.997652)">Source stance, licensed rules,</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(191.049047 81.800113)">disclosed proposals</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(181.009125 70.998003)">Bank + solver + critical</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(213.785297 81.799761)">questions</text>
    </g>
    <g id="text_6">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(358.570688 70.998003)">Frozen source T; proposed P</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(400.260375 81.799761)">remains H</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="76.398882" transform="rotate(-0 424.026 76.398882)">Per-paper novelty; R28 padding</text>
    </g>
    <g id="text_7">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="119.48685" transform="rotate(-0 69.975 119.48685)">Construction of T</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="119.48685" transform="rotate(-0 69.975 119.48685)">T: frozen source theory</text>
    </g>
    <g id="text_8">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(180.275063 114.08562)">Windows, shared formal</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(185.410688 124.888081)">vocabulary, alignment</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(179.773031 114.08562)">Construct / consolidate /</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(224.360297 124.888081)">align</text>
    </g>
    <g id="text_9">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(348.052641 114.08562)">Gap1 recovery; gap2 STOP; gap3</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(405.962016 124.887378)">running</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="119.486499" transform="rotate(-0 424.026 119.486499)">Gap1r 160; gap3 243</text>
    </g>
    <g id="text_10">
     <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="162.574818" transform="rotate(-0 69.975 162.574818)">One freeze / forks</text>
    </g>
    <g id="text_11">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(167.49225 157.173939)">Authenticated prefix; counted</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(218.755688 167.975697)">context</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(180.963422 157.173939)">Preserve evidence; vary</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(216.017719 167.975697)">requests</text>
    </g>
    <g id="text_12">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(358.341469 157.173939)">A packed / B full / C external</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(418.161234 167.975697)">T2</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="162.574818" transform="rotate(-0 424.026 162.574818)">A/B/C; gap3p; packing2</text>
    </g>
    <g id="text_13">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="205.662786" transform="rotate(-0 69.975 205.662786)">Search through L</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="205.662786" transform="rotate(-0 69.975 205.662786)">Backward / forward gaps</text>
    </g>
    <g id="text_14">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(179.869359 200.261556)">Z3, CQs, both polarities,</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(205.322484 211.064017)">novelty gates</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(181.078031 200.261556)">Missing premises / joint</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(206.076938 211.063314)">consequence</text>
    </g>
    <g id="text_15">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="205.662786" transform="rotate(-0 424.026 205.662786)">100 OPEN; B partial; 0 derived</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="205.662786" transform="rotate(-0 424.026 205.662786)">T1–T9; forward zero leads</text>
    </g>
    <g id="text_16">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="248.750754" transform="rotate(-0 69.975 248.750754)">Gap discovery</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="248.750754" transform="rotate(-0 69.975 248.750754)">H: proposed premises</text>
    </g>
    <g id="text_17">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(162.432563 243.349524)">Backward comparison / forward</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(214.523578 254.151985)">synthesis</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="235.701" y="248.750754" transform="rotate(-0 235.701 248.750754)">Disclosed conditional route</text>
    </g>
    <g id="text_18">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(358.655766 243.349524)">T1–T9; 0 forward leads; stop</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(401.107641 254.151985)">requested</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(370.4985 243.349524)">Gap3h blocked; B/2, T2</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(401.954906 254.151985)">proposals</text>
    </g>
    <g id="text_19">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="291.838722" transform="rotate(-0 69.975 291.838722)">New bridge in H</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="291.838722" transform="rotate(-0 69.975 291.838722)">Output verification</text>
    </g>
    <g id="text_20">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(176.246156 286.437492)">Conditional-on-H / argued</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(215.938969 297.239953)">proposal</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(174.814594 286.437843)">Typed k=3, local citations,</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(212.066859 297.239601)">carry-over</text>
    </g>
    <g id="text_21">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="291.838722" transform="rotate(-0 424.026 291.838722)">Xi32, proposal mode: pending</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(365.434594 286.437492)">Two original PDFs; polish</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(405.484594 297.239953)">pending</text>
    </g>
    <g id="text_22">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="334.926339" transform="rotate(-0 69.975 334.926339)">Output gates</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="69.975" y="334.926339" transform="rotate(-0 69.975 334.926339)">Review / operation</text>
    </g>
    <g id="text_23">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(168.446391 329.525811)">Typed audit, k=3 union, local</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(216.085922 340.327569)">citations</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(181.729125 329.52546)">Exact heads; pause and</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(215.23725 340.327921)">diagnose</text>
    </g>
    <g id="text_24">
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(363.147328 329.52546)">Analysis PDF; sign + short</text>
-    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(406.794516 340.327921)">refused</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="424.026" y="334.92669" transform="rotate(-0 424.026 334.92669)">Ten-job rule; findings ledger</text>
    </g>
    <g id="text_25">
     <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: middle" x="258.3" y="374.93352" transform="rotate(-0 258.3 374.93352)">Dashed cells include pending work; arrows describe responsibility, not proven success.</text>

@@ -1,14 +1,14 @@
 # ARA from premises to papers: construction, search, and the limits of licensed inference
 
-*An anonymised methodology report · Version 5, concept-based revision · correspondence through 30 October 2026, 06:46:47 UTC · live checkpoints explicitly dated*
+*An anonymised methodology report · Version 6 · correspondence through 30 October 2026, 22:28:10 UTC; gap3h handoff and publication receipts checked 22:46 UTC · live checkpoints explicitly dated*
 
 ## Abstract
 
-ARA separates a bank of licensed moves (L), a frozen theory assembled from source commitments (T), and proposed hypotheses or targets (H). The scaffold was **designed and directed by a human, and built largely by AI coding agents under that direction**. This report organizes its development and use around those boundaries. Construction chooses which literature can enter T; window failures, source stance and atomic formalization can prevent a useful inference even when a passage has been acquired. Forks preserve one freeze while varying target context or hypotheses. Bank checks and polarity search then distinguish an admissible step from an unclosed obligation. The central representation bottleneck was measured directly in the shared freeze: 141/160 commitments were paper-prefixed atoms, and only two of 147 symbols spanned papers through a single alignment bridge. With no shared vocabulary in the source commitments themselves, wider bank-licensed search mostly constructed Boolean packages rather than the intended cross-paper inference. Completed packed, unpacked and externally seeded tests produced 100 OPEN routes and no substantive CLOSED-derived contribution. ARA did propose near-T2 targets; the exact T2 formulation came from a separate literature dossier. Output gates exposed unstable audits, citation loss and unsupported prose. The available fallback PDF analyzes those outcomes; two native sign-argument drafts were refused. Gap2 stopped before freeze. Gap3, shared-catalogue/wider-alignment repair, disclosed hypothesis-premise support and proposal-mode writing remain pending; the coordinator requested a stop to the larger forward run after its truncated census. The latter approaches separate arguing for a new bridge principle from mechanically deriving a conditional result. Deterministic figures, recorded human decisions, source hashes, worker credits and scoped cost accounting make the evidence and its limits inspectable.
+ARA separates licensed moves (L), a frozen source theory (T), and proposed targets or hypotheses (H). The scaffold was **designed and directed by a human, and built largely by AI coding agents under that direction**. Its distinctive engineering contribution is the enforcement of these boundaries through source provenance, one-freeze lifecycles, bank instantiation, polarity search, explicit hypothesis disclosure and independently gated prose. This report documents mechanisms and failures rather than claiming established priority over other research systems. The central finding is representational: gap1r froze 141 bare atoms among 160 commitments, with no symbol shared across source papers; its two bridge-linked symbols do not change that source-only result. The widened forward pass yielded no substantive leads. Gap3 retained the safety and retraction anchors but still had zero shared source symbols. Its packed continuation completed 46 polarity jobs, all OPEN with zero accepted inferences, while omitting complete target bases from model-visible requests. A later replay repaired basis coverage without claiming a new live derivation. Shared-vocabulary prompting alone likewise produced no source reuse in gap4a construction; consolidation remains unfinished. Output experiments exposed byte-identical audit prompts yielding 44 then zero flags, citation-stripping exports and unstable polish judgments. Conservative union audits, local citation verification, verified sentence carry-over and bounded inline repair address different failures. Two verified original proposal papers, B/2 and T2, have PDFs; they argue bridge principles without claiming mechanical derivation. Gap3h's combined source-plus-H route is featured as a conditional design, stopped before H formalization at the latest preflight. **Zero substantive novel CLOSED-derived contributions are established.** Deterministic figures, complete target inventories, revision-qualified review findings, human-action disclosure, credits and scoped accounting make this result inspectable.
 
 ## 1. L, T and H: the architecture and responsibility boundary
 
-The human chose the research area, supplied the bibliography, directed the scaffold, approved budgets and provider changes, and set acceptance and submission priorities. Coding agents implemented, reviewed and operated it. ARA generation used separate provider calls; isolation of those calls does not establish isolation of development workers. The operating rule prohibited the human from supplying original philosophical arguments, premises, distinctions or a personal view. Recording actions does not independently certify competition compliance. The human-action ledger now contains **38 timestamped entries**, plus earlier untimed design and bibliography preparation. Worker use of a native `HUMAN` input boundary does not count as a distinct human intervention. [R1–R3, R34]
+The human chose the research area, supplied the bibliography, directed the scaffold, approved budgets and provider changes, and set acceptance and submission priorities. Coding agents implemented, reviewed and operated it. ARA generation used separate provider calls; isolation of those calls does not establish isolation of development workers. The operating rule prohibited the human from supplying original philosophical arguments, premises, distinctions or a personal view. Recording actions does not independently certify competition compliance. The human-action ledger now contains **59 timestamped entries**, plus earlier untimed design and bibliography preparation. Worker use of a native `HUMAN` input boundary does not count as a distinct human intervention. [R1–R3, R34]
 
 Every later effort is an instance of the same process: represent admissible evidence in T; propose something in H; try to license a move through L; record what remains open; and gate any written account on its actual support. Proposal-mode writing and proposed hypothesis premises extend this process in different ways. Neither licenses quietly converting a new idea into source evidence.
 
@@ -24,7 +24,26 @@ Originality was pursued through several independent checks: avoiding direct rest
 
 {{fig:concepts}}
 
-This revision replaces the earlier chronological addendum with a concept-based account. Completed results are tied to their run or reviewed head. A live checkpoint is not a final result, a code review is not a philosophical validation, and a rendered PDF is not a native export. The companion data preserves earlier snapshots and records this revision's sources separately. V1–v4 and the earlier v5 checkpoint remain unchanged. [R34]
+This revision extends the concept-based account with completed construction/search evidence, proposal papers and the latest reviewed mechanisms. Completed results are tied to their run or reviewed head. A live checkpoint is not a final result, a code review is not a philosophical validation, and a rendered PDF is not a native export. The companion data preserves earlier snapshots and records this revision's sources separately. V1–v5 remain unchanged. [R34]
+
+### 1.1 What is distinctive, and what is not yet a novelty claim
+
+The system's unit of accountability is a licensed, source-bound move. A language model can suggest a target, a translation, a bridge or an explanation; none supplies its own formal authority. This differs in emphasis from a research-writing workflow whose principal artifact is a paper: here a paper must retain the status of the route beneath it. An OPEN graph remains OPEN after fluent exposition. A proposal remains proposed after publication. A formula proved from an H premise remains conditional on that premise. These are enforceable design commitments, not evidence that the underlying philosophy is correct. [R3, R52, R57]
+
+The AI Scientist describes idea generation, code execution, experiments, paper writing and automated review; STORM describes retrieval and multi-perspective pre-writing for grounded articles; SciAgents describes graph-based hypothesis generation and critique. Those are relevant neighboring aims. Their inspected abstracts do not supply enough implementation evidence to certify that any ARA feature is absent from every competing system. Our comparison therefore identifies ARA's implemented responsibilities and failure evidence, without an unsupported first-of-its-kind claim or a head-to-head benchmark. [R65]
+
+| Methodological contribution in this system | Concrete mechanism | Executed evidence and boundary |
+| --- | --- | --- |
+| Source-relative synthesis | Per-paper endorsed-closure novelty; allow joint entailment, reject padding and inconsistent unions | R28 fixes and placeholder cross-paper derivation; no substantive real-source novelty yet (§4.2). |
+| Stable evidence identity | Runtime binds immutable IDs; models return semantic decisions or local handles | Gap1 recovery completed 150 judgments; consolidation reused the lesson after r19 (§2.4, §2.7). |
+| Representation diagnosis | Count atoms and actual cross-source formula reuse separately from name prefixes | 141/160 atoms in gap1r; 212/243 in gap3; gap4a changed names without creating sharing (§2.7). |
+| Context without reduced authority | Pack model-visible evidence, retain full T for licensing; mandatory declared basis in packing2 | 46 maps and 92 cuts regain complete basis in offline replay (§3.4). |
+| Conservative output evidence | Fresh k=3 union with persistent adverse history; local frozen-T citation checks | 44→0 nondeterminism and bibliography-zero failures remain recorded (§7). |
+| Disclosed conditional research | H has no source-paper credit; runtime owns affirmative conditional disclosure | X32 review repairs; gap3h has no admitted H or completed derivation (§6.2–6.4). |
+| Resource-aware investigation | Pause after ten empty jobs; diagnose basis, sharing and responses before explicit resume | Reviewed native mechanism; historical gap3p diagnosis is retrospective (§4.5). |
+| Candidate accountability | Separate derived, partial, proposal and analysis paths; preserve refusal status | Two verified original proposal PDFs and explicit failed alternatives (§7.4). |
+
+The empirical lessons are strongest where a concrete failure was reproduced and a targeted repair was tested. Their general usefulness is plausible, but comparative superiority and philosophical novelty require further evidence. [R48–R64]
 
 ## 2. Constructing T: retrieval, windows, stance and alignment
 
@@ -70,7 +89,7 @@ Counting the papers attached to each symbol's formula occurrences through commit
 
 The bank cannot infer the internal content of an opaque proposition from its English name. In particular, an atom naming information-sensitive safety does not expose a reusable safety predicate, its arguments, or a conditional connecting the same assertion and contexts to retraction. The 19 non-atomic formulas and one disputed bridge did not supply the required cross-paper chain. Boolean conjunction/disjunction rules can still fire across otherwise disconnected atoms—as the forward census shows—but this packages premises rather than producing the intended substantive bridge. **No substantive cross-paper derivation was established in the recorded tests.** This is an evidence-based explanation of those outcomes, not a theorem that every possible bank application or future representation must fail. [R28, R44, R46]
 
-**Sigma r17 is pending at the 06:46:47 UTC instruction checkpoint.** The urgent repair investigates structured formalization against a shared run-level predicate/term catalogue and a much wider, budgeted alignment pool. It must preserve source stance and provenance, disclose model alignment, and avoid inventing equivalences. Replay metrics should compare atom share, cross-paper symbol reuse and candidate licensed cross-paper applications. No repaired freeze, replay improvement or successful route is credited yet. Whether gap3's remaining alignment can adopt a wider pool without violating plan identity is itself pending; its running lifecycle is not silently changed. [R47]
+**The r17 prompt and wider alignment mechanism are now implemented and reviewed; successful source sharing is not established.** Free replay on gap1r leaves source sharing at zero. A fresh gap4a construction later delivers the shared-vocabulary prompt but again produces zero actual cross-source reuse. The response is a separate accepted-content consolidation lifecycle, whose r18–r20 attempts are described in §2.7; r21 remains pending. These stages must not be described as a completed before/after improvement. [R49, R50, R60]
 
 ### 2.4 Immutable identity and resumable alignment
 
@@ -100,25 +119,50 @@ Exact-ID comparison found **five retained, 52 added and 154 lost source rows** r
 
 One rejected definition described Joey as maintaining a modal belief; this was a possible false author-attribution hit. Another diagnostic normalized nullable wire fields before applying correction patches: that repaired a schema issue but still left **94/95** required commitments. Neither diagnostic justified admitting the rejected window. Dinges and several newer comparison texts remained absent from native extraction; acquisition or an anchor nomination cannot manufacture their premises. [R35]
 
-### 2.6 Gap3 and construction repair: pending, with preserved checkpoints
+### 2.6 Gap3: the right passages survived, but their formal structure did not
 
-Gap3 runs a **fresh lifecycle on reviewed `f76c1b3`**, with exact L3 anchors and the older absolute construction limits: 70,000 batch / 100,000 working / 60,000 catalogue tokens, two corrections, and a run-level 600,000 context setting. Its actual plan is **77 windows / 147 slots / cap six**. An earlier preview had predicted 74 windows and 154 slots; the second startup instead produced cap three, below gap1's cap four. It was stopped before source generation and preserved. A corrected multiplier and a guard verified actual cap six before generation. The first startup had separately refused a missing brief path before any model call. These were disclosed recovery steps, not silently uninterrupted execution. [R36]
+Gap3 completed all **77 terminal construction windows**, freezing **243 source commitments across 23/26 papers**. Stances were **201 endorsed, 14 reported, 28 attacked**. All five Beddor–Goldstein anchors and six MacFarlane anchors survived; the two required safety anchors and the Retraction Rule were endorsed. Alignment judged **148 unrelated, one contrary and one right-to-left entailment**. Applying the judged set refused consistency, so no alignment bridge was added to the frozen source theory. Preserving a refusal is part of the result. [R48, R50]
 
-**Pending at 06:22:42 UTC:** 20 of 77 windows completed, **13 accepted / seven skipped**, with **70 working commitments from nine papers**. All 11 nominated anchors were present. These are in-progress working counts, not a freeze or completed coverage result. The pre-freeze guard requires at least 20 papers and endorsed Beddor–Goldstein safety/worldly-information anchors; alignment, the single freeze, source/formula review, L3 binding and target/search results remain pending. [R36]
+The freeze contained **212/243 bare atoms (87.24%)**, 212 distinct symbols and **zero symbols shared by at least two source papers**. Source coverage improved over gap1r, but the retained prose rule remained an opaque whole-claim atom. Textual possession of the safety anchor and Retraction Rule was necessary for a grounded attempt; it was insufficient for executable safety-to-retraction reasoning. Gap3's target/search outcomes appear in §4.4. [R48]
 
-The two accepted anchor windows preserve six MacFarlane roots and five Beddor–Goldstein roots, including the missing safety side. But **all 11 formulas are atomic**, with no connected conditional from those windows. MacFarlane's q4 preserves the permission/commission distinctions, q5 separates permissible rejection from obligatory retraction, and attacked n35 remains attacked. The retraction illustration remains reported. The Mighty Failure paraphrase substitutes a credence formulation for thinking that one might have passed; that change must not be treated as an established equivalence. Improved inclusion does not yet make the rule executable or establish faithful formalization. [R36]
+Sigma r16's dependency-safe partial acceptance, bounded split retry and more precise attribution screen precede the shared-vocabulary work. The report records a whole-response complexity bypass found and fixed during development. Safe parallel windows remain deferred: snapshot ordering, reservations, symbol collisions and crash/resume evidence are unresolved requirements. Primary-window and retry-entry counts must stay separate; gap4a's 79 primary windows generated 237 terminal entry receipts. No throughput benefit from concurrent construction is claimed. [R45, R60]
 
-Sigma r16 is **pending at this revision's 06:28:53 UTC instruction checkpoint**, with no final completion or review credited. Its requested native mechanisms are dependency-safe partial acceptance, one bounded split retry, corrected attribution false positives, and safe parallel windows. Flags are to default off; rejected items and their dependants must remain excluded. These changes must not alter the running gap3 lifecycle. A reviewed later lifecycle may opt in; the operator's later parallel-work instruction supersedes the earlier scheduling-only framing. The ~09:30 review target and ~10:00 gap3 freeze check are plans, not completion times. [R34, R37]
+The combined r16/r17 delivery at `de4fff8` completed **1,846/1,850 tests** (four skips) and **158/158 selected production-wire controls**; the final independent S17 review reported 382 checks and ten controls with no blockers. This supersedes the earlier r16 proof-pending checkpoint. It establishes tested implementation at that head, while parallel windows remain deferred and live source sharing remains zero. [R45, R49]
 
-**Later report snapshot, 30 October 06:44:42 UTC:** sigma16 describes local partial acceptance, one split retry and a precise construction attribution screen, but final full-suite/control/committed-file receipts and independent review remain pending. The focused recovery suite reports 40/40. A whole-response complexity bypass was discovered and fixed during implementation; the first full-suite run was interrupted for that fix and is not final proof. Dependency/symbol pruning and whole-response bounds remain required. **Parallel windows are deferred**, with no concurrency flag or no-op path: safe concurrency still needs deterministic snapshots, reservations, collision handling, ordered publication and crash/resume proof. Split children also require separate retry-entry versus primary-window coverage counts. Combined integration with hypothesis-premise work has not been tested at this checkpoint. These are author-reported local results, not a reviewed gap4 readiness verdict. [R45]
+### 2.7 Shared vocabulary, consolidation and the repeated identity lesson
+
+R17 (`de4fff8`) made shared-vocabulary prompting and wider alignment independently opt-in. The prompt asks for source-supported predicates, roles and terms against the growing catalogue; it no longer prefers paper-prefixed names. The wider pool uses signature compatibility and weighted lexical similarity with top-k neighbors and an explicit global cap. It is bounded lexical retrieval, not a semantic oracle. Defaults preserve the older path. Faithful atoms remain permitted; the runtime neither forces equivalence nor invents an ontology. Free replay changed no source formulas and demonstrated no improvement in source sharing. [R49]
+
+Gap4a is the live test of that prompt. At its completed construction checkpoint, **308 commitments from 21 papers** comprised **263 atoms, 38 implications, four conjunctions and three universals**, using **292 symbols**. Actual source sharing and exact-antecedent cross-paper modus-ponens opportunities were both **zero**. Only **75/263** atoms still began with their own source prefix: removing a prefix did not make two formulas reuse the same symbol. A recorded request contained the shared-vocabulary contract and 290 catalogue symbols, so absence of the new instruction does not explain this outcome. [R60]
+
+Gap4a's 2,000 selected alignment pairs came from a 3,338-pair top-k pool and 30,955 signature-compatible pairs. At the **20:10:10 UTC** checkpoint, disk policy had paused the run before the first alignment dispatch. No freeze, forward C3 sweep or searched route existed. Search was separately held after an offline counterexample showed its pinned code could omit a declared target basis. These are two distinct holds. The later packing2 repair does not hot-swap the already-running process. [R60]
+
+R18 introduced **accepted-content consolidation** in a fresh lifecycle. It imports verified terminal construction, re-formalizes accepted source commitments against a shared catalogue, runs new alignment, optionally admits H, and freezes once. Source IDs, text, citations, stance and provenance remain unchanged; old formulas and new formulas are both retained. Old alignment judgments bind old formulas and therefore cannot be silently carried into the new alignment. The nested consolidation receipt and provenance-v5 permit replay validation and disclosed model judgments. The same text can have a different proposed formal representation without becoming new source evidence. [R50]
+
+| Attempt | What executed | Stopping point | What cannot be claimed |
+| --- | --- | --- | --- |
+| Gap3v / r18 | Fresh consolidation attempted | First batch refused reuse/evidence-ID mismatches; zero accepted batches | No consolidated freeze or sharing result. |
+| Gap3v / r19 (`f11fc18`) | Runtime-owned slot/handle binding worked in live calls | Legacy attribution lexicon rejected consolidation definitions | Identity repair is not semantic success. |
+| Gap3v / r20 (`cdec8ff`) | 22/30 batches accepted, representing 181 commitments; 41 new model receipts: two canaries, 22 accepted and 17 rejected consolidation replies | Batch 23: seven formulas for eight slots, then eight with definition refusals, then seven again; bounded budget exhausted | Partial prefix is not a final consolidated theory. Zero alignment, target or search calls. |
+| R1 | `correspondence/log.txt`, frozen through 2026-10-30 22:28:10 UTC: decisions, iterations, human actions, and timing. |
+
+R19 generalizes gap1's lesson: do not ask a probabilistic model to echo immutable IDs. Runtime-owned handles bind formulas and evidence back to immutable source rows. R20 adds precise declaration-specific feedback; successful corrections demonstrate useful feedback, but the terminal batch shows that a correction can fix one constraint and regress another. R21's proposed response is structural cardinality plus failure isolation, not unlimited retries or manual invention of model text. R20's exact-head offline result was **1,987/1,991 tests** with four skips and **39 selected controls**; a real fork test remained unexercised because no new freeze existed. [R50, R51]
+
+{{fig:vocabulary-after}}
 
 {{fig:funnel}}
+
+The figure separates construction outputs, failed gates and distinct writing lineages. None of the proposal PDFs is counted as the endpoint of a CLOSED gap route.
 
 ## 3. One freeze, controlled forks, and context admission
 
 ### 3.1 Freezing a theory is an evidence boundary
 
 A lifecycle constructs and aligns T, then freezes once. Fork-from-freeze reuses that authenticated theory and its provenance; it does not import improved evidence retrospectively or make the experiments independent. Gap1r reused completed construction and accepted alignment judgments. A/B/C then reused its byte-identical freeze. Gap2's unaccepted rows never entered such a freeze; gap3 starts a new construction lifecycle. [R18, R28, R35, R36]
+
+{{fig:lifecycle}}
+
+A fork-from-freeze preserves T for a new target/search experiment. A construction-reuse lifecycle that consolidates formulas or adds H is different: it creates a new theory and freezes that new lifecycle once. The previous freeze remains intact. Reusing accepted stage receipts saves work without rewriting what a historical experiment knew. [R18, R50, R52]
 
 ### 3.2 Client windows and the refused target request
 
@@ -137,6 +181,18 @@ A's actual two-hop L3 context retained **three full and 157 compact commitments*
 Actual first-call usage was **60,702 input / 958 output / 3,968 cache-read** for A and **171,899 / 699 / 0** for B. The larger limit admitted a conservatively estimated request. These receipts do **not** show that the provider needed more than 200,000 actual input tokens or establish its maximum serving capacity. A/B also differed in ten semantic classifications before packing, despite identical pair inputs; token bounds differed, and there was only one arm of each type. Target-count differences cannot be causally attributed to packing. Their deterministic preparation was interrupted and explicitly recovered, with original receipts and freezes preserved; these were not uninterrupted runs. [R28]
 
 The completed fork outcomes are in §4. Raising an admission limit admitted a conservatively estimated request; it did not supply missing premises, improve the freeze or establish a causal quality benefit. Fresh usage is reported separately in §8. [R28]
+
+### 3.4 Packing must preserve the evidence that the model needs
+
+Gap3 exposed a later request boundary: **42/46 jobs failed before search model dispatch**, with roughly **720k input versus a 567k native bound** and a large novelty payload. Gap3s raised the configured window to 872k and cleared admission, but **67 CLI exits** exhausted reservation headroom: **0/46 completed, 36 failed and ten cancelled**. Their cause remained unknown in those receipts. It is not legitimate to infer the backend's actual context ceiling from these unknown exits. [R48]
+
+The first search-packing change reduced replay estimates from **730,729–733,092 to 47,195–49,558 input tokens**, with a 16,384 output allowance and 239,232 native bound. Gap3p's actual map estimates were **46,940–49,970** and cut estimates **58,243–61,287**. Full frozen-T licensing, novelty, stance and alignment gates remained intact. Yet every root request selected the same ten commitments: **34/46 omitted every basis row, 12 retained one, and zero retained a complete basis**. Both L3 polarities omitted all six declared safety/retraction anchors in mapping and cuts. An ID in a compact index does not supply the full source premise. The same L3 omission existed in gap3s; the evidence does not establish that packing introduced it. [R53, R54]
+
+Packing2 makes the declared basis mandatory through both polarities, child leaves, corrections and shrink attempts. It retains formal/alignment neighborhoods and full vocabulary for arbitrary open slots. Unknown IDs or an oversized mandatory payload refuse explicitly; mandatory evidence is not dropped to obtain an admission pass. On the **same 46 maps and 92 cuts**, offline replay retained the complete basis in every request, with **12 distinct root sets** and all six anchors in both L3 jobs. Estimates were **49,118–58,524** for maps and **60,421–69,841** for cuts, plus 16,384 output. These are request-replay results with zero generation, not proof that the model would produce a useful inference. [R54]
+
+{{fig:packing}}
+
+The deployment proof also needed correction. A reported 920-control pass was retracted when PACK-F3 found one mutation failing through unrelated AttributeError rather than its intended stance boundary. The repaired owning test at `1878759` detected the intended error. Main `bd60d6a` merged that repair, with 239 affected tests and **920 accepted inherited-plus-repaired controls**, not a fresh 920-control rerun. Later reviewed main `dcbc4b3` included full-basis packing, nested consolidation/provenance readers and native pause diagnosis; its merged affected gate was **274/275, one skip**. Historical live results stay attached to their original heads. [R54, R64]
 
 ## 4. L licenses moves; polarity search exposes open obligations
 
@@ -173,6 +229,18 @@ All three forks reached native `awaiting_selection`. No route had been selected 
 B's partial argument retains a sign inference and two source leaves; CQ1 is supported and CQ2 unsupported. One source's underlying inference is omitted. It remains OPEN and does not establish L3, but it does contain material that can be drafted and criticized. The all-candidates queue contains `gap1pu-B-sign`. C's exact biconditional and its two directions were disclosed external hypotheses from eps2's dossier, not ARA discoveries. Their formulas were whole-statement atoms; the biconditional and contextual quantification were not decomposed and the direction atoms were not formally linked. These are bounded unsuccessful tests, not countermodels or impossibility theorems. [R28, R33]
 
 No closed safety–retraction argument follows from those experiments. B's partial sign argument is useful enough to attempt writing, but its unsupported CQ and omitted underlying source inference remain obligations. C is the focused test of externally supplied T2; its six root-only routes contain no licensed step. ARA's near-T2 proposals, the exact external formulation and the partial sign argument must not be collapsed into one result. [R28]
+
+### 4.4 Gap3p: a completed unsuccessful search is not an impossibility result
+
+Gap3 retained **23 authenticated targets**. The exact T2 iff, if and only-if probes each had **zero admitted targets**; their refusals were preserved in later continuations rather than force-admitted. Gap3p reused the 23 retained targets and completed **46/46 polarity jobs**, publishing **46 OPEN routes**, **zero accepted inferences**, **zero CLOSED routes** and **zero eligible queue entries**. All 46 map replies were OPEN; all 92 cuts proposed nothing. Slot formalization and critical-question stages were never reached. No model-response rejection or sanitized CLI error explains this completed run. [R53]
+
+The retained L3 target challenges a sufficiency bridge and maps most closely to partially anticipated T1. A review flags a possible reversal of MacFarlane's sufficient retraction trigger into a necessary condition. Another admitted target combines a consistency-testing claim and a higher-order information claim in a fresh whole-claim atom; its reviewer labels it semantic packaging, although it is not the literal conjunction-padding pattern. Gate admission and distinct target IDs do not establish distinct substantive theses. Appendix C depicts every retained A/B/C and gap3p target with both polarity outcomes; its data retains full texts and route IDs. [R53]
+
+### 4.5 Pause after empty search, then diagnose the actual request
+
+The operator's **19:52:39 UTC** rule requires stopping after about ten completed jobs with no accepted inference. Gap3p was already terminal, so its first-ten diagnosis is retrospective: **zero licenses**, **zero complete bases in 30 map/cut requests**, and **ten root requests containing none of their declared basis**. The source premise sets also had zero cross-paper symbol sharing. Ten maps returned OPEN and twenty cuts empty proposals; these were schema-valid model responses. The diagnosis identified missing visible premises plus isolated vocabulary, not a transport error or proof of falsity. [R53]
+
+The reviewed native implementation defaults to **ten completed jobs**, counts bank-licensed inferences rather than accepted JSON, preserves completed jobs and emits a pause receipt with exit status 2. Diagnosis records actual packed basis coverage, shared symbols, model outcomes and sanitized rejection categories. Explicit resume starts the next preserved window; automatic reruns would defeat the rule. This mechanism is a resource and investigation policy, not a new logical license. The separate gap4a external guard is disclosed as such and has no live ten-job trigger to report. [R60, R64]
 
 ## 5. Finding gaps backward and forward
 
@@ -216,11 +284,11 @@ Backward investigation begins with a conflict, failed connection or proposed tar
 
 The old native forward pass on gap1r was bounded at depth two / 500 consequences and returned two packaging leads, with **zero substantive contributions**. The answer to whether every premise combination and route had been searched is therefore no. The bounds and available bank schemes delimit coverage. [R18]
 
-The **fwd sweep is pending at 06:28:53 UTC**. Its operator-approved brief directs the native forward path on the authenticated 160-commitment gap1r freeze at reviewed `f76c1b3`, with broader bounds and disclosed remaining truncation. Candidates must survive stance, SAT, licensed-inference, essential multi-paper support, per-paper novelty and anti-padding gates, then enter native target/polarity search. Literature verdicts would remain `pending-eps2` until checked. No completed sweep report, qualifying conclusion, route or queue count is credited here. This assignment explores premise combinations; it cannot repair missing evidence or justify the disputed alignment bridge by itself. [R39]
+The completed native gap1r census widened the bound to **depth six / 20,000 consequences**, producing **zero surviving candidates**, **zero recorded support conflicts**, and **truncated=true** in 493.733 seconds. Its retained consequences were **9,180 conjunction introductions, two conjunction eliminations and 10,818 disjunction introductions**. One further disjunction reached the insertion cap. Only 11 non-scoped deductive entries had fresh forward instantiation; 23 defeasible and two scoped deductive entries needed existing closed-route witnesses. The cap was spent on first-layer Boolean enumeration; configured depth is not observed search depth. The final fwd handoff credits zero candidates and no substantive cross-paper derivation. No exhaustive census or successful 50,000-consequence result is claimed. [R44, R59]
 
-**Later report snapshot, 30 October 06:44:42 UTC:** the completed depth-six / 20,000-consequence census reports **zero surviving candidates**, **zero recorded support conflicts**, and **truncated=true**, taking 493.733 seconds. Retained consequences comprise 9,180 conjunction introductions, two conjunction eliminations and 10,818 disjunction introductions; an additional licensed disjunction hit the insertion cap. Only 11 non-scoped deductive bank entries have fresh forward instantiation; 23 defeasible and two scoped deductive entries need existing closed-route witnesses. Rule order can exhaust the cap before later rules or layers, so configured depth does not prove depth reached. At that snapshot the **50,000-consequence general target pool and subsequent search remained running/pending**; no candidate route or queue addition is credited. Its 30-target / three-attempt proposal limits remain. This is a completed bounded census inside an unfinished sweep, not an exhaustive absence result. [R44]
+This is the forward signature of the construction defect: the engine can package opaque atoms with conjunction/disjunction but cannot extract their internal safety, context and obligation relations from their names. All A/B/C tests share this same theory and finish **100 OPEN / zero CLOSED-derived**. The initial two padding leads under a smaller bound were not new theses. R32's scheduling repair excludes standalone packaging enumeration and records rule/work coverage; its real gap4a census still awaits freeze. The formal representation, retrieval selection, bank coverage and stopping bounds are jointly limiting. The measurements support a unifying representation diagnosis without proving that every empty model proposal has one exclusive cause. [R28, R52, R59, R60]
 
-**Connection to construction:** the 20,000-consequence result is the operational signature of the sparse shared vocabulary measured in §2.3: 141/160 opaque commitment atoms, 147 zero-arity symbols, and only two cross-paper symbols supplied by the disputed bridge. The recorded conjunction/disjunction enumeration produced **zero leads**. A/B/C likewise ended **100 OPEN / zero CLOSED-derived**; changing packing or seeding exact T2 did not change their shared T. Together these observations identify inadequate shared formal structure as the unifying bottleneck. Enumeration order, bounded search, missing premises and source fidelity remain additional limits; the diagnosis is not a controlled ablation proving a single exclusive cause. At **06:46:15 UTC**, correspondence records the coordinator's instruction to **stop the wider forward sweep and prioritize sigma r17**. This is a stop request; no process-stop receipt or final 50,000-run result is credited in this report. [R1, R28, R44, R46, R47]
+Forward gap detection thus asks a demanding question: is there a licensed, non-padded consequence requiring premises from different papers that no one paper already yields? Adding model calls or removing paper prefixes alone does not answer it. The useful next measurement is actual shared formal structure followed by complete request-basis visibility and a licensed consequence, with a separate literature comparison. [R49, R53, R60]
 
 ## 6. H as a proposed bridge: conditional derivation versus argued proposal
 
@@ -228,17 +296,33 @@ The **fwd sweep is pending at 06:28:53 UTC**. Its operator-approved brief direct
 
 The missing sufficiency connection links worldly-information safety failure to an obligation concerning the same earlier assertion with fixed use and specified assessment contexts. A necessary condition on knowledge does not itself create that obligation. The necessity direction additionally needs an exhaustive or excluding premise covering the relevant grounds of obligatory retraction; a sufficient trigger cannot simply be reversed. Permission to reject, actual withdrawal, a knowledge claim and an obligation to retract are distinct. Gaining MacFarlane's prose rule is relevant, but neither its atomic encoding nor a generic alignment judgment supplies all those connections. [R27, R28, R35, R36]
 
-### 6.2 Hypothesis premises: a pending native extension
+### 6.2 Hypothesis premises and runtime-owned disclosure
 
-Xi r32 is **pending at 06:28:53 UTC**, not a completed derivation. The brief proposes admitting an explicitly disclosed bridge principle P through native construction before the single freeze, with `kind=hypothesis`, `stance=proposed`, a proposer, rationale and linked target. Normal formalization and consistency checks still apply. Hypotheses may not count as source papers or source support; a qualifying route must still have at least two source papers besides H, and simply restating P with padding must fail. Writer/audit roles must distinguish the paper's proposal from attributed source claims, and undisclosed H must prevent export. [R40]
+Xi r32 admits explicitly proposed H in a new construction-reuse lifecycle before its single freeze. Hypotheses carry `kind=hypothesis`, `stance=proposed`, origin, rationale and linked target; normal formula/signature and consistency checks apply. H receives **no source-paper credit**, no source evidence role and no automatic critical-question support. A qualifying cross-paper route must still use source premises from at least two papers in addition to H. The proposed bridge must not merely restate the target with irrelevant source padding. [R52]
 
-The intended result is **“conditional on H”**: mechanically deriving a thesis from P plus the frozen source premises. This does not mechanically derive or establish P itself. A displayed “if P, then T2/B1/B2” result requires an actual native derivation and an adequate representation of the conditional; the assigned feature and proposed config entries are not evidence that either exists yet. P must not merely restate the target, smuggle in a source endorsement or satisfy the multi-paper requirement by being counted as another paper. Gap4 hypothesis-premise work is a planned parallel lifecycle and must not alter gap3. [R40]
+Review found three concrete violations. **X32-F1** closed an H restatement padded with source content; **X32-F2** accepted negated or quoted conditional language as disclosure; **X32-F3** omitted H in summaries/receipts. The first repair closed F1/F3 but left typography/negation bypasses. R32c (`c42fcd5`) moved affirmative conditional disclosure into runtime-owned output, and the final review closed all three. Its full suite reported **1,914/1,918**, with four skips. The review validates those enforcement seams, not the soundness of an actual philosophical H. [R52]
 
-### 6.3 Proposal-mode papers argue for P
+The mathematical form is T plus disclosed H licensing C. The philosophical work of defending H remains separate. A source-stated safety condition cannot be silently promoted into the hypothesis's new normative implication; H also cannot count as a second paper. If a future native route closes, the paper must say which conclusion follows only on which H. It must still examine whether translating the source passages as those formulas is faithful. [R52, R61]
 
-Nu4's proposal mode is separately **pending at 06:28:53 UTC**. It is meant to let a paper state and defend a new bridge principle as its own proposal, with explicit reasoning, objections and the closest literature, while source claims retain citation requirements and unmarked unsupported claims fail. Proposed typed roles are `proposed_principle` and `argument_for_proposal`; k=3 union, bounded repair and local citation gates remain required. The assignments include exact T2, B/1, B/2 and A/3, followed by eligible new gap3/gap4 targets. These are assignments, not four completed papers or exports. [R41]
+### 6.3 Proposal-mode papers argue for the bridge
 
-Required origin labels distinguish **“ARA-proposed thesis; bridge principle argued, not mechanically derived”** for the native target proposals from **“eps2-proposed thesis (tested in ARA); bridge principle argued, not mechanically derived”** for exact T2. Both disclose **proposal-mode: argued, not ARA-derived**. A later conditional-on-H route would add a distinct mechanical result without erasing the argued status of H. Pi3's polish must preserve these labels. The existing fallback analysis remains a third category: analysis of the output, not a proposal-mode or native derived export. [R34, R40, R41]
+Proposal mode now has actual outputs. B/1, B/2 and A/3 retain **“ARA-proposed thesis; bridge principle argued, not mechanically derived”**; exact T2 retains **“eps2-proposed thesis (tested in ARA); bridge principle argued, not mechanically derived.”** These labels distinguish native target generation from the external dossier. A proposal paper can defend a bridge with reasons and objections even when the corresponding route is OPEN. This is a generated research proposal, not a proof that the bridge is true, new, or successfully derived by ARA. [R55]
+
+The final four-rule writing contract requires an origin label and one abstract disclosure; the bridge stated and defended under Proposal without false source attribution; cited faithful source claims; and no unsupported claim presented as established. Natural supporting reasoning may appear throughout. Repeated “this paper argues” prefixes are not required. B/2 and T2 passed original writer k=3 gates and have verified original PDFs; B/1 and A/3 remain refused. A/3 also exposed conflicting generic-versus-proposal role instructions: six union flags treated proposals as root argument steps, but three unsupported-claim findings still independently blocked it. The subsequent prompt clarification has no demonstrated live acceptance for that refused candidate. [R55, R56]
+
+{{fig:proposal-routes}}
+
+### 6.4 Featured combined gap3–T2 route: a conditional design with a real stopping point
+
+The intended combined paper would take gap3's retained Beddor–Goldstein safety commitment and MacFarlane Retraction Rule, disclose H_suff and H_nec, and present a mechanically licensed conditional T2 derivation if one exists. H_suff proposes that safety failure at later assessment, with use fixed, satisfies the Retraction Rule antecedent; the source rule is then separately needed for obligation. H_nec supplies the necessity/exhaustiveness direction. The proposed paper must defend those premises separately. Retraction being a sufficient trigger does not make it the only ground of retraction. [R61]
+
+**At 22:29:29 UTC on 30 October, no combined derivation exists.** The latest generation-free native reuse plan on reviewed `dcbc4b3` passed: **77 terminal windows, 243 commitments, 150 reusable accepted alignment judgments, zero remaining pairs**. Zeta's semantic preflight then stopped before formalization: the exact available symbols denote whole source claims, not individual safety failures and retraction obligations. A faithful expression of the two H premises over those fixed atoms has not been established. Xi2 confirms that the reviewed code has no separate pre-freeze semantic H-fidelity gate. Well-formed, consistent formulas alone would not certify the intended meaning. [R61]
+
+The receipt records **zero live calls, zero admitted hypotheses, no new freeze, zero generated targets, zero derived or CLOSED routes**, and no destination lifecycle created. This is a worker preflight block, **not a native solver/model refusal**. There is also a disk constraint: free space was 6,629,629,952 bytes; importing the preserved prefix plus one export would leave an estimated lower bound of 5,852,271,144, below the 6 GB search floor. Neither constraint authorizes changing source meanings or reporting a result early. [R61]
+
+{{fig:combined-route}}
+
+The diagram's dashed edges denote the intended research dependency, not accepted bank steps. The completed **22:33 UTC handoff** adds one **held fallback metadata item**, `gap3h-T2-combined`, with route ID null and dispatch hold `awaiting_native_grounding_admission`. The current watcher cannot consume that state. Thus “queued = 1” means **one grounding packet and zero licensed routes**, not a dispatched essay. Nu4 must implement and review truthful route-free grounding admission before it can enter writing; no fake OPEN route or accepted inference was manufactured. The packet binds all 11 anchors and two local PDFs, with 18 physical pages checked for bounds/readability. Those checks do not replace sentence-level local citation verification. No combined PDF is credited. [R61] A later result must replace this pending state with its exact H formulas, licensed steps, source-use proof, route ID and audit/export receipt.
 
 ## 7. Writing and verification are gates on output
 
@@ -306,13 +390,49 @@ The operator authorized drafting every eligible candidate; the operator retains 
 | gap-T2-analysis | PDF; rendered at the earlier v5 checkpoint | 3,879 complete-Markdown words; 4,064 PDF-inclusive words; 17 references; 10 pages / two figures. Analysis of ARA output. No native typed audit, export or Opus pass. Its gap2-pending statement is historical; §2.5 supersedes it here. |
 | gap1pu-B-sign | Refused, 03:14:26 UTC | 4,790 words, five bibliography entries; successive audit flags 92 → 101 → 32 → 18. Final 15 miscited + three unsupported claims; missing node n1; three repairs used. Final k=3, citation/originality verification and polish not reached. |
 | gap1pu-B-sign-short | Refused, 03:42:33 UTC | Writer failed the 2,500-word minimum. Attempt counts 1,412 / 1,373 / 0 / 1,203; 1,203 is the last rejected response, not a validated draft. Typed audit, final consensus, verification and polish not run. |
-| T2, B/1, B/2, A/3 proposal-mode assignments | Pending, 06:28:53 UTC | Native implementation, draft, audit, export and polish results not yet credited. |
+| B/1 proposal | Refused under four-rule standard | 3,171 native words; final samples [5,4,0], two historical adverse receipts, six union findings; three repairs spent. |
+| A/3 proposal | Refused under four-rule standard | 2,992 native words; [4,7,4], three historical adverse receipts, nine union flags; three substantive findings remain beyond role-policy conflict. |
+| B/2 proposal | Verified original PDF delivered, 19:36:05 UTC correspondence | Clean original [0,0,0]; 3,168 reading words including method note, excluding references; seven pages. Polished revision refused. |
+| Exact T2 proposal | Verified original PDF delivered, 19:36:05 UTC correspondence | Clean original [0,0,0]; 3,427 reading words on the same basis; eight pages. Polished revision initially failed title quotation fidelity; title-only recovery later passed citations but refused final audit [9,6,0], union 14. [R66] |
+| Combined gap3–T2 | Held fallback metadata, handoff 22:33 UTC | One queued grounding packet, zero licensed routes; native writer admission pending; no H admission or combined PDF. |
 
 The short retry's policy was an **orchestrator decision**, corrected in correspondence at **03:19:32 UTC**, not a separate human instruction or a competition minimum. For its three-node route with two direct source leaves from two papers, the policy used a 2,500 floor, 2,700 target, 3,000 requested limit and 6,000 runtime ceiling. Audit samples, repair limit and citation policy stayed unchanged. Its failure does not establish that short essays are impossible; it records this bounded writer attempt. Neither refused candidate was enqueued for polish. [R42]
 
 ### 7.5 Audit history and citation verification must survive retries
 
 R2-F1 exposed dropped partial adverse history on resume; R2-F2 exposed citation stripping. DLV-F1 then showed that valid adverse labels inside rejected schema retries of the current fresh batch could disappear when a corrected response was clean. Pi3's `3c9c8a4`, included in delivery round30b `6c6cf84`, unions those labels before verdict. The reviewed pipeline verifies frozen-T source evidence locally, restores only citation markers without changing prose, preserves semantic repair budgets, and independently checks support coverage before export. Missing local evidence is not positive mismatch evidence. Clean sampled judgments still do not prove source fidelity or statistical independence. [R23, R29, R31]
+
+### 7.6 Polish failures, carry-over and meaning-preserving edits
+
+Publication has its own gates. B/2 initially failed the isolation canary's string-format reporting; the operator approved a Claude-only list format while retaining strict empty-field semantics. The reviewed canary then passed. A subsequent context refusal was addressed with a publication-only counted bound, leaving Codex admission separate. Neither transport repair accepted the prose. B/2 used three semantic repairs; its last complete gate was **[0,1,1]**, and its final operator-stopped gate had only **[4,10]**. There is no third sample or clean final gate to infer. [R56]
+
+T2 polish moved from **[7,14,13] to [0,0,0]**, but native verification refused two quoted article titles. All six citation identity/locator checks passed; originality remained unverified/advisory and was not the refusal trigger. Formatting those exact titles in italics is a narrowly scoped correction, not permission to change substantive claims or bypass verification. On the operator's instruction, the delivered B/2 and T2 PDFs reproduce the verified pre-polish originals, retaining the original body/title hashes, origin labels and clean gate receipts. Their small status notes and deterministic reference/layout formatting are disclosed. The existing refused polished PDF is not a delivered success. [R56]
+
+{{fig:audit-flags}}
+
+Nu4's carry-over mechanism anchors each current sentence to a source draft with a complete clean native k≥3 gate, exact source hashes, matching outline/evidence/authorization and retained sentence offsets. Deterministic normalization permits ownership-prefix removal and limited typography/whitespace changes; it does not erase citations, logical symbols or arbitrary words. Adding or changing an ownership prefix requires meaning assessment. Citation markers and bibliography records must remain unchanged. Source roles remain effective, including inherited roles, without requiring incidental role labels to agree in every original sample. [R57]
+
+Other aligned edits receive **three fresh meaning samples**. Only unanimous equivalence inherits the source verdict. A different/uncertain vote, including a valid adverse vote in a malformed retry, leaves ordinary typed auditing in force. Failed equivalence does not itself refuse publication; the current text can still pass its ordinary audit. Decisions persist, preventing favorable rerolls. Unaligned sentences and unrelated adverse history retain ordinary treatment. This is a disciplined reuse of verified evidence, not a claim that meaning equivalence is mechanically decided. [R57]
+
+The native live probe used requested `gpt-6-luna`, with serving version unverified. Seven pair expectations passed: two rewordings received three equivalent votes each; quantifier/scope, attribution, negation, modality and claims-versus-sources scope changes received three different votes each. This is a small classifier/schema probe, not an accuracy estimate. The latest source-retry fix has **27 owning tests** and independent review at `757bdda`; the initial publication continuation used reviewed combined `3a365a5`; the later inventory repair advanced its pin to `6ddcaf1` (§7.8). [R57, R58]
+
+Pi3's inline repair uses verified source spans and current occurrence markers to repair unsupported elaborations locally. The combined reviewer exercised the native seam: accepted prefix removal survived raw model dissent, one unaligned unsupported sentence was deleted, and the final audit passed with one inline pass and zero whole-paper rounds. Fake providers and stubbed verification transport were used in that review, so it is not a live candidate success. **T2 subsequently refused the final audit after passing title/citation verification (§7.8); B/2 inline-repair outcome remains pending.** [R58]
+
+### 7.7 The candidate pipeline preserves result kinds
+
+A graph with a licensed inference can enter route writing, including an explicitly partial OPEN graph. Root-only hypotheses need separately authorized proposal mode. The fallback analysis describes the run and missing premises without claiming a native route. The success-only polish queue carries verified exports; refusals remain in status records. The operator chooses submission candidates after seeing these distinctions. A PDF renderer only lays out the supplied text; it cannot upgrade an OPEN route, an unaudited analysis or a refused polish revision. [R33, R55, R56]
+
+{{fig:candidate-pipeline}}
+
+### 7.8 Late T2 result: repaired formatting, preserved dissent, refused polish
+
+The first native title-only continuation replaced exactly four quotation characters with asterisks, leaving every other Markdown character unchanged. All six citation items verified. It then stopped before publication k=3 because the meaning stage returned **98 of 101 requested pairs**; its **47 equivalent / 51 different** votes were retained. A malformed inventory is not permission to erase its valid adverse evidence. [R66]
+
+A bounded shape correction was reviewed on integrated `6ddcaf1`: exactly two attempts per meaning sample, precise missing/extra/duplicate feedback and retained dissent, without changing prose or semantic repair budgets. Four owning regressions and twelve independent combined checks passed; four distinguishing controls were restored. The renewed native stage corrected a 99/101 inventory within its single correction. **All 51 previously adverse pairs remained adverse and none inherited**; overall, **40 of 101 pairs inherited** the source verdict and 61 stayed on ordinary audit. [R66]
+
+The final fresh publication samples were **[9,6,0]**, with **14 union flags over seven sentences**: seven unsupported-claim labels, five unsupported-elaboration labels and two original-draft-fidelity labels. A clean third sample did not override dissent. **Polished T2 remains refused.** No semantic editor ran; whole-paper repairs remain one and inline passes zero. The attempted polished draft is **3,786 reading words**. The automatic fallback metadata reports **3,385 words**, a different artifact; the delivered original PDF with its method note remains **3,427 words**. Its original file and audit evidence were not overwritten. [R66]
+
+This result narrows the earlier diagnosis: the title formatting defect is fixed, while final sentence-level support/fidelity still fails. It also supplies live evidence that malformed-response dissent survives the structural recovery. B/2 has started its separate same-draft inline continuation on the reviewed head; no final acceptance or replacement PDF is yet credited. [R66]
 
 ## 8. Runtime, prompts, human time and accounting
 
@@ -392,6 +512,12 @@ These components include local runtime canaries and reporting summaries, and exc
 
 No complete campaign total for gap2, gap3, the wider forward sweep, new writer work or this report is inferred from the older lineage. Partial live counters are not final invoices. New API spend of zero in a Codex run does not mean free subscription usage or zero authoring cost. [R28, R35, R36]
 
+#### Gap3p accounting: local continuation only
+
+The gap3p handoff reports **4,213,242 input tokens, 36,104 output tokens and 254,976 cache-read tokens**, with no cache writes or server tools in that local accounting. The 4,504,322 sum is a sum of receipt categories, not a new global token definition or subscription dollar estimate. Inherited gap3 construction must not be charged again. The broader campaign still lacks a reconciled authoring-agent, reviewer, consolidation and publication total. Failed/unknown CLI responses can retain reservation upper bounds; those are distinct from measured usage. [R53]
+
+R20 consolidation records 41 new accounted model receipts; imported unknown-usage receipts retain their reservation treatment. This report does not add call counts to token counts or assign subscription dollars from API list prices. New pipeline stages also mean that the historical prompt supplement is no longer a complete current replay package. [R51]
+
 ### 8.4 Coordination and reporting errors
 
 The coordinating agent acknowledged an idle period from **12:33:41 to 16:49:21 UTC on 28 October**, or **4 hours 15 minutes 40 seconds**. It waited for a go/no-go decision instead of starting an already available alternative in parallel. Earlier, its instruction to stop at “any cap” caused a worker to interrupt an extraction pass after a best-effort reconciliation refusal; that was a briefing error, not evidence that the corpus could not be processed. [R1]
@@ -400,11 +526,15 @@ Reporting itself needed repair. A **3.7 GB** HTML report crashed Chromium; a lat
 
 The original all-candidates short-length attribution was corrected rather than counted as an operator action. Old report directories were archived only after verification according to the correspondence; source hashes in this paper identify snapshots, not a guarantee that every old source path remains unpacked. The operator's recent scheduling and parallel-work instructions are disclosed in Appendix A. [R1, R42]
 
+A later orchestration failure was recorded at **15:50:34 UTC on 30 October**: no new paper had arrived during an approximately four-hour stall while disk reservations, a canary decision and idle cleanup work blocked progress. The orchestrator acknowledged that it had not noticed the stall and reassigned investigation. At 08:34:20 it had also recorded that correction messages ended workers' turns without continuation. These coordination failures are not model-search results; they affected elapsed delivery time. The operator subsequently required the orchestrator to limit its own investigation, rotated xi/kappa4 to xi2/kappa5, and adopted the ten-empty-job diagnostic rule. [R1]
+
+Evidence cleanup is itself an operational intervention. Janitor archived 55 directories with upload/download hash verification, freeing a reported 1.35 GB; active records and uncertain items were excluded. Later triage classified the screened hits as zero real secrets, 246 fake fixtures and zero unknown, without printing values. This does not certify all campaign logs secret-free. Worker-owned shared-memory cleanup was authorized separately, restricted to finished scratch with no process users. Meta deleted none in this revision. [R1, R63]
+
 ## 9. Novelty, reviewed mechanisms and the remaining limits
 
 ### 9.1 Honest novelty status
 
-**Zero substantive CLOSED-derived contributions have been established so far.** The measured paper-local atomic representation of T is the unifying explanation for the failed cross-paper synthesis (§§2.3, 5.3); sigma r17 is the pending repair. ARA did propose near-T2 hypotheses. That is a proposal-generation result, not a licensed argument, an exact match to the dossier's only not-found thesis, or priority in the literature. The exact T2 is eps2-proposed and externally tested in ARA. All A/B/C routes remained OPEN; the available B sign argument remained partial. The fallback analysis is a rendered analysis candidate; both native sign drafts refused. [R27, R28, R38, R42]
+**Zero substantive CLOSED-derived contributions have been established so far.** The measured paper-local atomic representation of T is the unifying explanation for the failed cross-paper synthesis (§§2.3, 5.3); r17 prompting alone did not establish sharing, and r18–r21 consolidation has no completed replacement freeze (§2.7). ARA did propose near-T2 hypotheses. That is a proposal-generation result, not a licensed argument, an exact match to the dossier's only not-found thesis, or priority in the literature. The exact T2 is eps2-proposed and externally tested in ARA. All A/B/C routes remained OPEN; the available B sign argument remained partial. The fallback analysis is a rendered analysis candidate; both native sign drafts refused. B/2 and T2 are now verified original proposal PDFs. Gap3p adds 46 OPEN root-only routes, and gap3h is blocked before H formalization. These updates do not change the zero substantive novel CLOSED-derived count. [R27, R28, R38, R42]
 
 The formal novelty gate is weaker than philosophical novelty. A target may pass source-relative checks without being a useful, faithful, defended or literature-new contribution. Conversely, a hypothesis may be interesting while lacking a missing bridge premise; accepting that premise as H would establish at most the disclosed conditional derivation, if actually licensed. Proposal-mode prose must argue for that premise. No pending feature or larger search is counted as its own success. [R11, R34, R39–R41]
 
@@ -421,7 +551,21 @@ The formal novelty gate is weaker than philosophical novelty. A target may pass 
 | Sigma15 anchors and context-derived budgets | Kappa4 merge verdict; 1,460/1,464 full tests, 77 Sigma controls and 25 synthetic-merge controls | No faithful new T or live pilot success follows. |
 | Xi31 integration at `f76c1b3` | 1,673/1,677 full tests; all 820 controls; no fixes needed | Four opt-in tests skipped; offline compatibility, not live or submission readiness. |
 
-The delivery round30b review separately ran 253/254 tests, 170 controls and 33 probes. Do not aggregate tests across heads into a claimed full-suite result. Sigma15's later full review closes the pending label from the earlier v5 checkpoint; xi31 checked the actual merge and retained both decision histories. Sigma16, xi32 and proposal-mode completion are still pending at this revision's checkpoint. [R21–R24, R27, R30, R31, R43]
+The delivery round30b review separately ran 253/254 tests, 170 controls and 33 probes. Do not aggregate tests across heads into a claimed full-suite result. Sigma15's later full review closes the pending label from the earlier v5 checkpoint; xi31 checked the actual merge and retained both decision histories. The later X32, packing, consolidation and output-gate findings below distinguish completed code repairs from pending live results. [R21–R24, R27, R30, R31, R43]
+
+| Later review finding | Corrective mechanism / disposition | Evidence boundary |
+| --- | --- | --- |
+| X32-F1/F2/F3 | H-restatement padding, nonaffirmative disclosure and hidden H; closed by r32c runtime-owned disclosure | Mechanism reviewed; gap3h has no actual admitted H. |
+| PACK-F1 | Open slots lost frozen vocabulary; packing2 retains full catalogue where dependency inventory is incomplete | Gap3p never reached slot formalization. |
+| PACK-F2 | Declared target basis omitted; mandatory basis now survives shrinking, polarity and child leaves | Offline replay restores 46/46 maps and 92/92 cuts; no useful live inference proved. |
+| PACK-F3 | Mutation failed for unrelated error; earlier 920 pass retracted and owning test repaired | Repaired plus inherited accepted controls, not a fresh 920 rerun. |
+| S17-F1/F2 | Compatibility/control issues closed on final r17 | Prompt delivery does not prove actual shared vocabulary. |
+| N4-F1 | No-reroll control exhausted fixture votes instead of testing persistence | Corrected control detects intended six-versus-three call failure; raw failed proof retained. |
+| Combined audit-inline | Exact reviewed union at 3a365a5, six independent seam checks, zero blockers | Fake-provider seam proof; candidate verification remains separate. |
+
+{{fig:review-ledger}}
+
+The review architecture separates author implementation, a non-author adversarial review, exact-head integration and live candidate evidence. A mutation count alone is insufficient: the failed assertion must exercise the intended boundary. Reviews also preserve stale failures and explicit retractions rather than replacing history with the latest green number. [R49, R52, R54, R57, R58, R62]
 
 {{fig:iterations}}
 
@@ -431,25 +575,28 @@ Source selection remains incomplete and access-bounded; literal stance and sourc
 
 Privacy's early API refusal did not change visibility; the later operator report and coordinator check did. Anonymity is checked on these deliverables, not inferred for raw logs. Source acquisition, exact model serving identity, statistical independence of audits, full campaign cost and competition readiness are not certified. [R1, R13]
 
-| Pending item | Last evidence checkpoint, UTC on 30 October | What remains unproven |
+| Pending item | Last explicit evidence checkpoint, UTC on 30 October | What remains unproven |
 | --- | --- | --- |
-| Gap3 | 06:22:42 | Completed construction/coverage, alignment, freeze, usable anchor formulas, L3 binding, search and candidates. |
-| Sigma16 | 06:44:42 report snapshot | Final implementation proof and review; parallel windows explicitly deferred. |
-| Native forward sweep | 06:46:15 stop instruction | 20,000 census complete, zero leads and truncated; stop requested for the unfinished wider run, final stop/result receipt not credited. |
-| Sigma17 shared vocabulary / wide alignment | 06:46:47 instruction checkpoint | Reviewed shared-predicate formalization, wider alignment, measurable cross-paper applications and usable repaired T. |
-| Xi32 hypothesis premises / planned gap4 | 06:28:53 instruction checkpoint | Reviewed native H support, one disclosed freeze, conditional routes and non-padding proofs. |
-| Nu4 proposal mode and pi3 polish | 06:28:53 instruction checkpoint | Native mode, labelled candidates, successful audit/export and polished PDFs. |
-| Operator submission selection | 06:28:53 instruction checkpoint | A final choice among delivered eligible candidates. |
+| Consolidation r21 / replacement gap3v freeze | 21:05:16 assignment | Stable cardinality and failure isolation; completed freeze, faithful formulas and after-sharing metrics. |
+| Gap4a alignment / C2 / C3 | 20:10:10 | First alignment dispatch blocked by disk policy; search also held on pinned basis-omission defect; no frozen or searched result. |
+| Combined gap3h–T2 | 22:29:29 preflight | Faithful H over existing atoms; adequate disk headroom; H admission, freeze, conditional route and paper. |
+| B/2 inline publication / combined grounding admission | Receipts collected at 22:46 UTC | B/2 final native verdict; gap3h route-free packet consumer. T2 title-only recovery is completed and refused (§7.8). |
+| Construction concurrency | R16 report, collected for v6 | Ordered snapshots, reservations, collisions and crash/resume correctness; no parallel-window benefit claimed. |
+| Philosophical novelty / submission choice | This revision's cutoff | Independent substantive evaluation, priority and operator's final selection. |
 
-A pending item receives no completed result bar or invented success count. This paper's locally verified PDF is not a substitute for any of those gates. [R34, R36, R37, R39–R41]
+A pending item receives no completed result bar or invented success count. The repaired search software now exists, while the next real shared-vocabulary freeze and successful cross-paper route do not. This paper's rendering checks are separate from native paper audit, source fidelity and competition eligibility. [R51, R53, R57, R60, R61, R64]
+
+### 9.4 What discovery this record actually supports
+
+The work generated hypotheses, located missing-premise obligations and discovered engineering failures that explain why apparently promising routes were empty. Those are useful research outputs with different warrant. A near-T2 target is a proposal; a mapped literature absence is bounded evidence; a conditional derivation would be a formal achievement relative to disclosed H; a substantive novel contribution requires a defensible claim beyond those ingredients. None of these categories should be collapsed into the number of PDFs. The strongest present contribution is an auditable method and a concrete negative result about this construction/search setup, with reproducible repairs and unresolved semantic work.
 
 ## 10. Credits
 
-The detailed historical rows below retain their recorded rounds and evidence. Their in-progress descriptions are dated to v4; the current updates in §10.6 and the concept sections supersede them. The new worker fwd brings the roster to **40 workers plus one orchestrator**. Agent IDs are not human names.
+The detailed historical rows below retain their recorded rounds and evidence. Their in-progress descriptions are dated to v4; the current updates in §10.6 and the concept sections supersede them. The roster now includes fwd and the three later workers janitor, kappa5 and xi2: **43 workers plus one orchestrator**. Agent IDs are not human names.
 
 ### 10.1 People, agent identifiers, and model evidence
 
-**The operator designed and directed the scaffold; AI coding agents built most of it under that direction.** The operator chose the topic and literature, approved budgets and providers, set acceptance criteria and research priorities, selected writing routes, and requested publication and this report. Appendix A records the human actions. All names below are **agent identifiers, not people**. There are **40 distinct workers plus one orchestrator**, or **41 credited agent roles**. The count excludes the operator. [R1, R26]
+**The operator designed and directed the scaffold; AI coding agents built most of it under that direction.** The operator chose the topic and literature, approved budgets and providers, set acceptance criteria and research priorities, selected writing routes, and requested publication and this report. Appendix A records the human actions. All names below are **agent identifiers, not people**. There are **43 distinct workers plus one orchestrator**, or **44 credited agent roles**. The count excludes the operator. [R1, R26]
 
 **Orchestrator — `brain` in correspondence, `@agent` in the live roster.** The recorded harness is Claude and the model family is Claude; an exact model/version pin is unrecorded. From 21–29 October it planned work, wrote briefs, dispatched approved worker contexts, sequenced author/reviewer work, merged branches, coordinated budgets/providers, and reported to the operator. It also arranged output publication. These coordination credits do not transfer human design or research decisions to the agent. Evidence: `correspondence/log.txt`, `briefs/meta-credits.md`, and the read-only roster receipt in `data.json/credits`. Its acknowledged mistakes are retained: the 70–90-token construction estimate (§2.2), the “stop at any cap” briefing error and idle period (§8.4), and the logged delay in submitting the xi r29 prompt on 29 October. [R1, R26]
 
@@ -517,7 +664,7 @@ Dates below are UTC calendar dates in October 2026 and identify recorded work/ro
 
 At **20:55:52 UTC**, eps2’s L3 dossier superseded the earlier “dossier pending” label: **nine analyst-generated candidate theses**, **four anticipated, four partially anticipated, one not found within scope**, plus **seven** further lawful full texts. The not-found thesis is the exact necessity-and-sufficiency claim linking safety failure to obligatory retraction. “Not found” does not establish novelty, viability, priority or a successful ARA derivation. The dossier also reports that both previously inaccessible modern comparison papers were now obtained and inspected; other access limits remain. Its thesis map must not be presented as targets that zeta generated. [R1, R27]
 
-At the v4 credit checkpoint, sigma14, nu4 R7, A/B/C and delivery integration were still pending. Their later completed receipts are now reported under construction/context (§§2–3), search (§4), writing (§7) and review (§9.2). New sigma16, xi32, forward-sweep and proposal-mode work remains pending at 06:28:53 UTC on 30 October. This preserves the difference between an assignment and an executed result. [R26–R43]
+At the v4 credit checkpoint, sigma14, nu4 R7, A/B/C and delivery integration were still pending. Their later completed receipts are now reported under construction/context (§§2–3), search (§4), writing (§7) and review (§9.2). Those historical pending entries are superseded by the executed and explicitly pending results in §§2–7 of this revision. This preserves the difference between an assignment and an executed result. [R26–R43]
 
 ### 10.5 Roster reconciliation and limits
 
@@ -531,7 +678,17 @@ Two filenames would otherwise double-count workers: `briefs/omicron2-review.md` 
 | --- | --- | --- |
 | **fwd** · Codex; model unrecorded | 30 Oct; native forward sweep | Operator-approved sweep of cross-paper premise combinations on gap1r's authenticated freeze at `f76c1b3`; preserve licenses, SAT, stance and anti-padding gates; send qualifying routes for writing and later eps2 literature checking. Sweep completion not credited; the bounded census and subsequent stop request are recorded in §5.3. Evidence: `briefs/fwd-sweep.md`; `reports/fwd-sweep.md`; correspondence. |
 
-**Omega retired from the active roster at 06:27:19 UTC** after finishing the recorded provider work; the orchestrator retired its idle context when assigning fwd. This does not erase omega's contributions in §10.3 or imply that fwd inherited its context. **Sigma** supplied the reviewed r15 mechanisms, reports r16 under verification with concurrency deferred, and now prioritizes pending r17 shared vocabulary and wider alignment. **Kappa4** completed the r15 independent review; **xi** verified integrated `f76c1b3` without repairs and now owns pending r32. **Zeta** completed A/B/C, documented and stopped gap2 before freeze, and operates gap3. **Nu4** recorded both refused sign candidates and owns pending proposal-mode writing; **pi3** waits for eligible exports and must preserve proposal-origin labels during polish. **Eps2** supplied the bounded dossier and the exact external T2; future forward candidates still need its literature assessment. **Meta** produced the fallback analysis and unified this methodology around the same L/T/H boundaries. The **orchestrator** coordinated the pipeline and corrected its mistaken attribution of the short-length policy to the operator. [R1, R34–R43]
+**Omega retired** at 06:27:19 UTC after the recorded provider work. **Kappa4** handed off at 19:46:59 and retired after **kappa5** accepted review ownership at 19:47:48; **xi** handed off at 20:06:45 and retired after **xi2** accepted at 20:07:37. Fresh contexts did not erase earlier findings or inherit unverified completion claims. **Sigma** owns construction/consolidation and gap3v; **zeta** owns gap3 continuations and source/route review; **fwd** owns gap4a and forward diagnostics; **nu4** owns writer/carry-over; **pi3** owns publication/inline repair. Meta writes this report without dispatching native generation or selecting a candidate. [R1, R49–R64]
+
+| Worker / harness / model | Dates / scope | Concrete contribution and evidence |
+| --- | --- | --- |
+| **janitor** · Codex; model unrecorded | 30 Oct; approved storage tasks | Preserved evidence manifests, archived and download-verified eligible run records; screened hits with no values exposed. Reports `janitor-evidence.md`, `janitor-records.md`, `janitor-secret-triage.md`. Operational cleanup does not establish research correctness. |
+| **kappa5** · Codex; model unrecorded | 30 Oct; successor non-author reviewer | Caught PACK-F3's unrelated-failure control and N4-F1's exhausted-vote control; reviewed search-pause/full-basis integration and audit-inline boundaries. Reports `kappa5-packing-review.md`, `kappa5-nu4-audit-inline-review.md`, `kappa5-inline-combined-review.md`. |
+| **xi2** · Codex; model unrecorded | 30 Oct; successor integration/search | Finished mixed-executor packing controls, retracted the unsupported pass, repaired the intended stance test and merged approved packing/pause/reader changes. Evidence `xi-packing2.md`, `overnight/gap3p/search-ready-checkpoint.md`. |
+
+The roster is **43 workers plus one orchestrator**. The credits describe recorded work, not an equal contribution claim or a complete per-worker serving-model log. Earlier exact model pins remain unrecorded unless an actual receipt supplies them. The orchestrator is recorded as a Claude model; under the current provider policy, Opus generation is restricted to the separately disclosed polish path. Earlier API extraction use is disclosed in §8.1. New requested `gpt-6-luna` meaning-probe usage is a runtime-stage receipt, not proof of every worker's model. [R57]
+
+{{fig:credits}}
 
 ## Appendix A. Complete recorded human-action entries
 
@@ -577,18 +734,38 @@ Timestamps are UTC. Entries are grouped exactly by correspondence record; one en
 | H36 · 2026-10-30 06:27:19 | Authorized proposal papers and hypothesis-premise work in parallel without stopping ongoing work; asked whether premise combinations and routes were being used to find literature gaps. The coordinator disclosed bounded earlier forward coverage, retired idle omega and assigned the native fwd sweep. |
 | H37 · 2026-10-30 06:28:39 | Approved the proposed hypothesis-premise extension; the coordinator assigned xi round32. |
 | H38 · 2026-10-30 06:28:53 | Requested an immediate metapaper update unified under ARA base concepts. |
+| H39 · 2026-10-30 08:14:07 | Authorized autonomous progress while away and requested skepticism that produces results; no permission to overstate outcomes. |
+| H40 · 2026-10-30 08:15:11 | Required the orchestrator to limit its own work; source investigation to owners and merges after independent review. |
+| H41 · 2026-10-30 08:28:44 | Restricted cleanup to unnecessarily stored material saved in version control, then directed no changes for space; coordinator stopped cleanup. |
+| H42 · 2026-10-30 08:37:51 | Authorized an additional cleanup worker for inactive, restorable checkouts while retaining run/cache evidence. |
+| H43 · 2026-10-30 08:45:03 | Asked for reasonable cleanup restrictions; coordinator briefly simplified them. |
+| H44 · 2026-10-30 08:45:45 | Clarified that cleanup should stay strict and proposal-publication requirements should be reasonable; four substantive disclosure/source rules retained. |
+| H45 · 2026-10-30 15:50:34 | Asked whether vocabulary repair applied to gap3 and whether papers had arrived; coordinator acknowledged no new papers and a prolonged stall, then assigned consolidation. |
+| H46 · 2026-10-30 16:07:08 | Approved the canary list-format reporting change under the publication worker’s conditions. |
+| H47 · 2026-10-30 17:07:54 | Authorized cleanup of already-recorded old agent records through the cleanup worker, excluding active sessions and retaining manifests. |
+| H48 · 2026-10-30 17:22:10 | Allowed two session-infrastructure processes to be excluded from the cleanup attribution blocker. |
+| H49 · 2026-10-30 17:38:27 | Requested relevant evidence be saved remotely before local cleanup; coordinator required private release upload/download hash verification and scanning. |
+| H50 · 2026-10-30 18:41:32 | Authorized each worker to clean only its own finished shared-memory scratch, with no active users or other workers’ objects touched. |
+| H51 · 2026-10-30 19:29:05 | Requested immediate PDFs of the verified B/2 and T2 originals and stopped polish rounds. |
+| H52 · 2026-10-30 19:36:47 | Requested cleanup and numbered reorganization of output folders. |
+| H53 · 2026-10-30 19:41:33 | Approved fresh successor worker contexts kappa5 and xi2 after handoffs. |
+| H54 · 2026-10-30 19:52:39 | Required pause and diagnosis after approximately ten empty search jobs: inspect target bases, shared symbols and responses/rejections before continuing. |
+| H55 · 2026-10-30 19:54:00 | Asked why Opus polish failed; coordinator requested failure classification rather than treating all failures alike. |
+| H56 · 2026-10-30 20:28:07 | Directed prefix-only carry-over, auditing/inline repair of unsupported elaborations, and exact title formatting plus re-verification for T2. |
+| H57 · 2026-10-30 20:29:47 | Required wording changes to be audited but accepted when not meaningfully different; coordinator assigned three-sample unanimous equivalence. |
+| H58 · 2026-10-30 22:25:53 | Requested a detailed v6 metapaper centered on core concepts, new mechanisms, routes and updated visualizations; also asked which candidate was promising to await. |
+| H59 · 2026-10-30 22:28:10 | Withdrew the requested discovery-framing citation and asked to combine gap3 sources with T2; conditional-derivation paper if licensed, source-grounded proposal fallback otherwise. |
 
 **Earlier human actions without a timestamp in this log.** The human designed and directed the scaffold, chose the topic, and supplied/committed the initial bibliography and filing labels. The intake review found no added argument annotations, but flagged an unresolved literal-rule tension: bibliographic titles and human-provided grouping labels can name positions despite the repository’s blanket prohibition on committed philosophical content. Four position-related filing labels were not four selected theses. The collection’s claimed completeness and neutrality were not independently verified. No selection policy is promoted here into proof that the corpus was balanced. [R2]
 
-**Current revision instruction without a separate timestamped operator entry.** The operator directed meta to make the measured 141/160 atomic commitments, 2/147 cross-paper symbols and 150-pair alignment the central construction/forward-search finding, add a deterministic two-panel figure, and mark sigma r17's shared-catalogue/wider-alignment repair pending. The correspondence records the coordinator's diagnosis and dispatch at 06:46:15–06:46:47; it does not timestamp this operator message separately. This direction is disclosed without inventing an additional timed human-action row.
+**Earlier v5 direction without a separate timestamped operator entry.** The operator directed meta to make the measured 141/160 atomic commitments, 2/147 cross-paper symbols and 150-pair alignment the central construction/forward-search finding, add a deterministic two-panel figure, and mark sigma r17's shared-catalogue/wider-alignment repair pending. The correspondence records the coordinator's diagnosis and dispatch at 06:46:15–06:46:47; it does not timestamp this operator message separately. This direction is disclosed without inventing an additional timed human-action row.
 
 ## Appendix B. Evidence register and reproducibility
 
-Each citation identifies a source snapshot, not a live guarantee that the file has not changed. `data.json/unified_source_snapshots` records this revision's new hashes and collection times; older hash sets retain their original scopes. Numerical statements are indexed in `data.json/numerical_claim_index`. Pending statuses are anchored to the stated times, even if work continues during rendering.
+Each citation identifies a source snapshot, not a live guarantee that the file has not changed. `data.json/v6_source_snapshots` records this revision's new hashes and collection times; older hash sets retain their original scopes. Numerical statements are indexed in `data.json/numerical_claim_index`. Pending statuses are anchored to the stated times, even if work continues during rendering.
 
 | ID | Primary sources and responsibility |
 | --- | --- |
-| R1 | `correspondence/log.txt`, frozen through 2026-10-30 06:46:47 UTC: decisions, iterations, human actions, and timing. |
 | R2 | `briefs/beta-literature.md`, `reports/beta-literature.md`, `reports/epsilon-pdfs.md`: supplied bibliography, intake scope, rule issues, initial access. |
 | R3 | Scaffold `CLAUDE.md`, `PLAN.md`, `SOURCE_MAP.md`, `DECISIONS.md`, and `docs/`: architecture, boundaries, lifecycle, policies and their limitations. |
 | R4 | `reports/overnight/fork6/{data,accounting}.json`, its content-addressed event sidecars, and `reports/zeta-fork6.md`: deduplicated accounting, gap/search outcomes and report defects. |
@@ -608,6 +785,7 @@ Each citation identifies a source snapshot, not a live guarantee that the file h
 | R18 | `reports/overnight/gap1r/handoff.md`, `reports/zeta-gap1r.md`, `reports/overnight/gap1r/final-local-accounting.json`, `reports/overnight/gap1r/pilot-exit.json`: Gap1r recovery, frozen inventory, source/padding review, admission refusal, timing and fresh accounting. |
 | R19 | `reports/overnight/gap1f/handoff.md`, `reports/sigma-round13.md`, `briefs/zeta-gap-fork2.md`: Gap1f client-window inspection, sigma r13 offline plans/window plumbing, historical packed/unpacked fork brief; completed results in R28. |
 | R20 | `reports/nu4-writer.md`, `briefs/nu4-round-7.md`: Nu4 R5–R6 native exports, audit dissent and union batches, citation loss; historical R7 repair brief, completed outcome in R29. |
+| R21 | Schema cardinality plus per-batch failure isolation assigned at 21:05:16 UTC | Pending at this revision's source cutoff | No freeze or after-sharing metric credited. |
 | R21 | `reports/kappa4-sigma12-review.md`: Kappa4 s12: ID-free response and recovery review, integration fixture blocker. |
 | R22 | `reports/kappa4-nu4pi3-review.md`: Kappa4 np: publication screening/title/occurrence blockers, audit and length-policy notes. |
 | R23 | `reports/kappa4-r2-review.md`: Kappa4 r2: Pi closure evidence, incomplete adverse-history and citation-stripping blockers. |
@@ -632,13 +810,34 @@ Each citation identifies a source snapshot, not a live guarantee that the file h
 | R42 | `reports/candidates/gap1pu-B-sign/status.json`, `reports/candidates/gap1pu-B-sign-short/status.json`, `reports/candidates/gap-T2-analysis/status.json` |
 | R43 | `reports/kappa4-sigma15-review.md`, `reports/xi-round31.md` |
 | R44 | `reports/fwd-sweep.md`, `reports/fwd-sweep-wide/summary.json`: completed truncated census inside an unfinished sweep. |
-| R45 | `reports/sigma-round16.md`: local implementation checkpoint; final verification/review pending, concurrent windows deferred. |
+| R45 | `reports/sigma-round16.md`: historical focused checkpoint and completed combined r16/r17 verification at de4fff8; concurrent windows deferred. |
 | R46 | `scaffold/runs/codex-gap-1r/frozen-t.json`, `scaffold/runs/codex-gap-1r/commitment-provenance.json`: independently counted syntax, catalogue reuse and alignment; method in `data.json/vocabulary_bottleneck`. |
 | R47 | `briefs/sigma-round-17.md`; correspondence at 06:46:15–06:46:47: shared-vocabulary repair assignment and wider-sweep stop request. |
+| R48 | `reports/overnight/gap3/handoff.md`; `reports/overnight/gap3s/handoff.md` |
+| R49 | `reports/sigma-round17.md`; `reports/kappa4-sigma17-review.md` |
+| R50 | `reports/sigma-round18.md`; `reports/sigma-round19.md` |
+| R51 | `reports/sigma-round20.md`; `correspondence/log.txt` (r21 assignment at 21:05:16 UTC) |
+| R52 | `reports/xi-round32.md`; `reports/xi-round32b.md`; `reports/xi-round32c.md`; `reports/kappa4-xi32-review.md` |
+| R53 | `reports/overnight/gap3p/handoff.md`; `reports/overnight/gap3p/target-route-dossier-review.json`; `reports/overnight/gap3p/target-basis-retrieval-audit.json` |
+| R54 | `reports/xi-packing2.md`; `reports/kappa4-packing-review.md`; `reports/kappa5-packing-review.md`; `reports/overnight/gap3p/packing2-checkpoint.md` |
+| R55 | `reports/candidates/proposal-publication-handoff.md` |
+| R56 | `reports/candidates/pi3-original-delivery.md`; `reports/candidates/pi3-original-delivery.json`; `reports/candidates/gap1pu-B-2-proposal/status.json`; `reports/candidates/gap1pu-C-T2-iff-proposal/status.json` |
+| R57 | `reports/nu4-audit-inline.md`; `reports/kappa5-nu4-audit-inline-review.md` |
+| R58 | `reports/kappa5-inline-combined-review.md`; `reports/kappa5-pi3-inline-review.md` |
+| R59 | `reports/fwd-sweep.md`; `reports/fwd-sweep-wide/summary.json` |
+| R60 | `reports/gap4a.md` |
+| R61 | `reports/overnight/gap3h/gap3h-preflight-result.json`; `reports/overnight/gap3h/preparation.md`; completed `gap3h/handoff.md` and held combined-candidate status |
+| R62 | `reports/kappa4-handoff.md`; `reports/kappa5-packing-review.md` |
+| R63 | `reports/janitor-evidence.md`; `reports/janitor-secret-triage.md` |
+| R64 | `reports/overnight/gap3p/search-ready-checkpoint.md` |
+| R65 | `reports/papers/metapaper/v6/research/ai_scientist.response`; `reports/papers/metapaper/v6/research/storm.response`; `reports/papers/metapaper/v6/research/sciagents.response` |
+| R66 | `reports/candidates/pi3-audit-inline.md`; T2 `pi3/audit-inline-20261030T214052Z/final-diagnosis.json`: title-only continuation and final refusal. |
 
-This report used no new ARA generation or Opus polish calls. Authoring-agent usage is outside the supplied native ledger. Deterministic SVGs are generated from recorded data; local Chromium renders the Markdown/HTML with browser networking blocked. Checks cover source and citation inventories, figure determinism, fonts, captions, page bounds, table rows, anonymity across delivered text and PDF metadata, and preservation of previous deliveries. These checks do not establish an audit pass or philosophical truth. The earlier v5 snapshot is preserved as `v5-checkpoint-0229/`; it is not the current paper.
+**Related systems (abstract-level comparison only):** Lu et al., *The AI Scientist* (2024), arXiv:2408.06292v3; Shao et al., *Assisting in Writing Wikipedia-like Articles From Scratch with Large Language Models* (2024), arXiv:2402.14207v2; Ghafarollahi and Buehler, *SciAgents* (2024), arXiv:2409.05556v1. Retrieved metadata/abstracts and hashes accompany R65.
 
-**Finding placement.** The following ledger maps every material finding from the earlier working record and this revision to the concept section carrying it. Historical failure labels describe what failed; the referenced section gives the current disposition.
+This report used no new ARA generation or Opus polish calls. Authoring-agent usage is outside the supplied native ledger. Deterministic SVGs are generated from recorded data; local Chromium renders the Markdown/HTML with browser networking blocked. Checks cover source and citation inventories, figure determinism, fonts, captions, page bounds, table rows, anonymity across delivered text and PDF metadata, and preservation of previous deliveries. These checks do not establish an audit pass or philosophical truth. V1–v5 remain historical deliveries; this v6 directory is the current report. Native prompt examples remain historical, not a full current replay package.
+
+**Finding placement.** Historical findings retain their original labels; the named concept section supplies the current disposition. Every material new finding is included here.
 
 | Finding | Report section |
 | --- | --- |
@@ -703,5 +902,52 @@ This report used no new ARA generation or Opus polish calls. Authoring-agent usa
 | 59. Central T bottleneck: 141/160 bare atoms, 19 syntactically structured formulas, 147 zero-arity symbols | 2.3, 5.3 |
 | 60. Two shared symbols arise only through one bridge; zero direct cross-paper reuse; 149/150 alignment pairs unrelated | 2.3 |
 | 61. Sparse vocabulary unifies bounded padding/OPEN outcomes; sigma17 pending, wider forward stop requested, no impossibility theorem | 2.3, 5.3, 9.1 |
+| 62. Gap3 retains all anchors but source formulas remain disconnected | 2.6 |
+| 63. R17 prompt delivered; gap4a completed construction still shares zero source symbols | 2.7 |
+| 64. Gap4a alignment disk pause and separate pinned search defect; no C2/C3 | 2.7 |
+| 65. Consolidation preserves source identity but changes formula history in a new lifecycle | 2.7 |
+| 66. R19 runtime IDs work but r20 cardinality regression prevents freeze; r21 pending | 2.7 |
+| 67. Gap3/s context failure versus gap3p successful dispatch; unknown exits remain unknown | 3.4 |
+| 68. Packing2 mandatory bases repair request coverage, not an actual useful inference | 3.4 |
+| 69. PACK-F3 pass retraction; repaired/inherited controls are not a fresh full rerun | 3.4 |
+| 70. Gap3p all 46 OPEN and semantic padding/necessity-overstatement flags | 4.4 |
+| 71. Native ten-empty-job pause; historical diagnosis is retrospective | 4.5 |
+| 72. X32 disclosure/padding/source-credit fixes; no actual H truth established | 6.2 |
+| 73. Four proposal thesis origins and literature/audit verdicts remain distinct | 6.3, 7.4 |
+| 74. Gap3h semantic preflight block, no native refusal or completed conditional route | 6.4 |
+| 75. B2/T2 verified originals distinct from refused polished revisions | 7.6 |
+| 76. Carry-over requires exact source authority; equivalence votes persist | 7.6 |
+| 77. Meaning probe small live evidence; inline review uses fake providers | 7.6 |
+| 78. Gap3p local usage not campaign cost | 8.3 |
+| 79. Second orchestrator stall, corrections ending turns, rotations and cleanup | 8.4 |
+| 80. Novel mechanism description does not establish first-ever priority | 1.1, 9.4 |
+| 81. Janitor, kappa5 and xi2 added to complete credits | 10.6 |
+| 82. Gap3h held grounding metadata is not an executable writer packet or licensed queue route | 6.4 |
+| 83. T2 title-only correction verifies citations but final 14-flag union refuses polished revision | 7.8 |
+| 84. Meaning inventory recovery preserves all 51 adverse pairs; attempted/fallback word counts differ | 7.8 |
 
-**61 findings, 61 placed.**
+**84 findings, 84 placed.**
+
+## Appendix C. Complete retained-target route atlas
+
+Each row depicts a retained target branching to its two polarity routes. Labels are abbreviated for legibility; `data.json/v6/route_atlas` retains full target texts/formulas and route IDs. The atlas includes all 27 A targets (54 routes), all 20 B targets (40 routes), all three C targets (six routes), and all 23 gap3p targets (46 routes). Every outcome is OPEN. B has one three-node partial argument; all other A/B/C roots and every gap3p route have no accepted inference. These are 73 target records and 146 polarity-route records across distinct experiments, not 73 philosophically distinct theses. Rejected external T2 probes in gap3 have no route to draw (§4.4). Earlier pilot populations are separately shown in the historical route census (§4.1). [R28, R53]
+
+{{fig:atlas-A-1}}
+
+{{fig:atlas-A-2}}
+
+{{fig:atlas-B-1}}
+
+{{fig:atlas-B-2}}
+
+{{fig:atlas-C-1}}
+
+{{fig:atlas-gap3p-1}}
+
+{{fig:atlas-gap3p-2}}
+
+### The single partial B argument
+
+The sign scheme joins Egan's response to the communicative objection with MacFarlane's criticism of Solipsistic Contextualism's treatment of genuine disputes. It licenses a defeasible step toward the comparative target, but CQ2 remains unsupported. The two source leaves do not constitute a CLOSED conclusion. This is the route used for the refused sign drafts; it is distinct from B/1 and B/2's safety–retraction proposals. [R28, R42]
+
+{{fig:partial-B}}

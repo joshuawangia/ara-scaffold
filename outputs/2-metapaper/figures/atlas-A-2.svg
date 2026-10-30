@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="483.12pt" height="406.9152pt" viewBox="0 0 483.12 406.9152" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Deterministic v6 figure from recorded evidence</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 406.9152 
+L 483.12 406.9152 
+L 483.12 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 351.332713 50.133333 
+Q 363.428946 47.804685 374.317515 45.708524 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 44.379963 
+L 374.317515 45.708524 
+L 370.412735 48.700629 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 351.332713 50.890711 
+Q 363.428946 53.219359 374.317515 55.31552 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 52.323415 
+L 374.317515 55.31552 
+L 369.580963 56.644081 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 351.332713 77.203346 
+Q 363.428946 74.874698 374.317515 72.778538 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 71.449977 
+L 374.317515 72.778538 
+L 370.412735 75.770643 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 351.332713 77.960725 
+Q 363.428946 80.289373 374.317515 82.385534 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 79.393429 
+L 374.317515 82.385534 
+L 369.580963 83.714095 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 351.332713 104.27336 
+Q 363.428946 101.944712 374.317515 99.848552 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 98.519991 
+L 374.317515 99.848552 
+L 370.412735 102.840657 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 351.332713 105.030739 
+Q 363.428946 107.359387 374.317515 109.455548 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 106.463442 
+L 374.317515 109.455548 
+L 369.580963 110.784108 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 351.332713 131.343374 
+Q 363.428946 129.014726 374.317515 126.918565 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 125.590005 
+L 374.317515 126.918565 
+L 370.412735 129.910671 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 351.332713 132.100753 
+Q 363.428946 134.429401 374.317515 136.525561 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 133.533456 
+L 374.317515 136.525561 
+L 369.580963 137.854122 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 351.332713 158.413388 
+Q 363.428946 156.08474 374.317515 153.988579 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 152.660018 
+L 374.317515 153.988579 
+L 370.412735 156.980684 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 351.332713 159.170767 
+Q 363.428946 161.499415 374.317515 163.595575 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 160.60347 
+L 374.317515 163.595575 
+L 369.580963 164.924136 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 351.332713 185.483402 
+Q 363.428946 183.154754 374.317515 181.058593 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 179.730032 
+L 374.317515 181.058593 
+L 370.412735 184.050698 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 351.332713 186.24078 
+Q 363.428946 188.569428 374.317515 190.665589 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 187.673484 
+L 374.317515 190.665589 
+L 369.580963 191.99415 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 351.332713 212.553415 
+Q 363.428946 210.224767 374.317515 208.128607 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 206.800046 
+L 374.317515 208.128607 
+L 370.412735 211.120712 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 351.332713 213.310794 
+Q 363.428946 215.639442 374.317515 217.735603 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 214.743498 
+L 374.317515 217.735603 
+L 369.580963 219.064164 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 351.332713 239.623429 
+Q 363.428946 237.294781 374.317515 235.198621 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 233.87006 
+L 374.317515 235.198621 
+L 370.412735 238.190726 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 351.332713 240.380808 
+Q 363.428946 242.709456 374.317515 244.805617 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 241.813511 
+L 374.317515 244.805617 
+L 369.580963 246.134177 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 351.332713 266.693443 
+Q 363.428946 264.364795 374.317515 262.268634 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 260.940074 
+L 374.317515 262.268634 
+L 370.412735 265.26074 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 351.332713 267.450822 
+Q 363.428946 269.77947 374.317515 271.87563 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 268.883525 
+L 374.317515 271.87563 
+L 369.580963 273.204191 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 351.332713 293.763457 
+Q 363.428946 291.434809 374.317515 289.338648 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 288.010087 
+L 374.317515 289.338648 
+L 370.412735 292.330753 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 351.332713 294.520836 
+Q 363.428946 296.849484 374.317515 298.945644 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 295.953539 
+L 374.317515 298.945644 
+L 369.580963 300.274205 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 351.332713 320.833471 
+Q 363.428946 318.504823 374.317515 316.408662 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 315.080101 
+L 374.317515 316.408662 
+L 370.412735 319.400767 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_23">
+    <path d="M 351.332713 321.590849 
+Q 363.428946 323.919497 374.317515 326.015658 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 323.023553 
+L 374.317515 326.015658 
+L 369.580963 327.344219 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_24">
+    <path d="M 351.332713 347.903484 
+Q 363.428946 345.574836 374.317515 343.478676 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 342.150115 
+L 374.317515 343.478676 
+L 370.412735 346.470781 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_25">
+    <path d="M 351.332713 348.660863 
+Q 363.428946 350.989511 374.317515 353.085672 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 350.093567 
+L 374.317515 353.085672 
+L 369.580963 354.414233 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_26">
+    <path d="M 351.332713 374.973498 
+Q 363.428946 372.64485 374.317515 370.54869 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 369.580963 369.220129 
+L 374.317515 370.54869 
+L 370.412735 373.540795 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_27">
+    <path d="M 351.332713 375.730877 
+Q 363.428946 378.059525 374.317515 380.155686 
+" clip-path="url(#pb30f0c08cd)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 370.412735 377.16358 
+L 374.317515 380.155686 
+L 369.580963 381.484246 
+z
+" clip-path="url(#pb30f0c08cd)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 12px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="24.439129" transform="rotate(-0 7.2 24.439129)">A: retained targets → polarity routes</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="52.849913" transform="rotate(-0 7.2 52.849913)">A15</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 47.449034)">MacFarlane’s assessment-sensitive proposal concerns truth</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 58.251495)">evaluation and the motivation for expressivism, whereas…</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="47.43591" transform="rotate(-0 382.176 47.43591)">+ OPEN</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="58.263915" transform="rotate(-0 382.176 58.263915)">− OPEN</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="79.919926" transform="rotate(-0 7.2 79.919926)">A16</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 74.519048)">Motivational support for alternatives to contextualism and the</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 85.321509)">empirical case for relativist semantics are distinct…</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="74.505924" transform="rotate(-0 382.176 74.505924)">+ OPEN</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="85.333929" transform="rotate(-0 382.176 85.333929)">− OPEN</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="106.98994" transform="rotate(-0 7.2 106.98994)">A17</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 101.589061)">Motivational support for alternatives to contextualism does</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 112.391522)">not by itself establish relativist semantics as the…</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="101.575938" transform="rotate(-0 382.176 101.575938)">+ OPEN</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="112.403943" transform="rotate(-0 382.176 112.403943)">− OPEN</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="134.059954" transform="rotate(-0 7.2 134.059954)">A18</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 128.659075)">Success in explaining quantified epistemic-modal defects is a</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 139.461536)">distinct criterion from making epistemic…</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="128.645951" transform="rotate(-0 382.176 128.645951)">+ OPEN</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="139.473957" transform="rotate(-0 382.176 139.473957)">− OPEN</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="161.129968" transform="rotate(-0 7.2 161.129968)">A19</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 155.729089)">The BEM approach’s use of standard context-dependent semantics</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 166.53155)">and indeterminacy about the relevant information…</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="155.715965" transform="rotate(-0 382.176 155.715965)">+ OPEN</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="166.543971" transform="rotate(-0 382.176 166.543971)">− OPEN</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="188.199982" transform="rotate(-0 7.2 188.199982)">A20</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 182.799103)">The Moss probability-measure proposal and the von</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 193.601564)">Fintel–Gillies account should be treated as distinct…</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="182.785979" transform="rotate(-0 382.176 182.785979)">+ OPEN</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="193.613984" transform="rotate(-0 382.176 193.613984)">− OPEN</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="215.269995" transform="rotate(-0 7.2 215.269995)">A21</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 209.869117)">The comparison should be restricted by expression class: the</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 220.671577)">probability-measure proposal covers epistemic modals…</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="209.855993" transform="rotate(-0 382.176 209.855993)">+ OPEN</text>
+   </g>
+   <g id="text_29">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="220.683998" transform="rotate(-0 382.176 220.683998)">− OPEN</text>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="242.340009" transform="rotate(-0 7.2 242.340009)">A22</text>
+   </g>
+   <g id="text_31">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 236.93913)">The dynamic direction’s support concerning quantified</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 247.741591)">epistemic-modal phenomena does not by itself settle the…</text>
+   </g>
+   <g id="text_32">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="236.926006" transform="rotate(-0 382.176 236.926006)">+ OPEN</text>
+   </g>
+   <g id="text_33">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="247.754012" transform="rotate(-0 382.176 247.754012)">− OPEN</text>
+   </g>
+   <g id="text_34">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="269.410023" transform="rotate(-0 7.2 269.410023)">A23</text>
+   </g>
+   <g id="text_35">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 264.009144)">The epistemic consequence relation and the type of semantic</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 274.811605)">values assigned to epistemic sentences are distinct…</text>
+   </g>
+   <g id="text_36">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="263.99602" transform="rotate(-0 382.176 263.99602)">+ OPEN</text>
+   </g>
+   <g id="text_37">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="274.824026" transform="rotate(-0 382.176 274.824026)">− OPEN</text>
+   </g>
+   <g id="text_38">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="296.480037" transform="rotate(-0 7.2 296.480037)">A24</text>
+   </g>
+   <g id="text_39">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 291.079158)">The resistance of epistemic modals to standard truth-</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 301.881619)">conditional frameworks concerns frameworks requiring absolute…</text>
+   </g>
+   <g id="text_40">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="291.066034" transform="rotate(-0 382.176 291.066034)">+ OPEN</text>
+   </g>
+   <g id="text_41">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="301.89404" transform="rotate(-0 382.176 301.89404)">− OPEN</text>
+   </g>
+   <g id="text_42">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="323.550051" transform="rotate(-0 7.2 323.550051)">A25</text>
+   </g>
+   <g id="text_43">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 318.149172)">The semantic-value question addressed by expressivism and the</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 328.951633)">question whether epistemic-modal truth varies with…</text>
+   </g>
+   <g id="text_44">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="318.136048" transform="rotate(-0 382.176 318.136048)">+ OPEN</text>
+   </g>
+   <g id="text_45">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="328.964053" transform="rotate(-0 382.176 328.964053)">− OPEN</text>
+   </g>
+   <g id="text_46">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="350.620064" transform="rotate(-0 7.2 350.620064)">A26</text>
+   </g>
+   <g id="text_47">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 345.219186)">The “Almost certainly” reply should be interpreted as</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 356.021646)">coordinating interlocutors on their information, rather than…</text>
+   </g>
+   <g id="text_48">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="345.206062" transform="rotate(-0 382.176 345.206062)">+ OPEN</text>
+   </g>
+   <g id="text_49">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="356.034067" transform="rotate(-0 382.176 356.034067)">− OPEN</text>
+   </g>
+   <g id="text_50">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start; fill: #28677e" x="7.2" y="377.690078" transform="rotate(-0 7.2 377.690078)">A27</text>
+   </g>
+   <g id="text_51">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 372.289199)">World quantification by epistemic modals is compatible with a</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif" transform="translate(44.6976 383.09166)">non-possible-worlds semantics for Moss’s analyzed…</text>
+   </g>
+   <g id="text_52">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="372.276075" transform="rotate(-0 382.176 372.276075)">+ OPEN</text>
+   </g>
+   <g id="text_53">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; text-anchor: start" x="382.176" y="383.104081" transform="rotate(-0 382.176 383.104081)">− OPEN</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pb30f0c08cd">
+   <rect x="7.2" y="7.2" width="468.72" height="392.5152"/>
+  </clipPath>
+ </defs>
+</svg>

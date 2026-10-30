@@ -2,68 +2,59 @@
   {
     "id": "architecture",
     "file": "figures/architecture.svg",
-    "caption": "ARA separates the source of a license (L), the premises available to a run (T), and model-suggested hypotheses or cuts (H). Models propose; the deterministic engine decides formal admissibility. The final export path remains gated.",
+    "caption": "Authority is separated at each boundary. Proposal mode has its own authorization and disclosure; it is not an alternate way to claim a CLOSED route. PDF production follows the status of its input.",
     "data": {
-      "source": [
-        "scaffold/PLAN.md",
-        "scaffold/CLAUDE.md",
-        "scaffold/SOURCE_MAP.md"
-      ],
-      "nodes": [
-        "L",
-        "T",
-        "H",
-        "extraction",
-        "engine",
-        "runtime",
-        "search",
-        "selection-writing-verification"
+      "source_refs": [
+        "R3",
+        "R52",
+        "R55",
+        "R57"
       ]
     }
   },
   {
     "id": "concepts",
     "file": "figures/concepts.svg",
-    "caption": "One architecture organizes the experiments and extensions. Source construction determines T; L licenses search; H includes targets and, in a pending extension, disclosed proposed premises. Arguing for a bridge principle differs from deriving a result conditional on it. Pending mechanisms receive no success count.",
+    "caption": "One architecture organizes the experiments and extensions. Source construction determines T; L licenses search; H includes targets and disclosed proposed premises under the reviewed extension. Arguing for a bridge principle differs from deriving a result conditional on it. Pending mechanisms receive no success count.",
     "data": {
       "rows": [
         {
-          "concept": "L / T / H boundaries",
-          "mechanism": "Source stance, licensed rules, disclosed proposals",
-          "instances": "Frozen source T; proposed P remains H"
+          "concept": "L: licensed moves",
+          "mechanism": "Bank + solver + critical questions",
+          "instances": "Per-paper novelty; R28 padding"
         },
         {
-          "concept": "Construction of T",
-          "mechanism": "Windows, shared formal vocabulary, alignment",
-          "instances": "Gap1 recovery; gap2 STOP; gap3 running"
+          "concept": "T: frozen source theory",
+          "mechanism": "Construct / consolidate / align",
+          "instances": "Gap1r 160; gap3 243"
         },
         {
           "concept": "One freeze / forks",
-          "mechanism": "Authenticated prefix; counted context",
-          "instances": "A packed / B full / C external T2"
+          "mechanism": "Preserve evidence; vary requests",
+          "instances": "A/B/C; gap3p; packing2"
         },
         {
-          "concept": "Search through L",
-          "mechanism": "Z3, CQs, both polarities, novelty gates",
-          "instances": "100 OPEN; B partial; 0 derived"
+          "concept": "Backward / forward gaps",
+          "mechanism": "Missing premises / joint consequence",
+          "instances": "T1–T9; forward zero leads"
         },
         {
-          "concept": "Gap discovery",
-          "mechanism": "Backward comparison / forward synthesis",
-          "instances": "T1–T9; 0 forward leads; stop requested"
+          "concept": "H: proposed premises",
+          "mechanism": "Disclosed conditional route",
+          "instances": "Gap3h blocked; B/2, T2 proposals"
         },
         {
-          "concept": "New bridge in H",
-          "mechanism": "Conditional-on-H / argued proposal",
-          "instances": "Xi32, proposal mode: pending"
+          "concept": "Output verification",
+          "mechanism": "Typed k=3, local citations, carry-over",
+          "instances": "Two original PDFs; polish pending"
         },
         {
-          "concept": "Output gates",
-          "mechanism": "Typed audit, k=3 union, local citations",
-          "instances": "Analysis PDF; sign + short refused"
+          "concept": "Review / operation",
+          "mechanism": "Exact heads; pause and diagnose",
+          "instances": "Ten-job rule; findings ledger"
         }
       ],
-      "checkpoint": "2026-10-30T06:46:47Z",
+      "checkpoint": "2026-10-30T22:28:10Z",
       "sources": [
         "briefs/meta-v5.md",
         "briefs/xi-round-32.md",
@@ -116,259 +107,228 @@
     }
   },
   {
-    "id": "funnel",
-    "file": "figures/funnel.svg",
-    "caption": "Shared historical extraction feeds distinct lifecycles and output attempts. Gap1 stopped at alignment; recovery froze T but stopped at target admission. A/B/C later completed without derived closure. Gap2 stopped before freeze; gap3 counts are live at 30 October 06:22:42 UTC. R7 and both sign drafts refused. The separate analysis PDF is not a native export. Proposal-mode outputs remain pending at 06:28:53 UTC.",
+    "id": "vocabulary-after",
+    "file": "figures/vocabulary-after.svg",
+    "caption": "No before/after gain is established. Gap1r has two bridge-linked symbols but zero source-only sharing. Gap4a is completed construction before alignment, not a frozen after-treatment. Structured syntax and source-independent names do not establish faithful shared semantics.",
     "data": {
-      "stages": [
-        [
-          "Chosen works",
-          53
-        ],
-        [
-          "Original PDFs / rich graphs",
-          26
-        ],
-        [
-          "Extracted items",
-          5659
-        ],
-        [
-          "Eligible after quarantine",
-          5296
-        ]
+      "runs": [
+        "gap1r freeze",
+        "gap3 freeze",
+        "gap4a pre-alignment"
       ],
-      "writing_path": [
-        [
-          "Earlier pilot 5 frozen T",
-          "169 commitments / 22 papers"
-        ],
-        [
-          "Fork 3 → selected routes",
-          "3 targets / 6 searches; 2 single-paper derived"
-        ],
-        [
-          "Round 4 writer",
-          "0 native verified exports"
-        ],
-        [
-          "R6 → R7 audit STOP",
-          "R6 bib=0; R7 restores refs, exports 0/2"
-        ],
-        [
-          "B sign candidate: audit STOP",
-          "18 final flags; 4,790 words; no export"
-        ],
-        [
-          "B sign short: writer STOP",
-          "1,203 rejected words < 2,500 floor"
-        ],
-        [
-          "Separate T2 analysis PDF",
-          "10 pages / 17 refs; not ARA-derived"
-        ],
-        [
-          "Proposal-mode candidates",
-          "PENDING at 06:28:53 UTC; no export credited"
-        ]
+      "commitments": [
+        160,
+        243,
+        308
       ],
-      "construction_path": [
-        [
-          "Gap1 construction",
-          "74 windows / 159 commitments / 22 papers"
-        ],
-        [
-          "Gap1 STOP: alignment 36/150",
-          "35 accepted; altered ID correctly refused"
-        ],
-        [
-          "Gap1r recovery → one freeze",
-          "160 = 159 source + 1 bridge; 0 unresolved"
-        ],
-        [
-          "Gap1r STOP: target admission",
-          "328,169 total > 200,000; not dispatched"
-        ],
-        [
-          "Later A / B / C forks",
-          "50 targets → 100 OPEN; 0 derived"
-        ],
-        [
-          "Gap2 STOP before freeze",
-          "3/13 accepted; 57 commitments / 3 papers"
-        ],
-        [
-          "Gap3: PENDING at 06:22:42 UTC",
-          "13 accepted / 7 skipped of 77; T70 / 9 papers"
-        ],
-        [
-          "Next freeze/search outcomes",
-          "PENDING; working counts are not a freeze"
-        ]
+      "atoms": [
+        141,
+        212,
+        263
       ],
-      "source": [
-        "reports/overnight/gap1/handoff.md",
-        "reports/overnight/gap1r/handoff.md",
-        "reports/overnight/gap2/pre-freeze-check.md",
-        "reports/overnight/gap3/live-status.md",
-        "reports/candidates/gap1pu-B-sign/status.json",
-        "reports/candidates/gap1pu-B-sign-short/status.json"
+      "shared_source_symbols": [
+        0,
+        0,
+        0
+      ],
+      "consolidation_after": null,
+      "sources": [
+        "R46",
+        "R48",
+        "R51",
+        "R60"
       ]
     }
   },
   {
-    "id": "iterations",
-    "file": "figures/iterations.svg",
-    "caption": "Logged iteration episodes. Diamonds mark gap1 alignment and gap1r target-admission stops. The hatched interval is the acknowledged coordinator idle period. Later bars record completed A/B/C and R7/delivery receipts; the all-candidates row records an instruction, not a research result. Historical packing plans preceded actual forks. Gap2 later stopped before freeze and both sign drafts refused. Gap3 and the new extensions remain pending; gate repairs do not establish semantic success.",
+    "id": "funnel",
+    "file": "figures/funnel.svg",
+    "caption": "Branched gate funnel: recorded progression ends at an explicit stop or output. Rows are distinct lineages, not successive denominators. Proposal PDFs are not CLOSED gap derivations.",
     "data": {
-      "episodes": [
+      "rows": [
         [
-          "Extraction",
-          "2026-10-21T00:26:58Z",
-          "2026-10-22T23:59:23Z",
-          "Rich graph → grounded union"
+          "Original corpus",
+          "53 chosen → 26 PDFs → 5,659 items",
+          "363 quarantined → 5,296 eligible"
         ],
         [
-          "Construction",
-          "2026-10-21T03:37:29Z",
-          "2026-10-23T19:39:01Z",
-          "Closure budgets → soft shares"
+          "Gap1",
+          "74 windows → 159 commitments / 22 papers",
+          "STOP: echoed ID, alignment 36/150"
         ],
         [
-          "Providers / isolation",
-          "2026-10-23T10:02:43Z",
-          "2026-10-26T06:23:00Z",
-          "Credit stop → Claude → Codex"
+          "Gap1r",
+          "150 accepted judgments → frozen T 160",
+          "STOP: target input 311,785 > 200,000 bound"
         ],
         [
-          "Structure / vocabulary",
-          "2026-10-26T15:09:34Z",
-          "2026-10-27T14:05:42Z",
-          "Atomic T → conditionals + stance"
+          "A / B / C forks",
+          "27 / 20 / 3 targets → 100 routes",
+          "100 OPEN; one partial B inference"
         ],
         [
-          "Novelty / cross-paper",
-          "2026-10-26T23:07:41Z",
-          "2026-10-29T06:19:53Z",
-          "Trivial closure → per-paper gate"
+          "Gap2",
+          "3/13 accepted windows → 57 commitments",
+          "STOP before freeze; required safety lost"
         ],
         [
-          "Writing / audit",
-          "2026-10-28T16:52:30Z",
-          "2026-10-29T18:45:24Z",
-          "44→0 flags; k=3; exports lose citations"
+          "Gap3 → gap3p",
+          "243 commitments → 23 targets → 46 routes",
+          "46 OPEN; zero inferences; basis omitted"
         ],
         [
-          "Literature currency",
-          "2026-10-28T21:03:17Z",
-          "2026-10-29T06:17:05Z",
-          "Historical gaps → qualified L3"
+          "Gap3v r20",
+          "22/30 batches → 181 partial commitments",
+          "STOP batch 23; no freeze / after metric"
         ],
         [
-          "Gap1 stop",
-          "2026-10-29T09:04:37.624543Z",
-          "2026-10-29T13:36:58.286858Z",
-          "Alignment 36/150: correct refusal"
+          "Gap3h",
+          "243-source reuse plan accepted",
+          "STOP before H formalization; no live route"
         ],
         [
-          "Gap1r recovery",
-          "2026-10-29T15:02:17.273674+00:00",
-          "2026-10-29T18:51:51.254234+00:00",
-          "Frozen T 160 → L3 admission STOP"
-        ],
-        [
-          "Context / packing",
-          "2026-10-29T19:09:07Z",
-          "2026-10-29T19:46:10Z",
-          "Window override + 122k offline plan"
-        ],
-        [
-          "Independent review",
-          "2026-10-29T15:24:58Z",
-          "2026-10-29T20:05:31Z",
-          "s12 / np / r2 / s13: findings ledger"
-        ],
-        [
-          "Completed A/B/C",
-          "2026-10-29T19:46:10Z",
-          "2026-10-30T01:16:27Z",
-          "100 OPEN; 0 derived; B partial"
-        ],
-        [
-          "R7 / delivery closure",
-          "2026-10-29T21:35:27Z",
-          "2026-10-30T01:53:47Z",
-          "0/2 exports; gate repairs reviewed"
-        ],
-        [
-          "All-candidates instruction",
-          "2026-10-30T02:09:23Z",
-          "2026-10-30T02:09:23Z",
-          "Draft all; final selection reserved"
-        ],
-        [
-          "Gap2 construction STOP",
-          "2026-10-30T01:55:00Z",
-          "2026-10-30T04:04:01Z",
-          "3/13 windows; no freeze"
-        ],
-        [
-          "Sign writing gates",
-          "2026-10-30T02:09:23Z",
-          "2026-10-30T03:42:33Z",
-          "Audit refusal; short writer refusal"
+          "Proposal output",
+          "B/2 and T2 original k=3 [0,0,0]",
+          "Two verified original PDFs; no derived claim"
         ]
       ],
-      "idle_start": "2026-10-28T12:33:41Z",
-      "idle_end": "2026-10-28T16:49:21Z",
-      "pending": [
+      "sources": [
+        "R16",
+        "R18",
+        "R28",
+        "R35",
+        "R51",
+        "R53",
+        "R56",
+        "R61"
+      ]
+    }
+  },
+  {
+    "id": "lifecycle",
+    "file": "figures/lifecycle.svg",
+    "caption": "Consolidation or H admission reuses completed construction in a new lifecycle before its own freeze. A search fork instead preserves the existing freeze. Valid completed stages survive later failure; neither path silently edits the source experiment.",
+    "data": {
+      "stages": [
+        "Extract\nimmutable evidence",
+        "Construct\nstance + provenance",
+        "Consolidate (opt-in)\nnew formula history",
+        "Align\nmodel judgments",
+        "Freeze once\nT + disclosed H",
+        "Fork\nauthenticated T",
+        "Target\nper-paper gates",
+        "Search ±\nlicenses + CQs",
+        "Candidate\nroute or proposal",
+        "Audit / verify\nthen PDF"
+      ],
+      "sources": [
+        "R18",
+        "R50",
+        "R52"
+      ]
+    }
+  },
+  {
+    "id": "context-admission",
+    "file": "figures/context-admission.svg",
+    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); the later actual two-hop A results are reported separately in §3.3. This historical unpacked template adds 299 tokens. The later stage-window defect was closed by r14 review. These plan estimates do not prove service capacity.",
+    "data": {
+      "plans": [
         {
-          "item": "Gap3 freeze/coverage/search",
-          "status": "pending",
-          "as_of_utc": "2026-10-30T06:22:42Z",
-          "source": "reports/overnight/gap3/live-status.md"
+          "label": "Historical unpacked",
+          "input": 311785,
+          "output": 16384,
+          "total": 328169,
+          "bound": 200000,
+          "status": "refused before dispatch"
         },
         {
-          "item": "Sigma16 construction improvements",
-          "status": "pending",
-          "as_of_utc": "2026-10-30T06:44:42.536565+00:00",
-          "source": "briefs/sigma-round-16.md"
+          "label": "Packed / original bound",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 200000,
+          "status": "offline fit"
         },
         {
-          "item": "Forward sweep",
-          "status": "stop requested; final receipt not credited",
-          "as_of_utc": "2026-10-30T06:46:15Z",
-          "source": "briefs/fwd-sweep.md"
+          "label": "Packed / 272k window",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 239232,
+          "status": "offline fit"
         },
         {
-          "item": "Xi32 hypothesis premises / future gap4",
-          "status": "pending",
-          "as_of_utc": "2026-10-30T06:28:53Z",
-          "source": "briefs/xi-round-32.md"
+          "label": "Unpacked / 872k window",
+          "input": 312084,
+          "output": 16384,
+          "total": 328468,
+          "bound": 839232,
+          "status": "offline fit"
         },
         {
-          "item": "Nu4 proposal mode and pi3 polish",
-          "status": "pending",
-          "as_of_utc": "2026-10-30T06:28:53Z",
-          "source": "briefs/nu4-proposal-mode.md"
-        },
-        {
-          "item": "Operator final selection",
-          "status": "pending",
-          "as_of_utc": "2026-10-30T06:28:53Z",
-          "source": "briefs/all-candidates.md"
-        },
-        {
-          "item": "Sigma17 shared predicate catalogue and wider alignment",
-          "status": "pending",
-          "as_of_utc": "2026-10-30T06:46:47Z",
-          "source": "briefs/sigma-round-17.md"
+          "label": "Packed / 872k window",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 839232,
+          "status": "offline fit"
         }
       ],
       "source": [
-        "correspondence/log.txt",
-        "reports/overnight/gap1/pilot-exit.json",
-        "reports/overnight/gap1r/pilot-exit.json"
+        "reports/overnight/gap1f/handoff.md",
+        "reports/sigma-round13.md",
+        "briefs/zeta-gap-fork2.md"
+      ],
+      "forks": [
+        {
+          "fork": "A",
+          "context": "packed, hops=2",
+          "full_commitments": null,
+          "results": "pending"
+        },
+        {
+          "fork": "B",
+          "context": "unpacked; proposed run-level window 600000",
+          "results": "pending"
+        }
+      ]
+    }
+  },
+  {
+    "id": "packing",
+    "file": "figures/packing.svg",
+    "caption": "Token reductions and evidence coverage are different achievements. Left: input estimates exclude the 16,384 output allowance, with distinct experiments explicitly named; old-versus-packed search is a replay comparison. Right: packing2 offline replay repairs full basis visibility. No later live derivation is inferred.",
+    "data": {
+      "input_labels": [
+        "Gap1r refused input",
+        "A actual input estimate",
+        "B actual input estimate",
+        "Old search replay upper",
+        "Packed replay upper"
+      ],
+      "input_tokens": [
+        311785,
+        105722,
+        312084,
+        733092,
+        49558
+      ],
+      "complete_basis": [
+        0,
+        46,
+        92
+      ],
+      "denominators": [
+        46,
+        46,
+        92
+      ],
+      "sources": [
+        "R18",
+        "R28",
+        "R53",
+        "R54"
       ]
     }
   },
@@ -508,6 +468,176 @@
     }
   },
   {
+    "id": "proposal-routes",
+    "file": "figures/proposal-routes.svg",
+    "caption": "Four proposal candidates retain distinct origins and bounded literature comparisons. B/1 and B/2 only partially match exact T2; A/3 is thematic T5. The T2 sufficiency direction alone is closest to partially anticipated T1. Clean original writer gates do not imply polished acceptance or mechanical derivation.",
+    "data": {
+      "proposals": [
+        [
+          "B/1",
+          "ARA-proposed; near T2 necessity\nChanged subject / normative force",
+          "[5,4,0] → union 6\nREFUSED"
+        ],
+        [
+          "B/2",
+          "ARA-proposed; near T2 necessity\nWarranted withdrawal ≠ obligation",
+          "Original [0,0,0]\nVerified original PDF"
+        ],
+        [
+          "A/3",
+          "ARA-proposed; thematic T5\nPartially anticipated comparison",
+          "[4,7,4] → union 9\nREFUSED"
+        ],
+        [
+          "T2",
+          "eps2-proposed exact iff\nNot found in bounded dossier",
+          "Original [0,0,0]\nVerified original PDF"
+        ]
+      ],
+      "sources": [
+        "R28",
+        "R38",
+        "R55",
+        "R56"
+      ]
+    }
+  },
+  {
+    "id": "combined-route",
+    "file": "figures/combined-route.svg",
+    "caption": "Featured gap3 + T2 conditional design, not an executed derivation. Source reuse is verified; the worker semantic preflight blocks H before model or solver execution. Dashed edges are intended dependencies, not bank licenses. H must be defended and source meanings preserved. A completed route was unavailable at the inspected checkpoint.",
+    "data": {
+      "at": "2026-10-30T22:29:29.928054+00:00",
+      "head": "dcbc4b391efe3074e16623c8932535da749c5a78",
+      "approved_subject": "d8470c11c31b6cfd8ca09cd371d8af66c9e45eb7",
+      "native_plan_exit": 0,
+      "native_plan_path": "/home/dev/ara-scaffold/runs/codex-gap-3h-control/plan-dcbc4b3-v3/alignment-resume-plan.json",
+      "native_plan_sha256": "b2ac8d5481c4bdebaadf05fb411317535899d137a1b63a32cf46436491e352e1",
+      "completed_windows": 77,
+      "restored_commitments": 243,
+      "accepted_alignment_judgments": 150,
+      "remaining_alignment_pairs": 0,
+      "hypothesis_ids": [
+        "hypothesis:H_suff",
+        "hypothesis:H_nec"
+      ],
+      "hypotheses_path": "/home/dev/ara-scaffold/runs/codex-gap-3h-control/hypotheses.operator-v3.json",
+      "hypotheses_sha256": "7c2b5df1c1d818f9136bfc80d7ed71eff6902e80143f306541c3312ea33381af",
+      "source_run": "/home/dev/ara-scaffold/runs/codex-gap-3",
+      "intended_new_run": "/home/dev/ara-scaffold/runs/codex-gap-3h",
+      "destination_created": false,
+      "live_calls": 0,
+      "hypotheses_admitted": [],
+      "single_freeze_performed": false,
+      "targets_generated": 0,
+      "derived": 0,
+      "closed": 0,
+      "selected_conditional_route_ids": [],
+      "continuing_run_path": null,
+      "prefix_bytes": 385375292,
+      "prefix_sha256": "dc401b013059bab3e4ee69bb9c560c5b3f67a63b87ae15c7c77abe0fefd5c8b3",
+      "minimum_import_bytes": 388679404,
+      "disk": {
+        "free_bytes": 6629629952,
+        "search_floor_bytes": 6000000000,
+        "after_import_plus_one_export_lower_bound": 5852271144,
+        "fits_search_floor_even_before_search": false,
+        "general_new_heavy_step_floor_bytes": 10000000000
+      },
+      "status": "pre_formalization_fidelity_block; live_not_started",
+      "precise_nonclosure_point": "Free construction reuse/symbol-availability plan passed. Zeta semantic preflight found no established faithful expression of H_suff/H_nec over fixed whole-claim atoms; Xi2 confirms no reviewed pre-freeze semantic H gate. Live H admission/freeze/search not attempted. This is not a native solver or model refusal.",
+      "native_control_limit": "Declaration, signature/formula validity and consistency do not establish text/formula fidelity or reject redundant whole-claim implications.",
+      "handoff_utc": "2026-10-30T22:33:00Z",
+      "queued_metadata": 1,
+      "queued_licensed_routes": 0,
+      "dispatch_hold": "awaiting_native_grounding_admission"
+    }
+  },
+  {
+    "id": "audit-flags",
+    "file": "figures/audit-flags.svg",
+    "caption": "These are separate observed audits, not a quality trend or independent trials. R5 changed 44→0 without text repair. B/1 still refused with six union findings despite a clean sample. T2 had a clean earlier polished gate but failed quotation fidelity; after exact title repair its final [9,6,0] union refused again. The delivered PDF remains its verified original.",
+    "data": {
+      "series": [
+        [
+          "Identical prompt\nR5 route 1",
+          [
+            44,
+            0
+          ],
+          [
+            "sample 1",
+            "sample 2"
+          ]
+        ],
+        [
+          "B/1 final gate",
+          [
+            5,
+            4,
+            0
+          ],
+          [
+            "1",
+            "2",
+            "3"
+          ]
+        ],
+        [
+          "T2 polish gates",
+          [
+            7,
+            14,
+            13,
+            0,
+            0,
+            0
+          ],
+          [
+            "a1",
+            "a2",
+            "a3",
+            "b1",
+            "b2",
+            "b3"
+          ]
+        ],
+        [
+          "T2 title-only final",
+          [
+            9,
+            6,
+            0
+          ],
+          [
+            "1",
+            "2",
+            "3"
+          ]
+        ]
+      ],
+      "sources": [
+        "R20",
+        "R55",
+        "R56",
+        "R66"
+      ]
+    }
+  },
+  {
+    "id": "candidate-pipeline",
+    "file": "figures/candidate-pipeline.svg",
+    "caption": "Distinct entry paths and output claims. The current two proposal PDFs reproduce verified originals. Native generation/audit was not claimed for meta’s fallback analysis. A refused polished revision is never replaced in the ledger with a rendering pass.",
+    "data": {
+      "sources": [
+        "R33",
+        "R55",
+        "R56",
+        "R57"
+      ]
+    }
+  },
+  {
     "id": "api-cost",
     "file": "figures/api-cost.svg",
     "caption": "Measured API cost is $131.785270; unknown-at-reservation is $1.844820. The sum, $133.630090, is a budget-accounting figure, not an invoice. Subscription calls contribute no API USD here. Earlier development/smoke work and later writing/polish are outside this report’s lineage.",
@@ -578,70 +708,2288 @@
     }
   },
   {
-    "id": "context-admission",
-    "file": "figures/context-admission.svg",
-    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); the later actual two-hop A results are reported separately in §3.3. This historical unpacked template adds 299 tokens. The later stage-window defect was closed by r14 review. These plan estimates do not prove service capacity.",
+    "id": "review-ledger",
+    "file": "figures/review-ledger.svg",
+    "caption": "Review findings are attached to exact revisions and exercised boundaries. “Closed” refers to a software finding, not to an argument route or philosophical question.",
     "data": {
-      "plans": [
-        {
-          "label": "Historical unpacked",
-          "input": 311785,
-          "output": 16384,
-          "total": 328169,
-          "bound": 200000,
-          "status": "refused before dispatch"
-        },
-        {
-          "label": "Packed / original bound",
-          "input": 105724,
-          "output": 16384,
-          "total": 122108,
-          "bound": 200000,
-          "status": "offline fit"
-        },
-        {
-          "label": "Packed / 272k window",
-          "input": 105724,
-          "output": 16384,
-          "total": 122108,
-          "bound": 239232,
-          "status": "offline fit"
-        },
-        {
-          "label": "Unpacked / 872k window",
-          "input": 312084,
-          "output": 16384,
-          "total": 328468,
-          "bound": 839232,
-          "status": "offline fit"
-        },
-        {
-          "label": "Packed / 872k window",
-          "input": 105724,
-          "output": 16384,
-          "total": 122108,
-          "bound": 839232,
-          "status": "offline fit"
-        }
+      "headers": [
+        "Boundary",
+        "Failure found",
+        "Disposition / limit"
       ],
-      "source": [
-        "reports/overnight/gap1f/handoff.md",
-        "reports/sigma-round13.md",
-        "briefs/zeta-gap-fork2.md"
-      ],
-      "forks": [
-        {
-          "fork": "A",
-          "context": "packed, hops=2",
-          "full_commitments": null,
-          "results": "pending"
-        },
-        {
-          "fork": "B",
-          "context": "unpacked; proposed run-level window 600000",
-          "results": "pending"
-        }
+      "rows": [
+        [
+          "Identity",
+          "S12: fixture drift; gap1 echoed IDs",
+          "Runtime binding / resume; semantics separate"
+        ],
+        [
+          "Output evidence",
+          "NP-F1–3; R2-F1/F2; DLV-F1",
+          "Screening, titles, occurrence IDs, citations and retry dissent retained"
+        ],
+        [
+          "Novelty",
+          "R28-F1/F2: padding / inconsistent union",
+          "Closed in reviewed xi29; real novelty still unproved"
+        ],
+        [
+          "Context",
+          "S13-F1/F2: stage/provider mismatch",
+          "Normalized before cache/admission"
+        ],
+        [
+          "H disclosure",
+          "X32-F1–3: padding / negation / hidden H",
+          "Runtime disclosure; gap3h not derived"
+        ],
+        [
+          "Retrieval",
+          "PACK-F1/F2: missing vocabulary / bases",
+          "Packing2 offline basis coverage restored"
+        ],
+        [
+          "Proof quality",
+          "PACK-F3; N4-F1: unrelated failure",
+          "Pass retracted; causal controls repaired"
+        ],
+        [
+          "Inline output",
+          "Combined 3a365a5: 6/6 seam tests",
+          "Reviewed; live publication verdict pending"
+        ]
       ]
+    }
+  },
+  {
+    "id": "iterations",
+    "file": "figures/iterations.svg",
+    "caption": "Iterations grouped by the core mechanism they changed. The alignment refusal, cardinality stop, invalid pass retraction and pending repairs remain visible; this is not a monotonic success timeline.",
+    "data": {
+      "headers": [
+        "Concept / iteration",
+        "Observed failure",
+        "Response / outcome"
+      ],
+      "rows": [
+        [
+          "21–25 Oct: extraction",
+          "Small summaries; malformed ranges/inferences",
+          "Rich evidence, grounding, disclosed omissions"
+        ],
+        [
+          "Construction bounds",
+          "86k singleton / 70k; false 70–90-token claim",
+          "Window metadata, bounded closure; ~233-token correction"
+        ],
+        [
+          "29 Oct: gap1 / r12",
+          "74 windows; alignment ID mismatch at 36/150",
+          "ID-free recovery → frozen T160; target admission then stops"
+        ],
+        [
+          "Novelty / R28",
+          "Whole-T exclusion; padding / inconsistent union",
+          "Per-paper gate; zero qualifying real-source census"
+        ],
+        [
+          "29–30 Oct: forks",
+          "141/160 atoms; zero source sharing",
+          "100 OPEN, only one partial B sign inference"
+        ],
+        [
+          "30 Oct: gap3 / packing",
+          "243 commitments; admission / unknown CLI exits",
+          "Gap3p fits but omits bases; 46 OPEN"
+        ],
+        [
+          "30 Oct: r17 / gap4a",
+          "Prompt delivered; 0/292 source-shared symbols",
+          "Consolidation added; alignment still pending"
+        ],
+        [
+          "30 Oct: r18–r21",
+          "Echoed IDs, attribution, cardinality regression",
+          "r19 binding; r20 22/30 batches; r21 pending"
+        ],
+        [
+          "Writing / audits",
+          "44→0; bibliography zero; refused polish",
+          "k=3 union, local citations, verified originals"
+        ],
+        [
+          "Review / operation",
+          "Basis omission, unrelated mutation failure, empty jobs",
+          "Packing2, corrected proof, native ten-job pause"
+        ]
+      ]
+    }
+  },
+  {
+    "id": "credits",
+    "file": "figures/credits.svg",
+    "caption": "Compact role map; §10 retains individual histories and evidence paths for all 43 workers plus the orchestrator. Agent identifiers are credits, not human identities. Model/version uncertainty is retained.",
+    "data": {
+      "headers": [
+        "Contribution cluster",
+        "Recorded identifiers"
+      ],
+      "rows": [
+        [
+          "Sources / extraction",
+          "alpha, beta, epsilon, gamma, delta, theta, eta, iota, mu"
+        ],
+        [
+          "Pilots / source review",
+          "zeta, kappa, lambda, omicron, rho, tau, upsilon"
+        ],
+        [
+          "Construction / search",
+          "sigma, xi, xi2, omega, fwd; phi, psi, chi"
+        ],
+        [
+          "Integration / independent review",
+          "kappa2, kappa3, kappa4, kappa5; rho2, rho3, tau2, upsilon2, phi2, omicron3, chi2, lambda2"
+        ],
+        [
+          "Writing / publication / literature",
+          "nu, nu4, pi, pi3, eps2, meta"
+        ],
+        [
+          "Operations / direction",
+          "janitor; orchestrator; anonymised human operator"
+        ]
+      ]
+    }
+  },
+  {
+    "id": "atlas-A-1",
+    "file": "figures/atlas-A-1.svg",
+    "caption": "Every retained A target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "formula": {
+            "args": [],
+            "name": "compare_measure_semantics_against_possibility_consequence",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "A comparison of the measure-valued proposal with the partial-possibility logic should test whether the former can reproduce the latter’s consequence behavior; their different semantic-value formats alone do not establish incompatibility.",
+          "routes": [
+            {
+              "id": "672ca3c77265:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "3ddacb48fef7:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A01"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "moss2015_dialogue_requires_distinguishing_probability_reply_from_simple_epistemic_possibility",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "A semantics of the dialogue in (37) must distinguish the “Almost certainly” reply from a simple epistemic-possibility utterance, rather than infer the reply’s interpretation from an account of simple epistemic modals.",
+          "routes": [
+            {
+              "id": "63d8a95ab854:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "5d42acedabf7:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A02"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "assessment_sensitivity_and_bem_indeterminacy_are_distinct_explanatory_dimensions",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Assessment sensitivity and BEM indeterminacy are distinct explanatory dimensions: the former concerns whether truth varies with the context of assessment, while the latter concerns which group's information is relevant. Adopting one therefore does not by itself refute the other.",
+          "routes": [
+            {
+              "id": "4f776bdb99e9:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "d68bf4e2312a:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A03"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_world_quantification_is_operator_level_while_the_alternative_content_claim_applies_to_the_analyzed_probably_utterance",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Epistemic modals can quantify over possible worlds at the operator level, while the alternative-semantics claim applies at least to the analyzed “probably” utterance in dialogue (37b); it need not deny possible-world quantification generally.",
+          "routes": [
+            {
+              "id": "cfba2c366f63:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "857d29a1f989:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A04"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_quantification_does_not_require_every_modal_sentence_to_express_possible_worlds_content",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Epistemic modals can quantify over possible worlds without every sentence containing an epistemic modal expressing possible-worlds content.",
+          "routes": [
+            {
+              "id": "6279c896a2ea:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "282a4cf303c2:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A05"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "quantified_dynamic_evidence_does_not_defeat_ortholattice_contradiction_account",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Even if the dynamic approach is favored for its predictions about quantified sentences, that evidence alone does not displace the ortholattice account of genuine epistemic contradictions.",
+          "routes": [
+            {
+              "id": "20496168ab5b:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "d2802092a5cd:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A06"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "assessment_relative_truth_conditions_without_absolute_truth",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "For epistemic modals, truth-conditionality and absolute truth are distinct commitments: assessment-relative truth conditions can preserve the former without the latter.",
+          "routes": [
+            {
+              "id": "7b89efb524ff:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "eb2099d01fb7:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A07"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "egan_yalcin_distinct_criteria_compatibility",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "For epistemic possibility, passing the communicative-objection test for relativist semantics and favoring the informational view for pragmatics and informational consequence are compatible assessments of different criteria; success on the former does not by itself rule out the latter.",
+          "routes": [
+            {
+              "id": "eee4206a3e09:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "9c241b4da567:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A08"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_retraction_bridge",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "For epistemic-modal knowledge claims, information available to a later assessor can bear on whether the earlier claim meets worldly-information safety, but does not replace the information determined at nearby worlds; assessment-sensitive retraction norms govern whether retraction is required.",
+          "routes": [
+            {
+              "id": "ba82066bf420:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "4de3296e5b07:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A09"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "almost_certainly_updates_shared_probabilistic_information",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "In the “Almost certainly” exchange, the reply should update interlocutors’ shared probabilistic information about whether Liem is wearing green, rather than assert a possible-worlds proposition.",
+          "routes": [
+            {
+              "id": "b3da076061d8:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "96415344f12b:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A10"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "simple_epistemic_reply_has_nonfactual_coordination_not_factual_report",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "In the “Almost certainly” exchange, the reply’s simple epistemic use should be analyzed as nonfactual coordination between interlocutors, not as a factual report of the speaker’s information.",
+          "routes": [
+            {
+              "id": "cdbac7c384f6:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "50d0280ef2da:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A11"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "information_sensitive_safety_compatible_with_unrestricted_cd_failure",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Information-sensitive Safety is compatible with unrestricted second constructive dilemma leading to bad results: a condition on knowledge of epistemic modal claims can hold while that inference form requires restriction.",
+          "routes": [
+            {
+              "id": "690e8077969d:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "aca75ca9756e:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A12"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "moss2015_dialogue_reply_requires_semantics_beyond_simple_epistemic_modals",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Interpreting “Almost certainly” as a reply to “Is Liem probably wearing green?” requires an account of probabilistic replies beyond an account restricted to simple epistemic modals.",
+          "routes": [
+            {
+              "id": "e0b4953d6d01:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "75ce43a57986:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A13"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_safety_and_inference_require_distinct_assessments",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Knowledge of epistemic modals and the validity of inferences involving modal premises require distinct assessments: satisfying an information-sensitive knowledge condition does not by itself license an unrestricted constructive-dilemma inference.",
+          "routes": [
+            {
+              "id": "e4480396e5fb:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "99d4220b42ce:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A14"
+        }
+      ],
+      "sources": [
+        "R28"
+      ]
+    }
+  },
+  {
+    "id": "atlas-A-2",
+    "file": "figures/atlas-A-2.svg",
+    "caption": "Every retained A target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "formula": {
+            "args": [],
+            "name": "assessment_truth_evaluation_does_not_refute_expressive_semantic_value",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "MacFarlane’s assessment-sensitive proposal concerns truth evaluation and the motivation for expressivism, whereas the expressivist thesis concerns part of semantic value; the stated in-house scope does not compare these claims, so the proposal does not by itself refute that thesis.",
+          "routes": [
+            {
+              "id": "01b74c5f870e:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "e29a3cdedae1:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A15"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "Motivational support for alternatives to contextualism and the empirical case for relativist semantics are distinct questions.",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Motivational support for alternatives to contextualism and the empirical case for relativist semantics are distinct questions.",
+          "routes": [
+            {
+              "id": "408d94a16b23:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "342a28812c13:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A16"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "Motivational support for alternatives to contextualism does not by itself establish relativist semantics as the best account of epistemic-modal thought and talk; that case requires empirical assessment.",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Motivational support for alternatives to contextualism does not by itself establish relativist semantics as the best account of epistemic-modal thought and talk; that case requires empirical assessment.",
+          "routes": [
+            {
+              "id": "e02e6b9335d7:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "6382684e70f4:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A17"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "quantified_epistemic_modal_success_is_distinct_from_genuine_contradiction_adequacy",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Success in explaining quantified epistemic-modal defects is a distinct criterion from making epistemic contradictions genuine; support for the dynamic direction on the quantified challenge does not by itself answer the contradiction criterion.",
+          "routes": [
+            {
+              "id": "0f75d8f50493:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "48f2f352d56d:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A18"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "bem_indeterminacy_is_competing_account_not_literal_negation_of_assessment_sensitivity",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The BEM approach’s use of standard context-dependent semantics and indeterminacy about the relevant information group is a competing explanation of epistemic modals, not a literal negation of assessment-sensitive truth.",
+          "routes": [
+            {
+              "id": "a5129575886d:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "fca14073e3a0:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A19"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "qualified_architectural_scope_distinction",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The Moss probability-measure proposal and the von Fintel–Gillies account should be treated as distinct architectures, not as a demonstrated contradiction: the former assigns probability-measure sets to epistemic expressions including indicative conditionals, while the latter’s stated account concerns bare epistemic modals and explains their behavior through context dependence and pragmatics. This qualified distinction does not establish that either architecture supersedes or is equivalent to the other.",
+          "routes": [
+            {
+              "id": "da0a326ab31f:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "ea3954fc66ce:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A20"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "comparison_scope_restricted_by_expression_class",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The comparison should be restricted by expression class: the probability-measure proposal covers epistemic modals and indicative conditionals, whereas the indeterminacy and context-dependent-pragmatics claims at issue concern bare epistemic modals. The latter claims therefore do not settle whether the former proposal is appropriate for indicative conditionals.",
+          "routes": [
+            {
+              "id": "50d1bb646287:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "70470fe3829f:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A21"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "quantified_dynamic_support_does_not_settle_contradiction_status",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The dynamic direction’s support concerning quantified epistemic-modal phenomena does not by itself settle the contradiction behavior of epistemic-modal formulas; that behavior requires separate assessment, including against the ortholattice approach.",
+          "routes": [
+            {
+              "id": "4e1d08c342d7:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "122ee4bd88f2:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A22"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_consequence_and_value_type_are_distinct_dimensions",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The epistemic consequence relation and the type of semantic values assigned to epistemic sentences are distinct dimensions; a possibility-based account and a measure-based proposal need not be rival answers on a single axis.",
+          "routes": [
+            {
+              "id": "44250970668a:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "ab4b9cb65108:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A23"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_resistance_targets_absolute_truth_frameworks",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The resistance of epistemic modals to standard truth-conditional frameworks concerns frameworks requiring absolute truth values; assessment-sensitive truth conditions remain viable without absolute truth values.",
+          "routes": [
+            {
+              "id": "3a1d1d743738:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "b6bff38415fd:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A24"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "expressive_value_and_assessor_relative_truth_address_distinct_explananda",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The semantic-value question addressed by expressivism and the question whether epistemic-modal truth varies with the assessor are distinct explananda, not competing answers to one question.",
+          "routes": [
+            {
+              "id": "7c2e0b92d3c5:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "279df44e65e7:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A25"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "probable_reply_as_information_coordination",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The “Almost certainly” reply should be interpreted as coordinating interlocutors on their information, rather than as expressing a possible-worlds proposition.",
+          "routes": [
+            {
+              "id": "3afb2d33a1a2:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "b08e7a9cfbe3:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A26"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "world_quantification_by_epistemic_modals_is_compatible_with_a_non_possible_worlds_semantics_for_mosss_analyzed_probably_dialogue",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "World quantification by epistemic modals is compatible with a non-possible-worlds semantics for Moss’s analyzed “probably” dialogue.",
+          "routes": [
+            {
+              "id": "54c0c50f8e7f:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "e50547c99866:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "A27"
+        }
+      ],
+      "sources": [
+        "R28"
+      ]
+    }
+  },
+  {
+    "id": "atlas-B-1",
+    "file": "figures/atlas-B-1.svg",
+    "caption": "Every retained B target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "formula": {
+            "args": [],
+            "name": "worldly_information_safety_licenses_assessment_sensitive_retraction",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "A later assessor should require retraction of an earlier epistemic-modal knowledge claim only when it fails information-sensitive safety relative to the worldly information at nearby worlds relevant to that claim; such a failure, rather than mere disagreement, supplies the retraction basis.",
+          "routes": [
+            {
+              "id": "a08ae7ed3885:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "738788af9ab9:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B01"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "standard_semantic_machinery_does_not_exclude_assessment_sensitive_truth",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "A proposal's use of standard context-dependent semantic machinery does not by itself show that epistemic-modal truth is independent of the assessor; thus that methodological advantage alone does not settle whether assessment sensitivity is needed.",
+          "routes": [
+            {
+              "id": "b91eacc7f3f3:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "41886fc92477:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B02"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "adequate_epistemic_modal_retraction_account_requires_explicit_safety_to_assessment_bridge",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "An adequate account of epistemic-modal retraction must specify how worldly information at nearby worlds bears on knowledge safety and how retraction norms apply across assessment contexts; neither condition alone establishes the link.",
+          "routes": [
+            {
+              "id": "eb324864f330:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "81843fadc06c:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B03"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_knowledge_retraction_requires_nearby_world_safety_failure",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "An assessment-sensitive retraction of an epistemic-modal knowledge claim is warranted only when the claim fails the nearby-world worldly-information safety condition; a later assessor's disagreement alone is insufficient.",
+          "routes": [
+            {
+              "id": "9c0f9f193ad8:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "3fc2f67bcaab:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B04"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "assessment_sensitivity_and_group_indeterminacy_compatible",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Assessment-relative truth for epistemic-modal claims is compatible with indeterminacy about which group's information a bare modal quantifies over: assessor-relative evaluation need not determine a unique information group, and group indeterminacy need not eliminate assessor-sensitive truth.",
+          "routes": [
+            {
+              "id": "5018a7c33749:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "d2134c87fc85:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B05"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "communicative_adequacy_and_informational_consequence_are_distinct_explananda",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Communicative adequacy for relativist epistemic-modal semantics and intuitive support for informational pragmatics are distinct explananda: success on the former does not test the latter.",
+          "routes": [
+            {
+              "id": "0af1f7ba1664:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "8af9d2f19820:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B06"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "contextually_supplied_perspective_restrictors_do_not_determine_a_unique_investigator_group_for_bare_epistemic_modals",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Contextually supplied perspective restrictors do not by themselves determine a unique group of investigators whose aggregated information fixes the interpretation of a bare epistemic modal.",
+          "routes": [
+            {
+              "id": "6bfb4cc1ff6b:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "669ae2608574:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B07"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modals_probability_content_compatibility",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Epistemic modal quantification over possible worlds is compatible with probability expressions such as “probably” lacking possible-worlds contents, because those claims concern different semantic levels.",
+          "routes": [
+            {
+              "id": "8bab19da2e3e:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "73ebb26dd543:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B08"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "modal_quantification_does_not_fix_embedded_probability_content",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Epistemic modals can quantify over possible worlds without probability expressions embedded under epistemic vocabulary expressing possible-worlds content.",
+          "routes": [
+            {
+              "id": "7bbcf1a75a5f:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "41f2ddf34a02:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B09"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_relativism_is_better_supported_than_solipsistic_contextualism_across_dispute_and_communication_considerations",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "For epistemic modals, relativism is better supported than Solipsistic Contextualism when both genuine-dispute cases and the communicative objection are considered.",
+          "routes": [
+            {
+              "id": "9bbec9815bf9:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 3,
+              "inferences": 1
+            },
+            {
+              "id": "42b3f5537687:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B10"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "group_parameter_selection_differs_from_assessment_sensitive_truth_evaluation",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "In epistemic-modal semantics, indeterminacy over which group's information is relevant concerns parameter selection, whereas assessment sensitivity concerns how a claim's truth is evaluated; neither thesis alone settles the other's question.",
+          "routes": [
+            {
+              "id": "b754def514a7:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "f92bf3a8158a:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B11"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "probability_reply_evidential_comment",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "In probability-question dialogue, a reply such as “Almost certainly” functions as an evidential comment on the prejacent, rather than as an assertion of the prejacent’s truth.",
+          "routes": [
+            {
+              "id": "22bf99979edf:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "8a870ba7e52f:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B12"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "probability_question_answer_level_distinction",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "In the cited dialogue, “Almost certainly” answers the probability question at the level of the likelihood assigned to the prejacent; it does not assert the prejacent itself.",
+          "routes": [
+            {
+              "id": "9b21e8e5d724:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "10dd3a0e1771:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B13"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_architecture_comparison_requires_separating_semantic_values_from_information_selection",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Moss’s probability-measure proposal concerns the semantic values assigned to epistemic expressions, whereas von Fintel and Gillies’s account concerns indeterminate group-information selection for bare epistemic modals. Their commitments warrant comparing these distinct dimensions, but do not establish that the approaches are incompatible, equivalent, or exhaustive alternatives.",
+          "routes": [
+            {
+              "id": "1b916b3296f8:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "bf364f6c076d:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B14"
+        }
+      ],
+      "sources": [
+        "R28"
+      ]
+    }
+  },
+  {
+    "id": "atlas-B-2",
+    "file": "figures/atlas-B-2.svg",
+    "caption": "Every retained B target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "formula": {
+            "args": [],
+            "name": "probability_measure_and_cloud_context_architectures_are_distinct",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Moss’s probability-measure semantics for epistemic expressions and von Fintel and Gillies’s account of indeterminate group information for bare epistemic modals address distinct architectural questions. The bounded review supports only a qualified comparison: later work offers partial treatments, but the evidence establishes neither incompatibility, equivalence, supersession, nor an exhaustive current-open verdict.",
+          "routes": [
+            {
+              "id": "5b41f3336f12:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "d9d25eb5bf30:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B15"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "consequence_value_distinction_blocks_incompatibility_inference",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "On the stated claims, a possibility-based account of epistemic-modal consequence and a proposal to use sets of probability measures as semantic values address different formal questions; their difference alone does not establish incompatibility.",
+          "routes": [
+            {
+              "id": "7b0aa9644e1d:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "62dbceeabf95:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B16"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "communicative_survival_does_not_settle_informational_preference",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "Surviving the communicative objection does not settle whether the informational view of epistemic-modal pragmatics is preferable: the former concerns communicative adequacy, while the latter concerns intuitive support for an informational view.",
+          "routes": [
+            {
+              "id": "74b65c50d124:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "d96365e25158:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B17"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "modal_scope_does_not_determine_probability_sentence_content",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The fact that epistemic modals quantify over possible worlds does not determine whether a sentence containing “probably” expresses possible-worlds content; in the dialogue case, an alternative semantics is needed.",
+          "routes": [
+            {
+              "id": "adf7563cd078:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "f8b0d3144f94:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B18"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "epistemic_modal_motivation_and_dispute_success_are_independent",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The grounds for pursuing alternatives to contextualism about epistemic modals and an account’s success in explaining genuine disputes about what might be the case are independent criteria; motivation to pursue alternatives does not by itself establish that an alternative explains those disputes.",
+          "routes": [
+            {
+              "id": "59ab1da28eb3:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "4aea4422bb3a:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B19"
+        },
+        {
+          "formula": {
+            "args": [],
+            "name": "probability_dialogue_evidential_comment_analysis",
+            "op": "atom",
+            "terms": [],
+            "variable": null
+          },
+          "text": "The “Almost certainly” reply in probability-question dialogue is best analyzed as an evidential comment within a measure-valued semantics, rather than as an ordinary possible-worlds assertion.",
+          "routes": [
+            {
+              "id": "0aa9abb15cda:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            },
+            {
+              "id": "2ca35430800d:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "inferences": 0
+            }
+          ],
+          "atlas_id": "B20"
+        }
+      ],
+      "sources": [
+        "R28"
+      ]
+    }
+  },
+  {
+    "id": "atlas-C-1",
+    "file": "figures/atlas-C-1.svg",
+    "caption": "Every retained C target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "atlas_id": "C01",
+          "text": "For the same earlier might-assertion and fixed use context, obligatory retraction at a later assessment context occurs if and only if its original belief fails worldly-information safety as evaluated there. In particular, safety preservation rules out an obligation to retract.",
+          "formula": {
+            "op": "atom",
+            "args": [],
+            "name": "same_earlier_might_assertion_retraction_iff_worldly_information_safety",
+            "terms": [],
+            "variable": null
+          },
+          "routes": [
+            {
+              "route_id": "fd8746ca661d:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "supports": [],
+              "licensed_inferences": [],
+              "CQs": []
+            },
+            {
+              "route_id": "22cf570e271f:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "supports": [],
+              "licensed_inferences": [],
+              "CQs": []
+            }
+          ],
+          "literature": "not_found"
+        },
+        {
+          "atlas_id": "C02",
+          "text": "For the same earlier might-assertion and fixed use context, if its original belief fails worldly-information safety as evaluated at a later assessment context, then retraction of that assertion is obligatory at that assessment context.",
+          "formula": {
+            "op": "atom",
+            "args": [],
+            "name": "later_assessment_safety_failure_requires_retraction",
+            "terms": [],
+            "variable": null
+          },
+          "routes": [
+            {
+              "route_id": "bfac7f5a7ea2:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "supports": [],
+              "licensed_inferences": [],
+              "CQs": []
+            },
+            {
+              "route_id": "04193e187ad7:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "supports": [],
+              "licensed_inferences": [],
+              "CQs": []
+            }
+          ],
+          "literature": "partially_anticipated"
+        },
+        {
+          "atlas_id": "C03",
+          "text": "For the same earlier might-assertion and fixed use context, if retraction of that assertion is obligatory at a later assessment context, then its original belief fails worldly-information safety as evaluated there. In particular, safety preservation rules out an obligation to retract.",
+          "formula": {
+            "op": "atom",
+            "args": [],
+            "name": "target1",
+            "terms": [],
+            "variable": null
+          },
+          "routes": [
+            {
+              "route_id": "7d7fbc89dd77:r0",
+              "polarity": "target",
+              "status": "OPEN",
+              "nodes": 1,
+              "supports": [],
+              "licensed_inferences": [],
+              "CQs": []
+            },
+            {
+              "route_id": "cb2543568a75:r0",
+              "polarity": "negation",
+              "status": "OPEN",
+              "nodes": 1,
+              "supports": [],
+              "licensed_inferences": [],
+              "CQs": []
+            }
+          ],
+          "literature": "not_found"
+        }
+      ],
+      "sources": [
+        "R28"
+      ]
+    }
+  },
+  {
+    "id": "atlas-gap3p-1",
+    "file": "figures/atlas-gap3p-1.svg",
+    "caption": "Every retained gap3p target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "atlas_id": "G01",
+          "text": "Information-sensitive safety for probabilistic modal knowledge does not by itself license a retraction obligation: that obligation requires the separate assessment-sensitive condition that the earlier assertion is not true as used and assessed from the later context.",
+          "target_id": "external:eps2-L3:target_worldly_safety_retraction_distinction",
+          "routes": [
+            {
+              "route_id": "bb2bcc569335:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "9e83d5db0cde:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "T1",
+            "lit_verdict": "partially_anticipated",
+            "relation": "Challenges the sufficiency bridge rather than asserting T1.",
+            "qualification": "Closest thesis comparison only; inherited literature verdict is not an exact-match or novelty certification. Potential necessity overstatement: MacFarlane n27 gives a sufficient trigger, not an exhaustive required condition. Does not establish T2 or either direction. Native attempt-1 preflight passed; derivation and substantive clearance pending.",
+            "mapping_by": "zeta substantive comparison",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G02",
+          "text": "Agreement and subject-directed attitude-ascription motivations for alternatives to contextualism support an assessment-sensitive, truth-conditional alternative.",
+          "target_id": "gap:e7d1b6e20262d0d61eb4135799c7ca8a2649dd6792003a9fb794e9bd9060a7a4:resolve_motivations",
+          "routes": [
+            {
+              "route_id": "0c8f797966f2:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "2984c0ce59b4:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G03",
+          "text": "Agreement and subject-directed attitude-ascription motivations for alternatives to contextualism can be addressed by assessment-sensitive semantics without requiring propositions to have non-worldly contents.",
+          "target_id": "gap:e7d1b6e20262d0d61eb4135799c7ca8a2649dd6792003a9fb794e9bd9060a7a4:gap:e7d1b6e20262d0d61eb4135799c7ca8a2649dd6792003a9fb794e9bd9060a7a4:resolve_without_nonworldly_contents",
+          "routes": [
+            {
+              "route_id": "eaaecfd6e74b:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "86527420bcd2:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G04",
+          "text": "For epistemic modals, the agreement-based case for moving beyond contextualism can be met by making truth assessment-sensitive without abandoning truth-conditional semantics.",
+          "target_id": "gap:e7d1b6e20262d0d61eb4135799c7ca8a2649dd6792003a9fb794e9bd9060a7a4:gap:e7d1b6e20262d0d61eb4135799c7ca8a2649dd6792003a9fb794e9bd9060a7a4:resolve_agreement_without_abandoning_truth_conditions",
+          "routes": [
+            {
+              "route_id": "40c680a50057:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "7ecd54681cc8:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G05",
+          "text": "Assessment-context selection of relevant information is compatible with a bindable covert partition argument: both can hold without either excluding the other.",
+          "target_id": "gap:9ba7debe6840452db491ddc274e7c771e348afccee2085722021a6950e689df2:epistemic_modals_compatible_assessment_and_partition_accounts",
+          "routes": [
+            {
+              "route_id": "5e120049a7a4:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "b09743986230:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G06",
+          "text": "Assessment-context selection of relevant information and binding of a covert partition argument are distinct semantic dimensions: one concerns which information is relevant at assessment, the other how epistemic vocabulary binds across partitions.",
+          "target_id": "gap:9ba7debe6840452db491ddc274e7c771e348afccee2085722021a6950e689df2:gap:9ba7debe6840452db491ddc274e7c771e348afccee2085722021a6950e689df2:assessment_selection_partition_binding_distinction",
+          "routes": [
+            {
+              "route_id": "45995c75c738:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "f1747dffd8bb:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G07",
+          "text": "Binding by “however you look at it” supports a bindable covert partition argument, but does not by itself show that the relevant information for epistemic modals is fixed at utterance context rather than selected by assessment-context features.",
+          "target_id": "gap:9ba7debe6840452db491ddc274e7c771e348afccee2085722021a6950e689df2:gap_resolution_partition_binding_evidence_scope",
+          "routes": [
+            {
+              "route_id": "b8e795e9dfe0:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "c880a2dd5cdf:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G08",
+          "text": "A possibility-based semantic account of epistemic modals and an adverbialist account of epistemic modal attitudes address distinct levels—semantic building blocks and a believer’s doxastic relation to a proposition, respectively—and are compatible only if the former does not identify modal contents with a distinctive class of believed contents; absent that separation, they conflict.",
+          "target_id": "gap:d2a63327a913e4d1d9f4dce789df2722d87ccf26ae929f28e15a89482f03398b:gap:d2a63327a913e4d1d9f4dce789df2722d87ccf26ae929f28e15a89482f03398b:level_separation_condition",
+          "routes": [
+            {
+              "route_id": "41258019eb5f:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "5617abcdcf71:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G09",
+          "text": "An adverbialist account of a subject’s epistemic-modal attitude does not by itself specify the semantic consequence relation for the modal claim; that relation must be separately specified before possibility-framework constraints on p and ◇¬p can be assessed.",
+          "target_id": "gap:d2a63327a913e4d1d9f4dce789df2722d87ccf26ae929f28e15a89482f03398b:gap_d2a63327_semantics_attitudes_distinction",
+          "routes": [
+            {
+              "route_id": "f389096adbf7:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "b3fe3830203b:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G10",
+          "text": "A semantic framework can explain epistemic possibility through assertibility and entailment without treating ◇φ as a distinct proposition or positing ◇φ-worlds.",
+          "target_id": "gap:84769c9c30598cdd0425ce3a4e27bd72bba23ade5fdb5ded75f76e0a08dbf0b5:target_gap_resolution",
+          "routes": [
+            {
+              "route_id": "2451dcd023c0:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "a8f0c7ce12e6:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G11",
+          "text": "An assertibility clause for epistemic possibility does not by itself commit a theory to a distinct proposition expressed by ◇φ or to ◇φ-worlds; it can characterize how information states treat possibility while leaving the ontology of modal attitudes open.",
+          "target_id": "gap:84769c9c30598cdd0425ce3a4e27bd72bba23ade5fdb5ded75f76e0a08dbf0b5:gap:84769c9c30598cdd0425ce3a4e27bd72bba23ade5fdb5ded75f76e0a08dbf0b5:target_gap_resolution_revised",
+          "routes": [
+            {
+              "route_id": "e401e4150b52:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "55bf3fcd380b:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G12",
+          "text": "The assertibility clause for epistemic possibility and the adverbialist account of the corresponding doxastic attitude address distinct explanatory levels: the clause characterizes how information states treat sentences, while the attitude concerns an agent’s relation to the prejacent; the former does not establish that the latter has a distinctive modal content.",
+          "target_id": "gap:84769c9c30598cdd0425ce3a4e27bd72bba23ade5fdb5ded75f76e0a08dbf0b5:gap:84769c9c30598cdd0425ce3a4e27bd72bba23ade5fdb5ded75f76e0a08dbf0b5:target_gap_resolution_levels",
+          "routes": [
+            {
+              "route_id": "afa1c11eb666:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "8c6575cdd560:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G13",
+          "text": "The epistemic-contradiction pattern is accommodated in the possibility framework by separating compatibility from compossibility, while the three constraints remain incompatible under classical consequence; the claims therefore concern distinct consequence settings.",
+          "target_id": "gap:7ef2b576d386d7b932c1bbcecb7bfaa97607ca55c6efba4b2756692b8047298c:target_gap_resolution",
+          "routes": [
+            {
+              "route_id": "12f8d5c37f82:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "f7901a3ccbb1:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G14",
+          "text": "The possibility-framework treatment accommodates epistemic contradiction without making the three constraints jointly compatible under classical consequence.",
+          "target_id": "gap:7ef2b576d386d7b932c1bbcecb7bfaa97607ca55c6efba4b2756692b8047298c:gap_resolution_possibility_classical_scope",
+          "routes": [
+            {
+              "route_id": "2111ab67d6e4:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "2f5923599914:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        }
+      ],
+      "sources": [
+        "R53"
+      ]
+    }
+  },
+  {
+    "id": "atlas-gap3p-2",
+    "file": "figures/atlas-gap3p-2.svg",
+    "caption": "Every retained gap3p target in this panel has both polarity routes. Labels are abbreviated; exact text/formulas and route IDs are retained in the figure data. These rows are records, not a count of distinct novel theses.",
+    "data": {
+      "rows": [
+        {
+          "atlas_id": "G15",
+          "text": "The compatibility claim in the possibility framework is not a counterexample to the classical incompatibility result: compatibility and classical consequence are distinct relations.",
+          "target_id": "gap:7ef2b576d386d7b932c1bbcecb7bfaa97607ca55c6efba4b2756692b8047298c:compatibility_is_not_classical_consequence",
+          "routes": [
+            {
+              "route_id": "0ac2768a6545:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "0d814dba76cd:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G16",
+          "text": "Relativism surviving the communicative objection and binding effects supporting a contextualist theory concern distinct explanatory considerations and are compatible claims; neither by itself settles which theory is the general semantics of epistemic modals.",
+          "target_id": "gap:bb2ca48ec96143f8be29ce11e98b3d9517bcaafa74bc9b7925eab5476725752b:target_scope_distinction",
+          "routes": [
+            {
+              "route_id": "9fe2fd82d33b:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "ec5b81db684f:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G17",
+          "text": "Moss’s binding-effects argument is evidence for a contextualist theory, while Egan’s communicative-test result concerns whether relativist semantics passes that test; the former does not defeat the latter.",
+          "target_id": "gap:bb2ca48ec96143f8be29ce11e98b3d9517bcaafa74bc9b7925eab5476725752b:gap_binding_evidence_vs_communicative_test",
+          "routes": [
+            {
+              "route_id": "c0c52359c854:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "f22a86ed8941:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G18",
+          "text": "Epistemic possibility talk can be assessed relative to information selected by the context of assessment while expressing compatibility with a mental state to coordinate interlocutors: assessment sensitivity concerns how utterances are evaluated, whereas expressivism concerns what possibility talk expresses.",
+          "target_id": "gap:b6282201189cea65e3a9a50ab6e715c9a560b9f6064feacbe58fd4d32427e403:assessment-sensitive-expressivist-compatibility",
+          "routes": [
+            {
+              "route_id": "7543212561f1:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "a5eae12e3fce:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G19",
+          "text": "In epistemic-possibility discourse, the information state selected as relevant by the context of assessment can serve as the mental state whose compatibility the utterance expresses for interlocutor coordination.",
+          "target_id": "gap:b6282201189cea65e3a9a50ab6e715c9a560b9f6064feacbe58fd4d32427e403:assessment-information-coordination-bridge",
+          "routes": [
+            {
+              "route_id": "122d384dd1b1:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "26c4e092de39:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G20",
+          "text": "Assessment context can determine which information is relevant to evaluating epistemic possibility talk, while that talk expresses compatibility with a mental state for coordination rather than representing a world-directed fact; these are compatible claims about distinct aspects of the discourse.",
+          "target_id": "gap:b6282201189cea65e3a9a50ab6e715c9a560b9f6064feacbe58fd4d32427e403:gap:b6282201189cea65e3a9a50ab6e715c9a560b9f6064feacbe58fd4d32427e403:assessment-evaluation-and-expressivist-content",
+          "routes": [
+            {
+              "route_id": "d98864cc3fac:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "e0d875abddd1:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G21",
+          "text": "The acceptability test for epistemic “might” should be parameterized by the context of assessment.",
+          "target_id": "assessment_sensitive_epistemic_might_test",
+          "routes": [
+            {
+              "route_id": "9fa6cf2ca742:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "ce22f7887dea:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        },
+        {
+          "atlas_id": "G22",
+          "text": "Epistemic “might” both tests consistency with an information state and conveys higher-order information about the speaker’s information.",
+          "target_id": "epistemic_might_has_higher_order_function_beyond_consistency_testing",
+          "routes": [
+            {
+              "route_id": "7c0b4d6fc584:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "4390d94517a0:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match (non-L3)",
+            "lit_verdict": "n/a",
+            "qualification": "Substantive review: padding/restatement, not a contribution. The target merely joins the endorsed Veltman consistency-test claim (p_might_is_test, PDF11) and GSV higher-order information qualification (n_higherorder, PDF19-20), represented as a fresh whole-claim atom. GSV already connects higher-order information to consistency. No new relationship or mechanism is asserted. This is semantic packaging rather than the exact formula P-and-Q-and-fresh-R pattern. Queueing any later eligible route follows the all-candidates instruction and does not clear this finding.",
+            "mapping_by": "zeta direct comparison with frozen source text",
+            "padding_review": "padding_not_contribution"
+          }
+        },
+        {
+          "atlas_id": "G23",
+          "text": "An epistemic “might” test can be evaluated against worldly information distinct from the speaker’s information state.",
+          "target_id": "epistemic_might_tests_can_use_worldly_information_distinct_from_speaker_information",
+          "routes": [
+            {
+              "route_id": "ff109961810c:r0",
+              "status": "OPEN",
+              "polarity": "target",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            },
+            {
+              "route_id": "87cc290a9bb7:r0",
+              "status": "OPEN",
+              "polarity": "negation",
+              "classification": "OPEN",
+              "accepted_inferences": 0
+            }
+          ],
+          "literature": {
+            "l3_tid": "no match",
+            "lit_verdict": "n/a",
+            "qualification": "No thesis-level match to eps2 T1–T9: this target concerns general modal semantics, consequence, attitudes or information tests without the dossier’s specific safety/retraction bridge. Shared ingredients do not establish that a dossier thesis is asserted. No literature novelty verdict is claimed.",
+            "mapping_by": "zeta review of complete retained text",
+            "dossier_path": "/home/dev/ara-work/reports/eps2-L3-novelty.json",
+            "dossier_sha256": "a5be7c4b476ce5c5d854a84771065f1ff170e4111a25a58df8edc7327d0d9d67"
+          }
+        }
+      ],
+      "sources": [
+        "R53"
+      ]
+    }
+  },
+  {
+    "id": "partial-B",
+    "file": "figures/partial-B.svg",
+    "caption": "The sole inference-bearing B route is a comparative sign argument. Its unanswered critical question keeps it OPEN. Its attempted sign essays were refused; it is not the B/1 or B/2 proposal route.",
+    "data": {
+      "sources": [
+        "R28",
+        "R42"
+      ],
+      "nodes": 3,
+      "accepted_inferences": 1,
+      "status": "OPEN"
     }
   }
 ]

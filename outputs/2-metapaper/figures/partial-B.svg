@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="516.6pt" height="263.88pt" viewBox="0 0 516.6 263.88" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Deterministic v6 figure from recorded evidence</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 263.88 
+L 516.6 263.88 
+L 516.6 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 19.2528 78.05232 
+L 236.2032 78.05232 
+Q 240.2208 78.05232 240.2208 76.05648 
+L 240.2208 25.66152 
+Q 240.2208 23.66568 236.2032 23.66568 
+L 19.2528 23.66568 
+Q 15.2352 23.66568 15.2352 25.66152 
+L 15.2352 76.05648 
+Q 15.2352 78.05232 19.2528 78.05232 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #edf1f3; stroke: #28677e; stroke-width: 1.1; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 280.3968 78.05232 
+L 497.3472 78.05232 
+Q 501.3648 78.05232 501.3648 76.05648 
+L 501.3648 25.66152 
+Q 501.3648 23.66568 497.3472 23.66568 
+L 280.3968 23.66568 
+Q 276.3792 23.66568 276.3792 25.66152 
+L 276.3792 76.05648 
+Q 276.3792 78.05232 280.3968 78.05232 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #edf1f3; stroke: #28677e; stroke-width: 1.1; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 84.5388 170.35992 
+L 432.0612 170.35992 
+Q 436.0788 170.35992 436.0788 168.36408 
+L 436.0788 117.96912 
+Q 436.0788 115.97328 432.0612 115.97328 
+L 84.5388 115.97328 
+Q 80.5212 115.97328 80.5212 117.96912 
+L 80.5212 168.36408 
+Q 80.5212 170.35992 84.5388 170.35992 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #edf1f3; stroke: #28677e; stroke-width: 1.1; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 129.46596 78.041113 
+Q 162.882555 97.013115 195.229657 115.377921 
+" clip-path="url(#p2e6399ba93)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 192.48951 111.292387 
+L 195.229657 115.377921 
+L 190.317141 115.118718 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 387.13404 78.041113 
+Q 353.717445 97.013115 321.370343 115.377921 
+" clip-path="url(#p2e6399ba93)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 326.282859 115.118718 
+L 321.370343 115.377921 
+L 324.11049 111.292387 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 84.5388 250.19352 
+L 432.0612 250.19352 
+Q 436.0788 250.19352 436.0788 248.19768 
+L 436.0788 207.78192 
+Q 436.0788 205.78608 432.0612 205.78608 
+L 84.5388 205.78608 
+Q 80.5212 205.78608 80.5212 207.78192 
+L 80.5212 248.19768 
+Q 80.5212 250.19352 84.5388 250.19352 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #ffffff; stroke-dasharray: 4.07,1.76; stroke-dashoffset: 0; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 258.3 171.358266 
+Q 258.3 188.070028 258.3 203.551951 
+" clip-path="url(#p2e6399ba93)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+    <path d="M 260.5 199.151951 
+L 258.3 203.551951 
+L 256.1 199.151951 
+z
+" clip-path="url(#p2e6399ba93)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(63.593625 41.454313)">Egan: relativism survives</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(64.272531 53.457047)">communicative objection</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(80.530344 65.459781)">Frozen source leaf</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(301.068562 42.394781)">MacFarlane: Solipsistic Contextualism</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(314.991844 53.197242)">cannot explain genuine disputes</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(346.394109 63.999703)">Frozen source leaf</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(134.364062 133.761912)">Sign scheme: comparative support for relativism</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(172.515625 145.764647)">One licensed defeasible inference</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(170.1875 157.767381)">CQ1 supported · CQ2 unsupported</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(175.926562 224.58648)">OPEN partial route: three nodes</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(143.803125 236.589214)">Does not establish safety–retraction L3 or T2</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p2e6399ba93">
+   <rect x="7.2" y="7.2" width="502.2" height="249.48"/>
+  </clipPath>
+ </defs>
+</svg>

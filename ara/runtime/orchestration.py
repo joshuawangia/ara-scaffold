@@ -230,7 +230,7 @@ def _save_analyses(calls, targets, results, commitments=None):
 def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None, *, proposal_packet: dict | None = None) -> dict:
     from ara.runtime.essay_audit import audit_and_revise, repair_rounds
     from ara.runtime.route_policy import frozen_from_events, provenance_from_events, route_contribution
-    from ara.runtime.proposal import activate
+    from ara.runtime.proposal import activate, retain_disclosure
     activate(calls, route, proposal_packet)
     events = calls.log.read()
     commitments = frozen_from_events(events)
@@ -247,8 +247,9 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None, *, 
         prior_rounds = 0
     else:
         calls.screen_imported_draft(draft)
-        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision') and
+        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision', 'essay_proposal_disclosure_inserted') and
                        json.loads(e['payload_json']).get('draft') == draft for e in calls.log.read())
+        draft = retain_disclosure(calls, route, draft, phase='resume')
         calls.validate_essay(route, draft, minimum_words=0 if recorded else None)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
         prior_rounds = repair_rounds(calls, route)

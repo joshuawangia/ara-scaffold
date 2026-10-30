@@ -5,6 +5,12 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
 CASES=[
+ ('metadata_adverse_history','ara/runtime/essay_audit.py',
+  "            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)",
+  '            remap = None',
+  'tests/runtime/test_proposal_mode.py::test_metadata_insertion_does_not_erase_unchanged_adverse_history[None]'),
+ ('deterministic_disclosure','ara/runtime/proposal.py','    result = insert_disclosure(proposal, draft)','    result = draft',
+  'tests/runtime/test_proposal_mode.py::test_resume_inserts_disclosure_and_restores_cleanup_without_spending_repair'),
  ('unmarked','ara/runtime/proposal.py',"return 'unmarked_proposal'",'return None',
   'tests/runtime/test_proposal_mode.py::test_unmarked_or_source_attributed_proposal_still_fails[P.-proposed_principle]'),
  ('source_attribution','ara/runtime/proposal.py',"            return 'source_attributed_proposal'",'            return None',

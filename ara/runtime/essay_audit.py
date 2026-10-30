@@ -115,6 +115,50 @@ def _same_audit_request(previous_prompt, prompt):
         return False
 
 
+
+def _proposal_metadata_request(previous_prompt, prompt):
+    """Match unchanged substantive inventory across deterministic disclosure insertion."""
+    try:
+        old_template, old_json = previous_prompt.split('\nINPUT_JSON\n', 1)
+        template, current_json = prompt.split('\nINPUT_JSON\n', 1)
+        old, current = json.loads(old_json), json.loads(current_json)
+        old.pop('validation_feedback', None)
+        if old_template != template or not current.get('proposal'):
+            return None
+        if {k:v for k,v in old.items() if k != 'sentences'} != {k:v for k,v in current.items() if k != 'sentences'}:
+            return None
+        label = current['proposal']['disclosure']
+        def inventory(data):
+            rows = []
+            for sentence in data['sentences']:
+                text = sentence['text']
+                if label in text:
+                    text = text.replace(label, '').replace('Disclosure:', '')
+                    text = text.strip(' \t\n."“”\'—-:;')
+                elif text.strip() == 'Disclosure: .':
+                    text = ''
+                if text:
+                    row = {k:v for k,v in sentence.items() if k not in ('sentence','start','end')}
+                    rows.append((sentence['sentence'], {**row, 'text':text}))
+            return rows
+        before, after = inventory(old), inventory(current)
+        if [r for _,r in before] != [r for _,r in after]:
+            return None
+        return old, dict(zip((n for n,_ in before), (n for n,_ in after)))
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return None
+
+
+def _remap_adverse(result, labels, mapping):
+    flags = [{**f, 'sentence':mapping[f['sentence']]} for f in result['flags'] if f['sentence'] in mapping]
+    extra = [mapping[n] for n in result['extra_steps'] if n in mapping]
+    # Only changed disclosure metadata may disappear; substantive flags and
+    # missing-node failures remain binding, with their current sentence numbers.
+    faithful = (not flags and not extra and not result['missing_node_ids'] and
+                (result['faithful'] or bool(result['extra_steps'])))
+    return ({**result, 'flags':flags, 'extra_steps':extra, 'faithful':faithful, 'metadata_only_remap':True},
+            [{**label, 'sentence':mapping[label['sentence']]} for label in labels if label['sentence'] in mapping])
+
 def _partial_adverse_history(route, draft, inputs, data, schema, config):
     """Salvage adverse facts only; an invalid inventory supplies no clean verdict."""
     from collections import Counter
@@ -160,8 +204,11 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                 continue
             previous = events[index - 2] if index > 1 else {}
             recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
-            if not _same_audit_request(event['prompt'], prompt) and (recorded or {}).get('prompt_sha256') != prompt_hash:
+            same = _same_audit_request(event['prompt'], prompt) or (recorded or {}).get('prompt_sha256') == prompt_hash
+            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)
+            if not same and remap is None:
                 continue
+            history_inputs = remap[0] if remap else inputs
             data = None
             schema = scoped.response_schema(kind, inputs)
             try:
@@ -169,21 +216,28 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                 if hasattr(scoped.provider, 'normalize_output'):
                     data = scoped.provider.normalize_output(schema, data)
                 validate_local(schema, data, calls.config)
-                result = audit_result(route, draft, inputs, data)
+                result = audit_result(route, draft, history_inputs, data)
                 if recorded is not None:
                     result = {key: recorded[key] for key in result}
             except (ValueError, TypeError, KeyError, ValidationError) as exc:
                 ignored.append(dict(event=index, reason=type(exc).__name__))
-                recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)
+                recovered = _partial_adverse_history(route, draft, history_inputs, data, schema, calls.config)
                 if recovered is not None:
                     ignored[-1]['retained_adverse'] = True
                     result, labels = recovered
+                    if remap:
+                        result, labels = _remap_adverse(result, labels, remap[1])
+                    if result['faithful']:
+                        continue
                     historical.append(dict(event=index, invalid_reason=type(exc).__name__, **result))
                     failures.append(EssayAuditFailed(result, inputs, labels))
                 continue
+            labels = data['labels']
+            if remap:
+                result, labels = _remap_adverse(result, labels, remap[1])
             if not partial_only and not result['faithful']:
                 historical.append(dict(event=index, **result))
-                failures.append(EssayAuditFailed(result, inputs, data['labels']))
+                failures.append(EssayAuditFailed(result, inputs, labels))
 
     events = calls.log.read()
     collect_history(events)
@@ -255,6 +309,8 @@ def audit_and_revise(calls, route, draft, *, final=False):
         try:
             if final:
                 cleaned, verification = calls.verify_originality_citations(draft)
+                from ara.runtime.proposal import retain_disclosure
+                cleaned = retain_disclosure(calls, route, cleaned, phase='verification_cleanup')
                 calls.validate_essay(route, cleaned, minimum_words=0)
                 audit_consensus(calls, route, cleaned)
                 return cleaned, verification

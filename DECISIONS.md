@@ -4623,3 +4623,8 @@ hidden unsupported assertions and source-attributed proposals. Frozen hypothesis
 authorization is a separate caller-bound helper input, never inferred from OPEN
 proposal authorization. Supplementary PDF checks establish hash-bound pages and
 excerpt membership, not independently verified metadata or semantic truth.
+
+Proposal disclosure is deterministic provenance metadata, not model-authored
+source material. Composition, resume and post-verification cleanup restore the
+fixed unquoted sentence before the gate. This does not regenerate substantive
+prose, consume semantic repair rounds, or reset prior adverse audit history.

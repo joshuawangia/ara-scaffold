@@ -2412,7 +2412,7 @@ CASES += [
      'tests/runtime/test_codex_cli.py::test_context_window_default_and_unpinned_model'),
 
 
-    ('audit_consensus_partial_history', 'ara/runtime/essay_audit.py', 'recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)', 'recovered = None', 'tests/runtime/test_audit_consensus.py::test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit'),
+    ('audit_consensus_partial_history', 'ara/runtime/essay_audit.py', 'recovered = _partial_adverse_history(route, draft, history_inputs, data, schema, calls.config)', 'recovered = None', 'tests/runtime/test_audit_consensus.py::test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit'),
     ('audit_consensus_partial_schema_history', 'ara/runtime/essay_audit.py', 'if recovered is not None:', 'if False:', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[invalid_label]'),
     ('audit_consensus_corrected_partial_history', 'ara/runtime/essay_audit.py', "previous.pop('validation_feedback', None)", 'pass', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[corrected_partial]'),
     ('frozen_citation_native_retention', 'ara/runtime/calls.py', 'local = local_verdicts(self, draft, all_items)', 'local = {}', 'tests/runtime/test_local_citations.py::test_native_competition_compose_cannot_strip_frozen_citations_and_export[True]'),

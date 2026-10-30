@@ -95,11 +95,11 @@ def test_proposal_writer_uses_native_proportional_sections(rig, monkeypatch):
         inputs=json.loads(prompt.split('INPUT_JSON\n')[1]);seen.append((kind,inputs))
         if kind=='outline_essay':
             assert 3000 <= inputs['budget_min'] < inputs['budget_max'] <= 4500
-            value=dict(title='P — '+DISCLOSURE, sections=[dict(id=f's{i}',heading=h,purpose='P',word_budget=800,node_ids=['n0','n1'])
+            value=dict(title='P', sections=[dict(id=f's{i}',heading=h,purpose='P',word_budget=800,node_ids=['n0','n1'])
                 for i,h in enumerate(['Abstract','P','Q','Methodology'])])
         else:
             assert inputs['mode']=='section'
-            value=dict(title=inputs['section']['heading'],body=DISCLOSURE+'. [[node:n0]] [[node:n1]] '+('P '*800),bibliography=[])
+            value=dict(title=inputs['section']['heading'],body='[[node:n0]] [[node:n1]] '+('P '*800),bibliography=[])
         return Response(response(value))
     monkeypatch.setattr(provider,'complete',complete)
     result=calls.write_essay(r)
@@ -235,3 +235,85 @@ def test_plural_claims_in_owned_reasoning_is_not_author_attribution(rig):
                   ('n0','n1') if s['sentence']==3 else ()) for s in inputs['sentences']]
     register(calls,provider,'audit_essay',inputs,dict(labels=labels))
     assert calls.audit_essay(r,d)['faithful']
+
+
+def test_resume_inserts_disclosure_and_restores_cleanup_without_spending_repair(rig, monkeypatch):
+    from ara.runtime.orchestration import compose
+    from ara.runtime.essay_audit import repair_rounds
+    from ara.runtime.writing import source_context
+    calls,provider,log=rig
+    r,_=setup(calls,log)
+    body='Abstract\n\nP.\n\nMethodology\n\nQ.\n\n[[node:n0]] [[node:n1]] This paper proposes P.\nP P P. [cite:p]\nQ Q Q. [cite:q]'
+    original=dict(title='P',body=body,bibliography=source_context(calls,r)['allowed_bibliography'])
+    log.record('route',graph=r.to_dict())
+    log.record('essay_composition_started',route_id=r.id,repair_rounds=3)
+    log.record('essay_audit_revision',round=3,draft=original)
+    seen=[]
+    def complete(kind,prompt,schema,maximum):
+        assert kind=='audit_essay';seen.append(kind)
+        inputs=json.loads(prompt.split('INPUT_JSON\n')[1])
+        assert any('Disclosure: '+DISCLOSURE+'.' in s['text'] for s in inputs['sentences'])
+        labels=[label(s['sentence'], 'proposed_principle' if 'This paper proposes P.' in s['text'] else
+                      'source_claim' if '[cite:' in s['text'] else 'framing',
+                      ('n0','n1') if 'This paper proposes P.' in s['text'] else ()) for s in inputs['sentences']]
+        return Response(response(dict(labels=labels)))
+    monkeypatch.setattr(provider,'complete',complete)
+    def cleanup(value):
+        return {**value,'body':value['body'].replace('Disclosure: '+DISCLOSURE+'. ',''),'title':'P'},dict(items=[],originality=dict(assessment='unverified',detail='P',evidence_urls=[]))
+    monkeypatch.setattr(calls,'verify_originality_citations',cleanup)
+    result=compose(calls,r,original)
+    assert result['title']=='P — '+DISCLOSURE
+    assert result['body'].count('Disclosure: '+DISCLOSURE+'.')==2
+    assert result['body'].replace('Disclosure: '+DISCLOSURE+'. ','')==body
+    assert seen==['audit_essay']*4 and repair_rounds(calls,r)==3
+    assert (log.path.parent/'export/essay.txt').exists()
+    corrections=[json.loads(e['payload_json']) for e in log.read() if e['stage']=='essay_proposal_disclosure_inserted']
+    assert len(corrections)==2 and all(c['semantic_repair_rounds_unchanged'] for c in corrections)
+
+
+def test_disclosure_metadata_is_idempotent_and_never_a_source_quotation():
+    from ara.runtime.proposal import insert_disclosure, validate_disclosure
+    from ara.runtime.calls import ModelCalls
+    proposal=dict(disclosure=DISCLOSURE)
+    old=dict(title='P — "'+DISCLOSURE+'"',body='## Abstract\n\n"'+DISCLOSURE+'". P.\n\n## 1. Methodology\n\nQ.',bibliography=[])
+    result=insert_disclosure(proposal,old)
+    assert insert_disclosure(proposal,result)==result
+    assert result['body'].count('Disclosure: '+DISCLOSURE+'.')==2
+    assert not ModelCalls.verification_items(result)
+    validate_disclosure(proposal,result)
+
+
+@pytest.mark.parametrize('malformed', [None, 'missing', 'duplicate', 'unknown_node'])
+def test_metadata_insertion_does_not_erase_unchanged_adverse_history(rig, monkeypatch, malformed):
+    from ara.runtime.proposal import retain_disclosure
+    from ara.runtime.essay_audit import audit_consensus
+    calls,provider,log=rig
+    r,_=setup(calls,log)
+    old=draft();old['body']+='\nThis paper argues Q.'
+    inputs=calls.audit_inputs(r,old)
+    labels=[label(s['sentence'], 'proposed_principle' if s['sentence']==3 else
+                  'unsupported_claim' if s['text']=='This paper argues Q.' else 'framing',
+                  ('n0','n1') if s['sentence']==3 else ()) for s in inputs['sentences']]
+    if malformed is None:
+        register(calls,provider,'audit_essay',inputs,dict(labels=labels))
+        with pytest.raises(EssayAuditFailed):calls.audit_essay(r,old)
+    else:
+        from ara.types import RunEvent
+        from ara.runtime.logging import now
+        from ara.runtime.cache import canonical
+        if malformed == 'missing': labels = labels[1:]
+        elif malformed == 'duplicate': labels.append(labels[0])
+        else: labels[0] = {**labels[0], 'node_ids':['unknown']}
+        log.emit(RunEvent(now(), 'audit_essay', 'MODEL', prompt=calls.render('audit_essay',inputs)[1],
+                          response=canonical(response(dict(labels=labels)))))
+    current=retain_disclosure(calls,r,old,phase='resume')
+    def complete(kind,prompt,schema,maximum):
+        data=json.loads(prompt.split('INPUT_JSON\n')[1])
+        return Response(response(dict(labels=[label(s['sentence'],
+            'proposed_principle' if 'This paper proposes P.' in s['text'] else
+            'argument_for_proposal' if s['text']=='This paper argues Q.' else 'framing',
+            ('n0','n1') if 'This paper proposes P.' in s['text'] else ()) for s in data['sentences']])))
+    monkeypatch.setattr(provider,'complete',complete)
+    with pytest.raises(EssayAuditFailed) as failure:audit_consensus(calls,r,current)
+    assert failure.value.result['historical_adverse']
+    assert any(f['reason']=='unsupported_claim' for f in failure.value.result['flags'])

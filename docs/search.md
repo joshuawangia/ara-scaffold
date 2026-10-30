@@ -659,3 +659,10 @@ publication; web absence cannot erase retained local evidence. Final fresh
 unanimous audits and the existing three-round shared repair cap are unchanged.
 Resuming without `--proposal-packet` restores the logged packet, including its
 length policy and exact thesis-origin disclosure. Replacing it requires a new run.
+
+Composition and resumed drafts insert an unquoted fixed disclosure sentence in
+Abstract and Methodology and add the candidate label to the title. The same
+metadata normalization runs after verification cleanup, followed by the existing
+disclosure gate and fresh audits. Corrections have their own hash-linked receipt
+and never consume or reset a semantic repair round. Existing quoted copies of
+the exact mode label are unquoted so they cannot be mistaken for source quotations.

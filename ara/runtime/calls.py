@@ -1265,6 +1265,8 @@ class ModelCalls:
 
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
+            from ara.runtime.proposal import retain_disclosure
+            data = retain_disclosure(self, route, data, phase='composition')
             return self.validate_essay(route, data)
         if self.config['essay_min_words'] >= 4500 or 'proposal' in self.essay_inputs(route):
             from ara.runtime.writing import sectioned_essay

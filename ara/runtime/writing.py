@@ -110,7 +110,6 @@ def sectioned_essay(calls, route, inputs, validate):
     def check_plan(data):
         sections = data['sections']
         if 'proposal' in inputs:
-            require(inputs['proposal']['disclosure'] in data['title'], 'proposal disclosure missing from planned title')
             require({'abstract', 'methodology'} <= {s['heading'].casefold() for s in sections},
                     'proposal plan needs Abstract and Methodology sections')
         require(len({s['id'] for s in sections}) == len(sections), 'duplicate essay section id')

@@ -183,3 +183,42 @@ def author_names(evidence):
             if isinstance(attributed, str) and attributed.strip():
                 names.add(attributed.strip())
     return tuple(sorted(names))
+
+
+def insert_disclosure(proposal, draft):
+    """Deterministic provenance metadata; leave substantive text and citations intact."""
+    if proposal is None:
+        return draft
+    label = proposal['disclosure']
+    sentence = 'Disclosure: ' + label + '.'
+    title = draft['title']
+    for left, right in (('"', '"'), ('“', '”')):
+        title = title.replace(left + label + right, label)
+    if label not in title:
+        title += ' — ' + label
+    body = draft['body']
+    for left, right in (('"', '"'), ('“', '”')):
+        body = body.replace(left + label + right, label)
+    body = body.replace('Disclosure: .', sentence)
+    for heading in ('Abstract', 'Methodology'):
+        pattern = r'^(?:#{1,6}[ \t]*)?(?:\d+\.[ \t]*)?' + heading + r'[ \t]*\n(?:[ \t]*\n)*'
+        match = re.search(pattern, body, re.M | re.I)
+        if match is None:
+            section = heading + '\n\n' + sentence + '\n\n'
+            body = section + body if heading == 'Abstract' else body + '\n\n' + section.rstrip()
+        elif not body[match.end():].startswith(sentence):
+            rest = body[match.end():]
+            separator = '\n\n' if not rest.strip() or re.match(r'^(?:#{1,6}\s|Methodology\s*\n)', rest, re.I) else ' '
+            body = body[:match.end()] + sentence + separator + rest
+    return {**draft, 'title': title, 'body': body}
+
+
+def retain_disclosure(calls, route, draft, *, phase):
+    proposal = from_events(calls.log.read(), route.id)
+    result = insert_disclosure(proposal, draft)
+    if result != draft:
+        calls.log.record('essay_proposal_disclosure_inserted', route_id=route.id, phase=phase,
+                         disclosure=proposal['disclosure'], before_sha256=digest(canonical(draft)),
+                         after_sha256=digest(canonical(result)), draft=result,
+                         semantic_repair_rounds_unchanged=True)
+    return result

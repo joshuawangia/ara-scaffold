@@ -308,9 +308,9 @@ class ModelCalls:
             template += f'\nLOCAL_RESPONSE_SCHEMA ({note})\n' + canonical(schema)
         if (inputs.get('outline',{}).get('hypothesis_disclosure') or inputs.get('hypothesis_disclosure')):
             template += ('\nFROZEN HYPOTHESES: These are proposed premises, never sources. '
-                'Conditional on H disclosure: copy hypothesis_disclosure.required_statement exactly once as a standalone plain paragraph, '
-                'without quotes, blockquote, code or other markup. In sectioned writing put it only in the introduction. '
-                'Do not add other conditional-on-H, unconditional, or independence claims that contradict or obscure it. '
+                'Conditional on H status is runtime-owned. The runtime inserts a fixed disclosure naming H before the authored argument. '
+                'Do not write, quote, paraphrase, negate or imitate that disclosure or supply your own conditional/unconditional status. '
+                'For revision or publication, preserve the existing Runtime conditional disclosure block exactly and first after the title. '
                 'State each H in a separate node-marked sentence beginning This paper proposes or We propose. '
                 'Use the typed proposed_principle audit role only for these authorized H nodes; never source_claim or argument_step. '
                 'Do not attribute H to an author or attach a source citation to its proposal sentence. '
@@ -1262,11 +1262,11 @@ class ModelCalls:
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
 
-    def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None) -> dict:
+    def validate_essay(self, route: RouteGraph, data: dict, *, minimum_words: int | None = None, authored: bool = False) -> dict:
         validate_local(self.response_schema('write_essay', {}), data, self.config)
         from ara.runtime.hypotheses import validate_disclosure
         try:
-            validate_disclosure(self.log.read(),route,data)
+            validate_disclosure(self.log.read(),route,data,authored=authored)
         except ValueError as exc:
             raise Rejected(str(exc)) from exc
         require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
@@ -1283,7 +1283,7 @@ class ModelCalls:
 
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
-            return self.validate_essay(route, data)
+            return self.validate_essay(route, data, authored=True)
         if self.config['essay_min_words'] >= 4500:
             from ara.runtime.writing import sectioned_essay
             return sectioned_essay(self, route, self.essay_inputs(route), check)

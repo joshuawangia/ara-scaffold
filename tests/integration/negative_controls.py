@@ -2577,14 +2577,14 @@ CASES += [
      "check(basis, goal,\n                                'per_paper_atom_closure'",
      'tests/runtime/test_hypothesis_padding.py'),
     ('hypothesis_affirmative_paragraph', 'ara/runtime/hypotheses.py',
-     'if not affirmative or body.count(statement) != 1:', 'if False:',
-     'tests/runtime/test_hypothesis_disclosure.py'),
+     "if not body.startswith(block) or body.count(DISCLOSURE_HEADING) != 1:", 'if False:',
+     'tests/runtime/test_runtime_disclosure.py::test_runtime_disclosure_is_fixed_before_authored_text'),
     ('hypothesis_no_contradictory_status', 'ara/runtime/hypotheses.py',
      "if re.search(r'\\bconditional\\s+on\\s+h\\b|\\bunconditional(?:ly)?\\b|'",
      "if False and re.search(r'\\bconditional\\s+on\\s+h\\b|\\bunconditional(?:ly)?\\b|'",
-     'tests/runtime/test_hypothesis_disclosure.py'),
+     'tests/runtime/test_runtime_disclosure.py::test_runtime_authored_status_is_reserved'),
     ('hypothesis_reading_copy_disclosure', 'ara/runtime/publication.py',
-     "validate_conditional_statement(route_disclosure(events,RouteGraph.from_dict(route)),\n                                       reading_markdown)",
+     "validate_conditional_statement(route_disclosure(events,RouteGraph.from_dict(route)),\n                                       as_draft(reading_markdown,result['draft']['bibliography'])['body'])",
      'pass', 'tests/runtime/test_hypothesis_disclosure.py::test_publication_reading_copy_retains_affirmative_disclosure'),
     ('hypothesis_open_route_usage', 'ara/runtime/route_policy.py',
      'hypotheses = route_hypothesis_disclosure(route, provenance)',
@@ -2604,6 +2604,20 @@ CASES += [
     ('hypothesis_reload_disclosure', 'ara/runtime/publication.py',
      "validate_publication_disclosure(events, result, result.get('audit_markdown', result['markdown']),\n                                   result['markdown'])",
      'pass', 'tests/runtime/test_hypothesis_disclosure.py::test_publication_reload_rechecks_hypothesis_disclosure'),
+]
+
+
+CASES += [
+    ('runtime_hypothesis_insertion', 'ara/runtime/orchestration.py',
+     'draft = insert_runtime_disclosure(calls, route, calls.write_essay(route))',
+     'draft = calls.write_essay(route)',
+     'tests/runtime/test_hypothesis_premises.py::test_hypothesis_native_writer_audit_export_and_figures'),
+    ('runtime_hypothesis_receipt', 'ara/runtime/hypotheses.py',
+     '        validate_runtime_receipt(events, route, disclosure)', '        pass',
+     'tests/runtime/test_runtime_disclosure.py::test_runtime_disclosure_needs_route_bound_insertion'),
+    ('runtime_hypothesis_nfkc', 'ara/runtime/hypotheses.py',
+     "visible = unicodedata.normalize('NFKC', ''.join(text.parts))", "visible = ''.join(text.parts)",
+     'tests/runtime/test_runtime_disclosure.py::test_runtime_authored_status_is_reserved'),
 ]
 
 

@@ -252,7 +252,7 @@ def validate_publication_disclosure(events, result, audit_markdown, reading_mark
             as_draft(audit_markdown,result['draft']['bibliography']))
         from ara.runtime.hypotheses import route_disclosure, validate_conditional_statement
         validate_conditional_statement(route_disclosure(events,RouteGraph.from_dict(route)),
-                                       reading_markdown)
+                                       as_draft(reading_markdown,result['draft']['bibliography'])['body'])
 
 
 def publish(log, result):

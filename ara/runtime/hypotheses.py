@@ -159,23 +159,25 @@ def route_disclosure(events, route):
     return route_hypothesis_disclosure(route, provenance_from_events(events, frozen))
 
 
-def validate_conditional_statement(disclosure, body):
-    """One runtime-specified affirmative paragraph, never a phrase occurrence."""
+DISCLOSURE_HEADING = '## Runtime conditional disclosure'
+
+
+def conditional_block(disclosure):
+    """A fixed, first-body section, outside the model's authored argument."""
+    if not disclosure['conditional_on']:
+        return ''
+    return (DISCLOSURE_HEADING + '\n\n' + disclosure['required_statement'] +
+            '\n\nThis status is supplied by the runtime from the recorded route.\n\n---\n\n')
+
+
+def validate_authored_status(disclosure, body):
+    """The model cannot supply the reserved route-status disclosure."""
     import re
+    import unicodedata
     from html.parser import HTMLParser
     from markdown_it import MarkdownIt
     if not disclosure['conditional_on']:
         return
-    statement = disclosure['required_statement']
-    markdown = MarkdownIt('commonmark')
-    tokens = markdown.parse(body)
-    affirmative = any(token.type == 'inline' and token.content == statement and
-        i > 0 and tokens[i-1].type == 'paragraph_open' and tokens[i-1].level == 0 and
-        all(child.type == 'text' for child in token.children or ())
-        for i, token in enumerate(tokens))
-    if not affirmative or body.count(statement) != 1:
-        raise ValueError('hypothesis disclosure requires one standalone plain paragraph: ' + statement)
-
     class VisibleText(HTMLParser):
         def __init__(self):
             super().__init__(convert_charrefs=True)
@@ -188,14 +190,56 @@ def validate_conditional_statement(disclosure, body):
             if tag == 'img':
                 self.parts.append(dict(attrs).get('alt', '') or '')
 
-    # Screening view only: preserve all authored bytes, including markup.
+    # Same raw-HTML-disabled Markdown policy as publication rendering. NFKC is
+    # screening only; neither the authored bytes nor frozen definitions change.
     text = VisibleText()
-    text.feed(markdown.render(body.replace(statement, '', 1)))
+    text.feed(MarkdownIt('commonmark', {'html': False}).render(body))
     text.close()
+    visible = unicodedata.normalize('NFKC', ''.join(text.parts))
+    if (DISCLOSURE_HEADING.removeprefix('## ') in visible or
+            disclosure['required_statement'] in visible):
+        raise ValueError('hypothesis disclosure is reserved for runtime insertion')
     if re.search(r'\bconditional\s+on\s+h\b|\bunconditional(?:ly)?\b|'
                  r'\b(?:independent\s+of|(?:not|never)\s+(?:depend|rely)\s+on)\s+'
-                 r'(?:h\b|(?:the\s+)?(?:proposed\s+)?hypothes)', ''.join(text.parts), re.I):
-        raise ValueError('hypothesis disclosure has contradictory or ambiguous status wording')
+                 r'(?:h\b|(?:the\s+)?(?:proposed\s+)?hypothes)', visible, re.I):
+        raise ValueError('hypothesis disclosure status belongs to the runtime, not authored prose')
+
+
+def validate_conditional_statement(disclosure, body):
+    """The runtime-owned block must be first, exact and unrepeated."""
+    if not disclosure['conditional_on']:
+        return
+    block = conditional_block(disclosure)
+    if not body.startswith(block) or body.count(DISCLOSURE_HEADING) != 1:
+        raise ValueError('hypothesis disclosure runtime block missing, moved or altered')
+    validate_authored_status(disclosure, body[len(block):])
+
+
+def insert_runtime_disclosure(calls, route, draft):
+    from ara.runtime.cache import digest
+    disclosure = route_disclosure(calls.log.read(), route)
+    block = conditional_block(disclosure)
+    if not block:
+        return draft
+    validate_authored_status(disclosure, draft['body'])
+    result = {**draft, 'body': block + draft['body']}
+    calls.log.record('hypothesis_disclosure_inserted', schema_version='hypothesis-disclosure-v1',
+        route_id=route.id, route_sha256=digest(route.to_json()),
+        conditional_on=disclosure['conditional_on'], block=block, block_sha256=digest(block),
+        authored_body_sha256=digest(draft['body']), draft=result)
+    return result
+
+
+def validate_runtime_receipt(events, route, disclosure):
+    from ara.runtime.cache import digest
+    import json
+    block = conditional_block(disclosure)
+    expected = dict(schema_version='hypothesis-disclosure-v1', route_id=route.id,
+        route_sha256=digest(route.to_json()), conditional_on=disclosure['conditional_on'],
+        block=block, block_sha256=digest(block))
+    if not any(all(json.loads(e['payload_json']).get(k) == v for k,v in expected.items())
+               for e in events if e['stage'] == 'hypothesis_disclosure_inserted'):
+        raise ValueError('hypothesis disclosure lacks matching runtime insertion receipt')
 
 
 def hypothesis_role_failure(role, text, authorized):
@@ -214,14 +258,18 @@ def hypothesis_role_failure(role, text, authorized):
     return None
 
 
-def validate_disclosure(events, route, draft):
+def validate_disclosure(events, route, draft, *, authored=False):
     """A clean audit cannot substitute for explicit proposal/conditional disclosure."""
     import re
     from ara.runtime.essay_audit import sentence_spans
     disclosure=route_disclosure(events,route)
     if not disclosure['conditional_on']:
         return
-    validate_conditional_statement(disclosure, draft['body'])
+    if authored:
+        validate_authored_status(disclosure, draft['body'])
+    else:
+        validate_conditional_statement(disclosure, draft['body'])
+        validate_runtime_receipt(events, route, disclosure)
     for tid in disclosure['conditional_on']:
         nodes={n.id for n in route.nodes if n.kind=='leaf' and n.t_id==tid}
         marked=[draft['body'][a:b] for a,b in sentence_spans(draft['body'])

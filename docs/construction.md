@@ -487,19 +487,27 @@ CLOSED but its contribution receipt and human rendering say **conditional on H**
 This neither proves H nor turns an OPEN proposal paper into a derivation.
 
 The writer must state each H in a node-marked sentence beginning “This paper
-proposes” or “We propose”, with no source citation or author attribution, and
-copy the runtime-supplied `hypothesis_disclosure.required_statement` exactly once
-as a standalone plain Markdown paragraph (in the introduction when writing in
-sections). For example: “This paper's conclusion is conditional on H
-(hypothesis:h).” Quoted, blockquoted, code or negated occurrences do not count.
-Contradictory or ambiguous conditional-status wording elsewhere is refused,
-including rendered emphasis and HTML entities. The typed `proposed_principle` role is
-available only for verified hypothesis nodes. Other source and argument roles,
-three-sample adverse-union audits, citation verification and repair bounds stay
-in force. Export and publication refuse missing disclosure, even if a draft
-receipt exists. Both the audit-marked publication and its reading copy are
-checked at publication and reload. Construction receipts, report data, methodology,
-route receipts and figures retain the proposed status. Selection summaries, CLI
-listings and tree headings disclose H beside the classification; OPEN routes
-retain their actual reachable H use and state that no completed conclusion is
-established. Local assumptions and unreachable nodes do not become global H use.
+proposes” or “We propose”, with no source citation or author attribution. The
+runtime owns the conclusion-status disclosure: after validating the authored
+argument, compose inserts a fixed **Runtime conditional disclosure** section
+first in the body, naming the exact H IDs. The insertion receipt binds the route,
+block hash and unchanged authored-body hash. Model prose must not supply or
+imitate this reserved section or its status statement.
+
+Compose, export, publication and reload require the exact first-body block and
+its matching route-bound receipt. Moving it under an authored negation, altering
+H, removing it or duplicating it refuses. Publication checks both the audit and
+reading copies after the title. Resuming a recorded draft verifies and preserves
+the existing block. Writer/revision/publication instructions explain the runtime
+boundary; an audit cannot authorize changes to it. The existing status-wording
+screen uses NFKC only for checking, without rewriting accepted text.
+
+The typed `proposed_principle` role is available only for verified hypothesis
+nodes. Other source and argument roles, three-sample adverse-union audits,
+citation verification and repair bounds stay in force. Construction receipts,
+report data, methodology, route receipts and figures retain proposed status.
+Selection summaries, CLI listings and tree headings disclose H beside the
+classification; OPEN routes retain reachable H use and state that no completed
+conclusion is established. Local assumptions and unreachable nodes do not become
+global H use. Runtime status is a mechanical disclosure, not a semantic proof of
+arbitrary authored prose.

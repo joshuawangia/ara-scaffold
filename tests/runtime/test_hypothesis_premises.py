@@ -167,9 +167,13 @@ def test_hypothesis_export_and_typed_audit(tmp_path,monkeypatch,mode):
               'a argues that (P and Q) implies R' if mode=='attributed' else '(P and Q) implies R') if hypothesis else 'P Q'
         body.append(f'[[node:{node.id}]] {text}.')
         labels.append(dict(sentence=i,node_ids=[node.id],role='proposed_principle' if hypothesis else 'argument_step',citation_supported=True))
-    body.append("\nThis paper's conclusion is conditional on H (hypothesis:h).")
-    labels.append(dict(sentence=len(body),node_ids=[],role='framing',citation_supported=True))
     draft=dict(title='P',body='\n'.join(body),bibliography=[])
+    from ara.runtime.hypotheses import insert_runtime_disclosure, conditional_block, route_disclosure
+    from ara.runtime.essay_audit import sentence_spans
+    offset=len(sentence_spans(conditional_block(route_disclosure(calls.log.read(),route))))
+    labels=[dict(sentence=i+1,node_ids=[],role='framing',citation_supported=True) for i in range(offset)]+[
+        {**label,'sentence':label['sentence']+offset} for label in labels]
+    draft=insert_runtime_disclosure(calls,route,draft)
     inputs=calls.audit_inputs(route,draft)
     # Source claims intentionally lack citations here; isolate H flags from those failures.
     if mode=='mixed':
@@ -273,7 +277,12 @@ def test_hypothesis_native_writer_audit_export_and_figures(tmp_path,monkeypatch)
         citation=' [cite:'+node.t_id+']' if node.t_id in ('p','q') else ''
         body.append(f'[[node:{node.id}]] {text}.{citation}')
         labels.append(dict(sentence=i,node_ids=[node.id],role='proposed_principle' if hypothesis else 'argument_step',citation_supported=True))
-    body.append("\nThis paper's conclusion is conditional on H (hypothesis:h).");labels.append(dict(sentence=len(body),node_ids=[],role='framing',citation_supported=True))
+    from ara.runtime.hypotheses import conditional_block, route_disclosure
+    from ara.runtime.essay_audit import sentence_spans
+    block=conditional_block(route_disclosure(calls.log.read(),route))
+    offset=len(sentence_spans(block))
+    labels=[dict(sentence=i+1,node_ids=[],role='framing',citation_supported=True) for i in range(offset)]+[
+        {**label,'sentence':label['sentence']+offset} for label in labels]
     draft=dict(title='P',body='\n'.join(body),bibliography=evidence['allowed_bibliography'])
     seen=[]
     def complete(kind,prompt,*_):
@@ -286,7 +295,13 @@ def test_hypothesis_native_writer_audit_export_and_figures(tmp_path,monkeypatch)
             value=dict(items=[],originality=dict(assessment='unverified',detail='P',evidence_urls=[]))
         return Response(raw(value))
     monkeypatch.setattr(calls.provider,'complete',complete)
-    assert compose(calls,route)==draft
+    expected={**draft,'body':block+draft['body']}
+    assert compose(calls,route)==expected
+    assert draft['body'] in expected['body'] and not draft['body'].startswith(block)
+    receipts=[json.loads(e['payload_json']) for e in calls.log.read() if e['stage']=='hypothesis_disclosure_inserted']
+    assert len(receipts)==1 and receipts[0]['draft']==expected
+    assert compose(calls,route,expected)==expected
+    assert sum(e['stage']=='hypothesis_disclosure_inserted' for e in calls.log.read())==1
     assert 'write_essay' in seen and seen.count('audit_essay')>=3
     essay=(tmp_path/'export/essay.txt').read_text()
     assert 'conditional on H (hypothesis:h)' in essay and 'This paper proposes' in essay

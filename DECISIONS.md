@@ -4671,3 +4671,22 @@ No provenance codec, source authority, licensing or source-credit rule changes.
 Red-first native regressions and production-wire controls cover padding,
 misleading text, authenticated old publications and selection/report disclosure.
 Full offline gate receipts are recorded in the external Round 32b report.
+
+
+## Round 32c — runtime-owned conditional status
+
+X32-F2 follow-up: model-authored paragraphs cannot establish the route's
+conditional status. Compose inserts a fixed first-body Runtime conditional
+disclosure section naming the actual H IDs after validating the authored draft.
+An append-only receipt binds the exact block, route and original authored body.
+Export, publication and reload require the unchanged first-body block and matching
+receipt; recorded resume preserves it without adding another. Publication checks
+both copies after the title. No draft schema or frozen provenance codec changes.
+
+Model prose cannot supply the reserved disclosure or its status assertions.
+The existing lexical status screen uses NFKC as a view only. No expanding list
+of paragraph-negation heuristics supplies authority: position, exact runtime bytes
+and recorded insertion supply it. Proposal sentences, typed audits and source
+citation requirements are unchanged. Three reviewer admissions are now native
+refusal regressions; genuine composition/resume remains positive. Controls cover
+insertion, position/integrity, receipt binding and compatibility typography.

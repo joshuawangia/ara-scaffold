@@ -246,16 +246,20 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
             raise ValueError('inconsistent or unresolved route supports cannot supply an essay')
 
     from ara.runtime.citations import restore_citations, check_coverage
+    from ara.runtime.hypotheses import insert_runtime_disclosure, validate_disclosure
     if draft is None:
-        draft = calls.write_essay(route)
+        draft = insert_runtime_disclosure(calls, route, calls.write_essay(route))
         prior_rounds = 0
     else:
         calls.screen_imported_draft(draft)
-        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision') and
+        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision', 'hypothesis_disclosure_inserted') and
                        json.loads(e['payload_json']).get('draft') == draft for e in calls.log.read())
-        calls.validate_essay(route, draft, minimum_words=0 if recorded else None)
+        calls.validate_essay(route, draft, minimum_words=0 if recorded else None, authored=not recorded)
+        if not recorded:
+            draft = insert_runtime_disclosure(calls, route, draft)
         calls.log.record('essay_draft_resumed', route_id=route.id, draft=draft)
         prior_rounds = repair_rounds(calls, route)
+    validate_disclosure(calls.log.read(), route, draft)
     calls.log.record('essay_composition_started', route_id=route.id,
                      policy='fresh-unanimous-with-adverse-history', repair_rounds=prior_rounds)
     for path in (calls.log.path.parent / 'draft.json', calls.log.path.parent / 'export/essay.txt'):

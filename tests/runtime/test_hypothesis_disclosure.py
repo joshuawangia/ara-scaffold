@@ -10,7 +10,7 @@ from ara.types import Proposition
 
 STATEMENT="This paper's conclusion is conditional on H (hypothesis:h)."
 
-@pytest.mark.parametrize('disclaimer',['Not Conditional on H.','The result is unconditional; the phrase Conditional on H is unnecessary.', '"Conditional on H."', '> Conditional on H.', '`Conditional on H.`', STATEMENT+'\n\nNot conditional on H.', STATEMENT+'\n\nThe result is **unconditional**.', STATEMENT+'\n\nThe result is un&#99;onditional.', '"'+STATEMENT+'"', '> '+STATEMENT, '```\n'+STATEMENT+'\n```'])
+@pytest.mark.parametrize('disclaimer',['Not Conditional on H.', 'The result is 𝐮𝐧𝐜𝐨𝐧𝐝𝐢𝐭𝐢𝐨𝐧𝐚𝐥.','The result is unconditional; the phrase Conditional on H is unnecessary.', '"Conditional on H."', '> Conditional on H.', '`Conditional on H.`', STATEMENT+'\n\nNot conditional on H.', 'Not:\n\n'+STATEMENT, 'The following statement is false:\n\n'+STATEMENT, STATEMENT+'\n\nThe result is 𝐮𝐧𝐜𝐨𝐧𝐝𝐢𝐭𝐢𝐨𝐧𝐚𝐥.', STATEMENT+'\n\nThe result is **unconditional**.', STATEMENT+'\n\nThe result is un&#99;onditional.', '"'+STATEMENT+'"', '> '+STATEMENT, '```\n'+STATEMENT+'\n```'])
 def test_negated_conditional_phrase_native_export(tmp_path,monkeypatch,disclaimer):
     from test_search_alignment import rig,raw,ROOT
     from test_delivery_alignment_citations import aligned_sources
@@ -57,6 +57,17 @@ def test_negated_conditional_phrase_native_export(tmp_path,monkeypatch,disclaime
     with pytest.raises(ValueError,match='hypothesis disclosure'):
         publish(calls.log,dict(route_id=route.id,markdown=draft['body'],draft=draft))
     assert not (tmp_path/'publication/latest.json').exists()
+    # An authenticated legacy publication is still subject to current disclosure.
+    import ara.runtime.hypotheses as hypotheses
+    from ara.runtime.publication import load_publication
+    with monkeypatch.context() as old_policy:
+        old_policy.setattr(hypotheses,'validate_disclosure',lambda *_:None)
+        old_policy.setattr(hypotheses,'validate_conditional_statement',lambda *_:None)
+        publish(calls.log,dict(route_id=route.id,markdown='# P\n\n'+draft['body'],draft=draft,
+            polished=True,audit={},local_citations=[],native_citations=[],words=40,bibliographic_records={},
+            repair_rounds=0,accepted_repair_rounds=0,word_limits={},repair_validation_attempts=0))
+    with pytest.raises(ValueError,match='hypothesis disclosure'):
+        load_publication(tmp_path)
 
 
 @pytest.mark.parametrize('reading_bad',[False,True])
@@ -68,7 +79,9 @@ def test_publication_reading_copy_retains_affirmative_disclosure(tmp_path,monkey
     calls.log.record('route',graph=route.to_dict())
     lines=[f"[[node:{n.id}]] "+('This paper proposes (P and Q) implies R.' if n.t_id=='hypothesis:h' else 'P Q.')
            for n in route.nodes]
-    body='\n'.join(lines)+'\n\n'+STATEMENT
+    from ara.runtime.hypotheses import insert_runtime_disclosure
+    draft=insert_runtime_disclosure(calls,route,dict(title='P',body='\n'.join(lines),bibliography=[]))
+    body='# P\n\n'+draft['body']
     result=dict(route_id=route.id,markdown=body,draft=dict(body=body,bibliography=[]),
         reading_markdown=body.replace(STATEMENT,'Not Conditional on H.') if reading_bad else body,
         polished=True,audit=dict(),local_citations=[],native_citations=[],words=40,bibliographic_records={},
@@ -93,7 +106,9 @@ def test_publication_reload_rechecks_hypothesis_disclosure(tmp_path,monkeypatch,
     calls.log.record('route',graph=route.to_dict())
     lines=[f"[[node:{n.id}]] "+('This paper proposes (P and Q) implies R.' if n.t_id=='hypothesis:h' else 'P Q.')
            for n in route.nodes]
-    body='\n'.join(lines)+'\n\n'+STATEMENT
+    from ara.runtime.hypotheses import insert_runtime_disclosure
+    draft=insert_runtime_disclosure(calls,route,dict(title='P',body='\n'.join(lines),bibliography=[]))
+    body='# P\n\n'+draft['body']
     invalid=body.replace(STATEMENT,'Not Conditional on H.')
     result=dict(route_id=route.id,markdown=invalid if corrupted_copy=='audit' else body,
         draft=dict(body=body,bibliography=[]),

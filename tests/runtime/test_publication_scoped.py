@@ -178,7 +178,7 @@ def test_codex_writer_window_stays_on_codex_audit_not_claude_polish(rig):
     def factory(settings,*unused,**kwargs):
         assert settings['provider']=='claude_code'
         assert apply_context_window(settings) is None
-        assert settings['model_context_token_bound']<=200000
+        assert settings['model_context_token_bound']==934464
         audit=dispatch_settings(settings,'audit_publication')[2]
         assert audit['provider']=='codex_cli' and audit['model_context_window']==872000
         assert audit['model_context_token_bound']>200000

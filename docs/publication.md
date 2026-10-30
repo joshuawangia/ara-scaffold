@@ -39,6 +39,21 @@ Attempted and accepted repair counts and the structural-attempt bound are record
 separately; rejected responses and validation retries remain in the event log.
 Remaining failure retains the original draft and explicitly records fallback.
 
+Publication admission uses the pinned Opus 5.5 native 1,000,000-token window,
+verified against [Claude Code model configuration](https://code.claude.com/docs/en/model-config#extended-context)
+and the [model catalogue](https://platform.claude.com/docs/en/models/overview).
+No `[1m]` suffix is required for this model. The bound is the window minus the
+provider's doubled output allowance and a positive `publication_context_margin_tokens`
+(default 16,384). At the default 24,576 output setting the bound is 934,464;
+native admission additionally counts request output inside that conservative bound.
+This operator-authorized publication policy replaces the historical generic 200,000
+bound, not the provider window or its isolation. `publication_context_policy` and
+configuration receipts disclose the calculation. The separately selected Codex
+auditor retains its own configured bound/window. Full source evidence and fresh
+k>=3 adverse-history audits remain unchanged; requests that still exceed admission
+refuse without truncation. The policy is an admission estimate, not a serving-token
+measurement or a guarantee that a provider will accept a particular request.
+
 The structured response contains Markdown, figure placements and a paragraph
 change log. The whole paper requires a 150–200-word abstract, consecutive numbered
 sections and, by default, 3,000–6,000 reading words excluding references and internal

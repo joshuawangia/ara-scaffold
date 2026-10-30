@@ -20,6 +20,25 @@ CITATION = re.compile(r'\[cite:([^\]]+)\]')
 NODE = re.compile(r'\[\[node:([^\]]+)\]\]')
 
 
+def publication_context_policy(maximum, margin=16384):
+    """The pinned editor has a native 1M window; retain conservative reserves."""
+    require(type(maximum) is int and maximum > 0,
+            'publication output allowance must be a positive integer')
+    require(type(margin) is int and margin > 0,
+            'publication context margin must be a positive integer')
+    window = 1000000
+    output = maximum * 2  # ClaudeCodeProvider.context_output_tokens, including its two-turn reserve.
+    bound = window - output - margin
+    require(bound > 0, 'publication context reserves exhaust the model window')
+    return dict(provider='claude_code', model=MODEL, window_tokens=window,
+                output_allowance_tokens=output, margin_tokens=margin,
+                admission_bound_tokens=bound,
+                basis='Pinned Opus 5.5 native context window; operator-authorized publication policy',
+                references=['https://code.claude.com/docs/en/model-config#extended-context',
+                            'https://platform.claude.com/docs/en/models/overview'],
+                admission_note='Native admission also counts request output within this conservative bound; full evidence retained.')
+
+
 class RunSources:
     """Read-only view of native evidence builders, without opening a provider."""
     essay_outline = ModelCalls.essay_outline
@@ -358,16 +377,19 @@ def publication_command(args, log, root, calls_factory):
                       cache_dir=str(args.run_dir/'publication/cache'))
         # A writer's Codex client window belongs to the separately selected
         # Codex auditor, never to the Claude publication provider.
-        if config.pop('model_context_window', None) is not None:
-            import yaml
-            default_bound = yaml.safe_load((root/'config.yaml').read_text())['model_context_token_bound']
-            config['model_context_token_bound'] = min(config['model_context_token_bound'], default_bound)
+        config.pop('model_context_window', None)
         config.pop('model_context_margin_tokens', None)
+        context_policy = publication_context_policy(
+            config.get('polish_essay_max_output_tokens', config['max_output_tokens']),
+            config.get('publication_context_margin_tokens', 16384))
+        config['model_context_token_bound'] = context_policy['admission_bound_tokens']
+        config['publication_context_policy'] = context_policy
         if args.audit_provider == 'codex_cli':
             audit_model = args.audit_model or writer_settings['model']
             require(audit_model.startswith('gpt-'), 'Codex publication audit requires a configured GPT model')
             config['stages']['audit_publication'] = dict(provider='codex_cli', model=audit_model,
-                effort=writer_settings['effort'], system_prompt=writer_settings.get('system_prompt', ''))
+                effort=writer_settings['effort'], system_prompt=writer_settings.get('system_prompt', ''),
+                model_context_token_bound=writer_settings['model_context_token_bound'])
             config['stages']['audit_publication'].update({key: writer_settings[key] for key in
                 ('model_context_window', 'model_context_margin_tokens', 'propose_targets_max_output_tokens')
                 if key in writer_settings})
@@ -379,6 +401,7 @@ def publication_command(args, log, root, calls_factory):
         calls = calls_factory(config,log,run['topic'],imported_draft=draft)
         validate_local(json.loads((root/'schemas/write_essay.json').read_text()),draft,run['config'])
         log.record('publication_configuration',config=config,draft_path=str(draft_path),draft_sha256=digest(canonical(draft)))
+        log.record('publication_context_policy', **context_policy)
         from ara.runtime.publication_currency import load_currency
         currency = load_currency(args.literature_currency, log)
         result,directory = polish(calls,route,draft,currency=currency)

@@ -723,7 +723,7 @@ option permits a new alignment retrieval policy without mutating the source plan
 
 Add `--stop-at freeze` to finish after the single native freeze, before target
 generation or search. The log and generated methodology disclose this explicit
-operator boundary as `run_stopped_at_freeze`; the default command continues into
+requested boundary as `run_stopped_at_freeze`; the default command continues into
 targets/search. The frozen artifacts remain valid inputs to `fork-from-freeze`.
 
 `C.json` must explicitly set `construction_consolidate_vocabulary: true`. It may
@@ -735,6 +735,10 @@ refuse. Consolidation settings are run-level only. Ordinary runs retain their
 existing behavior unless enabled. An enabled fresh rich-construction run uses
 the same step after its terminal merge.
 
+New v2 plans target eight commitments per batch (or the configured smaller bound).
+The configured batch size remains the hard limit: an intact dependency component
+may exceed eight up to that limit; components are never split.
+
 Scheduling is deterministic: keep accepted inference/dependency components
 intact, then prefer cross-source components and lexical overlap. Oversize
 components refuse instead of splitting dependencies. This is a lexical heuristic,
@@ -745,6 +749,26 @@ content-definition and counted capacity checks apply. Selected conditional
 endpoints must agree; faithful atomic outputs remain allowed. Every reused
 predicate requires a model judgment. Neither reuse nor solver consistency proves
 translation fidelity.
+
+The v2 `consolidate_vocabulary` response contains ordered `formulas`, positional
+`new_symbols` declarations (kind, arity, content definition) and `reuse` entries
+(handle, reason). Runtime-issued s0/s1 handles refer to the existing catalogue;
+n0/n1 refer to fresh declarations. The runtime binds commitment IDs and global
+symbol names, rewrites references including constant terms without changing
+formula structure, and derives every symbol evidence ID from validated formula
+occurrences. Bound variables remain local. The model still owns semantic
+definitions and reuse judgments; it does not echo evidence or commitment IDs.
+Unknown/missing/duplicate handles, signatures and slot counts receive exact
+validator feedback through the ordinary bounded correction call. No text repair
+or extra retry is applied. This stage inherits `build_t_batch` routing and output
+allowance, including construction correction overrides and isolation canaries.
+Enabled Codex configurations require a fresh schema preflight for the new stage.
+
+The v2 receipt additionally binds slot IDs, handle-to-catalogue-entry hashes,
+introduced global names, all evidence IDs and reuse judgments. Reload derives
+these again and compares them exactly. Completed v1 receipts retain their original
+plan, response and semantic validation. A partially completed v1 consolidation
+cannot switch protocols in place: start a fresh lifecycle.
 
 `vocabulary-consolidation.json` and the `vocabulary_consolidated` event retain
 original formulas/catalogue, evidence, immutable provenance, the batch plan,

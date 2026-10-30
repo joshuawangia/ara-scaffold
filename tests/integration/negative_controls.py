@@ -704,7 +704,7 @@ CASES += [
 
 CASES += [
     ('construction_terminal_provider_skip', 'ara/runtime/calls.py',
-     "if kind in ('select_t_roots', 'build_t_batch') and terminal_request_refusal(exc):", 'if False:',
+     "if kind in ('select_t_roots', 'build_t_batch', 'consolidate_vocabulary') and terminal_request_refusal(exc):", 'if False:',
      'tests/runtime/test_construction_shares.py::test_terminal_provider_request_refusal_skips_window_at_reservation[200-select_t_roots]'),
     ('provider_size_diagnostic', 'ara/runtime/providers.py',
      'if size:', 'if False:',
@@ -2854,10 +2854,10 @@ CASES += [
      'tests/runtime/test_vocabulary_consolidation.py::test_native_consolidation_then_alignment_then_one_freeze'),
     ('consolidation_immutable_text', 'ara/runtime/vocabulary_consolidation.py',
      "require(all(c['definition']==expected[c['id']]['text'] for c in data['commitments']),", 'require(True,',
-     'tests/runtime/test_vocabulary_consolidation.py::test_invalid_consolidation_never_freezes'),
+     'tests/runtime/test_consolidation_handles.py::test_legacy_semantic_gates_remain_enforced'),
     ('consolidation_reuse_judgment', 'ara/runtime/vocabulary_consolidation.py',
      "require({a['name'] for a in data['alignments']}==set(used)&old_names and", 'require(True or',
-     'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
+     'tests/runtime/test_consolidation_handles.py::test_legacy_semantic_gates_remain_enforced'),
     ('consolidation_receipt_hash', 'ara/runtime/vocabulary_consolidation.py',
      "require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),", 'require(True,',
      'tests/runtime/test_vocabulary_consolidation.py::test_rehashed_receipt_tampering_refuses'),
@@ -2901,6 +2901,23 @@ CASES += [
     ('native_stop_at_freeze', 'ara/runtime/cli.py',
      "if args.stop_at == 'freeze':", 'if False:',
      'tests/runtime/test_vocabulary_consolidation.py::test_native_stop_at_freeze_excludes_targets_and_search'),
+]
+
+
+
+CASES += [
+    ('consolidation_binding_terms', 'ara/runtime/consolidation_bindings.py',
+     "terms=tuple(replace(t, name=mapping[t.name]) if t.kind=='constant' else t for t in formula.terms),", 'terms=formula.terms,',
+     'tests/runtime/test_consolidation_handles.py::test_native_consolidation_derives_ids_and_all_symbol_uses'),
+    ('consolidation_binding_replay', 'ara/runtime/vocabulary_consolidation.py',
+     "require(batch['bindings']==bindings, 'consolidation runtime binding mismatch')", "require(True, 'consolidation runtime binding mismatch')",
+     'tests/runtime/test_consolidation_handles.py::test_rehashed_runtime_binding_tampering_refuses'),
+    ('consolidation_exact_feedback', 'ara/runtime/calls.py',
+     "**({'reference_constraints': exc.reference_constraints} if hasattr(exc, 'reference_constraints') else {}),", '**{},',
+     'tests/runtime/test_consolidation_handles.py::test_native_exact_feedback_corrects_same_slots'),
+    ('consolidation_small_batches', 'ara/runtime/vocabulary_consolidation.py',
+     "settings['target_batch_size']=min(size,8)", "settings['target_batch_size']=size",
+     'tests/runtime/test_consolidation_handles.py::test_small_batches_are_versioned_and_keep_components'),
 ]
 
 

@@ -14,6 +14,7 @@ CASES=[
  ('prefix_inheritance',CARRY,'            rows.append(pair)','            pass',TEST+'test_prefix_only_inherits_verified_role_and_keeps_raw_dissent'),
  ('prefix_direction',CARRY,"==text and removal_or_unchanged(r)","==text",BOUNDARY+'test_added_ownership_prefix_requires_meaning_votes'),
  ('word_equality',CARRY,"normalized_sentence(r['text'])==text and removal_or_unchanged(r)","True and removal_or_unchanged(r)",TEST+'test_substantive_or_attribution_change_retains_dissent[P, Q and S.]'),
+ ('source_shape_retry',CARRY,"if _payload(event).get('status')!='accepted':\n                continue","if _payload(event).get('status')!='accepted':\n                return None",BOUNDARY+'test_clean_source_gate_with_nonadverse_schema_retry_can_inherit'),
  ('source_k3',CARRY,'type(k) is int and k>=3','type(k) is int and k>=2',BOUNDARY+'test_source_gate_requires_three_samples'),
  ('bibliography_binding',CARRY,"if any(bibliography.get(m[6:-1])!=original.get(m[6:-1]) for m in markers if m.startswith('[cite:')):",'if False:',BOUNDARY+'test_changed_bibliography_cannot_claim_carried_verdict'),
  ('meaning_unanimity',CARRY,"all(v['verdict']=='equivalent' for v in votes) and not adverse[key]","any(v['verdict']=='equivalent' for v in votes)",TEST+'test_scope_broadening_requires_meaning_and_retains_dissent'),

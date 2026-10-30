@@ -29,6 +29,7 @@ class Batch:
     papers_json: str
     input_tokens: int | None
     allowance: int
+    anchor_json: str | None = None
 
 
 @dataclass(frozen=True)
@@ -193,6 +194,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
               resume_state: dict | None = None):
     from ara.runtime.calls import CountRequestRefused, Rejected, require
     from ara.runtime.budget import BudgetStop
+    from ara.runtime.closure_budget import apply_context_limits
+    context_limits = apply_context_limits(calls.config)
     corrections = calls.config.get('construction_targeted_corrections', 2)
     if type(corrections) is not int or corrections < 0:
         raise ValueError('construction_targeted_corrections must be a nonnegative integer')
@@ -212,6 +215,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     from ara.runtime.grounding import evidence_items
     usable = [{**p, 'items': evidence_items(p)} for p in papers if p['status'] in ('extracted', 'partial')]
     usable = [p for p in usable if p['items']]
+    from ara.runtime.construction_anchors import resolve_anchors, window_anchor
+    anchors = resolve_anchors(calls.config, usable)
     all_items = [item for p in usable for item in p['items']]
     require(len({i['id'] for i in all_items}) == len(all_items), 'duplicate evidence id')
     require(len({i['citation'] for i in all_items}) == len(all_items), 'duplicate evidence citation')
@@ -226,6 +231,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         'batch_input_tokens': calls.config['build_t_batch_input_tokens'],
         'symbol_token_budget': calls.config['working_t_symbol_token_budget'],
         'working_t_token_budget': calls.config['working_t_token_budget']}
+    if anchors:
+        metadata['gap_anchors'] = anchors
+    if context_limits is not None:
+        metadata['context_limits'] = context_limits
+        calls.log.record('operator_construction_limits', **context_limits)
     symbol_budget = metadata['symbol_token_budget']
     input_bound = min(metadata['batch_input_tokens'], calls.config['model_context_token_bound'] -
                       calls.config['extracted_build_t_max_output_tokens'] - symbol_budget)
@@ -253,11 +263,15 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         selected = set(ids)
         return [evidence_window(p, selected)
                 for p in usable if any(i['id'] in selected for i in p['items'])]
-    def inputs_for(group, index, allowance):
-        return {**base_inputs, 'batch_index': index, 'papers': group, 'working_token_allowance': allowance}
+    def inputs_for(group, index, allowance, anchor=None):
+        return {**base_inputs, 'batch_index': index, 'papers': group, 'working_token_allowance': allowance,
+                **window_anchor(anchor, [i['id'] for p in group for i in p['items']])}
     def selection_request(inputs, window_items):
         root_ids, groups = selection_inventory(window_items)
         aliases = {id: alias for alias, id in root_ids.items()}
+        if 'gap_anchor' in inputs:
+            inputs = {**inputs, 'gap_anchor': {**inputs['gap_anchor'],
+                'required_root_ids': [aliases[id] for id in inputs['gap_anchor']['root_ids']]}}
         return {**inputs, 'selection_groups': groups,
                 'closure_costs': {alias: costs[id] for alias, id in root_ids.items()},
                 'closure_cost_counter': 'conservative UTF-8 byte bound on evidence payload; not a full request count',
@@ -266,13 +280,15 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
             for p in inputs['papers']]}
     count_cache = {}
     refused_windows = set()
-    def count(ids):
-        key = tuple(ids)
+    def window_key(ids, anchor):
+        return (tuple(ids), canonical(anchor)) if anchor is not None else tuple(ids)
+    def count(ids, anchor=None):
+        key = window_key(ids, anchor)
         if key in refused_windows:
             return None
         if key in count_cache:
             return count_cache[key]
-        inputs = inputs_for(grouped(ids), 0, metadata['working_t_token_budget'])
+        inputs = inputs_for(grouped(ids), 0, metadata['working_t_token_budget'], anchor)
         try:
             formal = calls.count_request('build_t_batch', inputs).initial_input_tokens
             roots = calls.count_request('select_t_roots', selection_request(inputs, {id: items[id] for id in ids})).initial_input_tokens
@@ -287,20 +303,24 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         count_cache[key] = max(formal, roots)
         return count_cache[key]
     partition_bound = max(1, input_bound - 2048)
-    def partition_count(ids):
-        measured = count(ids)
+    def partition_count(ids, anchor=None):
+        measured = count(ids, anchor)
         if measured is None:
             return partition_bound + 1 if len(ids) > 1 else partition_bound
         # Keep an indivisible oversized record as its own window. The plan records
         # its real count and execution omits it before dispatch, without truncation.
         return min(measured, partition_bound) if len(ids) == 1 else measured
     windows = counted_windows(list(items), partition_count, partition_bound, lambda: None)
+    anchored = [(ids, anchor) for anchor in anchors for ids in counted_windows(anchor['evidence_ids'],
+        lambda ids: partition_count(ids, anchor), partition_bound, lambda: None)]
+    window_anchors = [anchor for _, anchor in anchored] + [None] * len(windows)
+    windows = [ids for ids, _ in anchored] + windows
     target_inputs = {'count': calls.config['target_candidates'], 'named_position': None}
     wrapper = calls.count_request('propose_targets', {**target_inputs, 'commitments': {'commitments': []}}).initial_input_tokens
     copy_total = 0
     copy_items = 0
-    for ids in windows:
-        if tuple(ids) in refused_windows:
+    for ids, anchor in zip(windows, window_anchors):
+        if window_key(ids, anchor) in refused_windows:
             continue
         floor = [dict(id=id, text=evidence_text(items[id]), citation=items[id]['citation'],
                       formula={'op': 'atom', 'name': 'P'}) for id in ids]
@@ -309,14 +329,16 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 'commitments': {'commitments': floor}}).initial_input_tokens - wrapper)
             copy_items += len(ids)
         except CountRequestRefused:
-            refused_windows.add(tuple(ids))
+            refused_windows.add(window_key(ids, anchor))
             calls.log.record('build_t_partition_refused', evidence_ids=list(ids), action='omit', input_tokens=None)
     allocation = budget_plan(calls.config, len(windows), copy_total / max(1, copy_items), wrapper, input_bound)
     count_cache.clear()
     batches = [Batch(index, tuple(p['source_id'] for p in grouped(ids)), canonical(grouped(ids)),
-                     count(ids), metadata['working_t_token_budget']) for index, ids in enumerate(windows)]
+                     count(ids, anchor), metadata['working_t_token_budget'], canonical(anchor) if anchor is not None else None)
+               for index, (ids, anchor) in enumerate(zip(windows, window_anchors))]
     plan = {**metadata, 'budget': allocation, 'batches': [dict(index=b.index, source_ids=b.source_ids, input_tokens=b.input_tokens,
-                                       allowance=b.allowance, content_hash=digest(b.papers_json)) for b in batches]}
+                                       allowance=b.allowance, content_hash=digest(b.papers_json),
+                                       **({'gap_anchor': json.loads(b.anchor_json)} if b.anchor_json is not None else {})) for b in batches]}
     plan_id = digest(canonical(plan))
     if resumption:
         require(plan_id == resumption['plan_id'], 'construction resume requires the same counted plan id')
@@ -353,7 +375,11 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
         remaining = dict(select_t_roots=corrections, build_t_batch=corrections)
         definition_unframes = {}
         group = json.loads(batch.papers_json)
+        anchor = json.loads(batch.anchor_json) if batch.anchor_json is not None else None
         window_items = {item['id']: item for paper in group for item in paper['items']}
+        if anchor is not None:
+            calls.log.record('construction_gap_anchor_window', plan_id=plan_id, index=batch.index,
+                             **window_anchor(anchor, window_items)['gap_anchor'])
         selection, closure = {}, None
         if resumption and batch.index in resumption['completed']:
             data = resumption['completed'][batch.index]
@@ -418,7 +444,7 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                                  note='Freeze only previously accepted work; remaining windows are omitted.')
                 skip(batch, window_items, exhausted, selection, closure)
                 continue
-            inputs = {**inputs_for(group, batch.index, max(0, available)), 'plan_id': plan_id,
+            inputs = {**inputs_for(group, batch.index, max(0, available), anchor), 'plan_id': plan_id,
                       'shared_symbols': symbols, 'batch_content_hash': digest(batch.papers_json)}
             root_ids, selection_groups = selection_inventory(window_items)
             groups_by_id = {g['group_id']: g for g in selection_groups}
@@ -430,6 +456,8 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
                 require(len(set(short_roots)) == len(short_roots) and
                         set(short_roots) <= set(root_ids), 'invalid selection roots')
                 roots = [root_ids[id] for id in short_roots]
+                require(set(inputs.get('gap_anchor', {}).get('root_ids', [])) <= set(roots),
+                        'required anchor root omitted from selection')
                 require(bool(data['relevance'].strip()), 'empty selection reason')
                 omitted_groups = [g['group_id'] for g in data['omissions']]
                 require(len(omitted_groups) == len(set(omitted_groups)) and
@@ -655,6 +683,13 @@ def construct(calls: ModelCalls, literature: str, audience: str, *, plan_only: b
     merged = merge_batches(tuple(results), len(batches))
     require(bool(merged.commitments), 'empty working T after accounted omissions' + (': ' + '; '.join(refusal_reasons) if refusal_reasons else ''))
     final_omissions = [o for o in window_omissions if o['evidence_id'] not in materialized]
+    if anchors:
+        # Extra retrieval windows can omit the same item; retain each reason once
+        # in the final inventory, while individual window receipts retain all decisions.
+        reasons = {}
+        for omission in final_omissions:
+            reasons.setdefault(omission['evidence_id'], set()).add(omission['reason'])
+        final_omissions = [dict(evidence_id=id, reason='; '.join(sorted(values))) for id, values in sorted(reasons.items())]
     omitted_ids = [o['evidence_id'] for o in final_omissions]
     require(len(omitted_ids) == len(set(omitted_ids)) and
             set(omitted_ids) | materialized == set(items), 'final evidence inventory mismatch')

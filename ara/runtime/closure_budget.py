@@ -7,6 +7,32 @@ from ara.runtime.cache import canonical
 MEASURED_SYMBOL_TOKENS = ceil(10471 / 45)
 
 
+def apply_context_limits(config):
+    """Opt-in fractions of the effective run bound; explicit absolute defaults stay intact."""
+    fractions = config.get('construction_context_limits', {})
+    keys = {'build_t_batch_input_tokens', 'working_t_token_budget', 'working_t_symbol_token_budget'}
+    if (not isinstance(fractions, dict) or not fractions.keys() <= keys or
+            any(type(v) not in (int, float) or not isfinite(v) or not 0 < v < 1 for v in fractions.values())):
+        raise ValueError('construction context limits must map token-budget keys to fractions between zero and one')
+    if not fractions:
+        return None
+    from ara.runtime.codex_window import apply_context_window
+    effective = dict(config)
+    apply_context_window(effective)
+    bound = effective['model_context_token_bound']
+    if type(bound) is not int or bound <= 0:
+        raise ValueError('construction context limits require a positive integer run context bound')
+    limits = {key: floor(bound * fractions[key]) if key in fractions else config[key] for key in keys}
+    if any(type(v) is not int or v <= 0 for v in limits.values()):
+        raise ValueError('construction context limits leave no usable token budget')
+    if bound - config['extracted_build_t_max_output_tokens'] - limits['working_t_symbol_token_budget'] <= 0:
+        raise ValueError('construction context limits leave no formalization input allowance')
+    config.update(limits, model_context_token_bound=bound)
+    return dict(origin='operator_run_config', rule='floor(effective run context bound * configured fraction)',
+                context_bound=bound, model_context_window=config.get('model_context_window'),
+                fractions=dict(fractions), effective=limits)
+
+
 def budget_plan(config, windows, copy_tokens, wrapper_tokens, input_bound):
     from ara.runtime.calls import require
     headroom = config.get('working_t_headroom_fraction', .2)

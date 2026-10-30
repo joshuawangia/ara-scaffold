@@ -140,6 +140,77 @@ and caps, unfunded windows, and the allocation rule are disclosed in the plan.
 Actual closures, symbols and global limits are still checked; an allocation is not
 a guarantee that a window contributes.
 
+## Operator gap anchors and larger construction windows
+
+A fresh rich-source construction can prepend extra, counted retrieval windows
+with `construction_gap_anchors`. Each entry has a nonempty `gap_id`, `source_id`,
+and `root_ids` and/or `page_ranges`. Root IDs are exact IDs from the grounded
+extracted graph, not invented premises or target formulas. Page ranges are
+inclusive, one-based physical PDF pages; matching extracted items are candidates
+for ordinary relevance selection. Page matching does not read new PDFs or certify
+complete extraction. Missing sources, unknown/quarantined roots, empty page hits,
+invalid ranges and duplicate `(gap_id, source_id)` entries refuse before planning
+counts. Combine multiple ranges/roots for the same pair in one entry.
+
+```yaml
+construction_gap_anchors:
+  - gap_id: P
+    source_id: p
+    root_ids: ["p:r1-2:f"]
+    page_ranges: [[1, 2]]
+```
+
+Explicit roots must be selected in their anchor window; omitting them enters the
+normal bounded correction/refusal path. Page-only candidates may be omitted with
+reasons. The window can still contribute nothing if its mandatory closure does
+not fit or formalization fails. Anchors cannot change source text, stance,
+provenance, qualifiers, formalization gates or solver policy. Closure still reads
+the full immutable graph. Previously formalized IDs and symbols are reused exactly,
+and the run freezes once. Ordinary corpus windows remain after the extra windows.
+Overlapping omissions are reconciled once per evidence ID in the final inventory;
+every window's original reasons remain logged.
+
+The optional `construction_context_limits` mapping derives any of the three
+existing token budgets from the effective **run-level** `model_context_token_bound`.
+Values must be finite fractions strictly between zero and one; unspecified keys
+retain their absolute configured values. The bound is normalized from the
+configured Codex window before calculating `floor(bound * fraction)`.
+
+```yaml
+provider: codex_cli
+model: gpt-6-luna
+model_context_window: 600000
+construction_context_limits:
+  build_t_batch_input_tokens: 0.60
+  working_t_token_budget: 0.65
+  working_t_symbol_token_budget: 0.15
+construction_window_cap_multiplier: 8
+```
+
+With the default target output allowance and margin, the example uses run bound
+567232 and budgets 340339/368700/85084 respectively. The batch input allowance is
+also limited by the run bound minus construction output and catalogue reserves.
+Actual complete requests, including output allowances and effective stage windows,
+are still admitted separately; a smaller stage override can refuse a request.
+The existing finite window-cap multiplier is independently configurable. Larger
+budgets or caps do not guarantee that every closure fits, every source contributes,
+or the resulting formulas faithfully express the sources.
+
+Both options default to disabled. They apply to rich extracted literature only.
+Resolved anchors, physical ranges, matched evidence, effective budgets and operator
+origin enter the counted plan and logs. `construction_gap_anchor_window` and
+`operator_construction_limits` appear in methodology/report construction data.
+`plan-construction --token-counter local` exercises the same planner without
+generation; it is an estimate, not a provider admission or source-quality verdict.
+
+Use a fresh empty run directory when changing anchors or limits. Disabled options
+preserve existing plan inputs. Enabled or changed options partition plan/request
+cache identities, including downstream catalogue context. Keeping the old cache
+directory permits only exact-input hits; it does **not** import previously accepted
+construction outcomes into a different plan. Reusing extraction is separate. Add
+new PDFs to validated extraction before anchoring them. Construction/alignment
+resume continues to require the recorded plan and source identities.
+
 ## Structure and frozen vocabulary
 
 Rich construction preserves selected inference nodes as content conditionals with source stance in provenance

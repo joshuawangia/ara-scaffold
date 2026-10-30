@@ -109,6 +109,11 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     if any(e['stage'] == 'commitments_frozen' for e in calls.log.read()):
         raise ValueError('commitments already frozen for this run')
     state = getattr(calls, 'alignment_resume', None)
+    if state is not None:
+        from ara.runtime.closure_budget import apply_context_limits
+        decision = apply_context_limits(calls.config)
+        if decision is not None:
+            calls.log.record('operator_construction_limits', **decision)
     commitments = state['commitments'] if state is not None else calls.build_t(literature, audience)
     # Rich construction exposes semantic metadata without changing the strict
     # CommitmentSet codec or the legacy commitments.json artifact.

@@ -132,7 +132,7 @@ def sectioned_essay(calls, route, inputs, validate):
             require('abstract' in headings and any(is_proposal_heading(s['heading']) for s in sections),
                     'proposal plan needs Abstract and Proposal sections')
             for section in sections:
-                heading, words = section['heading'].casefold(), section['word_budget']
+                heading, words = section['heading'].strip().casefold(), section['word_budget']
                 low, high = (100, 250) if heading == 'abstract' else (50, 150) if heading == 'status and method' else (400, 1200)
                 require(low <= words <= high, 'proposal section budget outside its purpose')
         else:

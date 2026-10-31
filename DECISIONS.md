@@ -4782,3 +4782,7 @@ disclosure validation, sentence scopes and bridge coverage. Plain prose mentions
 remain outside scope. The proposal Abstract budget overrides ordinary-section
 budgets; clarify that precedence in the planner prompt. No audit labels, adverse
 history, source fidelity checks or repair limits are relaxed.
+
+Review follow-up: apply identical whitespace normalization to heading presence
+and per-section budget selection. A padded Abstract heading must not bypass
+its proposal budget. The native regression refuses before section dispatch.

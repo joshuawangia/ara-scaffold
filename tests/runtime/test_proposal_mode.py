@@ -324,3 +324,18 @@ def test_metadata_insertion_does_not_erase_unchanged_adverse_history(rig, monkey
     with pytest.raises(EssayAuditFailed) as failure:audit_consensus(calls,r,current)
     assert failure.value.result['historical_adverse']
     assert any(f['reason']=='unsupported_claim' for f in failure.value.result['flags'])
+
+
+def test_proposal_abstract_budget_uses_normalized_heading(rig, monkeypatch):
+    from ara.runtime.calls import InvalidOutput
+    calls, provider, log = rig
+    route, _ = setup(calls, log)
+    def complete(kind, prompt, schema, maximum):
+        assert kind == 'outline_essay', 'invalid abstract budget reached writer'
+        return Response(response(dict(title='P', sections=[
+            dict(id=f's{i}', heading=h, purpose='P', word_budget=w, node_ids=['n0','n1'])
+            for i,(h,w) in enumerate([(' Abstract ',400),('Introduction',800),
+                ('Proposal: P',1000),('Objections and replies',700),('Conclusion',400)])])))
+    monkeypatch.setattr(provider, 'complete', complete)
+    with pytest.raises(InvalidOutput, match='proposal section budget'):
+        calls.write_essay(route)

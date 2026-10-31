@@ -127,8 +127,9 @@ def sectioned_essay(calls, route, inputs, validate):
     def check_plan(data):
         sections = data['sections']
         if 'proposal' in inputs:
-            headings = {s['heading'].casefold() for s in sections}
-            require({'abstract', 'proposal'} <= headings,
+            from ara.runtime.proposal_scopes import is_proposal_heading
+            headings = {s['heading'].strip().casefold() for s in sections}
+            require('abstract' in headings and any(is_proposal_heading(s['heading']) for s in sections),
                     'proposal plan needs Abstract and Proposal sections')
             for section in sections:
                 heading, words = section['heading'].casefold(), section['word_budget']

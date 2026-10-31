@@ -85,7 +85,8 @@ def test_proposal_packet_is_bound_to_route_and_immutable(rig):
         activate(calls, replace(r, id='different'), packet)
 
 
-def test_proposal_writer_uses_native_proportional_sections(rig, monkeypatch):
+@pytest.mark.parametrize('proposal_heading', ['Proposal', 'Proposal: P', 'Proposal — P'])
+def test_proposal_writer_uses_native_proportional_sections(rig, monkeypatch, proposal_heading):
     calls, provider, log = rig
     r, _ = setup(calls, log)
     calls.config['token_cap'] = 10_000_000
@@ -95,7 +96,7 @@ def test_proposal_writer_uses_native_proportional_sections(rig, monkeypatch):
         if kind=='outline_essay':
             assert 3000 <= inputs['budget_min'] < inputs['budget_max'] <= 4500
             value=dict(title='P', sections=[dict(id=f's{i}',heading=h,purpose='P',word_budget=w,node_ids=['n0','n1'])
-                for i,(h,w) in enumerate([('Abstract',200),('Introduction',800),('Proposal',1000),('Objections and replies',700),('Conclusion',400),('Status and method',100)])])
+                for i,(h,w) in enumerate([('Abstract',200),('Introduction',800),(proposal_heading,1000),('Objections and replies',700),('Conclusion',400),('Status and method',100)])])
         else:
             assert inputs['mode']=='section'
             value=dict(title=inputs['section']['heading'],body='[[node:n0]] [[node:n1]] '+('P '*inputs['section']['word_budget']),bibliography=[])

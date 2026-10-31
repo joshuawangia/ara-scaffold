@@ -97,8 +97,9 @@ def audit_result(route, draft, inputs, data):
                for node in item['node_ids']}
     missing = ids - covered
     scopes = {s['sentence']: s.get('proposal_scope', {}) for s in inputs['sentences']}
+    from ara.runtime.proposal_scopes import is_proposal_heading
     if inputs.get('proposal') and not any(item['role'] == 'proposed_principle' and route.root_id in item['node_ids']
-            and scopes.get(item['sentence'], {}).get('heading', '').casefold() == 'proposal' for item in labels):
+            and is_proposal_heading(scopes.get(item['sentence'], {}).get('heading', '')) for item in labels):
         missing.add(route.root_id)
     extra = list(dict.fromkeys(item['sentence'] for item in flags))
     markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))

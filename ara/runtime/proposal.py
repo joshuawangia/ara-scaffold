@@ -141,7 +141,7 @@ def _read_source(source):
 
 def validate_disclosure(proposal, draft, *, allow_legacy=False):
     from ara.runtime.calls import require
-    from ara.runtime.proposal_scopes import sections
+    from ara.runtime.proposal_scopes import sections, is_proposal_heading
     if proposal is None:
         return
     label = proposal['disclosure']
@@ -157,7 +157,7 @@ def validate_disclosure(proposal, draft, *, allow_legacy=False):
     abstract = by_name.get('abstract', '')
     require(abstract.count(label) == 1 and 'Disclosure: ' + label + '.' in abstract,
             'proposal needs exactly one abstract disclosure')
-    require('proposal' in by_name, 'bridge principle needs a clearly headed Proposal section')
+    require(any(is_proposal_heading(s['heading']) for s in blocks), 'bridge principle needs a clearly headed Proposal section')
 
 
 def role_failure(role, text, proposal, *, frozen_hypothesis=None, source_authors=(), proposal_scope=None):

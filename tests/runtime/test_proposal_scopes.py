@@ -7,9 +7,12 @@ from test_proposal_policy import paper
 from test_typed_audit import label
 
 
-@pytest.mark.parametrize('heading',['Proposal','## Proposal','2. Proposal'])
+@pytest.mark.parametrize('heading',['Proposal','## Proposal','2. Proposal', 'Proposal: P', '## Proposal: P', '2. Proposal: P', 'Proposal — P'])
 def test_proposal_section_bounds_bridge_ownership(rig,heading):
-    calls,provider,log=rig;route,_=setup(calls,log);d=paper();d['body']=d['body'].replace('\nProposal\n','\n'+heading+'\n');inputs=calls.audit_inputs(route,d)
+    from ara.runtime.proposal import validate_disclosure, from_events
+    calls,provider,log=rig;route,_=setup(calls,log);d=paper();d['body']=d['body'].replace('\nProposal\n','\n'+heading+'\n')
+    validate_disclosure(from_events(log.read(), route.id), d)
+    inputs=calls.audit_inputs(route,d)
     assert next(s for s in inputs['sentences'] if s['text']=='P.')['proposal_scope']['kind']=='section'
     assert not next(s for s in inputs['sentences'] if s['text']=='R.').get('proposal_scope')
     labels=[label(s['sentence'],'proposed_principle' if s['text']=='P.' else 'framing',('n0','n1') if s['text']=='P.' else ()) for s in inputs['sentences']]
@@ -37,3 +40,16 @@ def test_bridge_in_proposal_subsection_is_still_in_proposal(rig):
     labels=[label(s['sentence'],'proposed_principle' if s['text']=='P.' else 'framing',('n0','n1') if s['text']=='P.' else ()) for s in inputs['sentences']]
     register(calls,provider,'audit_essay',inputs,dict(labels=labels))
     assert calls.audit_essay(route,d)['faithful']
+
+
+@pytest.mark.parametrize('heading', ['Proposal status: P', 'The proposal', 'Proposal: P.', 'Proposal for P', 'Proposal:'])
+def test_proposal_mentions_do_not_create_ownership(heading):
+    from ara.runtime.proposal import validate_disclosure
+    from ara.runtime.proposal_scopes import sentence_scopes
+    from ara.runtime.calls import Rejected
+    from test_proposal_mode import DISCLOSURE
+    d=paper();d['body']=d['body'].replace('\nProposal\n','\n'+heading+'\n')
+    start=d['body'].index('[[node:n0]]')
+    assert sentence_scopes(d['body'],[(start,start+len('[[node:n0]] [[node:n1]] P.'))])==[None]
+    with pytest.raises(Rejected,match='clearly headed Proposal'):
+        validate_disclosure(dict(disclosure=DISCLOSURE), d)

@@ -4774,3 +4774,11 @@ Large proposal grounding can repeat neighboring source items across anchors.
 Exact item interning with ordered per-anchor references preserves the entire
 selected context while retaining the existing size bound. A round-trip regression
 requires exact reconstruction; contexts still too large are explicitly refused.
+
+## Proposal subtitles across writer and audit
+
+Recognize Proposal headings with colon or dash subtitles consistently in planning,
+disclosure validation, sentence scopes and bridge coverage. Plain prose mentions
+remain outside scope. The proposal Abstract budget overrides ordinary-section
+budgets; clarify that precedence in the planner prompt. No audit labels, adverse
+history, source fidelity checks or repair limits are relaxed.

@@ -155,6 +155,8 @@ def verified_legacy_import(events, route, draft):
 def polish(calls, route, draft, *, currency=None):
     from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
+    from ara.runtime.publication_flow import start as start_flow
+    flow = start_flow(calls, route, draft)
     from ara.runtime.proposal import activate, validate_disclosure
     proposal = activate(calls, route)
     validate_disclosure(proposal, draft, allow_legacy=bool(proposal) and verified_legacy_import(calls.log.read(), route, draft))
@@ -162,6 +164,7 @@ def polish(calls, route, draft, *, currency=None):
     inline_enabled = calls.config.get('publication_inline_repairs', False)
     title_only = calls.config.get('publication_title_format_only', False)
     require(not (inline_enabled and title_only), 'choose inline repairs or title formatting only')
+    require(not flow or inline_enabled and not title_only, 'flow publication requires inline repairs only')
     resumed = repair_state(calls.log.read(), route.id, digest(canonical(draft)), inline=inline_enabled or title_only)
     require(not title_only or resumed['candidate'] is not None,
             'title formatting requires an accepted publication candidate')
@@ -262,6 +265,10 @@ def polish(calls, route, draft, *, currency=None):
             failed = logged_title_failures(calls.log.read(), as_draft(candidate['markdown'], draft['bibliography']))
             if failed:
                 candidate = format_titles(candidate, failed, 'exact_logged_request')
+        if candidate is None and flow:
+            from ara.runtime.publication_flow import edit
+            candidate = edit(calls, draft, figure_ids, check_whole)
+            calls.log.record('publication_candidate', **candidate)
         if candidate is None:
             for index,chunk in enumerate(chunks):
                 result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
@@ -322,7 +329,7 @@ def polish(calls, route, draft, *, currency=None):
                         inline_passes += 1
                         candidate = repair(calls, candidate, rejection, base, check_inline, inline_passes)
                         continue
-                if repair_rounds == 3 or not audit.get('flags'):
+                if flow or repair_rounds == 3 or not audit.get('flags'):
                     raise
                 inputs = rejection.inputs
                 flagged = [dict(**sentence,
@@ -457,6 +464,10 @@ def publication_command(args, log, root, calls_factory):
                       publication_title_format_only=getattr(args,'title_format_only',False),
                       publication_min_words=minimum,essay_min_words=minimum,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
+        if getattr(args, 'flow_prompt', None):
+            from ara.runtime.publication_flow import prompt_record
+            config.update(publication_flow_prompt=prompt_record(args.flow_prompt),
+                          publication_inline_repairs=True, system_prompt='')
         # A writer's Codex client window belongs to the separately selected
         # Codex auditor, never to the Claude publication provider.
         config.pop('model_context_window', None)
@@ -481,6 +492,8 @@ def publication_command(args, log, root, calls_factory):
         if args.unknown_usage_policy:
             config['unknown_usage_policy'] = args.unknown_usage_policy
         calls = calls_factory(config,log,run['topic'],imported_draft=draft)
+        if config.get('publication_flow_prompt'):
+            calls.screen_imported_draft(config['publication_flow_prompt'], kind='polish_flow')
         validate_local(json.loads((root/'schemas/write_essay.json').read_text()),draft,run['config'])
         log.record('publication_configuration',config=config,draft_path=str(draft_path),draft_sha256=digest(canonical(draft)))
         log.record('publication_context_policy', **context_policy)

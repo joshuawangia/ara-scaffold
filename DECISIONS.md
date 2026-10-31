@@ -4757,3 +4757,13 @@ are still required for inheritance. Exhaustion refuses before the final audit;
 this changes neither semantic repair counts nor the final union gate. The prior
 retry regression hid the native failure by raising the parent's attempt count.
 Tests now retain the native default and exercise incomplete large inventories.
+# Exact operator-instructed publication flow
+
+An explicitly authorized new flow-only publication may use a retained UTF-8
+instruction file instead of the standard section and whole-paper prompts.
+The native boundary logs its byte-preserving SHA-256 and source binding, screens
+the input, and permits one isolated whole-paper edit only. It requires an accepted
+native k>=3 original, preserves citation occurrence counts and cannot reopen a
+rejected edit or reset an existing publication history. Deterministic figure and
+change-log bookkeeping adds no manuscript claim. Ordinary typed/meaning audits,
+inline limits, native verification and final publication gates remain unchanged.

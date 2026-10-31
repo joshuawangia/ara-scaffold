@@ -11,6 +11,27 @@ uv run ara figures --run-dir runs/example
 uv run ara render-pdf --run-dir runs/example
 ```
 
+For an explicitly authorized new flow-only publication, use
+`ara polish --run-dir RUN --flow-prompt PATH --audit-provider codex_cli` on one
+dedicated copy of the verified original run. This requires the source's accepted
+native k>=3 gate. The UTF-8 instruction file is preserved byte-for-byte, with its
+SHA-256, path and source binding recorded in publication receipts and methodology.
+The editor receives exactly that instruction and the original manuscript; the
+isolated provider transports the revised Markdown in a one-field JSON object.
+There are no section-edit calls, additional whole-paper edits, or editorial
+instructions appended from the ordinary publication prompt. The one edit is
+charged before dispatch and cannot be rerolled after structural rejection or an
+interruption. Resume requires the same instruction/source binding and retained
+candidate. Every citation-marker occurrence must survive the initial edit.
+Figure placement and paragraph bookkeeping are deterministic.
+
+Flow-only mode uses the existing carry-over/meaning checks, conservative audit,
+up to three occurrence-bound inline passes, native verification and final audit.
+It never falls back to whole-paper repair. A different kind of flag that cannot
+be resolved within the authorized inline path refuses. All existing source,
+disclosure, length, citation and PDF checks remain binding. Keep any delivered
+verified original separate from a newly accepted polished PDF.
+
 `polish` reads `draft.json` when present, otherwise `draft.unverified.json`.
 `--draft PATH` explicitly selects a saved draft. The route must exist in the run;
 when omitted, the latest HUMAN selection or the sole available route is used.

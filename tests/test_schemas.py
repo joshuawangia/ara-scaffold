@@ -12,6 +12,7 @@ PROPOSITION = {'id': 'p', 'text': 'P', 'formula': P}
 PROPOSAL = {'bank_id': 'modus_ponens', 'premises': [
     {'slot': 'antecedent', 'text': 'P', 't_id': 't1', 'scope_id': None}], 'conclusion_text': 'Q'}
 PAYLOADS = {
+    'polish_flow': {'markdown': 'P'},
     'audit_meaning': {'pairs': [dict(sentence=1, source_sentence=1, verdict='equivalent', reason='P')]},
     'classify_conflict': {'classification': 'in_tension', 'reason': 'P Q'},
     'audit_publication': {'labels': [{'sentence': 1, 'node_ids': ['p'], 'role':'argument_step', 'citation_supported':True, 'publication_issue':'none'}]},

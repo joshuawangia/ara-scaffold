@@ -3,6 +3,10 @@
 Private snapshot of the competition outputs. Nothing here is a submission verdict; choosing what to
 submit is the operator's decision.
 
+## 0-final — submission package
+
+Recommended essay (T2, verified original), methodology (metapaper v6) and an alternate essay (B/2), with `SUBMISSION-CHECKLIST.md`.
+
 ## 1-candidates — candidate papers
 
 ### ready/ — readable PDFs of text that passed every gate

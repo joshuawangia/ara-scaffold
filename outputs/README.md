@@ -5,7 +5,7 @@ submit is the operator's decision.
 
 ## 0-final — submission package
 
-Recommended essay (T2, verified original), methodology (metapaper v8) and an alternate essay (B/2), with `SUBMISSION-CHECKLIST.md`.
+Three submissions ready: essay 1 (T2), essay 2 (B/2), essay 3 (gap analysis), each with the methodology report; see `SUBMISSION-CHECKLIST.md`.
 
 ## 1-candidates — candidate papers
 

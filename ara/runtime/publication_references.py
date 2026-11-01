@@ -7,7 +7,7 @@ from ara.runtime.extraction import HEADER
 
 
 def bibliography_records(log, evidence, source_ids=()):
-    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])
+    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', []) + evidence.get('proposal_source_evidence', [])
     wanted = {s['provenance']['source_id'] for s in sources
               if s['provenance'] and s['provenance']['source_id'] is not None}
     wanted.update(source_ids)
@@ -34,6 +34,10 @@ def bibliography_records(log, evidence, source_ids=()):
         if source not in found:
             found[source] = dict(record=fields,pdf_sha256=hashes[source],
                 origin_prompt_sha256=digest(event['prompt']),verification='not_independently_verified')
+    for source in evidence.get('proposal_source_evidence', []):
+        item = source.get('local_evidence')
+        if item:
+            found[item['source_id']] = dict(record=item['record'], pdf_sha256=item['pdf_sha256'], verification='retained_proposal_pdf_metadata')
     return found
 
 
@@ -49,7 +53,7 @@ def author_year(record):
 def reading_copy(markdown, evidence, records, currency):
     import re
     from ara.runtime.publication_currency import LIT
-    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])
+    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', []) + evidence.get('proposal_source_evidence', [])
     supports = {s['commitment']['id']:s for s in sources
                 if not s['provenance'] or s['provenance'].get('stance') not in ('model_alignment','proposed')}
     receipt = {}
@@ -64,7 +68,7 @@ def reading_copy(markdown, evidence, records, currency):
         label = author_year(metadata.get('record', {})) + ', ' + locator
         receipt[id] = dict(source_id=p['source_id'],display=label,locator=locator,
             raw_citation=support['commitment']['citation'],pdf_sha256=metadata.get('pdf_sha256'),
-            bibliography=metadata.get('record',{}),basis='frozen T physical PDF pages')
+            bibliography=metadata.get('record',{}),basis='proposal literature physical PDF pages' if id.startswith('proposal:') else 'frozen T physical PDF pages')
         return '('+label+')'
     def literature_citation(match):
         id=match[1]

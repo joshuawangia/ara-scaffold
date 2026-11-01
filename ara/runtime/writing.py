@@ -23,18 +23,24 @@ def source_context(calls, route):
     frozen = frozen_from_events(events)
     provenance = calls.search_vocabulary(frozen)['commitment_provenance'] if frozen is not None else None
     ids = support_ids(route, frozen)
+    from ara.runtime.proposal import from_events
+    proposal = from_events(events, route.id)
+    proposal_ids = set(proposal['packet']['frozen_evidence_ids']) if proposal else set()
+    ids = ids | proposal_ids
     citations = catalogue(events, ids)
     starts = [json.loads(e['payload_json']) for e in events if e['stage'] == 'run_started']
     literature = starts[0].get('literature') if starts else None
     papers = {p['source_id']: p for p in json.loads(literature[len(HEADER):])['papers']} if (
         isinstance(literature, str) and literature.startswith(HEADER)) else {}
-    supports, contexts, bibliography, alignment_evidence = [], [], [], []
+    supports, contexts, bibliography, alignment_evidence, proposal_evidence = [], [], [], [], []
     for tid in sorted(ids | citation_ids(ids, provenance)):
         commitment = frozen.get(tid) if frozen is not None else None
         require(commitment is not None, 'essay support missing frozen commitment')
         source = provenance['commitments'][tid] if provenance else None
         row = dict(commitment=commitment.to_dict(), provenance=source)
-        if tid in ids:
+        if tid in proposal_ids and tid not in support_ids(route, frozen):
+            proposal_evidence.append(dict(**row, authority='source_evidence_not_route_support'))
+        elif tid in ids:
             supports.append(row)
         else:
             alignment_evidence.append(dict(**row, authority='definition_evidence_not_additional_premise'))
@@ -71,14 +77,39 @@ def source_context(calls, route):
                   allowed_bibliography=bibliography,
                   critical_questions=[dict(node_id=n.id, **a.to_dict()) for n in route.nodes for a in n.cq_answers],
                   disclosed_limits=dict(open_node_ids=list(route.frontier),
-                      omitted_support_ids=sorted({id for s in supports + alignment_evidence if s['provenance']
+                      omitted_support_ids=sorted({id for s in supports + alignment_evidence + proposal_evidence if s['provenance']
                           for id in s['provenance'].get('omitted_support_ids', [])})))
     from ara.runtime.hypotheses import route_hypothesis_disclosure
     disclosure = route_hypothesis_disclosure(route,provenance)
     if disclosure['conditional_on']:
         result['hypothesis_disclosure'] = disclosure
+    if proposal:
+        for item in proposal['local_evidence'].values():
+            bibliography.append(item['bibliography'])
+            proposal_evidence.append(dict(commitment=dict(id=item['id'], text=item['source_text'], citation=item['bibliography']['text']),
+                provenance=dict(source_id=item['source_id'], source_authors=item['record']['authors'],
+                    source_text=item['source_text'], page_start=item['page_start'], page_end=item['page_end'], stance='related_literature'),
+                local_evidence=item, authority='related_literature_not_frozen_T'))
+        result['proposal_source_evidence'] = proposal_evidence
     if alignment_evidence:
         result['alignment_source_evidence'] = alignment_evidence
+    if len(canonical(result)) > MAX_CONTEXT_CHARS:
+        # Retain every contextual item and its per-anchor order; store repeats once.
+        items, indexes, compact = [], {}, []
+        for row in result['paper_context']:
+            if 'items' not in row:
+                compact.append(row)
+                continue
+            refs = []
+            for item in row['items']:
+                key = canonical(item)
+                if key not in indexes:
+                    indexes[key] = len(items)
+                    items.append(item)
+                refs.append(indexes[key])
+            compact.append({**{k:v for k,v in row.items() if k!='items'}, 'item_refs':refs})
+        result.update(paper_context=compact, context_items=items,
+                      context_encoding='paper_context.item_refs indexes context_items; all items retained')
     require(len(canonical(result)) <= MAX_CONTEXT_CHARS,
             'essay required source context exceeds bound; no evidence was truncated')
     return result
@@ -93,12 +124,23 @@ def sectioned_essay(calls, route, inputs, validate):
     evidence = source_context(calls, route)
     base = {**inputs, 'source_evidence': evidence}
     minimum, maximum = inputs['minimum_words'], inputs['word_limit']
-    budget_min, budget_max = max(4800, minimum), min(5600, maximum)
+    budget_min, budget_max = (min(4500, minimum + 200) if 'proposal' in inputs else max(4800, minimum)), min(4500 if 'proposal' in inputs else 5600, maximum)
     require(budget_min <= budget_max, 'essay limits cannot fit section budgets')
     node_ids = {n.id for n in route.nodes}
 
     def check_plan(data):
         sections = data['sections']
+        if 'proposal' in inputs:
+            from ara.runtime.proposal_scopes import is_proposal_heading
+            headings = {s['heading'].strip().casefold() for s in sections}
+            require('abstract' in headings and any(is_proposal_heading(s['heading']) for s in sections),
+                    'proposal plan needs Abstract and Proposal sections')
+            for section in sections:
+                heading, words = section['heading'].strip().casefold(), section['word_budget']
+                low, high = (100, 250) if heading == 'abstract' else (50, 150) if heading == 'status and method' else (400, 1200)
+                require(low <= words <= high, 'proposal section budget outside its purpose')
+        else:
+            require(all(s['word_budget'] >= 400 for s in sections), 'ordinary essay section budget below 400')
         require(len({s['id'] for s in sections}) == len(sections), 'duplicate essay section id')
         require(budget_min <= sum(s['word_budget'] for s in sections) <= budget_max,
                 'essay section budgets outside requested range')

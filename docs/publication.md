@@ -11,6 +11,27 @@ uv run ara figures --run-dir runs/example
 uv run ara render-pdf --run-dir runs/example
 ```
 
+For an explicitly authorized new flow-only publication, use
+`ara polish --run-dir RUN --flow-prompt PATH --audit-provider codex_cli` on one
+dedicated copy of the verified original run. This requires the source's accepted
+native k>=3 gate. The UTF-8 instruction file is preserved byte-for-byte, with its
+SHA-256, path and source binding recorded in publication receipts and methodology.
+The editor receives exactly that instruction and the original manuscript; the
+isolated provider transports the revised Markdown in a one-field JSON object.
+There are no section-edit calls, additional whole-paper edits, or editorial
+instructions appended from the ordinary publication prompt. The one edit is
+charged before dispatch and cannot be rerolled after structural rejection or an
+interruption. Resume requires the same instruction/source binding and retained
+candidate. Every citation-marker occurrence must survive the initial edit.
+Figure placement and paragraph bookkeeping are deterministic.
+
+Flow-only mode uses the existing carry-over/meaning checks, conservative audit,
+up to three occurrence-bound inline passes, native verification and final audit.
+It never falls back to whole-paper repair. A different kind of flag that cannot
+be resolved within the authorized inline path refuses. All existing source,
+disclosure, length, citation and PDF checks remain binding. Keep any delivered
+verified original separate from a newly accepted polished PDF.
+
 `polish` reads `draft.json` when present, otherwise `draft.unverified.json`.
 `--draft PATH` explicitly selects a saved draft. The route must exist in the run;
 when omitted, the latest HUMAN selection or the sole available route is used.
@@ -33,11 +54,59 @@ retry uses the same pre-repair candidate, flagged occurrences and round number.
 Only flagged sentence spans may change, including within an allowed paragraph;
 all intervening spans remain byte-identical. The editor must preserve length and
 support without padding. A second invalid response ends the attempt honestly.
+
+`--inline-repairs` enables the operator's bounded continuation path. It resumes
+the latest accepted candidate, including after three whole-paper rounds, without
+resetting that count. Unsupported claims and elaborations get up to three
+separate, persistent inline passes. A pass is charged before dispatch; a crash or
+invalid response cannot replenish it. Only the flagged prose occurrences change.
+Accepted verified-source carry-over can restore source wording; an alignment
+suggestion alone cannot. Otherwise the isolated editor returns one sentence (or
+deletes it), using the same evidence and whole-paper validation. Every occurrence
+retains its citation/node inventory, and surrounding bytes are assembled locally.
+Miscitation keeps the normal targeted repair path. Each changed candidate goes
+through fresh conservative k≥3 auditing, native verification and the final gate.
+
+In this continuation mode, a quotation-fidelity failure consisting solely of
+exact logged bibliographic titles permits deterministic quotation-delimiter to
+italics replacement. It spends neither semantic repair budget and changes no
+other bytes. The failed items, before hash and candidate are logged, then native
+verification and the final audit run again. Other quotation failures still refuse.
+`--title-format-only` limits an existing accepted candidate to this deterministic
+formatting path, followed by native verification and the fresh final audit. It
+cannot invoke the editor or repair a semantic audit failure. It is exclusive with
+`--inline-repairs`.
 These retries never reset or increase the three-round semantic repair limit
 (at most six repair proposals). Transport retries keep their existing policy.
 Attempted and accepted repair counts and the structural-attempt bound are recorded
 separately; rejected responses and validation retries remain in the event log.
 Remaining failure retains the original draft and explicitly records fallback.
+
+Publication admission uses the pinned Opus 5.5 native 1,000,000-token window,
+verified against [Claude Code model configuration](https://code.claude.com/docs/en/model-config#extended-context)
+and the [model catalogue](https://platform.claude.com/docs/en/models/overview).
+No `[1m]` suffix is required for this model. The bound is the window minus the
+provider's doubled output allowance and a positive `publication_context_margin_tokens`
+(default 16,384). At the default 24,576 output setting the bound is 934,464;
+native admission additionally counts request output inside that conservative bound.
+This operator-authorized publication policy replaces the historical generic 200,000
+bound, not the provider window or its isolation. `publication_context_policy` and
+configuration receipts disclose the calculation. The separately selected Codex
+auditor retains its own configured bound/window. Full source evidence and fresh
+k>=3 adverse-history audits remain unchanged; requests that still exceed admission
+refuse without truncation. The policy is an admission estimate, not a serving-token
+measurement or a guarantee that a provider will accept a particular request.
+
+The audit after citation verification shares the same three-round repair loop.
+A late flag receives the same occurrence-bound repair permissions and fresh audit
+requirements as an earlier flag. It cannot be outvoted by clean samples. Restarting
+an interrupted publication recovers its last accepted repair from the append-only
+log for the same route and original-draft hash; it screens that draft through the
+effective providers before logging or dispatch, revalidates it, and resumes at the
+next unused round. It does not rerun section or whole-paper editing. The ledger
+rejects consumed-round restarts, exhausted budgets, excess structural attempts and
+unfinished repair outputs rather than replenishing retries. A completed third-round
+refusal stands; retain the verified pre-polish export as the fallback deliverable.
 
 The structured response contains Markdown, figure placements and a paragraph
 change log. The whole paper requires a 150–200-word abstract, consecutive numbered
@@ -60,8 +129,9 @@ no matching logged record exists; no checkout manifest supplies a replacement.
 Recorded bibliography metadata is not independently verified. Native audit checks source support and
 route fidelity. These are model assessments, not a semantic equivalence proof.
 
-The native citation/originality path is attempted on accepted polish. Its external
-retrieval step is unavailable through the isolated subscription provider: this is
+The native citation/originality path is attempted on accepted polish through the
+explicitly selected audit provider. Codex supports its native web verification;
+without that selection, Claude cannot perform the retrieval step. That case is
 recorded as **blocked**, returns exit 2, and does not call an API fallback. Local
 citation membership is a separate check, not a replacement for external source
 verification. A Markdown/PDF artifact can therefore exist with incomplete
@@ -176,9 +246,9 @@ pin; absent that override, the recorded writer model is used and must be a GPT
 model. Without the flag the existing pinned Claude audit remains available.
 Provider scopes share the same budget, append-only log and cache boundary, with
 provider/model/settings included in cache identity. Each provider performs its
-own isolation preflight. This selects only publication auditing; external
-citation/originality retrieval remains on the publication provider and explicitly
-blocked there. It does not change pilot routing or claim stable model judgments.
+own isolation preflight. The explicitly selected audit provider also performs native citation/originality
+verification, sharing the original log, cache and budget. Without a separate
+audit provider, unavailable external retrieval remains explicitly blocked. It does not change pilot routing or claim stable model judgments.
 The live receipt distinguishes schema/transport proof from the semantic verdict.
 
 ## Frozen citations and malformed audit history
@@ -206,3 +276,63 @@ response remains binding even when the corrected response is clean. Invalid
 responses never count as clean samples; the gate still requires at least three
 complete fresh samples. Receipts distinguish recovered adverse evidence from
 those sample verdicts.
+
+## Proposal publications
+
+An explicitly authorized OPEN proposal retains its title-page label (in the title
+or front matter) and one abstract
+disclosure sentence. Its bridge is stated and defended in a clearly headed
+Proposal section as the paper's argued principle, not a source claim. Every
+source report must be cited and faithful, and unsupported substance cannot be
+presented as established. Native proposal validation owns that contract.
+
+Natural prose needs no sentence prefixes, paragraph ownership cues, repeated
+disclaimers or mandatory status-note placement. Source discussion is allowed
+inside Proposal when its citations support it and it remains distinct from the
+bridge. A short Status and method note is an editorial option. Proposal currency
+citations must resolve to their logged evidence; bounded-search qualifications,
+read status, page/section limits and source fidelity still apply wherever cited.
+The ordinary route layout and related-work rules remain unchanged.
+
+Publication receives the native proposal/audit metadata and retains fresh k≥3
+samples, union of substantive flags and adverse history. Proposal-only placement
+labels are advisory; source/currency support, unsupported substance, route
+coverage and original-draft fidelity still fail when violated. The raw labels
+remain in the audit receipts. A clean gate is a model assessment, not proof of
+semantic truth.
+
+Only the current exact accepted export with a matching clean complete k≥3 writer
+gate may use the legacy disclosure format on import. Final text and every repair
+use the current native validator; the retained original export is not rewritten.
+The writer's Codex-only context window stays on the separately selected Codex
+auditor. The Claude editor uses the repository context-admission bound, preserving
+any smaller inherited bound. The source run configuration remains unchanged.
+
+The initial whole-paper output receives deterministic proposal metadata through
+the shared insertion helper before strict validation and the fresh audit. The
+model's original citation/node/figure inventories and indices are validated
+first; only metadata-related paragraph/figure indices are recomputed. A receipt
+binds the before/after values and retains the original model change log. Repairs
+still validate strictly and cannot use insertion to alter unflagged spans.
+
+A native unverified-quotation finding can use a remaining publication repair
+round only when its exact text is a logged work title. The quote:index inventory
+identifies its occurrence, including repeated identical strings. That repair may
+replace only those quotation delimiters with Markdown italics; all other body
+characters, title wording and citations must remain unchanged. The original
+candidate is retained instead of accepting the verifier's cleanup. The ordinary
+fresh audits and citation verification still apply. Unmatched quotations and
+other verification failures continue to refuse; this is no fidelity exemption.
+
+
+## Exact operator-instructed flow
+
+`ara polish --run-dir runs/P --flow-prompt instructions.txt` selects one
+whole-paper edit with a retained UTF-8 operator instruction. It requires a
+native verified original with at least three audit samples and a dedicated
+publication history. The prompt hash and source binding are logged. Citation
+occurrence counts, ordinary typed/meaning audits and final verification remain
+binding. A rejected edit cannot be rerolled, and whole-paper repair is disabled
+for this mode; bounded inline repair remains subject to the existing limits.
+Resume requires the same prompt and source. See `publication_flow.py` and
+`tests/runtime/test_publication_flow.py` for the owning boundary.

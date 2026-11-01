@@ -264,9 +264,11 @@ def _save_analyses(calls, targets, results, commitments=None):
     return tuple(routes)
 
 
-def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> dict:
+def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None, *, proposal_packet: dict | None = None) -> dict:
     from ara.runtime.essay_audit import audit_and_revise, repair_rounds
     from ara.runtime.route_policy import frozen_from_events, provenance_from_events, route_contribution
+    from ara.runtime.proposal import activate, retain_disclosure
+    activate(calls, route, proposal_packet)
     events = calls.log.read()
     commitments = frozen_from_events(events)
     if commitments is not None and route.status == 'CLOSED':
@@ -283,8 +285,9 @@ def compose(calls: ModelCalls, route: RouteGraph, draft: dict | None = None) -> 
         prior_rounds = 0
     else:
         calls.screen_imported_draft(draft)
-        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision', 'hypothesis_disclosure_inserted') and
+        recorded = any(e['stage'] in ('final_draft', 'verification_cleanup', 'essay_audit_revision', 'hypothesis_disclosure_inserted', 'essay_proposal_disclosure_inserted') and
                        json.loads(e['payload_json']).get('draft') == draft for e in calls.log.read())
+        draft = retain_disclosure(calls, route, draft, phase='resume')
         calls.validate_essay(route, draft, minimum_words=0 if recorded else None, authored=not recorded)
         if not recorded:
             draft = insert_runtime_disclosure(calls, route, draft)

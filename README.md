@@ -10,6 +10,38 @@ model calls, decisions and accounting retain inspectable receipts.
 The [operator-approved success criteria](docs/success-criteria.md) define an
 acceptable pilot, a successful entry and the go/no-go dates.
 
+## Pipeline end to end
+
+1. **Extract and inspect sources.** PDF intake retains page-linked evidence,
+   accepted ranges, rejected material and provenance. Plan locally before
+   generation; extraction quality still requires source inspection.
+2. **Construct and freeze T.** Counted construction produces commitments and a
+   symbol catalogue. Optional consolidation and alignment precede one freeze.
+   Explicit proposed H premises are admitted before that freeze and retain their
+   proposed status; structural checks do not prove faithful formalization.
+3. **Propose targets and search.** Target gates use the verified frozen inputs.
+   The engine searches both polarities and licenses steps against the versioned
+   bank. Packed requests retain the declared target basis. By default, ten
+   completed jobs with no accepted inference pause search with a diagnostic
+   receipt; explicit resume retains sealed jobs.
+4. **Choose the paper's claim.** Ordinary selection offers `CLOSED-derived`
+   routes. An explicitly owned OPEN proposal uses a disclosed proposal packet.
+   `admit-proposal` can admit an unformalized paper-owned target from a verified
+   freeze without search, inferred edges, H admission or a new freeze. Related
+   evidence is not represented as derived support.
+5. **Write and check.** Native writing, source citations, typed sentence audits
+   and conservative multi-sample consensus govern the draft. H-dependent writing
+   retains runtime conditional disclosure. OPEN proposals retain paper ownership;
+   accepted sentence carry-over never erases adverse history or repair budgets.
+6. **Publish and export.** Optional polish, bounded occurrence repairs, figures
+   and PDF rendering retain the native verification gates. Export and offline
+   reports distinguish accepted results, partial work, refusals and costs.
+
+Each stage writes append-only receipts. A verified fork preserves its source
+artifacts and starts a separate lifecycle; resume continues the recorded one.
+Read the [operating guides](docs/README.md) before live calls. Offline tests,
+model judgments and symbolic validity establish different kinds of evidence.
+
 ## Install and try it offline
 
 Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/). Obtain the repository
@@ -46,21 +78,25 @@ and `uv run ara COMMAND --help`.
 | Plan construction | `uv run ara plan-construction --literature runs/extraction/literature.extracted.txt --topic 'P' --profile pilot --token-counter local --run-dir runs/construction-plan` | [Construction](docs/construction.md); preserve extraction provenance |
 | Construct and search | `uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot` | [Search](docs/search.md); pauses for route selection |
 | Reuse a verified freeze | `uv run ara fork-from-freeze --source-run runs/source --run-dir runs/fork` | [Frozen forks](docs/search.md#reuse-a-verified-freeze); proposes new targets without rebuilding T |
+| Reuse completed construction with proposed H | `uv run ara resume-alignment --source-run runs/source --run-dir runs/h-fork --hypotheses-file runs/h.json --plan-only --output-dir runs/h-plan` | Free verified reuse plan; [H lifecycle](docs/construction.md#new-hypothesis-lifecycle-from-completed-construction) |
+| Admit a paper-owned OPEN target | `uv run ara admit-proposal --source-run runs/source --run-dir runs/proposal --packet runs/proposal-request.json --plan-only` | No-copy, no-generation [admission plan](docs/proposal-admission.md); remove `--plan-only` only for actual admission |
 | Resume stopped construction | `uv run ara resume-construction --run-dir runs/previous --unknown-usage-policy count-at-reservation` | Verified, unfrozen eligible run; may make paid calls |
 | Resume stopped search | `uv run ara resume-search --run-dir runs/previous` | [Search recovery](docs/search.md#resume-a-stopped-search); may make paid calls |
 | Select a route and write | `uv run ara select --run-dir runs/pilot` | Lists route IDs and prompts; accepts `--route ID` |
 | Record feedback | `uv run ara feedback --run-dir runs/pilot --text 'P'` | Applies to the next draft, without changing frozen T |
 | Export essay/methodology | `uv run ara export --run-dir runs/pilot` | [Accounting and export](docs/accounting.md); essay requires completed verification |
+| Polish an existing draft | `uv run ara polish --run-dir runs/pilot --route ID` | [Publication](docs/publication.md); explicit provider and verification policy |
+| Render publication artifacts | `uv run ara figures --run-dir runs/pilot` then `uv run ara render-pdf --run-dir runs/pilot` | Uses the recorded publication result |
 | Read one or more runs offline | `uv run ara report --run-dir runs/pilot --out runs/report` | Repeat `--run-dir`; [reporting](docs/reporting.md) |
 | Compile extraction schemas live | `uv run ara schema-preflight --profile extraction-full --config config.yaml --run-dir runs/schema-P` | Paid, USD1 history-inclusive cap; [extraction](docs/extraction.md) |
 | Validate Codex schemas live | `uv run ara codex-schema-preflight --config runs/codex.yaml --profile pilot --run-dir runs/codex-schemas` | Subscription calls; [providers](docs/providers.md#codex-cli) |
 
-Target checks can exclude candidates, so a request for ten does not guarantee ten
-searches. Default selection offers only `CLOSED-derived` routes; other routes
+Target checks can exclude candidates. The default target limit is 30;
+each retained target has two polarity jobs. Default selection offers only `CLOSED-derived` routes; other routes
 remain visible and require explicit `--route ID`. See [target checks and route
 classification](docs/search.md#target-proposal-and-triviality).
 
-`fork-from-freeze` is available at base `f89cd37`. It uses the source configuration
+`fork-from-freeze` uses the source configuration
 with explicit provider/preflight/unknown-usage overrides and a separate cache.
 `run --from-frozen` is not a supported alias. Forking may make paid calls.
 
@@ -88,17 +124,16 @@ The API default is `claude-opus-5` with explicit `claude-opus-4-8` fallback.
 Ordinary extraction uses `claude-sonnet-5-5` without fallback; `extraction-full`
 uses Opus without fallback. Construction overrides can select providers/models;
 search and writing overrides select model settings within the run's provider.
-Subscription transports refuse PDF extraction and web-evidence retrieval.
-Extract separately with the API. A
-subscription-backed run cannot complete the web-verification stage at this base;
-there is no automatic API fallback. A requested Codex model is not verified serving
+Both subscription transports refuse PDF extraction; extract separately with the
+API. Codex permits web retrieval only for `search_evidence`; Claude Code refuses
+that stage. Stage settings do not create an automatic API fallback. A requested Codex model is not verified serving
 identity. Read [providers and isolation](docs/providers.md) before paid work.
 
 | Profile | Limits and use |
 | --- | --- |
-| Ordinary defaults | 200,000 tokens / USD10; ten candidates, depth 6, 500 search nodes |
+| Ordinary defaults | 200,000 tokens / USD10; 30 candidates, depth 6, 500 search nodes |
 | `--smoke` | 1,000,000 tokens / USD5; two candidates, depth 1, eight nodes, 150–300 words; automatic selection of a `CLOSED-derived` route, if available |
-| `--profile pilot` | 10,000,000 tokens / USD100; ten candidates, depth 6, 500 nodes, 4,500–6,000 words; human selection |
+| `--profile pilot` | 10,000,000 tokens / USD100; 30 candidates, depth 6, 500 nodes, 4,500–6,000 words; human selection |
 | `--profile extraction` | 6,000,000 tokens / USD30 enclosing and extraction caps |
 | `--profile extraction-full` | Generation disabled until token, run USD and extraction USD caps are set; also accepted by `run` for construction settings |
 

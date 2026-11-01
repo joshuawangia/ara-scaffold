@@ -54,6 +54,14 @@ def parser() -> argparse.ArgumentParser:
     fork.add_argument('--provider', choices=('anthropic','mock','claude_code','codex_cli'))
     fork.add_argument('--codex-schema-preflight-log', type=Path)
     fork.add_argument('--unknown-usage-policy', choices=('refuse','count-at-reservation'))
+    admission = sub.add_parser('admit-proposal', help='admit a paper-owned OPEN target from verified frozen evidence; no search or model calls')
+    admission.add_argument('--source-run', type=Path, required=True)
+    admission.add_argument('--run-dir', type=Path, required=True)
+    admission.add_argument('--packet', type=Path, required=True)
+    admission.add_argument('--plan-only', action='store_true', help='validate evidence and projected capacity without copying or dispatch')
+    promotion = sub.add_parser('promote-proposal', help='verify an admitted proposal and print its queue entry; no dispatch')
+    promotion.add_argument('--entry', type=Path, required=True)
+    promotion.add_argument('--run-dir', type=Path, required=True)
     resume = sub.add_parser('resume-construction', help='continue a verified stopped construction in its existing directory')
     resume.add_argument('--run-dir', type=Path, required=True)
     resume.add_argument('--codex-schema-preflight-log', type=Path)
@@ -140,6 +148,9 @@ def parser() -> argparse.ArgumentParser:
         if command == 'polish':
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--flow-prompt', type=Path, help='one whole-paper edit using the exact logged operator instruction; verified source required, inline repairs only')
+            cmd.add_argument('--inline-repairs', action='store_true', help='enable up to three persistent occurrence-only repair passes; whole-paper rounds are not replenished')
+            cmd.add_argument('--title-format-only', action='store_true', help='resume only exact logged title-delimiter formatting, native verification and final audit; no semantic repairs')
             cmd.add_argument('--audit-provider', choices=('claude_code', 'codex_cli'), default='claude_code')
             cmd.add_argument('--audit-model', help='audit model; defaults to the run writer model for Codex')
             cmd.add_argument('--min-words', type=int, help='ARA publication floor; defaults to publication_min_words in the run config or 3000')
@@ -149,6 +160,7 @@ def parser() -> argparse.ArgumentParser:
         cmd = sub.add_parser(command)
         cmd.add_argument('--run-dir', type=Path, required=True)
         if command == 'select':
+            cmd.add_argument('--proposal-packet', type=Path, help='paper-owned proposal and verified evidence for an OPEN route')
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path, help='audit an existing unverified draft without generating a new essay')
             cmd.add_argument('--codex-schema-preflight-log', type=Path)
@@ -233,6 +245,16 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'promote-proposal':
+            from ara.runtime.proposal_admission import promote_queue_entry
+            result=promote_queue_entry(json.loads(args.entry.read_text()),args.run_dir)
+            print(json.dumps(result,sort_keys=True))
+            return 0
+        if args.command == 'admit-proposal':
+            from ara.runtime.proposal_admission import admit
+            result=admit(args.source_run,args.run_dir,json.loads(args.packet.read_text()),ROOT,plan_only=args.plan_only)
+            print(json.dumps(result,sort_keys=True))
+            return 0
         if args.command == 'plan-target-request':
             from ara.runtime.planning import plan_recorded_target
             report = plan_recorded_target(args.run_dir, args.out, ROOT, gap_id=args.gap_id,
@@ -611,6 +633,10 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             return 0
         if not (args.run_dir / 'events.jsonl').is_file():
             raise ValueError('run log does not exist')
+        if args.command == 'select':
+            from ara.runtime.logging import read_log
+            from ara.runtime.proposal_admission import check_selection_capacity
+            check_selection_capacity([r['event'] for r in read_log(args.run_dir/'events.jsonl')],args.run_dir,ROOT)
         log = EventLog(args.run_dir / 'events.jsonl')
         log.human(args.command + '_command', json.dumps(raw_args, ensure_ascii=False),
                   argv=raw_args, reported_minutes=args.human_minutes)
@@ -661,7 +687,8 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
         require_codex_preflight(selection_config, ROOT)
         calls = calls_factory(selection_config, log, run['topic'])
         draft = json.loads(args.draft.read_text()) if args.draft is not None else None
-        compose(calls, chosen, draft)
+        packet = json.loads(args.proposal_packet.read_text()) if args.proposal_packet else None
+        compose(calls, chosen, draft, proposal_packet=packet)
         return 0
     except Exception as exc:
         from anthropic import APIError

@@ -139,6 +139,9 @@ def methodology(log_path: Path) -> str:
     }
     commitments = frozen_from_events(events)
     summary = {
+        'proposal_mode': [json.loads(e['payload_json']) for e in events if e['stage'] == 'essay_proposal_mode'],
+        'proposal_disclosure_insertions': [{k: v for k, v in json.loads(e['payload_json']).items() if k != 'draft'}
+                                           for e in events if e['stage'] == 'essay_proposal_disclosure_inserted'],
         'local_citation_verification': [json.loads(e['payload_json']) for e in events
                                        if e['stage'] == 'local_citation_verification'],
         'citation_removals': [dict(event=i, **reason) for i,e in enumerate(events)
@@ -151,7 +154,8 @@ def methodology(log_path: Path) -> str:
         'extraction': extraction_summary,
         'publication': {stage: [json.loads(e['payload_json']) for e in events if e['stage']==stage]
                         for stage in ('publication_length_policy', 'publication_completed', 'publication_figures', 'publication_pdf',
-                                      'publication_verification_blocked', 'publication_currency_input')},
+                                      'publication_verification_blocked', 'publication_currency_input',
+                                      'publication_flow_prompt', 'publication_flow_edit_started')},
         'search': {**search_status(events),
                    'conflicts': conflict_report(events),
                    'gaps': [json.loads(e['payload_json']) for e in events if e['stage']=='gaps_detected'],

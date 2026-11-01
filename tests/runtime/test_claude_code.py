@@ -72,7 +72,7 @@ if not canary and mode in ('plain_rate','plain_stdout_rate'): print('rate limit 
 schema=json.loads(arg('--json-schema'))
 assert '$schema' not in schema
 if canary:
- value={k:'' for k in schema['properties']}
+ value={k:[] if v['type']=='array' else '' for k,v in schema['properties'].items()}
  value.update(system_prompt=arg('--system-prompt'),tools='StructuredOutput',other_context='Anthropic runtime defaults')
  debug='Skipping skill dir discovery\\nproject memory is off\\nSafe mode: installed plugins are disabled\\n[claudeai-mcp] Disabled in safe mode\\n'
  if mode=='bad_canary': value['agents_md']='P'
@@ -774,7 +774,7 @@ def test_auth_reread_retry_is_once_and_accounted(cli,recovers,retries,measured,a
     config['claude_code']['retries']=retries
     calls,log=make()
     injection=("if not canary and (token == 'offline-token' or not "+repr(recovers)+"):\n"
-               " source=Path.home()/'.claude/.credentials.json'\n"
+               " source=Path(__file__).parent/'home/.claude/.credentials.json'\n"
                " auth=json.loads(source.read_text()); auth['claudeAiOauth']['accessToken']='offline-replaced-token'\n"
                " replacement=source.with_suffix('.replacement'); replacement.write_text(json.dumps(auth)); replacement.chmod(0o600); replacement.replace(source)\n"
                " result.update(subtype='error_during_execution',is_error=True,api_error_status=401)\n"
@@ -799,7 +799,7 @@ def test_inflight_credential_is_scanned_after_host_replacement(cli,monkeypatch):
     calls,log=make()
     monkeypatch.delenv('CLAUDE_CODE_OAUTH_TOKEN')
     injection=("if not canary:\n"
-               " source=Path.home()/'.claude/.credentials.json'\n"
+               " source=Path(__file__).parent/'home/.claude/.credentials.json'\n"
                " auth=json.loads(source.read_text()); auth['claudeAiOauth']['accessToken']='offline-replaced-token'\n"
                " source.write_text(json.dumps(auth))\n"
                " result['result']=json.dumps({'P':token})\n")
@@ -807,3 +807,174 @@ def test_inflight_credential_is_scanned_after_host_replacement(cli,monkeypatch):
     with pytest.raises(Rejected,match='credential_in_cli_output'): calls.formalise(Proposition('p','P'))
     assert 'offline-token' not in log.path.read_text()
     assert not list(calls.cache.path.glob('*.json'))
+
+
+def test_operator_home_is_not_discoverable_by_child(cli, monkeypatch):
+    """A clean config alone must not expose HOME-based instruction discovery."""
+    make, _, _, binary = cli
+    home = Path.home()
+    (home/'.claude/CLAUDE.md').write_text('P')
+    (home/'.claude/projects').mkdir()
+    (home/'.claude/projects/memory.md').write_text('Q')
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(home/'.claude'))
+    monkeypatch.setenv('CLAUDE_MEMORY_PATH', str(home/'.claude/projects'))
+    source = binary.read_text()
+    needle = "if mode=='bad_canary': value['agents_md']='P'"
+    replacement = """if (Path.home()/'.claude/CLAUDE.md').exists(): value['claude_md']='P'
+ assert 'CLAUDE_MEMORY_PATH' not in os.environ
+ """ + needle
+    binary.write_text(source.replace(needle, replacement))
+    calls, log = make()
+    calls.formalise(Proposition('p', 'P'))
+    calls.formalise(Proposition('q', 'Q'))
+    assert len(model_events(log)) == 3
+    assert (home/'.claude/CLAUDE.md').read_text() == 'P'
+
+
+@pytest.mark.parametrize('context', ['\n', 'P'])
+def test_canary_context_diagnostics_do_not_relax_rejection(cli, context):
+    make, _, _, binary = cli
+    binary.write_text(binary.read_text().replace(
+        "if mode=='bad_canary': value['agents_md']='P'",
+        "value['claude_md']=" + repr([context])))
+    with pytest.raises(Rejected, match='isolation_context_present'):
+        make()
+    log = EventLog(binary.parent/'run/events.jsonl')
+    errors = [json.loads(e['payload_json']) for e in log.read() if e['stage']=='provider_error']
+    receipt = errors[-1]['cli']
+    assert receipt['isolation_context_fields'] == ['claude_md']
+    assert receipt['isolation_context_entry_counts'] == {'claude_md': 1}
+    assert not list((binary.parent/'cache').glob('*.json'))
+
+
+def test_every_cli_invocation_has_private_empty_home(cli, monkeypatch):
+    import subprocess
+    make, _, _, binary = cli
+    original = subprocess.Popen
+    homes = []
+    class Observe(original):
+        def __init__(self, command, *args, **kwargs):
+            if command[0] == str(binary):
+                env = kwargs['env']
+                home = Path(env['HOME'])
+                assert home != Path.home()
+                assert home.parent == Path(env['CLAUDE_CONFIG_DIR']).parent
+                assert home.stat().st_mode & 0o777 == 0o700
+                assert not list(home.iterdir())
+                homes.append(str(home))
+            super().__init__(command, *args, **kwargs)
+    monkeypatch.setattr(subprocess, 'Popen', Observe)
+    calls, _ = make()
+    calls.formalise(Proposition('p', 'P'))
+    assert len(homes) == 3  # Version + canary share one process directory; next call is fresh.
+    assert homes[0] == homes[1] and homes[1] != homes[2]
+
+
+CONTEXT_FIELDS = ('skills', 'memory', 'claude_md', 'agents_md')
+
+
+def test_list_canary_wire_accepts_only_actual_empty_lists(cli):
+    make, _, _, binary = cli
+    calls, log = make()
+    trace = json.loads(binary.with_suffix('.trace').read_text().splitlines()[0])
+    schema = json.loads(trace['args'][trace['args'].index('--json-schema')+1])
+    for field in CONTEXT_FIELDS:
+        assert schema['properties'][field] == {'type': 'array', 'items': {'type': 'string'}}
+        assert field in schema['required']
+    assert '[]' in trace['prompt']
+    payload = json.loads(model_events(log)[0]['payload_json'])
+    assert payload['isolation']['status'] == 'proven'
+    assert payload['canary_report_format'] == 'context-lists-v1'
+    assert calls.provider.ready
+
+
+@pytest.mark.parametrize('field', CONTEXT_FIELDS)
+@pytest.mark.parametrize('value,reason', [
+    ([''], 'isolation_context_present'),
+    (['\n'], 'isolation_context_present'),
+    ([' ', '\t'], 'isolation_context_present'),
+    (['P'], 'isolation_context_present'),
+    ('', 'isolation_canary_invalid'),
+    ('\n', 'isolation_canary_invalid'),
+    (None, 'isolation_canary_invalid'),
+    (False, 'isolation_canary_invalid'),
+    ({}, 'isolation_canary_invalid'),
+    ([None], 'isolation_canary_invalid'),
+    ([[]], 'isolation_canary_invalid'),
+])
+def test_list_canary_rejects_nonempty_and_wrong_types_before_dispatch(cli, field, value, reason):
+    make, _, _, binary = cli
+    needle = "if mode=='bad_canary': value['agents_md']='P'"
+    binary.write_text(binary.read_text().replace(needle, f'value[{field!r}]={value!r}\n '+needle))
+    with pytest.raises(Rejected, match='^'+reason+'$'):
+        make()
+    rows = binary.with_suffix('.trace').read_text().splitlines()
+    assert len(rows) == 1 and 'ARA_ISOLATION_CANARY' in json.loads(rows[0])['prompt']
+    assert not list((binary.parent/'cache').glob('*.json'))
+    # Rejected context is not persisted as a response body or diagnostic text.
+    log = EventLog(binary.parent/'run/events.jsonl')
+    event = model_events(log)[0]
+    assert json.loads(event['response'])['content'] == []
+
+
+@pytest.mark.parametrize('field', CONTEXT_FIELDS)
+def test_list_canary_missing_fields_are_not_defaulted(cli, field):
+    make, _, _, binary = cli
+    needle = "if mode=='bad_canary': value['agents_md']='P'"
+    binary.write_text(binary.read_text().replace(needle, f'value.pop({field!r})\n '+needle))
+    with pytest.raises(Rejected, match='^isolation_canary_invalid$'):
+        make()
+    assert len(binary.with_suffix('.trace').read_text().splitlines()) == 1
+    assert not list((binary.parent/'cache').glob('*.json'))
+
+
+def test_claude_list_schema_does_not_change_inherited_codex_contract():
+    from types import SimpleNamespace
+    from ara.runtime.claude_code import ClaudeCodeProvider, CANARY_SCHEMA, CANARY_PROMPT
+    from ara.runtime.codex_cli import CodexCLIProvider
+    claude = object.__new__(ClaudeCodeProvider)
+    codex = object.__new__(CodexCLIProvider)
+    claude_schema = ModelCalls.response_schema(SimpleNamespace(provider=claude), 'isolation_canary', {})
+    codex_schema = ModelCalls.response_schema(SimpleNamespace(provider=codex), 'isolation_canary', {})
+    assert all(claude_schema['properties'][field]['type'] == 'array' for field in CONTEXT_FIELDS)
+    assert codex_schema == CANARY_SCHEMA
+    assert all(codex_schema['properties'][field]['type'] == 'string' for field in CONTEXT_FIELDS)
+    assert CodexCLIProvider.canary_prompt.startswith(CANARY_PROMPT)
+    assert claude_schema is not codex_schema
+    assert claude.canary_report_format == 'context-lists-v1'
+    assert codex.canary_report_format == 'context-strings-v1'
+
+
+@pytest.mark.parametrize('context,reason', [
+    ('offline-token', 'credential_in_cli_output'),
+    ('sentinel@example.invalid', 'operator_identity_in_output'),
+])
+def test_list_context_keeps_sensitive_output_screening(cli, context, reason):
+    make, _, _, binary = cli
+    needle = "if mode=='bad_canary': value['agents_md']='P'"
+    binary.write_text(binary.read_text().replace(needle, "value['memory']="+repr([context])+'\n '+needle))
+    with pytest.raises(Rejected, match='^'+reason+'$'):
+        make()
+    log = EventLog(binary.parent/'run/events.jsonl')
+    assert context not in log.path.read_text()
+    assert len(binary.with_suffix('.trace').read_text().splitlines()) == 1
+    assert not list((binary.parent/'cache').glob('*.json'))
+
+
+def test_canary_format_does_not_invalidate_content_cache(cli, monkeypatch):
+    make, _, _, binary = cli
+    calls, log = make()
+    current = calls.provider.metadata
+    def legacy(kind):
+        data = current(kind)
+        if kind != 'isolation_canary':
+            data.pop('canary_report_format', None)
+        return data
+    monkeypatch.setattr(calls.provider, 'metadata', legacy)
+    calls.formalise(Proposition('p', 'P'))
+    monkeypatch.setattr(calls.provider, 'metadata', current)
+    calls.formalise(Proposition('p', 'P'))
+    assert json.loads(model_events(log)[-1]['payload_json'])['cache_hit']
+    assert len(binary.with_suffix('.trace').read_text().splitlines()) == 2
+    assert 'canary_report_format' not in current('formalise')
+    assert current('isolation_canary')['canary_report_format'] == 'context-lists-v1'

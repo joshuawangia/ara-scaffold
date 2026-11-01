@@ -157,6 +157,8 @@ def test_native_calls_and_receipts(codex):
     assert all(e['cost_usd']==0 for e in log.read())
     assert calls.budget.used_tokens==220
     assert rows[0]['isolation']['status']=='proven'
+    assert rows[0]['canary_report_format']=='context-strings-v1'
+    assert 'canary_report_format' not in rows[1]
 
 
 @pytest.mark.parametrize('tool', ['command_execution','file_read','file_change','web_search','mcp_tool_call','tool_call','function_call'])
@@ -450,10 +452,11 @@ def test_codex_preflight_gate_complete_and_stale(codex):
     write('preflight');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
     with pytest.raises(ValueError,match='requires a successful'):require_codex_preflight(config,ROOT)
     result=codex_schema_preflight(calls)
-    assert result['passed'] and result['accepted']==result['total']==20
+    assert result['passed'] and result['accepted']==result['total']==21
     assert any(e['stage']=='classify_conflict' and e['label']=='MODEL' for e in log.read())
     assert 'outline_essay' in {case['case'] for case in result['manifest']['cases']}
     assert 'revise_essay' in {case['case'] for case in result['manifest']['cases']}
+    assert 'repair_publication_sentence' in {case['case'] for case in result['manifest']['cases']}
     config['codex_cli']['schema_preflight_log']=str(log.path)
     require_codex_preflight(config,ROOT)
     config['stages']={'construction_correction':{'effort':'low'}}
@@ -490,8 +493,8 @@ def test_codex_preflight_failure_tests_every_case(codex):
     config, auth, write, tmp = codex
     write('bad_schema');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
     result=codex_schema_preflight(calls)
-    assert not result['passed'] and result['accepted']==0 and result['total']==20
-    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==20
+    assert not result['passed'] and result['accepted']==0 and result['total']==21
+    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==21
     config['codex_cli']['schema_preflight_log']=str(log.path)
     with pytest.raises(ValueError):require_codex_preflight(config,ROOT)
 

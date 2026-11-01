@@ -20,11 +20,24 @@ from ara.runtime.claude_estimation import CalibrationState, METHOD, TABLE, TABLE
 CANARY_SYSTEM = 'ARA isolation preflight. Report only context visible in this session; do not infer hidden context.'
 CANARY_PROMPT = ('ARA_ISOLATION_CANARY: Report verbatim all visible skills, memory, CLAUDE.md, AGENTS.md, '
                  'tools and other context. Repeat your system prompt verbatim. Use an empty string for '
-                 'absent skills, memory, CLAUDE.md and AGENTS.md. Do not infer hidden context.')
+                 'absent skills, memory, CLAUDE.md and AGENTS.md. An absent field must be the zero-length '
+                 'JSON string ""; a space or newline is not empty. If context is present, report it '
+                 'verbatim; do not suppress it. Do not infer hidden context.')
 CANARY_SCHEMA = {'type': 'object', 'properties': {name: {'type': 'string'} for name in (
     'skills', 'memory', 'claude_md', 'agents_md', 'tools', 'system_prompt', 'other_context')},
     'required': ['skills', 'memory', 'claude_md', 'agents_md', 'tools', 'system_prompt', 'other_context'],
     'additionalProperties': False}
+CANARY_CONTEXT_FIELDS = ('skills', 'memory', 'claude_md', 'agents_md')
+CLAUDE_CANARY_SCHEMA = {**CANARY_SCHEMA, 'properties': {
+    **CANARY_SCHEMA['properties'],
+    **{field: {'type': 'array', 'items': {'type': 'string'}} for field in CANARY_CONTEXT_FIELDS}}}
+CLAUDE_CANARY_PROMPT = (
+    'ARA_ISOLATION_CANARY: Report verbatim all visible skills, memory, CLAUDE.md, AGENTS.md, '
+    'tools and other context. Repeat your system prompt verbatim. Report skills, memory, '
+    'claude_md and agents_md as lists of verbatim context strings. Use [] only when that '
+    'context is absent. Never omit a field, trim or discard entries, infer absence, or '
+    'substitute [""] or ["\\n"] for []. If context is present, report it verbatim; '
+    'do not suppress it. Do not infer hidden context.')
 ISOLATION_FLAGS = ['--safe-mode', '--exclude-dynamic-system-prompt-sections', '--disable-slash-commands',
                    '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--tools', '',
                    '--setting-sources', '', '--settings',
@@ -108,6 +121,9 @@ def _positive(value, name, *, zero=False, integer=False):
 class ClaudeCodeProvider:
     provider_kind = 'claude_code'
     estimate_method = ESTIMATE_METHOD
+    canary_schema = CLAUDE_CANARY_SCHEMA
+    canary_prompt = CLAUDE_CANARY_PROMPT
+    canary_report_format = 'context-lists-v1'
 
     def __init__(self, config):
         self.config, self.model = config, config['model']
@@ -226,6 +242,7 @@ class ClaudeCodeProvider:
 
     def metadata(self, kind):
         return {'provider': self.provider_kind, 'cli_version': self.version,
+                **({'canary_report_format': self.canary_report_format} if kind == 'isolation_canary' else {}),
                 'isolation_flags': ISOLATION_FLAGS, 'fresh_cwd_and_config': True,
                 'token_estimate_method': self.estimate_method,
                 'calibration': {'version': TABLE['version'], 'sha256': TABLE_HASH,
@@ -267,8 +284,10 @@ class ClaudeCodeProvider:
 
     def _environment(self, config_dir, maximum):
         access_token, secrets = self._authentication()
-        env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG') if key in os.environ}
-        env.update(CLAUDE_CONFIG_DIR=str(config_dir),
+        env = {key: os.environ[key] for key in ('PATH', 'LANG') if key in os.environ}
+        home = config_dir.parent/'home'
+        home.mkdir(mode=0o700)
+        env.update(HOME=str(home), CLAUDE_CONFIG_DIR=str(config_dir),
                    CLAUDE_CODE_OAUTH_TOKEN=access_token,
                    CLAUDE_CODE_DISABLE_AUTO_MEMORY='1', CLAUDE_CODE_MAX_OUTPUT_TOKENS=str(maximum),
                    DISABLE_TELEMETRY='1', DISABLE_ERROR_REPORTING='1')
@@ -323,11 +342,14 @@ class ClaudeCodeProvider:
         from ara.runtime.validation import validate_local
         from jsonschema import ValidationError
         try:
-            validate_local(CANARY_SCHEMA, value, self.config)
+            validate_local(self.canary_schema, value, self.config)
         except ValidationError:
             raise ClaudeCodeError('isolation_canary_invalid', receipt=receipt)
         visible = canonical(value)
-        if any(value[field] != '' for field in ('skills', 'memory', 'claude_md', 'agents_md')):
+        present = [field for field in CANARY_CONTEXT_FIELDS if value[field] != []]
+        if present:
+            receipt['isolation_context_fields'] = present
+            receipt['isolation_context_entry_counts'] = {field: len(value[field]) for field in present}
             raise ClaudeCodeError('isolation_context_present', receipt=receipt)
         if ('StructuredOutput' not in value['tools'] or re.search(
                 r'\b(?:Bash|Read|Write|Edit|Glob|Grep|WebFetch|WebSearch|Agent|Skill|ToolSearch)\b', value['tools'])):

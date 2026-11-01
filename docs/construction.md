@@ -304,11 +304,11 @@ by `ara.runtime.frozen_catalogue.validate_frozen_artifact`. Missing metadata mea
 the legacy catalogue is `unavailable_legacy`; corrupt present metadata refuses.
 Search loads and validates the catalogue, includes its hashes in model/cache
 inputs, and jointly formalizes slots against frozen bindings. See
-`ara/runtime/search_alignment.py:20` and `ara/runtime/calls.py:990`.
+`ara/runtime/search_alignment.py` and `ara/runtime/calls.py`.
 
 ## Reuse after freeze
 
-`fork-from-freeze` is available at base `f89cd37`. It verifies and copies the
+Native `fork-from-freeze` verifies and copies the
 recorded prefix through one freeze, then proposes new targets without rebuilding
 T. Follow [frozen-fork operation](search.md#reuse-a-verified-freeze) for source,
 destination, accounting and provider requirements. A fresh `ara run` still

@@ -232,3 +232,23 @@ def test_outline_uses_writing_stage_configuration(kind):
     from ara.runtime.providers import stage_settings
     assert stage_settings({'model': 'P', 'stages': {'writing': {'model': 'Q'}, 'search': {'model': 'R'}}},
                           kind)['model'] == 'Q'
+
+
+def test_large_repeated_source_context_is_lossless_without_raising_bound(rig,monkeypatch):
+    from ara.runtime import writing
+    from ara.runtime.cache import canonical
+    calls,_,log=rig
+    r=seed_sources(calls,log)
+    original=writing.source_context(calls,r)
+    limit=len(canonical(original))-1
+    monkeypatch.setattr(writing,'MAX_CONTEXT_CHARS',limit)
+    compact=writing.source_context(calls,r)
+    assert len(canonical(compact))<=limit
+    assert compact['context_encoding']=='paper_context.item_refs indexes context_items; all items retained'
+    restored={k:v for k,v in compact.items() if k not in ('context_encoding','context_items')}
+    restored['paper_context']=[{**{k:v for k,v in row.items() if k!='item_refs'},
+        'items':[compact['context_items'][i] for i in row['item_refs']]} if 'item_refs' in row else row
+        for row in compact['paper_context']]
+    assert restored==original
+    monkeypatch.setattr(writing,'MAX_CONTEXT_CHARS',1)
+    with pytest.raises(Rejected,match='no evidence was truncated'):writing.source_context(calls,r)

@@ -263,7 +263,7 @@ class ModelCalls:
     def response_schema(self, kind: str, inputs: dict) -> dict | None:
         if kind == 'isolation_canary':
             from ara.runtime.claude_code import CANARY_SCHEMA
-            return CANARY_SCHEMA
+            return getattr(self.provider, 'canary_schema', CANARY_SCHEMA)
         if kind == 'search_evidence':
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
@@ -294,6 +294,9 @@ class ModelCalls:
         return schema
 
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
+        if kind == 'polish_flow':
+            from ara.runtime.publication_flow import render
+            return render(self.config, inputs)
         if kind == 'isolation_canary':
             from ara.runtime.claude_code import CANARY_PROMPT
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
@@ -1270,7 +1273,9 @@ class ModelCalls:
         return outline
 
     def essay_inputs(self, route: RouteGraph) -> dict:
-        return {'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),
+        from ara.runtime.proposal import from_events
+        proposal = from_events(self.log.read(), route.id)
+        return {**({'proposal': proposal} if proposal else {}), 'outline': self.essay_outline(route), 'word_limit': min(6000, self.config['essay_word_limit']),
                 'minimum_words': self.config['essay_min_words'],
                 'feedback': [json.loads(e['payload_json'])['text'] for e in self.log.read()
                              if e['label'] == 'HUMAN' and e['stage'] == 'feedback']}
@@ -1282,6 +1287,8 @@ class ModelCalls:
             validate_disclosure(self.log.read(),route,data,authored=authored)
         except ValueError as exc:
             raise Rejected(str(exc)) from exc
+        from ara.runtime.proposal import from_events, validate_disclosure as validate_proposal_disclosure
+        validate_proposal_disclosure(from_events(self.log.read(), route.id), data)
         require(word_count(data) <= min(6000, self.config['essay_word_limit']), 'essay word limit exceeded')
         require(len({b['id'] for b in data['bibliography']}) == len(data['bibliography']), 'duplicate citation id')
         markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', data['body']))
@@ -1296,8 +1303,10 @@ class ModelCalls:
 
     def write_essay(self, route: RouteGraph) -> dict:
         def check(data):
+            from ara.runtime.proposal import retain_disclosure
+            data = retain_disclosure(self, route, data, phase='composition')
             return self.validate_essay(route, data, authored=True)
-        if self.config['essay_min_words'] >= 4500:
+        if self.config['essay_min_words'] >= 4500 or 'proposal' in self.essay_inputs(route):
             from ara.runtime.writing import sectioned_essay
             return sectioned_essay(self, route, self.essay_inputs(route), check)
         return self.call('write_essay', self.essay_inputs(route), check)
@@ -1310,7 +1319,16 @@ class ModelCalls:
                   'outline': self.essay_outline(route),
                   'root_conclusion': {'node_id': route.root_id,
                                       'text': next(n.proposition.text for n in route.nodes if n.id == route.root_id)}}
-        if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
+        from ara.runtime.proposal import from_events, validate_disclosure
+        proposal = from_events(self.log.read(), route.id)
+        if proposal:
+            validate_disclosure(proposal, draft)
+            inputs['proposal'] = proposal
+            from ara.runtime.proposal_scopes import sentence_scopes
+            for sentence, scope in zip(inputs['sentences'], sentence_scopes(draft['body'], spans)):
+                if scope is not None:
+                    sentence['proposal_scope'] = scope
+        if proposal or publication_context is not None or self.config['essay_min_words'] >= 4500 or any(
                 e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):
             from ara.runtime.writing import source_context
             inputs['source_evidence'] = source_context(self, route)
@@ -1321,6 +1339,12 @@ class ModelCalls:
                 sentence.update(section=section, field='body', start=start, end=end)
             inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title'],
                 section='Title', field='title', start=0, end=len(draft['title'])))
+        if proposal and publication_context is None:
+            inputs['sentences'].append(dict(sentence=len(spans)+1, text=draft['title']))
+        from ara.runtime.audit_carryover import carryover_receipt
+        carryover = carryover_receipt(self, route, draft, inputs)
+        if carryover is not None:
+            inputs['verified_sentence_carryover'] = carryover
         return inputs
 
     def audit_essay(self, route: RouteGraph, draft: dict, *, publication_context=None, fresh=False) -> dict:

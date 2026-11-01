@@ -6,6 +6,19 @@ Annotations link replacements without deleting the original text. For current
 operation use [README](README.md), [guides](docs/README.md) and [PLAN](PLAN.md).
 Source citations in the documentation correction entry refer to base `6511ff6`.
 
+## Current integration (2026-11-01)
+
+The cleanup integrates reviewed proposal admission, audit carry-over and publication
+recovery with the existing H, packed-search and consolidation lifecycle. Historical
+entries below keep their revision-specific meaning. Current target defaults are
+30 candidates; zero-inference search pauses after ten completed jobs unless
+configured otherwise. Native `fork-from-freeze` and `resume-alignment` own reuse;
+OPEN proposal admission owns unformalized paper targets and supplies no derivation.
+Provider capabilities and command options are defined by the current native
+entrypoints and linked operating guides, not by superseded historical base notes.
+Archive tags preserve retired branch/worktree heads. Run data and operator output
+artifacts are retained. Cleanup makes no new live-provider or paper-quality claim.
+
 ## Index by area
 
 ### Foundations and engine
@@ -4965,3 +4978,205 @@ Native handle binding, consistency, endpoints, capacity and the sole freeze rema
 mandatory. The fresh freeze-only lifecycle is an orchestrator instruction; the
 operator's standing approvals remain loosened limits, parallel efforts and drafting
 all candidates.
+## Explicit paper proposals on OPEN routes
+
+An immutable, route-bound proposal packet authorizes paper-owned principles and
+arguments without changing frozen commitments, graph status, or engine licensing.
+Thesis origin and bridge justification are disclosed separately. Exact disclosure
+is required in title, Abstract, and Methodology and survives publication/export.
+Nominated frozen evidence and retained supplementary PDF excerpts remain source
+claims with local citation obligations; neither becomes a licensed graph edge.
+The sectioned writer uses a 3,000–4,500-word profile with a 6,000-word ceiling.
+Typed adverse labels, fresh k>=3 conservative union, and the shared three-round
+repair budget remain binding. Ownership prefixes are necessary lexical cues,
+not evidence that an argument is sound: the semantic audit must still reject
+hidden unsupported assertions and source-attributed proposals. Frozen hypothesis
+authorization is a separate caller-bound helper input, never inferred from OPEN
+proposal authorization. Supplementary PDF checks establish hash-bound pages and
+excerpt membership, not independently verified metadata or semantic truth.
+
+Proposal disclosure is deterministic provenance metadata, not model-authored
+source material. Composition, resume and post-verification cleanup restore the
+fixed unquoted sentence before the gate. This does not regenerate substantive
+prose, consume semantic repair rounds, or reset prior adverse audit history.
+
+Scoped proposal ownership supersedes per-sentence ownership-prefix requirements.
+Explicit section or paragraph scope is computed from the draft, carried to the
+audit as trusted sentence metadata, and permits natural prose. It is never a
+source-support exemption: attribution inside scope and uncited source claims
+outside scope still fail, as do unsupported claims in either location. Frozen-H
+authorization remains separate. Proposal outputs use ordinary titles, one fixed
+abstract disclosure and a short final Status and method note. Search/process
+qualifications belong there. Verified legacy imports may opt into the old layout
+at entry only; output and repairs retain strict validation and k>=3 union auditing.
+
+### Proposal publication ownership and status placement
+
+For explicitly authorized OPEN proposals, publication inherits the native scoped
+ownership contract, allowing natural argument prose without repetitive sentence
+prefixes. Source attribution stays outside proposal scopes. The single abstract
+disclosure and final Status and method note retain status and bounded-search
+qualifications. Only a current, exact accepted export with a matching clean k≥3
+gate qualifies for legacy metadata import; final text and repairs remain strict.
+The conservative audit and occurrence-bound repair rules are unchanged.
+
+Operator correction: proposal auditing has four paper-level requirements only:
+one abstract disclosure and title label; a source-independent bridge principle
+in Proposal; faithful cited source claims; no unsupported claim presented as
+established. This supersedes mandatory sentence/paragraph ownership cues,
+blanket attribution bans across proposal sections, ordinary-title enforcement,
+and mandatory status-note/disclaimer-location gates. Source discussion may share
+the Proposal section; only the declared bridge cannot be source-attributed.
+Frozen-H authorization, immutable evidence, repair bounds and k>=3 union remain.
+
+
+### Four-rule proposal publication contract supersedes placement restrictions
+
+The operator narrowed proposal publication requirements to title/abstract
+disclosure, a clearly headed and defended paper-owned Proposal, faithful cited
+source claims, and no unsupported substance presented as established. This
+supersedes mandatory paragraph cues, blanket citation exclusions from Proposal,
+fixed literature/disclaimer placement and repeated status disclosures. Placement
+labels alone are advisory for proposals; actual support/fidelity failures and
+fresh conservative union auditing remain binding. Ordinary-route policy remains.
+
+## Private HOME for the Claude publication transport
+
+The Claude transport's fresh config and cwd previously retained the operator's
+HOME. Give each invocation an empty private HOME as well, including version
+probes, while preserving fresh read-only host authentication and the existing
+no-discovery flags. A contaminated-home production-wire regression must reject
+without this boundary. Canary nonempty fields, including whitespace, still
+refuse without retry or cache acceptance; record only fixed field names and
+whitespace categories so a refusal is diagnosable without retaining context.
+This closes an exposed discovery path, not proof that a particular host file
+was read by a historical failed call. Live diagnostic evidence stays in runs.
+
+## Proposal role precedence in publication audits
+
+Ordinary route-role instructions apply only without an OPEN proposal packet.
+Publication audit instructions use the same explicit precedence as the writer
+audit: faithful paper-owned root restatements use proposed_principle, including
+in Abstract or Conclusion, and supporting reasoning uses argument_for_proposal.
+The root declaration remains required under Proposal at document level, including
+nested subsections. Source fidelity, unsupported-claim enforcement, conservative
+sampling and adverse-history retention are unchanged. A corrected prompt does
+not discard prior raw labels, reset repair budgets, or prove improved live output.
+
+## Approved Claude list-format isolation canary
+
+The operator approved changing only the four Claude context-report fields to
+required lists of strings. Only literal empty lists establish absence; every
+nonempty list rejects, including empty or whitespace-only entries. Schema
+validation rejects missing fields and wrong types before any presence decision.
+There is no trimming, filtering, inferred absence or default insertion. Other
+canary checks and output screening remain unchanged. Safe refusal receipts retain
+field names/counts, not context contents. A fresh native canary must pass before
+publication content dispatch; the canary remains uncached for every new context.
+
+The shared call boundary selects a provider's explicit canary schema, retaining
+its legacy fallback. Because Codex subclasses Claude, Codex explicitly pins the
+legacy string schema and report-format receipt. This avoids accidental inheritance
+of the Claude-specific wire change. Red-first subprocess regressions and
+production controls cover presence, types, missing fields and this inheritance
+boundary. Changing a reporting format does not establish that historical failed
+calls read ambient files or weaken the fail-closed preflight.
+
+Report-format metadata is scoped to isolation_canary only. Emitting it on other
+stages would change their request identities and unnecessarily regenerate accepted
+editing outputs. A real cache-replay regression against legacy metadata and a
+production mutation control enforce this compatibility boundary; preflight remains
+fresh and uncached independently of content reuse.
+
+## Bounded inline publication continuation
+
+An explicit publication continuation may audit a saved candidate after its three
+whole-paper repairs are spent without replenishing them. Unsupported prose gets
+a separate three-pass ledger charged before dispatch; direct offset patches
+preserve all surrounding bytes and each occurrence's citation/node inventory.
+Verified-source reversion consumes accepted native carry-over receipts only;
+other edits use a logged isolated single-sentence call. Mixed miscitation and
+non-prose failures retain normal targeted repair. Whole-document validation,
+native verification and fresh conservative audits remain binding.
+
+A separately selected title-format-only continuation cannot dispatch an editor.
+It replaces only quotation delimiters of exact logged work titles identified by
+native verification, then re-verifies and audits. It spends neither semantic
+budget and cannot cure a substantive failure. Existing verified originals remain
+available independently of publication acceptance.
+
+## Verified sentence carry-over and native meaning checks (2026-10-30)
+
+Operator-authorized prefix removal preserves a verified source sentence verdict
+without sentence-level ownership rituals. Other wording changes require three
+native meaning-preservation votes: any dissent or uncertainty returns to ordinary
+audit. Similarity suggests alignment only. Source identity, original clean k>=3
+gate and raw roles are bound to retained receipts; citations remain required.
+Accepted carry-over re-evaluates old labels under the same narrow authorization,
+while all unrelated adverse history stays binding. Persisted meaning decisions
+prevent rerolls. No repair counter or publication dispatch is changed here.
+The owning contract and evidence limits are in [sentence carry-over](docs/audit-carryover.md).
+
+## Bounded meaning-inventory correction (2026-10-30)
+
+Meaning checks allow two validation attempts per sample independently of the
+parent publication's one-attempt setting. The second attempt corrects shape,
+with exact missing/extra/duplicate pair feedback; complete adverse responses do
+not trigger retries. Valid adverse votes from rejected attempts and interrupted
+gates remain binding, including after resume. Three complete meaning samples
+are still required for inheritance. Exhaustion refuses before the final audit;
+this changes neither semantic repair counts nor the final union gate. The prior
+retry regression hid the native failure by raising the parent's attempt count.
+Tests now retain the native default and exercise incomplete large inventories.
+
+## Native paper-owned target admission without search closure (2026-10-30)
+
+A proposal paper may begin from authenticated frozen source evidence even when
+no faithful formalization or search route exists. Native admission retains the
+original freeze prefix and adds one explicitly paper-owned OPEN target with no
+formula, inference edge, admitted H or engine license. It cannot claim conditional
+mechanical derivation. The existing proposal writer/audit/citation path consumes
+that envelope. A no-copy plan and receipt-bound queue promotion keep held grounding
+metadata separate from executable candidates. Source/grounding hashes, native
+identity/credential scans, existing audit history and projected disk reserves
+remain required. See docs/proposal-admission.md for the CLI and evidence limits.
+
+Large proposal grounding can repeat neighboring source items across anchors.
+Exact item interning with ordered per-anchor references preserves the entire
+selected context while retaining the existing size bound. A round-trip regression
+requires exact reconstruction; contexts still too large are explicitly refused.
+
+## Proposal subtitles across writer and audit
+
+Recognize Proposal headings with colon or dash subtitles consistently in planning,
+disclosure validation, sentence scopes and bridge coverage. Plain prose mentions
+remain outside scope. The proposal Abstract budget overrides ordinary-section
+budgets; clarify that precedence in the planner prompt. No audit labels, adverse
+history, source fidelity checks or repair limits are relaxed.
+
+Review follow-up: apply identical whitespace normalization to heading presence
+and per-section budget selection. A padded Abstract heading must not bypass
+its proposal budget. The native regression refuses before section dispatch.
+## Exact operator-instructed publication flow
+
+An explicitly authorized new flow-only publication may use a retained UTF-8
+instruction file instead of the standard section and whole-paper prompts.
+The native boundary logs its byte-preserving SHA-256 and source binding, screens
+the input, and permits one isolated whole-paper edit only. It requires an accepted
+native k>=3 original, preserves citation occurrence counts and cannot reopen a
+rejected edit or reset an existing publication history. Deterministic figure and
+change-log bookkeeping adds no manuscript claim. Ordinary typed/meaning audits,
+inline limits, native verification and final publication gates remain unchanged.
+
+The operator-only flow schema is excluded from ordinary Codex preflight, alongside
+the separately exercised publication schemas. Its exact instruction cannot be
+assumed in ordinary writer configuration; flow transport remains covered by its
+own native-boundary tests. Review FLOW-F1 reproduced this registration failure.
+
+## Model-free prefix rendering
+
+Ownership-prefix removal may capitalize the newly exposed first character.
+The verified-source carry-over matcher accepts exactly that case change only
+after an existing prefix is removed; later case, words, negation and citations
+remain significant. No model judgment or fresh audit is implied by rendering.
+Source receipt recovery includes the nonadverse schema-retry correction.

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="485" viewBox="0 0 900 485" role="img">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#255a67"/></marker></defs>
+<rect width="900" height="485" fill="white"/>
+<g data-box="true"><rect x="25" y="20" width="395" height="90" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="222.5" y="58.635" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="222.5" dy="0">Route or authorized proposal</tspan>
+<tspan x="222.5" dy="25.650000000000002">Source evidence and result status</tspan>
+</text>
+</g>
+<g data-box="true"><rect x="480" y="20" width="395" height="90" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="677.5" y="58.635" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="677.5" dy="0">Outline and sectioned writing</tspan>
+<tspan x="677.5" dy="25.650000000000002">Explain the argument and objections</tspan>
+</text>
+</g>
+<path d="M420,65 L472,65" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M677,110 L677,162" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="480" y="175" width="395" height="110" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="677.5" y="211.82" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="677.5" dy="0">Typed sentence audit</tspan>
+<tspan x="677.5" dy="24.3">Source claim · step · proposal</tspan>
+<tspan x="677.5" dy="24.3">Framing · objection · reply</tspan>
+</text>
+</g>
+<g data-box="true"><rect x="25" y="175" width="395" height="110" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="222.5" y="211.82" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="222.5" dy="0">Local source verification</tspan>
+<tspan x="222.5" dy="24.3">Identity · locator · quotation</tspan>
+<tspan x="222.5" dy="24.3">Attributed claim support</tspan>
+</text>
+</g>
+<path d="M480,230 L428,230" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M222,285 L222,335 L450,335 L450,362" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M677,285 L677,335 L450,335" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="105" y="375" width="690" height="90" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="450.0" y="413.635" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="450.0" dy="0">Fresh k = 3 audit union and delivery decision</tspan>
+<tspan x="450.0" dy="25.650000000000002">Editing preserves evidence; changed meaning returns to audit</tspan>
+</text>
+</g>
+</svg>

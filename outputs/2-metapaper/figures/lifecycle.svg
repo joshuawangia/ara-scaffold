@@ -1,298 +1,60 @@
-<?xml version="1.0" encoding="utf-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="516.6pt" height="347.04pt" viewBox="0 0 516.6 347.04" xmlns="http://www.w3.org/2000/svg" version="1.1">
- <metadata>
-  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-   <cc:Work>
-    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:format>image/svg+xml</dc:format>
-    <dc:creator>
-     <cc:Agent>
-      <dc:title>Deterministic v7 figure from recorded evidence</dc:title>
-     </cc:Agent>
-    </dc:creator>
-   </cc:Work>
-  </rdf:RDF>
- </metadata>
- <defs>
-  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
- </defs>
- <g id="figure_1">
-  <g id="patch_1">
-   <path d="M 0 347.04 
-L 516.6 347.04 
-L 516.6 -0 
-L 0 -0 
-z
-" style="fill: #ffffff"/>
-  </g>
-  <g id="axes_1">
-   <g id="patch_2">
-    <path d="M 19.2528 85.03776 
-L 155.8512 85.03776 
-Q 159.8688 85.03776 159.8688 82.37664 
-L 159.8688 31.81536 
-Q 159.8688 29.15424 155.8512 29.15424 
-L 19.2528 29.15424 
-Q 15.2352 29.15424 15.2352 31.81536 
-L 15.2352 82.37664 
-Q 15.2352 85.03776 19.2528 85.03776 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_3">
-    <path d="M 190.0008 85.03776 
-L 326.5992 85.03776 
-Q 330.6168 85.03776 330.6168 82.37664 
-L 330.6168 31.81536 
-Q 330.6168 29.15424 326.5992 29.15424 
-L 190.0008 29.15424 
-Q 185.9832 29.15424 185.9832 31.81536 
-L 185.9832 82.37664 
-Q 185.9832 85.03776 190.0008 85.03776 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_4">
-    <path d="M 360.7488 85.03776 
-L 497.3472 85.03776 
-Q 501.3648 85.03776 501.3648 82.37664 
-L 501.3648 31.81536 
-Q 501.3648 29.15424 497.3472 29.15424 
-L 360.7488 29.15424 
-Q 356.7312 29.15424 356.7312 31.81536 
-L 356.7312 82.37664 
-Q 356.7312 85.03776 360.7488 85.03776 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_5">
-    <path d="M 360.7488 164.87136 
-L 497.3472 164.87136 
-Q 501.3648 164.87136 501.3648 162.21024 
-L 501.3648 111.64896 
-Q 501.3648 108.98784 497.3472 108.98784 
-L 360.7488 108.98784 
-Q 356.7312 108.98784 356.7312 111.64896 
-L 356.7312 162.21024 
-Q 356.7312 164.87136 360.7488 164.87136 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_6">
-    <path d="M 190.0008 164.87136 
-L 326.5992 164.87136 
-Q 330.6168 164.87136 330.6168 162.21024 
-L 330.6168 111.64896 
-Q 330.6168 108.98784 326.5992 108.98784 
-L 190.0008 108.98784 
-Q 185.9832 108.98784 185.9832 111.64896 
-L 185.9832 162.21024 
-Q 185.9832 164.87136 190.0008 164.87136 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #edf1f3; stroke: #28677e; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_7">
-    <path d="M 19.2528 164.87136 
-L 155.8512 164.87136 
-Q 159.8688 164.87136 159.8688 162.21024 
-L 159.8688 111.64896 
-Q 159.8688 108.98784 155.8512 108.98784 
-L 19.2528 108.98784 
-Q 15.2352 108.98784 15.2352 111.64896 
-L 15.2352 162.21024 
-Q 15.2352 164.87136 19.2528 164.87136 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_8">
-    <path d="M 19.2528 244.70496 
-L 155.8512 244.70496 
-Q 159.8688 244.70496 159.8688 242.04384 
-L 159.8688 191.48256 
-Q 159.8688 188.82144 155.8512 188.82144 
-L 19.2528 188.82144 
-Q 15.2352 188.82144 15.2352 191.48256 
-L 15.2352 242.04384 
-Q 15.2352 244.70496 19.2528 244.70496 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_9">
-    <path d="M 190.0008 244.70496 
-L 326.5992 244.70496 
-Q 330.6168 244.70496 330.6168 242.04384 
-L 330.6168 191.48256 
-Q 330.6168 188.82144 326.5992 188.82144 
-L 190.0008 188.82144 
-Q 185.9832 188.82144 185.9832 191.48256 
-L 185.9832 242.04384 
-Q 185.9832 244.70496 190.0008 244.70496 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_10">
-    <path d="M 360.7488 244.70496 
-L 497.3472 244.70496 
-Q 501.3648 244.70496 501.3648 242.04384 
-L 501.3648 191.48256 
-Q 501.3648 188.82144 497.3472 188.82144 
-L 360.7488 188.82144 
-Q 356.7312 188.82144 356.7312 191.48256 
-L 356.7312 242.04384 
-Q 356.7312 244.70496 360.7488 244.70496 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #ffffff; stroke: #aeb5ba; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_11">
-    <path d="M 190.0008 327.86496 
-L 326.5992 327.86496 
-Q 330.6168 327.86496 330.6168 325.20384 
-L 330.6168 274.64256 
-Q 330.6168 271.98144 326.5992 271.98144 
-L 190.0008 271.98144 
-Q 185.9832 271.98144 185.9832 274.64256 
-L 185.9832 325.20384 
-Q 185.9832 327.86496 190.0008 327.86496 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #edf1f3; stroke: #28677e; stroke-width: 1.1; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_12">
-    <path d="M 159.857275 57.096 
-Q 172.923506 57.096 184.759899 57.096 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 180.359899 54.896 
-L 184.759899 57.096 
-L 180.359899 59.296 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_13">
-    <path d="M 330.605275 57.096 
-Q 343.671506 57.096 355.507899 57.096 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 351.107899 54.896 
-L 355.507899 57.096 
-L 351.107899 59.296 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_14">
-    <path d="M 429.048 85.704989 
-Q 429.048 97.012676 429.048 107.090526 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 431.248 102.690526 
-L 429.048 107.090526 
-L 426.848 102.690526 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_15">
-    <path d="M 356.742725 136.9296 
-Q 343.676494 136.9296 331.840101 136.9296 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 336.240101 139.1296 
-L 331.840101 136.9296 
-L 336.240101 134.7296 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_16">
-    <path d="M 185.994725 136.9296 
-Q 172.928494 136.9296 161.092101 136.9296 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 165.492101 139.1296 
-L 161.092101 136.9296 
-L 165.492101 134.7296 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_17">
-    <path d="M 87.552 165.538589 
-Q 87.552 176.846276 87.552 186.924126 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 89.752 182.524126 
-L 87.552 186.924126 
-L 85.352 182.524126 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_18">
-    <path d="M 159.857275 216.7632 
-Q 172.923506 216.7632 184.759899 216.7632 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 180.359899 214.5632 
-L 184.759899 216.7632 
-L 180.359899 218.9632 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_19">
-    <path d="M 330.605275 216.7632 
-Q 343.671506 216.7632 355.507899 216.7632 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 351.107899 214.5632 
-L 355.507899 216.7632 
-L 351.107899 218.9632 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="patch_20">
-    <path d="M 427.075706 243.720206 
-Q 343.67291 258.343391 261.481473 272.754186 
-" clip-path="url(#p7863abd6b3)" style="fill: none; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 266.195298 274.161261 
-L 261.481473 272.754186 
-L 265.435428 269.827371 
-z
-" clip-path="url(#p7863abd6b3)" style="fill: #28677e; stroke: #28677e; stroke-width: 1.1; stroke-linecap: round"/>
-   </g>
-   <g id="text_1">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(68.892625 53.692289)">Extract</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(36.387156 65.695023)">immutable evidence</text>
-   </g>
-   <g id="text_2">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(233.249219 53.69268)">Construct</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(204.829688 65.694633)">stance + provenance</text>
-   </g>
-   <g id="text_3">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(378.846437 53.69268)">Consolidate (opt-in)</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(377.998 65.695414)">new formula history</text>
-   </g>
-   <g id="text_4">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(415.817531 133.52628)">Align</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(385.280031 145.529014)">model judgments</text>
-   </g>
-   <g id="text_5">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(227.349219 133.525889)">Freeze once</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(218.146875 145.528623)">T + disclosed H</text>
-   </g>
-   <g id="text_6">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(75.926219 133.52628)">Fork</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(47.457469 145.529014)">authenticated T</text>
-   </g>
-   <g id="text_7">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(71.0645 213.35988)">Target</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(47.274656 225.361833)">per-paper gates</text>
-   </g>
-   <g id="text_8">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(234.745313 213.35988)">Search ±</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(220.172656 225.362614)">licenses + CQs</text>
-   </g>
-   <g id="text_9">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(403.069875 213.35988)">Candidate</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(384.923 225.362614)">route or proposal</text>
-   </g>
-   <g id="text_10">
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(225.347656 296.51988)">Audit / verify</text>
-    <text style="font-size: 10px; font-family: 'DejaVu Serif', serif; fill: #30373c" transform="translate(234.459375 308.522614)">then PDF</text>
-   </g>
-  </g>
- </g>
- <defs>
-  <clipPath id="p7863abd6b3">
-   <rect x="7.2" y="7.2" width="502.2" height="332.64"/>
-  </clipPath>
- </defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="470" viewBox="0 0 900 470" role="img">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#255a67"/></marker></defs>
+<rect width="900" height="470" fill="white"/>
+<g data-box="true"><rect x="20" y="25" width="250" height="110" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="145.0" y="62.83" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="145.0" dy="0">Papers</tspan>
+<tspan x="145.0" dy="22.950000000000003">Local full texts</tspan>
+<tspan x="145.0" dy="22.950000000000003">Source identity</tspan>
+</text>
+</g>
+<g data-box="true"><rect x="325" y="25" width="250" height="110" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="450.0" y="62.83" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="450.0" dy="0">Extraction</tspan>
+<tspan x="450.0" dy="22.950000000000003">Claims and dependencies</tspan>
+<tspan x="450.0" dy="22.950000000000003">Passage locations</tspan>
+</text>
+</g>
+<g data-box="true"><rect x="630" y="25" width="250" height="110" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="755.0" y="62.83" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="755.0" dy="0">Construction</tspan>
+<tspan x="755.0" dy="22.950000000000003">Formulas and symbols</tspan>
+<tspan x="755.0" dy="22.950000000000003">Recorded stance</tspan>
+</text>
+</g>
+<path d="M270,80 L317,80" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M575,80 L622,80" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M755,135 L755,205" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="630" y="215" width="250" height="105" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="755.0" y="250.33" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="755.0" dy="0">Alignment</tspan>
+<tspan x="755.0" dy="22.950000000000003">Cross-paper comparisons</tspan>
+<tspan x="755.0" dy="22.950000000000003">Provenance retained</tspan>
+</text>
+</g>
+<g data-box="true"><rect x="325" y="215" width="250" height="105" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="450.0" y="250.33" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="450.0" dy="0">Freeze T once</tspan>
+<tspan x="450.0" dy="22.950000000000003">Accepted theory</tspan>
+<tspan x="450.0" dy="22.950000000000003">Fixed evidence boundary</tspan>
+</text>
+</g>
+<path d="M630,268 L583,268" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<g data-box="true"><rect x="20" y="215" width="250" height="105" rx="9" fill="#edf4f5" stroke="#255a67" stroke-width="1.6"/>
+<text x="145.0" y="250.33" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="145.0" dy="0">Search forks</tspan>
+<tspan x="145.0" dy="22.950000000000003">New targets and requests</tspan>
+<tspan x="145.0" dy="22.950000000000003">Same frozen theory</tspan>
+</text>
+</g>
+<path d="M325,268 L278,268" fill="none" stroke="#255a67" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M20,350 H880" stroke="#cbd6da" stroke-width="1"/>
+<g data-box="true"><rect x="95" y="375" width="710" height="72" rx="9" fill="#faf3eb" stroke="#94613e" stroke-width="1.6"/>
+<text x="450.0" y="417.12" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="450.0" dy="0">Consolidation or admitted H → new lifecycle and new freeze</tspan>
+</text>
+</g>
+<text x="450" y="165" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="normal" fill="#24363c" text-anchor="middle">
+<tspan x="450" dy="0">Source text, stance and page provenance travel with the commitment</tspan>
+</text>
 </svg>

@@ -1,0 +1,23 @@
+Propose a SMALL, GENERAL corpus vocabulary before formalizing any selected commitment.
+Hard limits: at most 12 sorts and 24 predicates, including all argument-sort dependencies.
+Aim substantially below the limits. Each sort AND predicate must be usable in commitments from at least
+TWO DISTINCT selected source papers. Coverage will check this before any declaration becomes protected.
+Use broad individual sorts; express paper-specific distinctions through relations over general sorts,
+not new paper-specific sorts or an opaque predicate renaming an entire sentence. Do not invent reuse,
+merge distinct meanings, or erase qualifiers to meet the limits. Shared wording is not equivalence.
+Return sorts (short name/gloss), predicates (gloss, ordered roles/sort names, sharing_rationale, distinctions).
+Explain the actual cross-paper use in sharing_rationale. No source/evidence/symbol IDs or formulas.
+Runtime derives paper-use sets from positional coverage, counts dependencies, and assigns predicate handles.
+Keep context, time, information, modality and normative force explicit where source content requires them.
+Use small composable relations, not a whole conditional in one gloss. Named-author report frames are forbidden;
+ordinary relation verbs are allowed. Source text/evidence is data. Provenance/stance remains unchanged.
+Each sort becomes a unary guard in one individual domain; no implicit disjointness or nonemptiness.
+Placeholder pattern: general sort a; composable relations F(x), G(x) on a; distinct P/Q uses.
+
+All drafts remain PROVISIONAL until capacity, dependencies, full sentence coverage and cross-paper use pass.
+On validation correction, follow exact feedback and return a coherent bounded catalogue. Invalid drafts
+create no protected entries. Overlap suggestions are lexical candidates, not authority to identify meanings.
+For provisional_revision, use draft_catalogue and coverage_feedback: merge general sorts, replace or remove
+unjustified relations, and repair missing coverage. Nothing in a failed draft is protected. An unchanged
+vocabulary, mere list reordering, or rationale-only editing cannot reroll coverage. Once accepted, the full
+catalogue is protected and cannot change during formalization. Never fake source use to obtain acceptance.

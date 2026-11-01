@@ -6,7 +6,7 @@ from ara.runtime.calls import require
 from ara.runtime.providers import Response
 from ara.runtime.validation import normalize_local
 from ara.runtime.shared_predicates import ROOT,VERSIONS
-from ara.runtime.predicate_coverage import V2
+from ara.runtime.predicate_coverage import V2,V3,MANDATORY
 
 
 def model_inputs(event):
@@ -42,8 +42,12 @@ def verify_model_receipts(events,receipt):
     def add(kind,inputs,value):expected[(kind,canonical(inputs))]=value
     cat_input=dict(lifecycle_key=identity,sources=[dict(text=c['text'],source_id=receipt['provenance'][c['id']]['source_id'],
         stance=receipt['provenance'][c['id']]['stance'],evidence=receipt['evidence'][c['id']]) for c in original],policy=receipt['policy'])
-    if receipt['schema_version']==V2:
-        from ara.runtime.predicate_coverage import catalogue_inputs,coverage_inputs
+    if receipt['schema_version'] in MANDATORY:
+        if receipt['schema_version']==V3:
+            from ara.runtime.predicate_catalogue_policy import catalogue_inputs,coverage_inputs,verify_protection
+            verify_protection(events,cat_input,receipt['catalogue_history'],receipt['coverage_history'])
+        else:
+            from ara.runtime.predicate_coverage import catalogue_inputs,coverage_inputs
         for index,(data,check) in enumerate(zip(receipt['catalogue_history'],receipt['coverage_history'],strict=True)):
             add('predicate_catalogue',catalogue_inputs(cat_input,receipt['catalogue_history'][:index],receipt['coverage_history'][:index]),data)
             add('predicate_coverage',coverage_inputs(cat_input,data,index),check)
@@ -52,7 +56,7 @@ def verify_model_receipts(events,receipt):
     for c,item in zip(original,receipt['items'],strict=True):
         inputs=dict(lifecycle_key=identity,source=c['text'],evidence=receipt['evidence'][c['id']],
                     stance=receipt['provenance'][c['id']]['stance'],catalogue=entries,item_key=digest(c['id']))
-        if receipt['schema_version']==V2:inputs['policy_version']=V2
+        if receipt['schema_version'] in MANDATORY:inputs['policy_version']=receipt['schema_version']
         if item['candidate'] is not None:add('predicate_formalize',inputs,item['candidate'])
         if item['translation'] is not None:
             back=dict(lifecycle_key=identity,item_key=digest(c['id']),formula=item['candidate']['formula'],catalogue=entries)
@@ -60,7 +64,7 @@ def verify_model_receipts(events,receipt):
         if item['judgments']:
             judge=dict(**inputs,formula=item['candidate']['formula'],back_translation=item['translation']['text'])
             for index,value in enumerate(item['judgments']):add('predicate_fidelity',{**judge,'sample_index':index},value)
-            if receipt['schema_version']==V2 and item['reason']=='adverse_fidelity_history':
+            if receipt['schema_version'] in MANDATORY and item['reason']=='adverse_fidelity_history':
                 require(fidelity_adverse_history(events,judge),'unresolved history lacks adverse judgment')
         if item['status']=='admitted':admitted_keys.add(digest(c['id']))
     found=set();protected={}

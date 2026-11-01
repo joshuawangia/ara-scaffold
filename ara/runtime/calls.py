@@ -304,8 +304,10 @@ class ModelCalls:
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
             return prompt, prompt
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
-        if kind=='predicate_formalize' and inputs.get('policy_version')=='shared-predicate-formalization-v2':
+        if kind=='predicate_formalize' and inputs.get('policy_version') in ('shared-predicate-formalization-v2','shared-predicate-formalization-v3'):
             template=(self.root/'prompts/predicate_formalize_mandatory.txt').read_text()
+        if kind in ('predicate_catalogue','predicate_coverage') and inputs.get('policy_version')=='shared-predicate-formalization-v3':
+            template=(self.root/'prompts'/f'{kind}_shared.txt').read_text()
         if kind == 'build_t_batch' and inputs.get('mode') == 'vocabulary_consolidation':
             from ara.runtime.shared_vocabulary import SHARED_CONTRACT
             template = (self.root / 'prompts/consolidate_vocabulary_legacy.txt').read_text() + SHARED_CONTRACT
@@ -358,6 +360,11 @@ class ModelCalls:
                         prior=request_inputs.get('validation_feedback',{}).get('preserve_catalogue',inputs.get('preserve_catalogue'))
                         exc.feedback['preserve_catalogue']=merge_preserved(prior,rejected)
                         exc.feedback['instruction']='Correct only invalid entries; preserve every listed valid definition verbatim, and append missing relations.'
+                    if kind=='predicate_catalogue' and inputs.get('policy_version')=='shared-predicate-formalization-v3':
+                        from ara.runtime.predicate_catalogue_policy import capacity_feedback
+                        try:rejected=json.loads(exc.feedback.get('rejected_response','null'))
+                        except ValueError:rejected=None
+                        exc.feedback['catalogue_capacity']=capacity_feedback(rejected)
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
                     if kind.startswith('predicate_'):
                         validation_history.append(exc.feedback)

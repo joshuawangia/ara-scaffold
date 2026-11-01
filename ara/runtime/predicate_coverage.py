@@ -9,6 +9,8 @@ from ara.runtime.cache import canonical
 from ara.runtime.validation import validate_local
 
 V2='shared-predicate-formalization-v2'
+V3='shared-predicate-formalization-v3'
+MANDATORY=(V2,V3)
 # Glosses describe relations. Bare relation verbs are not attribution evidence.
 # Preserve the exact named report-frame boundary, including formatted text.
 _REPORT_FRAME=re.compile(r"\b(?:[A-Z][\w’'-]*|[ab])(?:\s+[A-Z][\w’'-]*){0,3}\s+"
@@ -62,8 +64,16 @@ def preserved_entries(data,prior=None):
     return result
 
 
+def within_capacity(data):
+    from ara.runtime.shared_predicates import ROOT
+    schema=json.loads((ROOT/'schemas/predicate_catalogue.json').read_text())
+    return not isinstance(data,dict) or all(not isinstance(data.get(k),list) or
+        len(data[k])<=schema['properties'][k]['maxItems'] for k in ('sorts','predicates'))
+
+
 def merge_preserved(prior,data):
     result=deepcopy(prior or dict(sorts=[],predicates=[]))
+    if not within_capacity(data):return result
     if prior and not preserves(data,prior):return result
     fresh=preserved_entries(data,result)
     for field in result:
@@ -152,7 +162,7 @@ def replay(history,checks,count):
 
 def response_schema(kind,schema,inputs):
     """One effective grammar for native calls and live schema preflight."""
-    if kind=='predicate_formalize' and inputs.get('policy_version')==V2:
+    if kind=='predicate_formalize' and inputs.get('policy_version') in MANDATORY:
         schema['properties']['mode']={'enum':['decompose']}
         schema['properties']['formula']={'$ref':'#/$defs/formula'}
     if kind=='predicate_coverage' and inputs.get('sources'):
@@ -160,4 +170,7 @@ def response_schema(kind,schema,inputs):
     if kind=='predicate_formalize' and inputs.get('catalogue'):
         branch=next(b for b in schema['$defs']['formula']['oneOf'] if b['properties']['op'].get('const')=='predicate')
         branch['properties']['name']={'type':'string','enum':[e['handle'] for e in inputs['catalogue']]}
+    if kind=='predicate_catalogue' and inputs.get('policy_version')==V3:
+        from ara.runtime.predicate_catalogue_policy import CAPACITY
+        for field,limit in CAPACITY.items():schema['properties'][field]['maxItems']=limit
     return schema

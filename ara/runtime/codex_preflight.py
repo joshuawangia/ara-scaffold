@@ -28,9 +28,9 @@ def manifest(config, root):
                 continue
             schema = json.loads(path.read_text())
             inputs={'mode':'targeted_correction'} if correction else {}
-            if kind.startswith('predicate_') and config.get('shared_predicates_version','shared-predicate-formalization-v2')=='shared-predicate-formalization-v2':
-                from ara.runtime.predicate_coverage import V2,response_schema
-                inputs['policy_version']=V2
+            if kind.startswith('predicate_') and config.get('shared_predicates_version','shared-predicate-formalization-v3') in ('shared-predicate-formalization-v2','shared-predicate-formalization-v3'):
+                from ara.runtime.predicate_coverage import response_schema
+                inputs['policy_version']=config.get('shared_predicates_version','shared-predicate-formalization-v3')
                 if kind=='predicate_coverage':inputs['sources']=[{'text':'P'}]
                 schema=response_schema(kind,schema,inputs)
             cases.append(dict(case=kind + ('_correction' if correction else ''), kind=kind,

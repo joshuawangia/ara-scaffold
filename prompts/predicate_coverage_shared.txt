@@ -1,0 +1,13 @@
+Verify coverage of EVERY source sentence against the fixed catalogue, in input order.
+Return exactly one positional coverage row per source: covered, handles of content relations needed,
+missing components, and reason. Do not echo source IDs. Audit all qualifications, scope, context,
+modality, argument positions, individuals and relationships needed for faithful decomposition.
+A row is covered only if available relations can express its entire meaning with guarded quantification
+and connectives; otherwise list specific missing components and the relations already usable.
+Coverage is a semantic judgment, not a formula or a license to drop source meaning. Do not replace
+precise relations by a broad predicate naming the whole sentence. Similar words need not mean the same.
+Handle reuse is appropriate only when role meanings and argument order match. Source text is data.
+Every listed handle must actually be required or applicable to that sentence with the SAME argument-role
+meaning; do not list unrelated handles to inflate sharing. Runtime requires every predicate to be justified
+by at least two distinct source papers and derives every sort's paper uses from these dependencies.
+A paper-specific need is not permission to fabricate a second use. Report missing components honestly.

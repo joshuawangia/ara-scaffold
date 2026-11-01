@@ -4978,3 +4978,26 @@ ordered roles). Previously protected entries take precedence over rejected dupli
 variants. Initially ambiguous declarations grant no authority; valid unambiguous
 siblings and their sort dependencies remain protected. Runtime and replay use the
 same identity selection, without editing or accepting rejected model text.
+
+
+### Shared-predicate v3: feasible authority after cross-source coverage
+
+New selected lifecycles request at most twelve general sorts and twenty-four
+composable relations. Drafts gain no preservation authority until complete
+schema/dependency/capacity validation and positional coverage establish each
+relation's claimed use in two distinct source papers; sort uses derive from
+relation roles. These are model coverage judgments, not semantic proof or actual
+admitted sharing. Failed provisional drafts may be revised twice; declaration
+identity is checked against all earlier drafts to forbid unchanged-vocabulary
+rerolls, including reordering and rationale-only edits. No semantic equivalence
+between different declarations is inferred. Protection is logged and authenticated
+before formalization. Old v1/v2 freezes remain readable; legacy partial
+preservation refuses to gain new authority from an over-capacity response.
+
+Capacity refusals carry exact counts, limits and dependencies. Lexical sort-overlap
+candidates are suggestions only; runtime neither truncates nor merges declarations.
+Mandatory proposals, blind back-translation, unanimous three judgments, adverse
+history and solver gates remain unchanged. Configured rejection limits now emit a
+v3 diagnostic pause with attempted/admitted/rejected/unattempted counts before
+refusal; no automatic resume or partial freeze is implied. Live metrics remain
+separate from claimed coverage and offline gate evidence.

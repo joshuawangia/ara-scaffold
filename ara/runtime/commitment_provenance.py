@@ -243,7 +243,7 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         if value['consolidation']['schema_version'] in (VERSION,'shared-predicate-formalization-v1'):
             # Only a fully replayed new-definition receipt grants this policy.
             precise_symbols={symbol_identity(s) for s in value['consolidation']['symbols']}
-        if value['consolidation']['schema_version']=='shared-predicate-formalization-v2':
+        if value['consolidation']['schema_version'] in ('shared-predicate-formalization-v2','shared-predicate-formalization-v3'):
             predicate_symbols={symbol_identity(s) for s in value['consolidation']['symbols']} - {symbol_identity(s) for s in source_symbols}
     for source in source_commitments.commitments:
         id, row = source.id, value['commitments'][source.id]
@@ -300,7 +300,7 @@ def load_commitment_provenance(directory: Path, commitments: CommitmentSet, cata
     if not path.exists():
         return None
     value=validate_commitment_provenance(json.loads(path.read_text()), commitments, catalogue)
-    if (value.get('consolidation') or {}).get('schema_version') in ('shared-predicate-formalization-v1','shared-predicate-formalization-v2'):
+    if (value.get('consolidation') or {}).get('schema_version') in ('shared-predicate-formalization-v1','shared-predicate-formalization-v2','shared-predicate-formalization-v3'):
         from ara.runtime.logging import read_log, LogTampered
         from ara.runtime.predicate_receipts import verify_runtime
         records=read_log(directory/'events.jsonl')

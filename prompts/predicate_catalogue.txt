@@ -10,3 +10,11 @@ can have a content relation without becoming endorsed. Glosses define content, n
 Use concise role/sort names free of attribution/reporting frames. Runtime uses a single individual domain:
 each sort becomes a unary guard. No many-sorted solver or implicit exclusivity/nonemptiness is assumed.
 Placeholder pattern: sort a; predicate F with role x:a; separate predicate G with role x:a.
+
+When policy_version is v2, cover every selected sentence, including each qualification, modal or normative
+condition, and context/argument role. Do not omit a required relation merely because it occurs in one source.
+Catalogue glosses may use ordinary relation verbs; exact named-author report frames remain forbidden.
+For coverage_patch, return the full catalogue with the published lists as exact prefixes and append only
+missing sorts/relations identified in coverage_feedback. Never delete, rewrite or reorder published entries.
+On validation correction, preserve every valid entry listed in preserve_catalogue verbatim; repair only
+invalid declarations and append missing ones. Do not trade away an existing concept to fix a different one.

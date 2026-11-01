@@ -820,7 +820,8 @@ current construction fork, not an inherited run configuration.
 starts a new, opt-in source-only lifecycle. `--plan-only` verifies the source and prints
 its selection/config without generation or a destination journal. The selection JSON
 has `commitment_ids`, `max_unresolved` and `failure_streak`; all IDs must already be
-accepted SOURCE commitments. No extraction, target generation or search runs here.
+accepted SOURCE commitments. `--instruction-origin operator|orchestrator` records who
+issued the lifecycle instruction (default operator). No extraction, target generation or search runs here.
 The compact source receipt binds the verified source tail, construction artifacts,
 selected originals, source evidence and unchanged provenance. It does not copy or
 re-account unrelated source calls. Frozen readers revalidate the retained original run; missing or changed source evidence refuses.
@@ -830,8 +831,20 @@ sharing reasons and distinctions. Runtime assigns content keys/handles. Formulas
 one item per request and use only bound variables and declared predicates. Explicit
 unary sort guards express quantifier restrictions in the existing single-domain FOL;
 no solver type semantics, constant identities or sort exclusivity are invented.
-Unsupported scope/individuals can retain the original formula with an explicit cost.
+New selections use `shared-predicate-formalization-v2`: each item must propose a structured
+formula. Retain/null is forbidden in the effective provider and local grammar. Exhausted
+proposal, translation or judgment validation refuses the lifecycle; it is not measured
+fidelity or an atom fallback. Historical v1 receipts retain their original policy.
 Corrections carry all prior validation feedback. Default construction is unchanged.
+
+Before formalization, positional coverage judgments cover every selected source sentence.
+Exact cardinality and runtime-issued handles are checked; missing components trigger at
+most two append-only catalogue extensions and fresh coverage. Published entries retain
+their order/handles, and individually valid definitions in rejected catalogue responses
+must survive corrections. Incomplete coverage refuses. Coverage is a model judgment,
+not independent semantic certification. Catalogue glosses use an exact named report-frame
+screen rather than the broad attribution lexicon; this permission applies only to
+replayed v2-derived symbols, never original source definitions.
 
 Each structurally valid candidate is back-translated without its source sentence,
 then independently keyed fidelity samples require three unanimous equivalence,
@@ -841,8 +854,9 @@ consistency must be established by Z3. Reported/attacked stance remains unchange
 Unresolved items are logged as `consolidation_unresolved`, not admitted decompositions.
 The declared unresolved/streak thresholds refuse excessive failure before freeze.
 
-`shared-predicates.json` and nested `shared-predicate-formalization-v1` provenance
-retain the entire catalogue, candidates, translations and judgments. Native replay
+`shared-predicates.json` and nested versioned shared-predicate provenance
+retain the entire catalogue, candidates, translations and judgments; v2 additionally
+binds catalogue revisions and all coverage judgments. Native replay
 checks every admitted item, retained original, threshold, derived symbol use and
 metric. The outer v5 provenance and frozen-T codecs are unchanged; readers need the
 new nested validator. The native fork additionally checks the construction/selection

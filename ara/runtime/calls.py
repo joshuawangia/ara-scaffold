@@ -269,9 +269,9 @@ class ModelCalls:
         if kind == 'search_evidence':
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
-        if kind == 'predicate_formalize' and inputs.get('catalogue'):
-            branch=next(b for b in schema['$defs']['formula']['oneOf'] if b['properties']['op'].get('const')=='predicate')
-            branch['properties']['name']={'type':'string','enum':[e['handle'] for e in inputs['catalogue']]}
+        if kind.startswith('predicate_'):
+            from ara.runtime.predicate_coverage import response_schema
+            schema=response_schema(kind,schema,inputs)
         if kind in ('audit_essay','audit_publication') and inputs.get('outline',{}).get('hypothesis_disclosure'):
             schema['properties']['labels']['items']['properties']['role']['enum'].append('proposed_principle')
         if kind == 'extract_paper':
@@ -304,6 +304,8 @@ class ModelCalls:
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)
             return prompt, prompt
         template = (self.root / 'prompts' / f'{kind}.txt').read_text()
+        if kind=='predicate_formalize' and inputs.get('policy_version')=='shared-predicate-formalization-v2':
+            template=(self.root/'prompts/predicate_formalize_mandatory.txt').read_text()
         if kind == 'build_t_batch' and inputs.get('mode') == 'vocabulary_consolidation':
             from ara.runtime.shared_vocabulary import SHARED_CONTRACT
             template = (self.root / 'prompts/consolidate_vocabulary_legacy.txt').read_text() + SHARED_CONTRACT
@@ -349,6 +351,13 @@ class ModelCalls:
                 self.log.record('validation_retry', kind=kind, next_attempt=attempt + 2,
                                 reason=str(exc))
                 if not whole_essay:
+                    if kind=='predicate_catalogue' and inputs.get('policy_version')=='shared-predicate-formalization-v2':
+                        from ara.runtime.predicate_coverage import merge_preserved
+                        try:rejected=json.loads(exc.feedback.get('rejected_response','null'))
+                        except ValueError:rejected=None
+                        prior=request_inputs.get('validation_feedback',{}).get('preserve_catalogue',inputs.get('preserve_catalogue'))
+                        exc.feedback['preserve_catalogue']=merge_preserved(prior,rejected)
+                        exc.feedback['instruction']='Correct only invalid entries; preserve every listed valid definition verbatim, and append missing relations.'
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
                     if kind.startswith('predicate_'):
                         validation_history.append(exc.feedback)
@@ -546,6 +555,9 @@ class ModelCalls:
                                         source_id=inputs.get('source_id'), attempt=attempt)
                     extraction_defaults(data)
                 validate_local(schema, data, self.config)
+            if kind=='predicate_catalogue' and inputs.get('policy_version')=='shared-predicate-formalization-v2':
+                from ara.runtime.predicate_coverage import check_preserved
+                check_preserved(data,inputs.get('validation_feedback',{}).get('preserve_catalogue',inputs.get('preserve_catalogue')))
             result = check(data) if check else data
         except Exception as exc:
             if isinstance(exc, CountRequestRefused) and not dispatched:

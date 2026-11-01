@@ -4945,3 +4945,21 @@ responses remain binding on their exact source/catalogue/candidate/translation/s
 identity. Shape corrections cannot erase dissent; runtime retains the original and
 frozen replay checks rejected history. Event-only provenance readers and freeze-only
 methodology perform the same source/model authentication as artifact readers.
+
+
+## Shared predicates — mandatory proposals and verified catalogue coverage
+
+Per orchestrator instruction, new selected lifecycles use v2: every item must
+propose a structured formula and complete blind back-translation plus three fidelity
+judgments. Only fidelity/history or consistency rejection retains an original;
+exhausted structural output validation refuses explicitly rather than reporting a
+measurement. V1 frozen receipts remain readable under their original policy.
+Before proposals, exact positional coverage must account for every source sentence.
+Up to two append-only catalogue extensions address missing components. Published
+handles remain stable; valid entries in schema-rejected catalogue responses survive
+targeted corrections and are authenticated on replay. Catalogue relation glosses use
+a normalized exact named report-frame guard, not the broad attribution lexicon.
+Only verified v2-derived definitions receive this permission. Source screening,
+stance, solver, bank and conservative fidelity history remain unchanged. Preflight
+uses the same effective v2 grammar as runtime. Metrics disclose proposal/judgment
+coverage and current judgment passes separately from admitted decompositions.

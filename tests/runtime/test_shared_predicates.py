@@ -15,7 +15,7 @@ def formula(name='p0'):
     return dict(op='forall',variable='x',args=[dict(op='implies',args=[dict(op='predicate',name='t0',terms=[dict(kind='variable',name='x')]),dict(op='predicate',name=name,terms=[dict(kind='variable',name='x')])])])
 
 def install(rig,monkeypatch,damage=None,*,record_setup=True):
-    calls=rig[0];calls.config.update(construction_shared_predicates=True,shared_predicates_max_unresolved=3,shared_predicates_failure_streak=4)
+    calls=rig[0];calls.config.update(construction_shared_predicates=True,shared_predicates_version='shared-predicate-formalization-v1',shared_predicates_max_unresolved=3,shared_predicates_failure_streak=4)
     t,symbols,rows=fixture();monkeypatch.setattr(calls,'build_t',lambda *_:t)
     if record_setup:
         calls.log.record('run_started',config=calls.config,topic='P',literature='P',audience='P',bank_version=load_bank(ROOT/'bank').bank_version)
@@ -25,6 +25,7 @@ def install(rig,monkeypatch,damage=None,*,record_setup=True):
         inputs=json.loads(prompt.split('\nINPUT_JSON\n')[1]);seen.append((kind,inputs,schema))
         if kind=='judge_symbol_alignment':data=dict(relation='unrelated',reason='P Q')
         elif kind=='predicate_catalogue':data=deepcopy(CATALOGUE)
+        elif kind=='predicate_coverage':data=dict(coverage=[dict(covered=True,handles=['p0'],missing=[],reason='P Q') for _ in inputs['sources']])
         elif kind=='predicate_formalize':data=dict(mode='decompose',formula=formula(),reason='P Q')
         elif kind=='predicate_backtranslate':
             assert 'source' not in inputs and 'evidence' not in inputs
@@ -158,11 +159,12 @@ def test_native_selected_cli_freeze_and_report(rig,monkeypatch,tmp_path):
     install(rig,monkeypatch,record_setup=False)
     destination=tmp_path/'shared'
     def factory(config,log,topic):return ModelCalls(config,calls.provider,log,Cache(destination/'cache'),ROOT,topic)
-    assert main(['shared-predicates','--source-run',str(source),'--run-dir',str(destination),'--selection-file',str(selection),'--stop-at','freeze'],calls_factory=factory)==0
+    assert main(['shared-predicates','--source-run',str(source),'--run-dir',str(destination),'--selection-file',str(selection),'--stop-at','freeze','--instruction-origin','orchestrator'],calls_factory=factory)==0
     assert snapshot(source)==before
     events=EventLog(destination/'events.jsonl').read()
     assert sum(e['stage']=='commitments_frozen' for e in events)==1
     assert any(e['stage']=='run_stopped_at_freeze' for e in events)
+    assert any(e['label']=='HUMAN' and json.loads(e['payload_json']).get('instruction_origin')=='orchestrator' for e in events)
     assert not any(e['label']=='MODEL' and e['stage'] in ('propose_targets','map_leaf') for e in events)
     assert any(e['stage']=='shared_predicate_bank_metrics' for e in events)
     data=methodology(destination/'events.jsonl')

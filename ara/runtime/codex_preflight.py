@@ -20,15 +20,21 @@ def manifest(config, root):
             continue
         if kind == 'consolidate_vocabulary' and not config.get('construction_consolidate_vocabulary'):
             continue
-        for correction in ((False, True) if kind in (*KINDS, 'consolidate_vocabulary','predicate_catalogue','predicate_formalize','predicate_backtranslate','predicate_fidelity') else (False,)):
+        for correction in ((False, True) if kind in (*KINDS, 'consolidate_vocabulary','predicate_catalogue','predicate_coverage','predicate_formalize','predicate_backtranslate','predicate_fidelity') else (False,)):
             _, overrides, scoped = dispatch_settings(config, kind, correction=correction)
             actual = scoped if overrides else config
             settings = stage_settings(actual, kind)
             if actual['provider'] != 'codex_cli':
                 continue
             schema = json.loads(path.read_text())
+            inputs={'mode':'targeted_correction'} if correction else {}
+            if kind.startswith('predicate_') and config.get('shared_predicates_version','shared-predicate-formalization-v2')=='shared-predicate-formalization-v2':
+                from ara.runtime.predicate_coverage import V2,response_schema
+                inputs['policy_version']=V2
+                if kind=='predicate_coverage':inputs['sources']=[{'text':'P'}]
+                schema=response_schema(kind,schema,inputs)
             cases.append(dict(case=kind + ('_correction' if correction else ''), kind=kind,
-                inputs={'mode':'targeted_correction'} if correction else {},
+                inputs=inputs,
                 native_schema_hash=digest(canonical(schema)), wire_schema_hash=digest(canonical(strict_schema(schema))),
                 model=settings['model'], effort=settings['effort'],
                 system_prompt_hash=digest(settings.get('system_prompt', ''))))

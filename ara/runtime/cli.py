@@ -67,6 +67,7 @@ def parser() -> argparse.ArgumentParser:
     predicates.add_argument('--plan-only', action='store_true')
     predicates.add_argument('--stop-at', choices=('freeze',), default='freeze')
     predicates.add_argument('--codex-schema-preflight-log', type=Path)
+    predicates.add_argument('--instruction-origin',choices=('operator','orchestrator'),default='operator')
     alignment = sub.add_parser('resume-alignment', help='continue unfinished alignment from verified completed construction')
     alignment.add_argument('--run-dir', type=Path, required=True)
     alignment.add_argument('--stop-at', choices=('freeze',), help='stop after the single freeze, before target generation or search')
@@ -255,7 +256,7 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
             require_codex_preflight(config,ROOT)
             log=initialize(plan,args.run_dir)
             log.human('shared-predicates',json.dumps(raw_args),selection=args.selection_file.read_text(),
-                      instruction_origin='operator',stop_controller='native_cli')
+                      instruction_origin=args.instruction_origin,stop_controller='native_cli')
             calls=calls_factory(config,log,plan['run']['topic'])
             calls.alignment_resume=dict(commitments=plan['commitments'])
             calls.shared_predicate_evidence=plan['evidence']

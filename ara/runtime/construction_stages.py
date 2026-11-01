@@ -6,7 +6,7 @@ KINDS = ('select_t_roots', 'build_t_batch')
 
 
 def dispatch_settings(config, kind, *, correction=False):
-    if kind in ('consolidate_vocabulary','predicate_catalogue','predicate_formalize','predicate_backtranslate','predicate_fidelity'):
+    if kind in ('consolidate_vocabulary','predicate_catalogue','predicate_coverage','predicate_formalize','predicate_backtranslate','predicate_fidelity'):
         return dispatch_settings(config, 'build_t_batch', correction=correction)
     if kind == 'judge_symbol_alignment':
         return dispatch_settings(config, 'build_t_batch', correction=False)

@@ -20,7 +20,7 @@ def methodology(log_path: Path) -> str:
     records = read_log(log_path)
     events = [r['event'] for r in records]
     if any(e['stage']=='commitment_provenance_frozen' and
-           (json.loads(e['payload_json']).get('consolidation') or {}).get('schema_version')=='shared-predicate-formalization-v1'
+           (json.loads(e['payload_json']).get('consolidation') or {}).get('schema_version') in ('shared-predicate-formalization-v1','shared-predicate-formalization-v2')
            for e in events):
         provenance_from_events(events,frozen_from_events(events))
     unpublished = pending_search_publications(events)

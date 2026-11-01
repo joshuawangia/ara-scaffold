@@ -30,6 +30,7 @@ def inspect_selection(source,destination,bank,selection):
     require(all(row.get('source_id') for row in rows.values()),'selection includes non-source commitments')
     config={**state['run']['config'],'cache_dir':str(Path(destination).absolute()/'cache'),
             'construction_consolidate_vocabulary':False,'construction_shared_predicates':True,'hypothesis_premises':[],
+            'shared_predicates_version':'shared-predicate-formalization-v2',
             'shared_predicates_max_unresolved':selection['max_unresolved'],
             'shared_predicates_failure_streak':selection['failure_streak']}
     policy(config)
@@ -60,7 +61,7 @@ def validate_selected_origin(events,provenance):
     """The compact source-selection receipt must bind the frozen re-formalization."""
     import json
     receipt=provenance.get('consolidation') if provenance else None
-    if not receipt or receipt.get('schema_version')!='shared-predicate-formalization-v1':return
+    if not receipt or receipt.get('schema_version') not in ('shared-predicate-formalization-v1','shared-predicate-formalization-v2'):return
     origins=[json.loads(e['payload_json']) for e in events if e['stage']=='shared_predicate_source']
     if not origins:
         merges=[json.loads(e['payload_json']) for e in events if e['stage']=='build_t_merged']

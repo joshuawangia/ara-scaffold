@@ -15,7 +15,9 @@ from ara.runtime.validation import validate_local
 from ara.types import CommitmentSet, Formula
 
 VERSION = 'shared-predicate-formalization-v1'
-KINDS = ('predicate_catalogue','predicate_formalize','predicate_backtranslate','predicate_fidelity')
+from ara.runtime.predicate_coverage import V2
+VERSIONS=(VERSION,V2)
+KINDS = ('predicate_catalogue','predicate_coverage','predicate_formalize','predicate_backtranslate','predicate_fidelity')
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -32,7 +34,9 @@ def policy(config):
     require(not any(any(k.startswith('shared_predicates_') or k=='construction_shared_predicates' for k in stage)
                     for stage in config.get('stages',{}).values() if isinstance(stage,dict)),
             'shared predicate policy is run-level only')
-    return dict(version=VERSION,max_unresolved=limit,failure_streak=streak,judges=3,
+    version=config.get('shared_predicates_version',V2)
+    require(version in VERSIONS,'unknown shared predicate policy version')
+    return dict(version=version,max_unresolved=limit,failure_streak=streak,judges=3,
                 types='explicit-unary-guards-v1',failure='retain-original',alignment='disabled')
 
 
@@ -40,23 +44,26 @@ def schema_check(kind,data):
     validate_local(json.loads((ROOT/f'schemas/{kind}.json').read_text()),data)
 
 
-def catalogue(data):
+def catalogue(data,*,version=VERSION):
     """Key proposed meanings, not model-supplied IDs. No lexical semantic merge."""
     from ara.runtime.commitment_provenance import content_definition, PRECISE_SCREEN
+    from ara.runtime.predicate_coverage import catalogue_definition
+    def definition_ok(text):
+        return catalogue_definition(text) if version==V2 else content_definition(text,screen=PRECISE_SCREEN)
     schema_check('predicate_catalogue',data)
     sorts=data['sorts'];names=[s['name'] for s in sorts]
     require(len(set(names))==len(names),'duplicate sort name')
     result=[]
     for i,s in enumerate(sorts):
-        require(content_definition(s['gloss'],screen=PRECISE_SCREEN),'sort gloss is not content')
+        require(definition_ok(s['gloss']),'sort gloss report frame or unsupported formatting')
         result.append(dict(handle=f't{i}',name='SPT_'+digest(canonical(s))[:24],kind='sort',
                            gloss=s['gloss'],roles=[dict(role='member',sort=s['name'])]))
     for i,p in enumerate(data['predicates']):
-        require(content_definition(p['gloss'],screen=PRECISE_SCREEN),'predicate gloss is not content')
+        require(definition_ok(p['gloss']),'predicate gloss report frame or unsupported formatting')
         require(all(r['sort'] in names for r in p['roles']),'unknown role sort')
         require(len({r['role'] for r in p['roles']})==len(p['roles']),'duplicate argument role')
         full_definition=p['gloss']+' [roles: '+', '.join(r['role']+':'+r['sort'] for r in p['roles'])+']'
-        require(content_definition(full_definition,screen=PRECISE_SCREEN),'predicate role definition is not content')
+        require(definition_ok(full_definition),'predicate role report frame or unsupported formatting')
         key=dict(gloss=p['gloss'],roles=p['roles'])
         result.append(dict(handle=f'p{i}',name='SPP_'+digest(canonical(key))[:24],kind='relation',**p))
     require(len({s['name'] for s in result})==len(result),'duplicate catalogue meaning key')
@@ -68,7 +75,7 @@ def typed_formula(value,entries):
     f=Formula.from_dict(value);by_handle={s['handle']:s for s in entries}
     used_relations=set()
     def visit(node,env):
-        require(node.op!='atom','private atoms forbidden; retain original with a reason')
+        require(node.op!='atom','private atoms forbidden; propose a structured formula')
         if node.op=='predicate':
             require(node.name in by_handle,'unknown predicate handle: '+str(node.name))
             entry=by_handle[node.name]
@@ -96,9 +103,10 @@ def typed_formula(value,entries):
     return bind(f)
 
 
-def candidate(data,entries):
+def candidate(data,entries,*,version=VERSION):
     schema_check('predicate_formalize',data)
     require(bool(data['reason'].strip()),'formalization requires a reason')
+    if version==V2:require(data['mode']=='decompose' and data['formula'] is not None,'structured proposal mandatory')
     if data['mode']=='retain':
         require(data['formula'] is None,'retain response must not supply a formula')
         return None
@@ -126,7 +134,7 @@ def symbols_for(t,original_symbols,entries):
     return result
 
 
-def metrics(t,symbols,rows,entries,items):
+def metrics(t,symbols,rows,entries,items,*,version=VERSION):
     result=vocabulary_metrics(t,symbols,rows)
     from collections import defaultdict
     uses=defaultdict(set);all_uses=defaultdict(set)
@@ -145,19 +153,38 @@ def metrics(t,symbols,rows,entries,items):
                   faithful_fraction=accepted/len(items) if items else 0,
                   fidelity_scope='unanimous three model judgments; not independent semantic certification',
                   atomic_cost=sum(c.formula.op=='atom' for c in t.commitments))
+    if version==V2:
+        judged=sum(len(i['judgments'])==3 for i in items)
+        result.update(proposed=sum(i['candidate'] is not None for i in items),judged=judged,
+                      current_judgments_passed=sum(fidelity(i['judgments']) for i in items if len(i['judgments'])==3),
+                      judged_fraction=judged/len(items) if items else 0)
     return result
 
 
-def admit_item(original,current,rows,entries,item):
+def admit_item(original,current,rows,entries,item,*,version=VERSION):
     """Replay structural, fidelity and full endorsed-set gates for one source item."""
     require(set(item)=={'id','status','candidate','translation','judgments','reason'},'invalid predicate item fields')
     require(item['id']==original.id and item['status'] in ('admitted','unresolved') and item['reason'].strip(),
             'invalid predicate item identity/status')
-    f=candidate(item['candidate'],entries) if item['candidate'] is not None else None
+    f=candidate(item['candidate'],entries,version=version) if item['candidate'] is not None else None
     if item['translation'] is not None:schema_check('predicate_backtranslate',item['translation'])
     for judgment in item['judgments']:schema_check('predicate_fidelity',judgment)
     require(len(item['judgments']) in (0,3),'incomplete fidelity record')
-    if item['status']=='unresolved':return current
+    if version==V2:
+        require(f is not None and item['translation'] is not None and len(item['judgments'])==3,
+                'mandatory proposal and complete fidelity measurement required')
+    if item['status']=='unresolved':
+        if version==V2:
+            require(item['reason'] in ('adverse_fidelity','adverse_fidelity_history','shared predicate consistency not established'),
+                    'unresolved proposal requires a fidelity or consistency rejection')
+            if item['reason']=='adverse_fidelity':require(not fidelity(item['judgments']),'unresolved fidelity mismatch')
+            if item['reason']=='adverse_fidelity_history':require(fidelity(item['judgments']),'unresolved history mismatch')
+            if item['reason']=='shared predicate consistency not established':
+                proposed=CommitmentSet(tuple(replace(c,formula=f) if c.id==original.id else c for c in current.commitments))
+                require(not (_consistent(CommitmentSet((replace(original,formula=f),))) and
+                    _consistent(CommitmentSet(tuple(c for c in proposed.commitments if rows[c.id]['stance']=='endorsed')))),
+                    'unresolved consistency mismatch')
+        return current
     require(f is not None and item['translation'] is not None and item['translation']['text'].strip(),
             'admission requires candidate and blind translation')
     require(fidelity(item['judgments']),'adverse fidelity judgment')
@@ -171,14 +198,20 @@ def admit_item(original,current,rows,entries,item):
 def validate_receipt(receipt,final,symbols,rows):
     fields={'schema_version','policy','original_commitments','original_symbols','provenance','evidence',
             'catalogue_response','catalogue','items','commitments','symbols','before','after','sha256'}
-    require(isinstance(receipt,dict) and set(receipt)==fields and receipt['schema_version']==VERSION,
+    version=receipt.get('schema_version') if isinstance(receipt,dict) else None
+    if version==V2:fields|={'catalogue_history','coverage_history'}
+    require(isinstance(receipt,dict) and set(receipt)==fields and version in VERSIONS,
             'invalid shared predicate receipt')
     require(receipt['sha256']==digest(canonical({k:v for k,v in receipt.items() if k!='sha256'})),
             'shared predicate receipt hash mismatch')
-    p=receipt['policy'];config=dict(construction_shared_predicates=True,
+    p=receipt['policy'];config=dict(construction_shared_predicates=True,shared_predicates_version=version,
         shared_predicates_max_unresolved=p['max_unresolved'],shared_predicates_failure_streak=p['failure_streak'])
     require(p==policy(config),'shared predicate policy mismatch')
-    original=CommitmentSet.from_dict(receipt['original_commitments']);entries=catalogue(receipt['catalogue_response'])
+    original=CommitmentSet.from_dict(receipt['original_commitments']);entries=catalogue(receipt['catalogue_response'],version=version)
+    if version==V2:
+        from ara.runtime.predicate_coverage import replay
+        replay(receipt['catalogue_history'],receipt['coverage_history'],len(original.commitments))
+        require(receipt['catalogue_history'][-1]==receipt['catalogue_response'],'coverage final catalogue mismatch')
     require(entries==receipt['catalogue'] and rows==receipt['provenance'],'shared predicate catalogue/provenance mismatch')
     require(set(receipt['evidence'])=={c.id for c in original.commitments},'shared predicate evidence mismatch')
     from ara.runtime.commitment_provenance import make_commitment_provenance
@@ -186,7 +219,7 @@ def validate_receipt(receipt,final,symbols,rows):
     require(len(receipt['items'])==len(original.commitments),'shared predicate item count mismatch')
     current=original;unresolved=streak=0
     for c,item in zip(original.commitments,receipt['items'],strict=True):
-        current=admit_item(c,current,rows,entries,item)
+        current=admit_item(c,current,rows,entries,item,version=version)
         if item['status']=='unresolved':unresolved+=1;streak+=1
         else:streak=0
         require(unresolved<=p['max_unresolved'] and streak<p['failure_streak'],'shared predicate failure threshold exceeded')
@@ -194,12 +227,13 @@ def validate_receipt(receipt,final,symbols,rows):
     require(current==final and final.to_dict()==receipt['commitments'] and expected==receipt['symbols'] and
             make_catalogue(final,symbols)==make_catalogue(final,expected),'shared predicate output mismatch')
     require(receipt['before']==vocabulary_metrics(original,receipt['original_symbols'],rows) and
-            receipt['after']==metrics(final,expected,rows,entries,receipt['items']),'shared predicate metrics mismatch')
+            receipt['after']==metrics(final,expected,rows,entries,receipt['items'],version=version),'shared predicate metrics mismatch')
     return original,receipt['original_symbols']
 
 
 def formalize(calls,original,original_symbols,rows,literature):
     p=policy(calls.config);require(p is not None,'shared predicates not enabled')
+    version=p['version']
     require(len(original.commitments)<=64 and all(r.get('source_id') for r in rows.values()),
             'shared predicates require a bounded source-only selection')
     from ara.runtime.vocabulary_consolidation import evidence_items
@@ -207,8 +241,12 @@ def formalize(calls,original,original_symbols,rows,literature):
     identity=digest(canonical(dict(original=original.to_dict(),symbols=original_symbols,rows=rows,evidence=evidence,policy=p)))
     cat_input=dict(lifecycle_key=identity,sources=[dict(text=c.text,source_id=rows[c.id]['source_id'],
                    stance=rows[c.id]['stance'],evidence=evidence[c.id]) for c in original.commitments],policy=p)
-    data=calls.call('predicate_catalogue',cat_input,lambda d:(catalogue(d),deepcopy(d)))
-    entries,cat_response=data
+    history=checks=None
+    if version==V2:
+        from ara.runtime.predicate_coverage import prepare
+        entries,cat_response,history,checks=prepare(calls,cat_input)
+    else:
+        entries,cat_response=calls.call('predicate_catalogue',cat_input,lambda d:(catalogue(d),deepcopy(d)))
     calls.log.record('shared_predicate_catalogue',lifecycle_key=identity,entries=entries,response=cat_response,
                      note='Proposed cross-source meanings and deduplication are model judgments, not established equivalences.')
     current=original;items=[];unresolved=streak=0
@@ -217,9 +255,10 @@ def formalize(calls,original,original_symbols,rows,literature):
     for c in original.commitments:
         inputs=dict(lifecycle_key=identity,source=c.text,evidence=evidence[c.id],stance=rows[c.id]['stance'],
                     catalogue=entries,item_key=digest(c.id))
+        if version==V2:inputs['policy_version']=version
         item=dict(id=c.id,status='unresolved',candidate=None,translation=None,judgments=[],reason='')
         try:
-            _,d=calls.call('predicate_formalize',inputs,lambda d:(candidate(d,entries),deepcopy(d)))
+            _,d=calls.call('predicate_formalize',inputs,lambda d:(candidate(d,entries,version=version),deepcopy(d)))
             item['candidate']=d
             if d['mode']=='retain':item['reason']='model_retained_original: '+d['reason']
             else:
@@ -233,9 +272,10 @@ def formalize(calls,original,original_symbols,rows,literature):
                 elif fidelity_adverse_history(calls.log.read(),judge):item['reason']='adverse_fidelity_history'
                 else:
                     item.update(status='admitted',reason='unanimous_fidelity')
-                    try:current=admit_item(c,current,rows,entries,item)
+                    try:current=admit_item(c,current,rows,entries,item,version=version)
                     except ValueError as exc:item.update(status='unresolved',reason=str(exc))
         except InvalidOutput as exc:
+            if version==V2:raise  # No unmeasured atom fallback under mandatory proposals.
             # Invalid model output is item-local; budget/provider failures remain fatal.
             item.update(status='unresolved',reason='validation_exhausted: '+str(exc))
             if len(item['judgments']) not in (0,3):item['judgments']=[]
@@ -247,10 +287,11 @@ def formalize(calls,original,original_symbols,rows,literature):
         else:streak=0
         require(unresolved<=p['max_unresolved'] and streak<p['failure_streak'],'shared predicate failure threshold exceeded')
     symbols=symbols_for(current,original_symbols,entries)
-    payload=dict(schema_version=VERSION,policy=p,original_commitments=original.to_dict(),original_symbols=original_symbols,
+    payload=dict(schema_version=version,policy=p,original_commitments=original.to_dict(),original_symbols=original_symbols,
         provenance=rows,evidence=evidence,catalogue_response=cat_response,catalogue=entries,items=items,
         commitments=current.to_dict(),symbols=symbols,before=vocabulary_metrics(original,original_symbols,rows),
-        after=metrics(current,symbols,rows,entries,items))
+        after=metrics(current,symbols,rows,entries,items,version=version))
+    if version==V2:payload.update(catalogue_history=history,coverage_history=checks)
     receipt={**payload,'sha256':digest(canonical(payload))}
     validate_receipt(receipt,current,symbols,rows)
     save_immutable(calls.log.path.parent/'shared-predicates.json',canonical(receipt))

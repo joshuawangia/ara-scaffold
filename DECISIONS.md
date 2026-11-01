@@ -4939,3 +4939,9 @@ copying unrelated journals. V5 outer provenance carries a new replayed nested
 receipt; native frozen forks verify its source origin. Metrics exclude sort guards
 from content sharing and report bounded native bank applicability separately.
 Default runs are unchanged; useful real sharing must be measured before scaling.
+
+Shared-predicate review closure: valid adverse fidelity booleans in schema-rejected
+responses remain binding on their exact source/catalogue/candidate/translation/sample
+identity. Shape corrections cannot erase dissent; runtime retains the original and
+frozen replay checks rejected history. Event-only provenance readers and freeze-only
+methodology perform the same source/model authentication as artifact readers.

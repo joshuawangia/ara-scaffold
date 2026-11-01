@@ -228,7 +228,9 @@ def formalize(calls,original,original_symbols,rows,literature):
                 item['translation']=calls.call('predicate_backtranslate',back)
                 judge=dict(**inputs,formula=d['formula'],back_translation=item['translation']['text'])
                 item['judgments']=[calls.call('predicate_fidelity',{**judge,'sample_index':i}) for i in range(3)]
+                from ara.runtime.predicate_receipts import fidelity_adverse_history
                 if not fidelity(item['judgments']):item['reason']='adverse_fidelity'
+                elif fidelity_adverse_history(calls.log.read(),judge):item['reason']='adverse_fidelity_history'
                 else:
                     item.update(status='admitted',reason='unanimous_fidelity')
                     try:current=admit_item(c,current,rows,entries,item)

@@ -857,3 +857,9 @@ premises, excludes Boolean packaging and discloses rule coverage/truncation. It 
 not a route search or proof that no other inference exists. Model fidelity consensus
 is evidence, not independent semantic certification. Inspect the real pilot artifacts
 before scaling.
+
+A valid adverse fidelity boolean remains binding even when another response field
+fails schema validation. Shape correction can complete a response but cannot erase
+that dissent. The exact source/catalogue/formula/translation/sample identity binds
+this history in both admission and replay. Report readers and freeze-only methodology
+authenticate the retained source and model history even when there are no routes.

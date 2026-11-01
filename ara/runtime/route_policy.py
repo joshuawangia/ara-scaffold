@@ -208,4 +208,7 @@ def provenance_from_events(events, commitments):
     catalogues = [json.loads(e['payload_json']) for e in events if e['stage'] == 'symbol_catalogue_frozen']
     if len(receipts) != 1 or len(catalogues) != 1 or commitments is None:
         raise ValueError('invalid commitment provenance freeze receipts')
-    return validate_commitment_provenance(receipts[0], commitments, catalogues[0])
+    value=validate_commitment_provenance(receipts[0], commitments, catalogues[0])
+    from ara.runtime.predicate_receipts import verify_runtime
+    verify_runtime(events,value)
+    return value

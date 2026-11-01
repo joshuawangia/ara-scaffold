@@ -8,6 +8,27 @@ from ara.runtime.validation import normalize_local
 from ara.runtime.shared_predicates import ROOT,VERSION
 
 
+def model_inputs(event):
+    inputs=json.loads(event['prompt'].split('\nINPUT_JSON\n',1)[1])
+    for field in ('topic','validation_feedback','validation_history'):inputs.pop(field,None)
+    return inputs
+
+
+def adverse_fields(event):
+    try:
+        raw=json.loads(Response(json.loads(event['response'])).text())
+    except (ValueError,TypeError,KeyError):
+        return []
+    if not isinstance(raw,dict):return []
+    return [field for field in ('equivalent','preserves_scope','no_additions') if raw.get(field) is False]
+
+
+def fidelity_adverse_history(events,inputs):
+    expected={canonical({**inputs,'sample_index':i}) for i in range(3)}
+    return any(e['label']=='MODEL' and e['stage']=='predicate_fidelity' and
+               canonical(model_inputs(e)) in expected and adverse_fields(e) for e in events)
+
+
 def request_identity(receipt):
     return digest(canonical(dict(original=receipt['original_commitments'],symbols=receipt['original_symbols'],
         rows=receipt['provenance'],evidence=receipt['evidence'],policy=receipt['policy'])))
@@ -37,10 +58,11 @@ def verify_model_receipts(events,receipt):
     for event in events:
         if event['label']!='MODEL' or not event['stage'].startswith('predicate_'):continue
         payload=json.loads(event['payload_json'])
-        if payload.get('status')!='accepted':continue
-        inputs=json.loads(event['prompt'].split('\nINPUT_JSON\n',1)[1]);inputs.pop('topic',None)
-        inputs.pop('validation_feedback',None);inputs.pop('validation_history',None)
+        inputs=model_inputs(event)
         key=(event['stage'],canonical(inputs))
+        if event['stage']=='predicate_fidelity' and key in expected and inputs.get('item_key') in admitted_keys:
+            require(not adverse_fields(event),'adverse fidelity history forbids admission')
+        if payload.get('status')!='accepted':continue
         if key not in expected:
             # An admitted item cannot discard earlier accepted dissent or another
             # candidate/translation. Unresolved partial judges remain in the log.

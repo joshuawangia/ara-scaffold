@@ -169,7 +169,12 @@ def test_native_selected_cli_freeze_and_report(rig,monkeypatch,tmp_path):
     assert '"shared_predicates"' in data and '"shared_content_predicates": 1' in data
     from ara.runtime.freeze_fork import fork_from_freeze
     fork_from_freeze(destination,tmp_path/'verified-fork',load_bank(ROOT/'bank'))
+    from ara.runtime.report import build_run
+    assert build_run(destination)['construction']['shared_predicates']
     (source/'commitments.json').unlink()
+    for reader in (lambda: methodology(destination/'events.jsonl'),lambda: build_run(destination)):
+        with pytest.raises((ValueError,FileNotFoundError)):
+            reader()
     with pytest.raises((ValueError,FileNotFoundError)):
         fork_from_freeze(destination,tmp_path/'missing-source-fork',load_bank(ROOT/'bank'))
 

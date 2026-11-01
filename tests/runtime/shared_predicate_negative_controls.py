@@ -7,7 +7,7 @@ CASES = [
  ('sharedpred_unanimity','ara/runtime/shared_predicates.py',
   "return all(j['equivalent'] and j['preserves_scope'] and j['no_additions'] and j['reason'].strip() for j in judgments)",
   "return any(j['equivalent'] and j['preserves_scope'] and j['no_additions'] and j['reason'].strip() for j in judgments)",
-  'tests/runtime/test_shared_predicates.py::test_one_adverse_sample_retains_exact_original_and_stance'),
+  'tests/runtime/test_shared_predicates.py::test_receipt_fidelity_replay_refuses_rehashed_admission'),
  ('sharedpred_guard','ara/runtime/shared_predicates.py',
   "require(body.op==shape,'quantifier requires explicit sort guard')",
   "require(True,'quantifier requires explicit sort guard')",
@@ -47,4 +47,21 @@ CASES = [
   "limit=config.get('shared_predicates_max_unresolved',3)",
   "limit=64",
   'tests/runtime/test_shared_predicates.py::test_failure_threshold_refuses_before_freeze'),
+]
+
+CASES += [
+ ('sharedpred_adverse_history_runtime','ara/runtime/shared_predicates.py',
+  "elif fidelity_adverse_history(calls.log.read(),judge):item['reason']='adverse_fidelity_history'",
+  "elif False:item['reason']='adverse_fidelity_history'",
+  'tests/runtime/test_predicate_replay.py::test_schema_retry_retains_valid_adverse_fidelity'),
+ ('sharedpred_adverse_history_replay','ara/runtime/predicate_receipts.py',
+  "require(not adverse_fields(event),'adverse fidelity history forbids admission')",
+  "require(True,'adverse fidelity history forbids admission')",
+  'tests/runtime/test_predicate_replay.py::test_replay_rejects_valid_adverse_fields_in_shape_rejected_history'),
+ ('sharedpred_event_authentication','ara/runtime/route_policy.py',
+  "verify_runtime(events,value)","pass",
+  'tests/runtime/test_predicate_replay.py::test_event_reader_authenticates_predicate_model_receipts'),
+ ('sharedpred_freeze_only_export','ara/runtime/export.py',
+  "        provenance_from_events(events,frozen_from_events(events))","        pass",
+  'tests/runtime/test_predicate_replay.py::test_freeze_only_methodology_authenticates_predicate_history'),
 ]

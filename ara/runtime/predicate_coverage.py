@@ -23,35 +23,49 @@ def catalogue_definition(text):
     return view is not None and bool(view.strip()) and not _REPORT_FRAME.search(view)
 
 
-def preserved_entries(data):
-    """Protect individually valid entries even if another entry/field was rejected."""
+def _unambiguous(rows,key,protected):
+    prior={key(row):row for row in protected}
+    groups={}
+    for row in rows:
+        values=groups.setdefault(key(row),[])
+        if row not in values:values.append(row)
+    result=[]
+    for identity,values in groups.items():
+        if identity in prior:
+            if prior[identity] in values:result.append(deepcopy(prior[identity]))
+        elif len(values)==1:result.append(deepcopy(values[0]))
+    return result
+
+
+def preserved_entries(data,prior=None):
+    """Protect unambiguous entries; prior identities win rejected duplicates."""
     from ara.runtime.shared_predicates import ROOT
     schema=json.loads((ROOT/'schemas/predicate_catalogue.json').read_text())
-    result=dict(sorts=[],predicates=[])
+    result=dict(sorts=[],predicates=[]);prior=prior or result
     if not isinstance(data,dict):return result
     for field in result:
-        values=data.get(field,[])
+        values=data.get(field,[]);valid=[]
         if not isinstance(values,list):continue
         for row in values:
             try:
                 validate_local(schema['properties'][field]['items'],row)
                 require(catalogue_definition(row['gloss']),'invalid definition')
-                if field=='sorts':
-                    require(row['name'] not in {s['name'] for s in result['sorts']},'duplicate sort')
-                else:
+                if field=='predicates':
                     names={s['name'] for s in result['sorts']}
                     require(all(r['sort'] in names for r in row['roles']),'unknown role sort')
                     require(len({r['role'] for r in row['roles']})==len(row['roles']),'duplicate role')
                     require(catalogue_definition(row['gloss']+' [roles: '+', '.join(r['role']+':'+r['sort'] for r in row['roles'])+']'),'invalid role definition')
-                if row not in result[field]:result[field].append(deepcopy(row))
+                valid.append(row)
             except (ValueError,ValidationError):continue
+        key=(lambda row:row['name']) if field=='sorts' else (lambda row:canonical(dict(gloss=row['gloss'],roles=row['roles'])))
+        result[field]=_unambiguous(valid,key,prior[field])
     return result
 
 
 def merge_preserved(prior,data):
     result=deepcopy(prior or dict(sorts=[],predicates=[]))
     if prior and not preserves(data,prior):return result
-    fresh=preserved_entries(data)
+    fresh=preserved_entries(data,result)
     for field in result:
         for row in fresh[field]:
             if row not in result[field]:result[field].append(row)

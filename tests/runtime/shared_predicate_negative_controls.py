@@ -112,3 +112,15 @@ CASES += [
   'require(True,',
   'tests/runtime/test_predicate_v2_repair.py::test_noop_extension_refuses_before_fresh_coverage'),
 ]
+
+
+CASES += [
+ ('sharedpred2_identity_precedence','ara/runtime/predicate_coverage.py',
+  "if prior[identity] in values:result.append(deepcopy(prior[identity]))",
+  "if values:result.append(deepcopy(values[0]))",
+  'tests/runtime/test_predicate_v2_identity.py::test_prior_identity_wins_without_losing_nonconflicting_additions'),
+ ('sharedpred2_ambiguous_authority','ara/runtime/predicate_coverage.py',
+  "elif len(values)==1:result.append(deepcopy(values[0]))",
+  "elif values:result.append(deepcopy(values[0]))",
+  'tests/runtime/test_predicate_v2_identity.py::test_ambiguous_initial_identity_protects_only_unambiguous_siblings'),
+]

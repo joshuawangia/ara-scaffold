@@ -4971,3 +4971,10 @@ catalogue recoverable; structurally valid siblings of an initial shape failure s
 survive. A coverage extension must strictly add entries and preserve all published
 prefixes before another coverage judgment is allowed. Native replay enforces both
 rules, preventing a no-op catalogue from receiving a fresh coverage judgment.
+
+
+Protected catalogue identity is the sort name or predicate meaning key (gloss plus
+ordered roles). Previously protected entries take precedence over rejected duplicate
+variants. Initially ambiguous declarations grant no authority; valid unambiguous
+siblings and their sort dependencies remain protected. Runtime and replay use the
+same identity selection, without editing or accepting rejected model text.

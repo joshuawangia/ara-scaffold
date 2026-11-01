@@ -452,10 +452,11 @@ def test_codex_preflight_gate_complete_and_stale(codex):
     write('preflight');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
     with pytest.raises(ValueError,match='requires a successful'):require_codex_preflight(config,ROOT)
     result=codex_schema_preflight(calls)
-    assert result['passed'] and result['accepted']==result['total']==20
+    assert result['passed'] and result['accepted']==result['total']==21
     assert any(e['stage']=='classify_conflict' and e['label']=='MODEL' for e in log.read())
     assert 'outline_essay' in {case['case'] for case in result['manifest']['cases']}
     assert 'revise_essay' in {case['case'] for case in result['manifest']['cases']}
+    assert 'repair_publication_sentence' in {case['case'] for case in result['manifest']['cases']}
     config['codex_cli']['schema_preflight_log']=str(log.path)
     require_codex_preflight(config,ROOT)
     config['stages']={'construction_correction':{'effort':'low'}}

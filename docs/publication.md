@@ -323,3 +323,16 @@ characters, title wording and citations must remain unchanged. The original
 candidate is retained instead of accepting the verifier's cleanup. The ordinary
 fresh audits and citation verification still apply. Unmatched quotations and
 other verification failures continue to refuse; this is no fidelity exemption.
+
+
+## Exact operator-instructed flow
+
+`ara polish --run-dir runs/P --flow-prompt instructions.txt` selects one
+whole-paper edit with a retained UTF-8 operator instruction. It requires a
+native verified original with at least three audit samples and a dedicated
+publication history. The prompt hash and source binding are logged. Citation
+occurrence counts, ordinary typed/meaning audits and final verification remain
+binding. A rejected edit cannot be rerolled, and whole-paper repair is disabled
+for this mode; bounded inline repair remains subject to the existing limits.
+Resume requires the same prompt and source. See `publication_flow.py` and
+`tests/runtime/test_publication_flow.py` for the owning boundary.

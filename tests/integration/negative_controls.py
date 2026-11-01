@@ -2104,7 +2104,7 @@ CASES += [
      "if index not in allowed_blocks:", "if False:",
      'tests/runtime/test_publication.py::test_repair_cannot_change_unflagged_abstract'),
     ('publication_second_audit', 'ara/runtime/publication.py', '        while True:\n', '        while repair_rounds < 3:\n', 'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[3-True]'),
-    ('publication_repair_cap', 'ara/runtime/publication.py', "if repair_rounds == 3 or not audit.get('flags'):", "if repair_rounds == 2 or not audit.get('flags'):", 'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[4-False]'),
+    ('publication_repair_cap', 'ara/runtime/publication.py', "if flow or repair_rounds == 3 or not audit.get('flags'):", "if flow or repair_rounds == 2 or not audit.get('flags'):", 'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[4-False]'),
     ('publication_issue_enforcement', 'ara/runtime/publication_audit.py', "if label['publication_issue'] != 'none' and not advisory:", 'if False:', 'tests/runtime/test_publication.py::test_publication_issue_reaches_targeted_repair'),
     ('publication_literature_scope', 'ara/runtime/publication_audit.py', "if not inputs.get('proposal') and sentence.get('section', '').casefold() != HEADING.casefold():", 'if False:', 'tests/runtime/test_publication.py::test_publication_literature_sentence_scope_and_typed_support'),
     ('publication_unsafe_html', 'ara/runtime/publication_pdf.py',

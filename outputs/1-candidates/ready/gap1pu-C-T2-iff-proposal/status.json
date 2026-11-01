@@ -16,13 +16,13 @@
       0
     ]
   ],
-  "refusal_reason": "Quotation fidelity failed for quote:0 and quote:1 (article titles). Operator stopped the correction continuation before any new repair.",
+  "refusal_reason": "essay audit failed",
   "pdf": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/paper.pdf",
   "run_dir": "/home/dev/ara-work/nu4/runs/proposal-mode/gap1pu-C-T2-iff-proposal/resume-disclosure-1/run",
   "source_head": "075283b1b8067904eebb0570a08d865827fe1faa",
   "substage": "verified_pre_polish_original",
   "operator_selection": "all queued candidates; final submission selection remains with operator",
-  "updated_at": "2026-10-30T19:34:44.231260+00:00",
+  "updated_at": "2026-10-30T23:23:05.047851+00:00",
   "proposal_mode": true,
   "disclosure": "eps2-proposed thesis (tested in ARA); bridge principle argued, not mechanically derived",
   "candidate_status": "OPEN-proposal",
@@ -51,7 +51,7 @@
   "export": "/home/dev/ara-work/nu4/runs/proposal-mode/gap1pu-C-T2-iff-proposal/resume-disclosure-1/run/export/essay.txt",
   "owner": "pi3",
   "publication_run_dir": "/home/dev/ara-work/pi3-scoped/runs/candidates/gap1pu-C-T2-iff-proposal/run",
-  "publication_head": "b6a5182a45aa8f3104a1b3c9a9be6240a39f5de8",
+  "publication_head": "6ddcaf1ae1f06403e88edb033e13ab2847a2653e",
   "publication_attempt": 4,
   "publication_exit_code": -2,
   "continuation_checkpoint": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/continuation-checkpoint.json",
@@ -1046,7 +1046,32 @@
     0,
     0
   ],
-  "refusal_details": [],
+  "refusal_details": [
+    {
+      "action": "remove",
+      "detail": "The search evidence identifies this exact string as an article title, not a verified quotation from article prose.",
+      "evidence_urls": [
+        "https://link.springer.com/article/10.1007/s11098-024-02103-z"
+      ],
+      "id": "quote:0",
+      "kind": "quotation",
+      "source_excerpt": null,
+      "status": "unverified",
+      "text": "Stable acceptance for mighty knowledge"
+    },
+    {
+      "action": "remove",
+      "detail": "The search evidence identifies this exact string as an article title, not a verified quotation from article prose.",
+      "evidence_urls": [
+        "https://doi.org/10.1016/j.cogpsych.2023.101591"
+      ],
+      "id": "quote:1",
+      "kind": "quotation",
+      "source_excerpt": null,
+      "status": "unverified",
+      "text": "Norm conflicts and epistemic modals"
+    }
+  ],
   "repair_rounds_remaining": 2,
   "repair_limit_note": "Operator selected the verified original and stopped polish. No unused repair rounds may be dispatched without a new request.",
   "refusal_stage": "native_quotation_verification",
@@ -1088,6 +1113,20 @@
       ],
       "polished_draft_retained": true,
       "cleanup_accepted": false
+    },
+    {
+      "recorded_at": "2026-10-30T23:23:05.047841+00:00",
+      "superseded_by": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/audit-inline-20261030T214052Z/final-diagnosis.json",
+      "previous_top_level": {
+        "polish_refusal_reason": "Quotation fidelity failed for quote:0 and quote:1 (article titles). Operator stopped the correction continuation before any new repair.",
+        "refusal_reason": "Quotation fidelity failed for quote:0 and quote:1 (article titles). Operator stopped the correction continuation before any new repair.",
+        "last_completed_flags_per_sample": [
+          0,
+          0,
+          0
+        ],
+        "final_post_verification_gate_reached": false
+      }
     }
   ],
   "native_verification_failure": {
@@ -1172,7 +1211,7 @@
     },
     "repair_classification": "Non-substantive quotation-versus-title formatting; exact occurrences only; no verification exemption; fresh k=3 required after repair"
   },
-  "final_post_verification_gate_reached": false,
+  "final_post_verification_gate_reached": true,
   "pdf_basis": "verified original export; no Opus edits; polished revision refused",
   "source_audit_flags_per_sample": [
     0,
@@ -1188,6 +1227,213 @@
   "partial_final_audit_samples": [],
   "partial_final_flags_per_sample": [],
   "partial_final_audit_status": "not_started_in_stopped_continuation",
-  "refusal_applies_to": "polished_revision_only",
-  "polish_refusal_reason": "Quotation fidelity failed for quote:0 and quote:1 (article titles). Operator stopped the correction continuation before any new repair."
+  "refusal_applies_to": "polished revision only; delivered verified original remains accepted",
+  "polish_refusal_reason": "essay audit failed",
+  "source_reading_words": 3379,
+  "words_basis": "Original reading text plus requested Status and method note; references excluded. Author\u2013year citation display may change counts relative to raw export.",
+  "operator_delivery_note_added": true,
+  "publication_pause": null,
+  "original_export_gate": {
+    "k": 3,
+    "flags_per_sample": [
+      0,
+      0,
+      0
+    ],
+    "draft_sha256": "37810f68f21c3798d63683ea37ab1d8806086586f88ac6b081e819a4b9003ebf"
+  },
+  "refused_pdf": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/paper-refused.pdf",
+  "refusal_evidence_note": "Retained refused PDF unchanged.",
+  "last_completed_flags_per_sample": [
+    9,
+    6,
+    0
+  ],
+  "delivery_capacity_policy": {
+    "reserve_bytes": 6000000000,
+    "other_reserved_bytes": 0,
+    "reason": "Both polish processes stopped; no remaining publication allocation"
+  },
+  "audit_inline_continuation": {
+    "head": "6ddcaf1ae1f06403e88edb033e13ab2847a2653e",
+    "authorization": "/home/dev/ara-work/briefs/audit-inline.md",
+    "mode": "title-format-only",
+    "proof": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/audit-inline-20261030T214052Z",
+    "run_dir": "/home/dev/ara-work/pi3-scoped/runs/candidates/gap1pu-C-T2-iff-proposal/run",
+    "status": "refused",
+    "source_verified": true,
+    "whole_paper_rounds_before": 1,
+    "updated_at": "2026-10-30T22:02:23.941115+00:00",
+    "step": "polish",
+    "refusal_reason": "essay audit failed",
+    "pdf": null,
+    "words": 3385,
+    "audit_words": 3251,
+    "whole_paper_rounds": 1,
+    "inline_passes": 0,
+    "flags_per_sample": [
+      [
+        9,
+        6,
+        0
+      ]
+    ],
+    "final_flags": [
+      {
+        "reason": "original_draft_fidelity",
+        "role": "unsupported_claim",
+        "sentence": 6
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 6
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 13
+      },
+      {
+        "reason": "unsupported_elaboration",
+        "role": "unsupported_claim",
+        "sentence": 13
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 21
+      },
+      {
+        "reason": "unsupported_elaboration",
+        "role": "unsupported_claim",
+        "sentence": 21
+      },
+      {
+        "reason": "original_draft_fidelity",
+        "role": "unsupported_claim",
+        "sentence": 37
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 37
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 79
+      },
+      {
+        "reason": "unsupported_elaboration",
+        "role": "unsupported_claim",
+        "sentence": 79
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 103
+      },
+      {
+        "reason": "unsupported_elaboration",
+        "role": "unsupported_claim",
+        "sentence": 103
+      },
+      {
+        "reason": "unsupported_claim",
+        "role": "unsupported_claim",
+        "sentence": 164
+      },
+      {
+        "reason": "unsupported_elaboration",
+        "role": "unsupported_claim",
+        "sentence": 164
+      }
+    ],
+    "native_citations": "not_run",
+    "original_preserved": true,
+    "attempted_polished_words": 3786,
+    "native_verification_of_attempted_draft": "pass",
+    "previous_51_adverse_preserved": true,
+    "diagnosis": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/audit-inline-20261030T214052Z/final-diagnosis.json"
+  },
+  "latest_publication_diagnosis": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/audit-inline-20261030T214052Z/final-diagnosis.json",
+  "latest_attempted_polished_words": 3786,
+  "operator_flow_publication": {
+    "status": "refused",
+    "head": "e89cd9f5233014b3510df51731a694b63bcbf9fe",
+    "proof": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/flow-20261101T001010Z",
+    "run_dir": "/dev/shm/pi3-t2-flow/run",
+    "prompt": "/home/dev/ara-work/briefs/t2-flow-polish-prompt.txt",
+    "prompt_sha256": "0b5b478ebab8a8688f2b962b62f59063d53287e9a6aafe94be1eaacef47d48f2",
+    "words": 2957,
+    "flags": [],
+    "source_verified": true,
+    "updated_at": "2026-11-01T00:21:26.696277+00:00",
+    "step": "polish",
+    "refusal_reason": "publication word count outside 3000\u20136000",
+    "pdf": null,
+    "final_flags": [],
+    "inline_passes": 0,
+    "whole_paper_rounds": 0,
+    "native_verification": {
+      "reason": "polish failed; original draft retained",
+      "status": "not_run"
+    },
+    "original_preserved": true,
+    "edit_calls": 1,
+    "audit_status": "not_run: structural length refusal before audit",
+    "meaning_status": "not_run",
+    "minimum_words": 3000,
+    "maximum_words": 6000,
+    "word_shortfall": 43,
+    "reroll": false,
+    "final_result": "verified original retained; no polished PDF published",
+    "report": "/home/dev/ara-work/reports/candidates/t2-flow-publication.md",
+    "software_verification": {
+      "final_test_head": "6f4cc2ca4a878fde991610253e15102ca6ed752b",
+      "production_identical_to_native_head": true,
+      "passed": 1881,
+      "skipped": 4,
+      "failed": 0,
+      "coverage": "retained partial runs plus isolated partitions",
+      "negative_controls": 6
+    }
+  },
+  "operator_final_publication": {
+    "status": "rendered_operator_selected_checkpoint",
+    "head": "6f4cc2ca4a878fde991610253e15102ca6ed752b",
+    "model_calls": 0,
+    "source_draft_sha256": "8fcf8b9c006b37cb302878cef99b09fbf5ec442073da3da57e85a44ed964c9df",
+    "final_draft_sha256": "ae99fc7a01ea161a20ac731fc2c9a1883337a9e6d34a8de749386fc7e4957337",
+    "only_four_delimiter_bytes": true,
+    "audit_basis": "Operator expressly selected historical clean k3 checkpoint; exact delimiter-only carry-over. No fresh semantic audit, no deletion or override of later native adverse history.",
+    "words": 3786,
+    "pdf": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/paper-final.pdf",
+    "pdf_checks": {
+      "pages": 9,
+      "glyph_overflow": [],
+      "embedded_fonts": {
+        "/AAAAAA+LiberationSerif-Bold": true,
+        "/BAAAAA+LiberationSerif": true,
+        "/CAAAAA+DejaVuSerif": true,
+        "/DAAAAA+LiberationSerif-Italic": true
+      },
+      "figures": 3,
+      "captions_present": true,
+      "horizontal_overflow": [],
+      "pdf_sha256": "e4ae97723d39fd7efa45bf6e8b8360cd8b9ce4b561dc7c86aee10209bc085f76"
+    },
+    "receipt": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/final-title-delimiters/receipt.json",
+    "report": "/home/dev/ara-work/reports/candidates/t2-final.md",
+    "native_local_verification": "pass: six citation items; zero remaining quotation items",
+    "visual_checks": "/home/dev/ara-work/reports/candidates/gap1pu-C-T2-iff-proposal/pi3/final-title-delimiters/visual-checks.json",
+    "later_adverse_history_retained": true,
+    "fresh_semantic_audit": false,
+    "selected_historical_flags": [
+      0,
+      0,
+      0
+    ]
+  }
 }

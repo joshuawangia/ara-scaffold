@@ -7,12 +7,11 @@ operator's account. The choice of essay is the operator's.
 
 | File | Role | Status |
 | --- | --- | --- |
-| `essay-T2-safety-and-retraction.pdf` | Recommended essay | Verified original. Final k=3 audit [0,0,0]; citations verified against local sources; no Opus edits. Under 6,000 words. |
+| `essay-T2-safety-and-retraction.pdf` | **Recommended essay** | Polished text that passed the post-polish k=3 audit [0,0,0]; only change since: two titles set in italics (4 delimiter bytes, no model calls); native verification pass (6 citations); 9 pp, 3,786 words. Note: a later separate polish attempt drew adverse flags — that history is retained in receipts. |
+| `essay-T2-verified-original-plain.pdf` | Fallback | The unpolished verified original (same thesis; plainer, repetitive prose). |
 | `methodology-metapaper-v7.pdf` | Methodology report | v7, 77 pages, 27 figures; executive summary with eight contributions; operator anonymised; anonymity grep clean. |
 | `alternate-essay-B2.pdf` | Alternative essay | Verified original, k=3 audit [0,0,0]; thesis originated by ARA itself; narrower. |
 
-If the flow-only polish of T2 passes every gate before submission, `essay-T2-safety-and-retraction-polished.pdf`
-will be added here and is the more readable version of the same verified content.
 
 ## Honest framing to keep in the submission text
 

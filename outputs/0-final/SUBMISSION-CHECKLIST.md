@@ -8,7 +8,7 @@ operator's account. The choice of essay is the operator's.
 | File | Role | Status |
 | --- | --- | --- |
 | `essay-T2-safety-and-retraction.pdf` | Recommended essay | Verified original. Final k=3 audit [0,0,0]; citations verified against local sources; no Opus edits. Under 6,000 words. |
-| `methodology-metapaper-v6.pdf` | Methodology report | v6, 65 pages, 27 figures; operator anonymised; anonymity grep clean. |
+| `methodology-metapaper-v7.pdf` | Methodology report | v7, 77 pages, 27 figures; executive summary with eight contributions; operator anonymised; anonymity grep clean. |
 | `alternate-essay-B2.pdf` | Alternative essay | Verified original, k=3 audit [0,0,0]; thesis originated by ARA itself; narrower. |
 
 If the flow-only polish of T2 passes every gate before submission, `essay-T2-safety-and-retraction-polished.pdf`

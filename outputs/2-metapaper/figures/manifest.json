@@ -13,57 +13,6 @@
     }
   },
   {
-    "id": "concepts",
-    "file": "figures/concepts.svg",
-    "caption": "One architecture organizes the experiments and extensions. Source construction determines T; L licenses search; H includes targets and disclosed proposed premises under the reviewed extension. Arguing for a bridge principle differs from deriving a result conditional on it. Pending mechanisms receive no success count.",
-    "data": {
-      "rows": [
-        {
-          "concept": "L: licensed moves",
-          "mechanism": "Bank + solver + critical questions",
-          "instances": "Per-paper novelty; R28 padding"
-        },
-        {
-          "concept": "T: frozen source theory",
-          "mechanism": "Construct / consolidate / align",
-          "instances": "Gap1r 160; gap3 243"
-        },
-        {
-          "concept": "One freeze / forks",
-          "mechanism": "Preserve evidence; vary requests",
-          "instances": "A/B/C; gap3p; packing2"
-        },
-        {
-          "concept": "Backward / forward gaps",
-          "mechanism": "Missing premises / joint consequence",
-          "instances": "T1–T9; forward zero leads"
-        },
-        {
-          "concept": "H: proposed premises",
-          "mechanism": "Disclosed conditional route",
-          "instances": "Gap3h blocked; B/2, T2 proposals"
-        },
-        {
-          "concept": "Output verification",
-          "mechanism": "Typed k=3, local citations, carry-over",
-          "instances": "Two original PDFs; polish pending"
-        },
-        {
-          "concept": "Review / operation",
-          "mechanism": "Exact heads; pause and diagnose",
-          "instances": "Ten-job rule; findings ledger"
-        }
-      ],
-      "checkpoint": "2026-10-30T22:28:10Z",
-      "sources": [
-        "briefs/meta-v5.md",
-        "briefs/xi-round-32.md",
-        "briefs/nu4-proposal-mode.md",
-        "briefs/fwd-sweep.md"
-      ]
-    }
-  },
-  {
     "id": "vocabulary",
     "file": "figures/vocabulary.svg",
     "caption": "The same gap1r freeze underlies A/B/C and the forward sweep. Structured means non-atomic syntax, not established faithful formalization. Every catalogue symbol is a zero-arity atom. Cross-paper sharing counts formula occurrences using their source provenance; only the two symbols in the alignment bridge span papers. Excluding that bridge, source-only sharing is zero. Alignment tested 150 pairs (149 unrelated, one directional entailment) and merged no symbols. This quantifies the missing common formal vocabulary; it is not an impossibility theorem.",
@@ -229,73 +178,6 @@
     }
   },
   {
-    "id": "context-admission",
-    "file": "figures/context-admission.svg",
-    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); the later actual two-hop A results are reported separately in §3.3. This historical unpacked template adds 299 tokens. The later stage-window defect was closed by r14 review. These plan estimates do not prove service capacity.",
-    "data": {
-      "plans": [
-        {
-          "label": "Historical unpacked",
-          "input": 311785,
-          "output": 16384,
-          "total": 328169,
-          "bound": 200000,
-          "status": "refused before dispatch"
-        },
-        {
-          "label": "Packed / original bound",
-          "input": 105724,
-          "output": 16384,
-          "total": 122108,
-          "bound": 200000,
-          "status": "offline fit"
-        },
-        {
-          "label": "Packed / 272k window",
-          "input": 105724,
-          "output": 16384,
-          "total": 122108,
-          "bound": 239232,
-          "status": "offline fit"
-        },
-        {
-          "label": "Unpacked / 872k window",
-          "input": 312084,
-          "output": 16384,
-          "total": 328468,
-          "bound": 839232,
-          "status": "offline fit"
-        },
-        {
-          "label": "Packed / 872k window",
-          "input": 105724,
-          "output": 16384,
-          "total": 122108,
-          "bound": 839232,
-          "status": "offline fit"
-        }
-      ],
-      "source": [
-        "reports/overnight/gap1f/handoff.md",
-        "reports/sigma-round13.md",
-        "briefs/zeta-gap-fork2.md"
-      ],
-      "forks": [
-        {
-          "fork": "A",
-          "context": "packed, hops=2",
-          "full_commitments": null,
-          "results": "pending"
-        },
-        {
-          "fork": "B",
-          "context": "unpacked; proposed run-level window 600000",
-          "results": "pending"
-        }
-      ]
-    }
-  },
-  {
     "id": "packing",
     "file": "figures/packing.svg",
     "caption": "Token reductions and evidence coverage are different achievements. Left: input estimates exclude the 16,384 output allowance, with distinct experiments explicitly named; old-versus-packed search is a replay comparison. Right: packing2 offline replay repairs full basis visibility. No later live derivation is inferred.",
@@ -333,138 +215,17 @@
     }
   },
   {
-    "id": "gates",
-    "file": "figures/gates.svg",
-    "caption": "Native rejection reasons across pilot generations. The same candidate-attempt can occur in more than one column; columns must not be summed into a rejection total. “Attribution screen” includes lexical false positives, especially before that screen became advisory. Repeated proposal attempts count separately. Zero means no recorded rejection under that reason, not proof of semantic novelty.",
+    "id": "partial-B",
+    "file": "figures/partial-B.svg",
+    "caption": "The sole inference-bearing B route is a comparative sign argument. Its unanswered critical question keeps it OPEN. Its attempted sign essays were refused; it is not the B/1 or B/2 proposal route.",
     "data": {
-      "pilots": [
-        "fork1",
-        "codex4",
-        "codex5",
-        "fork2",
-        "fork3",
-        "fork4",
-        "fork5",
-        "fork6"
+      "sources": [
+        "R28",
+        "R42"
       ],
-      "reasons": [
-        "attributed_report",
-        "own_thesis_not_established",
-        "single_commitment_entailment",
-        "target_content_not_established",
-        "gap_resolution_not_established",
-        "duplicate_retained_target"
-      ],
-      "values": [
-        [
-          13,
-          18,
-          2,
-          0,
-          0,
-          0
-        ],
-        [
-          4,
-          0,
-          16,
-          0,
-          0,
-          0
-        ],
-        [
-          7,
-          0,
-          0,
-          0,
-          0,
-          0
-        ],
-        [
-          10,
-          0,
-          0,
-          2,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
-          0,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
-          1,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
-          1,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
-          7,
-          2,
-          1
-        ]
-      ],
-      "source": "data.json/pilots/*/candidate_rows"
-    }
-  },
-  {
-    "id": "routes",
-    "file": "figures/routes.svg",
-    "caption": "Closed is a formal outcome. Pilot 3’s ten closed routes were trivial restatements; pilot 5’s four were conjunction packaging; fork 3’s two derived routes used a single paper. None met the complete accepted cross-paper criterion. Pilot 3 published twenty-one routes from twenty polarity searches.",
-    "data": {
-      "runs": [
-        "Pilot 2 resumed",
-        "Pilot 3",
-        "Pilot 5",
-        "Fork 2",
-        "Fork 3",
-        "Fork 5",
-        "Fork 6"
-      ],
-      "open": [
-        20,
-        11,
-        10,
-        4,
-        4,
-        12,
-        20
-      ],
-      "native_closed": [
-        0,
-        10,
-        4,
-        0,
-        2,
-        0,
-        0
-      ],
-      "source": [
-        "reports/zeta-codex-pilot-2-resumed.md",
-        "reports/zeta-codex-pilot-3.md",
-        "reports/zeta-codex-pilot-5.md",
-        "reports/zeta-fork2.md",
-        "reports/zeta-fork3.md",
-        "reports/zeta-fork5.md",
-        "reports/zeta-fork6.md"
-      ]
+      "nodes": 3,
+      "accepted_inferences": 1,
+      "status": "OPEN"
     }
   },
   {
@@ -634,6 +395,259 @@
         "R55",
         "R56",
         "R57"
+      ]
+    }
+  },
+  {
+    "id": "concepts",
+    "file": "figures/concepts.svg",
+    "caption": "One architecture organizes the experiments and extensions. Source construction determines T; L licenses search; H includes targets and disclosed proposed premises under the reviewed extension. Arguing for a bridge principle differs from deriving a result conditional on it. Pending mechanisms receive no success count.",
+    "data": {
+      "rows": [
+        {
+          "concept": "L: licensed moves",
+          "mechanism": "Bank + solver + critical questions",
+          "instances": "Per-paper novelty; R28 padding"
+        },
+        {
+          "concept": "T: frozen source theory",
+          "mechanism": "Construct / consolidate / align",
+          "instances": "Gap1r 160; gap3 243"
+        },
+        {
+          "concept": "One freeze / forks",
+          "mechanism": "Preserve evidence; vary requests",
+          "instances": "A/B/C; gap3p; packing2"
+        },
+        {
+          "concept": "Backward / forward gaps",
+          "mechanism": "Missing premises / joint consequence",
+          "instances": "T1–T9; forward zero leads"
+        },
+        {
+          "concept": "H: proposed premises",
+          "mechanism": "Disclosed conditional route",
+          "instances": "Gap3h blocked; B/2, T2 proposals"
+        },
+        {
+          "concept": "Output verification",
+          "mechanism": "Typed k=3, local citations, carry-over",
+          "instances": "Two original PDFs; polish pending"
+        },
+        {
+          "concept": "Review / operation",
+          "mechanism": "Exact heads; pause and diagnose",
+          "instances": "Ten-job rule; findings ledger"
+        }
+      ],
+      "checkpoint": "2026-10-30T22:28:10Z",
+      "sources": [
+        "briefs/meta-v5.md",
+        "briefs/xi-round-32.md",
+        "briefs/nu4-proposal-mode.md",
+        "briefs/fwd-sweep.md"
+      ]
+    }
+  },
+  {
+    "id": "context-admission",
+    "file": "figures/context-admission.svg",
+    "caption": "Full L3 request totals include output allowance. Only the first row is a historical refusal; the remaining rows are free offline plans. Packing uses one hop (3 full + 157 compact commitments); the later actual two-hop A results are reported separately in §3.3. This historical unpacked template adds 299 tokens. The later stage-window defect was closed by r14 review. These plan estimates do not prove service capacity.",
+    "data": {
+      "plans": [
+        {
+          "label": "Historical unpacked",
+          "input": 311785,
+          "output": 16384,
+          "total": 328169,
+          "bound": 200000,
+          "status": "refused before dispatch"
+        },
+        {
+          "label": "Packed / original bound",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 200000,
+          "status": "offline fit"
+        },
+        {
+          "label": "Packed / 272k window",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 239232,
+          "status": "offline fit"
+        },
+        {
+          "label": "Unpacked / 872k window",
+          "input": 312084,
+          "output": 16384,
+          "total": 328468,
+          "bound": 839232,
+          "status": "offline fit"
+        },
+        {
+          "label": "Packed / 872k window",
+          "input": 105724,
+          "output": 16384,
+          "total": 122108,
+          "bound": 839232,
+          "status": "offline fit"
+        }
+      ],
+      "source": [
+        "reports/overnight/gap1f/handoff.md",
+        "reports/sigma-round13.md",
+        "briefs/zeta-gap-fork2.md"
+      ],
+      "forks": [
+        {
+          "fork": "A",
+          "context": "packed, hops=2",
+          "full_commitments": null,
+          "results": "pending"
+        },
+        {
+          "fork": "B",
+          "context": "unpacked; proposed run-level window 600000",
+          "results": "pending"
+        }
+      ]
+    }
+  },
+  {
+    "id": "gates",
+    "file": "figures/gates.svg",
+    "caption": "Native rejection reasons across pilot generations. The same candidate-attempt can occur in more than one column; columns must not be summed into a rejection total. “Attribution screen” includes lexical false positives, especially before that screen became advisory. Repeated proposal attempts count separately. Zero means no recorded rejection under that reason, not proof of semantic novelty.",
+    "data": {
+      "pilots": [
+        "fork1",
+        "codex4",
+        "codex5",
+        "fork2",
+        "fork3",
+        "fork4",
+        "fork5",
+        "fork6"
+      ],
+      "reasons": [
+        "attributed_report",
+        "own_thesis_not_established",
+        "single_commitment_entailment",
+        "target_content_not_established",
+        "gap_resolution_not_established",
+        "duplicate_retained_target"
+      ],
+      "values": [
+        [
+          13,
+          18,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          16,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          10,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          7,
+          2,
+          1
+        ]
+      ],
+      "source": "data.json/pilots/*/candidate_rows"
+    }
+  },
+  {
+    "id": "routes",
+    "file": "figures/routes.svg",
+    "caption": "Closed is a formal outcome. Pilot 3’s ten closed routes were trivial restatements; pilot 5’s four were conjunction packaging; fork 3’s two derived routes used a single paper. None met the complete accepted cross-paper criterion. Pilot 3 published twenty-one routes from twenty polarity searches.",
+    "data": {
+      "runs": [
+        "Pilot 2 resumed",
+        "Pilot 3",
+        "Pilot 5",
+        "Fork 2",
+        "Fork 3",
+        "Fork 5",
+        "Fork 6"
+      ],
+      "open": [
+        20,
+        11,
+        10,
+        4,
+        4,
+        12,
+        20
+      ],
+      "native_closed": [
+        0,
+        10,
+        4,
+        0,
+        2,
+        0,
+        0
+      ],
+      "source": [
+        "reports/zeta-codex-pilot-2-resumed.md",
+        "reports/zeta-codex-pilot-3.md",
+        "reports/zeta-codex-pilot-5.md",
+        "reports/zeta-fork2.md",
+        "reports/zeta-fork3.md",
+        "reports/zeta-fork5.md",
+        "reports/zeta-fork6.md"
       ]
     }
   },
@@ -828,7 +842,7 @@
   {
     "id": "credits",
     "file": "figures/credits.svg",
-    "caption": "Compact role map; §10 retains individual histories and evidence paths for all 43 workers plus the orchestrator. Agent identifiers are credits, not human identities. Model/version uncertainty is retained.",
+    "caption": "Compact role map; Appendix B retains individual histories and evidence paths for all 43 workers plus the orchestrator. Agent identifiers are credits, not human identities. Model/version uncertainty is retained.",
     "data": {
       "headers": [
         "Contribution cluster",
@@ -2976,20 +2990,6 @@
       "sources": [
         "R53"
       ]
-    }
-  },
-  {
-    "id": "partial-B",
-    "file": "figures/partial-B.svg",
-    "caption": "The sole inference-bearing B route is a comparative sign argument. Its unanswered critical question keeps it OPEN. Its attempted sign essays were refused; it is not the B/1 or B/2 proposal route.",
-    "data": {
-      "sources": [
-        "R28",
-        "R42"
-      ],
-      "nodes": 3,
-      "accepted_inferences": 1,
-      "status": "OPEN"
     }
   }
 ]

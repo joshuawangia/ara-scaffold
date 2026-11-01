@@ -1,4 +1,4 @@
-"""Deterministic v6 figures. Historical panels retain their scoped source data."""
+"""Deterministic v7 figures. Historical panels retain their scoped source data."""
 from pathlib import Path
 import json, subprocess, sys, textwrap
 O=Path(__file__).resolve().parent
@@ -11,7 +11,7 @@ D=json.loads((O/'data.json').read_text());F=O/'figures';figures={x['id']:x for x
 plt.rcParams.update({'font.family':'serif','font.serif':['DejaVu Serif'],'font.size':10,'svg.fonttype':'none','svg.hashsalt':'ara-meta-v6','axes.spines.top':False,'axes.spines.right':False})
 ACC='#28677e';DARK='#30373c';GRAY='#aeb5ba';PALE='#edf1f3'
 def save(fig,id,caption,data):
- fig.savefig(F/(id+'.svg'),bbox_inches='tight',metadata={'Date':None,'Creator':'Deterministic v6 figure from recorded evidence'})
+ fig.savefig(F/(id+'.svg'),bbox_inches='tight',metadata={'Date':None,'Creator':'Deterministic v7 figure from recorded evidence'})
  plt.close(fig);figures[id]={'id':id,'file':'figures/'+id+'.svg','caption':caption,'data':data}
 def canvas(h=6,w=9):
  fig,ax=plt.subplots(figsize=(w,h));ax.set(xlim=(0,100),ylim=(0,100));ax.axis('off');return fig,ax
@@ -124,7 +124,7 @@ matrix('iterations',['Concept / iteration','Observed failure','Response / outcom
 'Iterations grouped by the core mechanism they changed. The alignment refusal, cardinality stop, invalid pass retraction and pending repairs remain visible; this is not a monotonic success timeline.',[.20,.40,.40])
 # Compact credit architecture, exhaustive names in data and paper.
 groups=[['Sources / extraction','alpha, beta, epsilon, gamma, delta, theta, eta, iota, mu'],['Pilots / source review','zeta, kappa, lambda, omicron, rho, tau, upsilon'],['Construction / search','sigma, xi, xi2, omega, fwd; phi, psi, chi'],['Integration / independent review','kappa2, kappa3, kappa4, kappa5; rho2, rho3, tau2, upsilon2, phi2, omicron3, chi2, lambda2'],['Writing / publication / literature','nu, nu4, pi, pi3, eps2, meta'],['Operations / direction','janitor; orchestrator; anonymised human operator']]
-matrix('credits',['Contribution cluster','Recorded identifiers'],groups,'Compact role map; §10 retains individual histories and evidence paths for all 43 workers plus the orchestrator. Agent identifiers are credits, not human identities. Model/version uncertainty is retained.',[.28,.72],9)
+matrix('credits',['Contribution cluster','Recorded identifiers'],groups,'Compact role map; Appendix B retains individual histories and evidence paths for all 43 workers plus the orchestrator. Agent identifiers are credits, not human identities. Model/version uncertainty is retained.',[.28,.72],9)
 # Complete route atlas: target label branches to +/- OPEN.
 for arm,rows in D['v6']['route_atlas'].items():
  for part,start in enumerate(range(0,len(rows),14),1):
@@ -150,4 +150,4 @@ import re
 ids=re.findall(r'\{\{fig:([^}]+)\}\}',(O/'metapaper.md').read_text());assert len(ids)==len(set(ids));assert set(ids)<=set(figures)
 D['figures']=[figures[i] for i in ids]
 (O/'data.json').write_text(json.dumps(D,ensure_ascii=False,indent=2)+'\n');(F/'manifest.json').write_text(json.dumps(D['figures'],ensure_ascii=False,indent=2)+'\n')
-print('v6 figures',len(ids))
+print('v7 figures',len(ids))

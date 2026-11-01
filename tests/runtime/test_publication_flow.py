@@ -131,3 +131,24 @@ def test_flow_resume_cannot_change_or_omit_instruction(rig, monkeypatch):
     with pytest.raises(Rejected, match='original prompt'):
         polish(calls, route, paper())
     assert len(edits) == 1
+
+
+def test_normal_codex_preflight_excludes_operator_only_flow(rig):
+    from ara.runtime.codex_preflight import manifest
+    calls,_,_=rig
+    config={**calls.config,'provider':'codex_cli','model':'gpt-5.4'}
+    cases=manifest(config,calls.root)['cases']
+    assert 'polish_flow' not in [c['kind'] for c in cases], 'operator-only polish_flow breaks ordinary schema preflight'
+
+
+def test_native_preflight_can_complete_without_operator_flow_prompt(rig,monkeypatch):
+    from ara.runtime.codex_preflight import codex_schema_preflight
+    calls,_,log=rig;calls.config.update(provider='codex_cli',model='gpt-5.4')
+    native=calls._call_once
+    def schema_smoke(kind,inputs,**kwargs):
+        # Execute the real native smoke for the added stage; unrelated schemas
+        # stand in as passed, so no live provider or broad probe is invoked.
+        if kind=='polish_flow':return native(kind,inputs,**kwargs)
+    monkeypatch.setattr(calls,'_call_once',schema_smoke)
+    result=codex_schema_preflight(calls)
+    assert result['passed'], 'native preflight includes a stage that requires an absent operator instruction'

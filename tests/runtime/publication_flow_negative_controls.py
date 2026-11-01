@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 FLOW = 'ara/runtime/publication_flow.py'
 TEST = 'tests/runtime/test_publication_flow.py::'
 CASES = [
+    ('ordinary_preflight', [('ara/runtime/codex_preflight.py', "'polish_essay', 'polish_flow',", "'polish_essay',")],
+     'test_native_preflight_can_complete_without_operator_flow_prompt'),
     ('instruction', [(FLOW, "return text, text + '\\nINPUT_JSON\\n'", "return text, text + 'R' + '\\nINPUT_JSON\\n'")],
      'test_flow_single_edit_exact_instruction_and_native_final_gate'),
     ('source', [(FLOW, 'require(verified_legacy_import(events, route, draft),', 'require(True,')],

@@ -54,7 +54,9 @@ def test_reader_refuses_catalogue_response_after_coverage_or_protection(rig,monk
     calls,t,rows,seen=setup(rig,monkeypatch)
     final=prepare_commitments(calls,load_bank(ROOT/'bank'),'P','P')
     receipt=catalogue_inputs(calls.log.path.parent,final)['commitment_provenance']['consolidation']
-    events=calls.log.read();i=next(i for i,e in enumerate(events) if e['stage']=='predicate_catalogue' and e['label']=='MODEL')
+    # Cached calls have no dispatch records; response ordering must stand alone.
+    events=[e for e in calls.log.read() if e['stage']!='call_start']
+    i=next(i for i,e in enumerate(events) if e['stage']=='predicate_catalogue' and e['label']=='MODEL')
     catalogue=events.pop(i);j=next(i for i,e in enumerate(events) if e['stage']==after)
     events.insert(j+1,catalogue)
     from ara.runtime.predicate_receipts import verify_model_receipts

@@ -42,7 +42,7 @@ def vocabulary_key(data):
     sorts={s['name']:visible(s['gloss']) for s in data['sorts']}
     predicates=[dict(gloss=visible(p['gloss']),roles=[dict(role=visible(r['role']),sort=sorts[r['sort']])
                  for r in p['roles']]) for p in data['predicates']]
-    return digest(canonical(dict(sorts=sorted(set(sorts.values())),predicates=sorted(predicates,key=canonical))))
+    return digest(canonical(dict(sorts=sorted(set(sorts.values())),predicates=sorted({canonical(p) for p in predicates}))))
 
 
 def draft(data,history=()):
@@ -131,12 +131,24 @@ def verify_protection(events,base,history,checks):
     def accepted_positions(kind,inputs):
         return [i for i,e in enumerate(events) if e['stage']==kind and e['label']=='MODEL' and
                 json.loads(e['payload_json']).get('status')=='accepted' and model_inputs(e)==inputs]
+    def dispatch_positions(kind,inputs):
+        starts=[]
+        for i,event in enumerate(events):
+            if event['stage']!='call_start':continue
+            payload=json.loads(event['payload_json'])
+            if payload.get('kind')==kind and model_inputs({'prompt':payload['prompt']})==inputs:starts.append(i)
+        return starts
     previous=-1
     for revision,(data,check) in enumerate(zip(history,checks,strict=True)):
         cat=accepted_positions('predicate_catalogue',catalogue_inputs(base,history[:revision],checks[:revision]))
         cov=accepted_positions('predicate_coverage',coverage_inputs(base,data,revision))
         require(len(cat)==len(cov)==1,'catalogue protection requires unique accepted responses')
         require(previous<cat[0]<cov[0],'catalogue/coverage order mismatch')
+        for kind,inputs,lower,upper in (
+            ('predicate_catalogue',catalogue_inputs(base,history[:revision],checks[:revision]),previous,cat[0]),
+            ('predicate_coverage',coverage_inputs(base,data,revision),cat[0],cov[0])):
+            # Cached responses have no dispatch; any recorded attempt must be causal.
+            require(all(lower<i<upper for i in dispatch_positions(kind,inputs)),'catalogue/coverage dispatch order mismatch')
         previous=cov[0]
     cover=[i for i,e in enumerate(events) if e['stage']=='predicate_coverage' and e['label']=='MODEL']
     formal=[i for i,e in enumerate(events) if (e['stage']=='predicate_formalize' and e['label']=='MODEL') or

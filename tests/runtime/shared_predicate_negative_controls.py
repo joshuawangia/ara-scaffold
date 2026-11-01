@@ -164,3 +164,13 @@ CASES += [
   "'coverage':deepcopy(checks[-1])", "'coverage':None",
   'tests/runtime/test_predicate_v3_review.py::test_revision_keeps_exact_missing_components_and_reasons'),
 ]
+
+
+CASES += [
+ ('sharedpred3_duplicate_multiplicity','ara/runtime/predicate_catalogue_policy.py',
+  "predicates=sorted({canonical(p) for p in predicates})", "predicates=sorted(canonical(p) for p in predicates)",
+  'tests/runtime/test_predicate_v3_boundaries.py::test_native_duplicate_cannot_buy_another_coverage_call'),
+ ('sharedpred3_dispatch_order','ara/runtime/predicate_catalogue_policy.py',
+  "require(all(lower<i<upper for i in dispatch_positions(kind,inputs)),'catalogue/coverage dispatch order mismatch')", 'pass',
+  'tests/runtime/test_predicate_v3_boundaries.py::test_coverage_dispatch_between_prerequisite_and_response'),
+]

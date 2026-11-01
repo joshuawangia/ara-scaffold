@@ -5010,3 +5010,12 @@ Revision feedback retains the exact positional missing-components/reasons.
 Frozen replay enforces accepted catalogue then coverage for every revision,
 followed by protection before formalization dispatch or response. Authenticated
 values alone do not establish this causal order.
+
+### Shared catalogue review completion: duplicate meanings and dispatch causality
+
+V3 provisional identity uses a set of normalized predicate meanings, so adding
+an alias or formatting duplicate cannot purchase another coverage judgment.
+Replay checks every recorded catalogue and coverage dispatch between its prior
+accepted prerequisite and its accepted response. Cached responses may omit a
+dispatch. Exact model output remains unmodified; the normalized key only governs
+whether an unchanged provisional vocabulary can request another coverage vote.

@@ -5157,3 +5157,18 @@ history, source fidelity checks or repair limits are relaxed.
 Review follow-up: apply identical whitespace normalization to heading presence
 and per-section budget selection. A padded Abstract heading must not bypass
 its proposal budget. The native regression refuses before section dispatch.
+# Exact operator-instructed publication flow
+
+An explicitly authorized new flow-only publication may use a retained UTF-8
+instruction file instead of the standard section and whole-paper prompts.
+The native boundary logs its byte-preserving SHA-256 and source binding, screens
+the input, and permits one isolated whole-paper edit only. It requires an accepted
+native k>=3 original, preserves citation occurrence counts and cannot reopen a
+rejected edit or reset an existing publication history. Deterministic figure and
+change-log bookkeeping adds no manuscript claim. Ordinary typed/meaning audits,
+inline limits, native verification and final publication gates remain unchanged.
+
+The operator-only flow schema is excluded from ordinary Codex preflight, alongside
+the separately exercised publication schemas. Its exact instruction cannot be
+assumed in ordinary writer configuration; flow transport remains covered by its
+own native-boundary tests. Review FLOW-F1 reproduced this registration failure.

@@ -148,6 +148,7 @@ def parser() -> argparse.ArgumentParser:
         if command == 'polish':
             cmd.add_argument('--route')
             cmd.add_argument('--draft', type=Path)
+            cmd.add_argument('--flow-prompt', type=Path, help='one whole-paper edit using the exact logged operator instruction; verified source required, inline repairs only')
             cmd.add_argument('--inline-repairs', action='store_true', help='enable up to three persistent occurrence-only repair passes; whole-paper rounds are not replenished')
             cmd.add_argument('--title-format-only', action='store_true', help='resume only exact logged title-delimiter formatting, native verification and final audit; no semantic repairs')
             cmd.add_argument('--audit-provider', choices=('claude_code', 'codex_cli'), default='claude_code')

@@ -12,10 +12,10 @@ from test_calls import response, rig
 from test_sectioned_writer import seed_sources
 
 
-def setup_source(rig, monkeypatch, *, first='This paper argues that P, Q, and R.', votes=('equivalent',)*3, vary_source_roles=False):
+def setup_source(rig, monkeypatch, *, first='This paper argues that P, Q, and R.', votes=('equivalent',)*3, vary_source_roles=False, source_shape_retry=False):
     calls, provider, log = rig
     route = seed_sources(calls, log)
-    calls.config.update(essay_min_words=4500, token_cap=20_000_000)
+    calls.config.update(essay_min_words=4500, token_cap=20_000_000, validation_attempts=2 if source_shape_retry else 1)
     source = dict(title='S', body='[[node:n0]] '+first+' [cite:p]\n[[node:n1]] We argue that Q. [cite:q]',
                   bibliography=[dict(id=t, text='a (2000). P. Q. PDF p. 1.', url=None) for t in ('p','q')])
     from ara.runtime.writing import source_context
@@ -36,7 +36,7 @@ def setup_source(rig, monkeypatch, *, first='This paper argues that P, Q, and R.
                     role='unsupported_claim' if adverse else ('source_claim' if vary_source_roles and len(seen)==2 else 'argument_step') if nodes else 'framing',
                     citation_supported=not adverse,
                     **({'publication_issue':'unsupported_elaboration' if adverse else 'none'} if kind=='audit_publication' else {})))
-            value=dict(labels=labels)
+            value=dict(labels=labels[:-1] if source_shape_retry and len(seen)==2 else labels)
         return Response(response(value))
     monkeypatch.setattr(provider,'complete',complete)
     audit_consensus(calls,route,source)

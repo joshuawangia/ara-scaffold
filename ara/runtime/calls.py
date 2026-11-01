@@ -294,6 +294,9 @@ class ModelCalls:
         return schema
 
     def render(self, kind: str, inputs: dict) -> tuple[str, str]:
+        if kind == 'polish_flow':
+            from ara.runtime.publication_flow import render
+            return render(self.config, inputs)
         if kind == 'isolation_canary':
             from ara.runtime.claude_code import CANARY_PROMPT
             prompt = getattr(self.provider, 'canary_prompt', CANARY_PROMPT)

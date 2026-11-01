@@ -4963,3 +4963,11 @@ Only verified v2-derived definitions receive this permission. Source screening,
 stance, solver, bank and conservative fidelity history remain unchanged. Preflight
 uses the same effective v2 grammar as runtime. Metrics disclose proposal/judgment
 coverage and current judgment passes separately from admitted decompositions.
+
+
+Shared-predicate v2 review closure: a response that overwrites or deletes protected
+entries cannot add authority to the correction history. Keep the prior protected
+catalogue recoverable; structurally valid siblings of an initial shape failure still
+survive. A coverage extension must strictly add entries and preserve all published
+prefixes before another coverage judgment is allowed. Native replay enforces both
+rules, preventing a no-op catalogue from receiving a fresh coverage judgment.

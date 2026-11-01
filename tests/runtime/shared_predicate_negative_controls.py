@@ -80,7 +80,7 @@ CASES += [
   "require(True,'coverage slot count mismatch')",
   'tests/runtime/test_predicate_v2_authority.py::test_coverage_reference_and_cardinality_are_runtime_gates'),
  ('sharedpred2_preserve','ara/runtime/predicate_coverage.py',
-  "require(all(row in data.get(field,[]) for row in values),",
+  "require(preserves(data,preserved),",
   'require(True,',
   'tests/runtime/test_predicate_v2.py::test_catalogue_correction_preserves_valid_rejected_entries'),
  ('sharedpred2_published_handles','ara/runtime/predicate_coverage.py',
@@ -99,4 +99,16 @@ CASES += [
   'schema=response_schema(kind,schema,inputs)',
   'schema=schema',
   'tests/runtime/test_predicate_v2_authority.py::test_preflight_binds_effective_mandatory_grammar'),
+]
+
+
+CASES += [
+ ('sharedpred2_recoverable_history','ara/runtime/predicate_coverage.py',
+  "if prior and not preserves(data,prior):return result",
+  'if False:return result',
+  'tests/runtime/test_predicate_v2_repair.py::test_rejected_overwrite_keeps_prior_authority_recoverable'),
+ ('sharedpred2_noop_extension','ara/runtime/predicate_coverage.py',
+  "require(any(len(data[field])>len(prior[field]) for field in ('sorts','predicates')),",
+  'require(True,',
+  'tests/runtime/test_predicate_v2_repair.py::test_noop_extension_refuses_before_fresh_coverage'),
 ]

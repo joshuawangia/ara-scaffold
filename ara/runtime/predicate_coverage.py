@@ -50,6 +50,7 @@ def preserved_entries(data):
 
 def merge_preserved(prior,data):
     result=deepcopy(prior or dict(sorts=[],predicates=[]))
+    if prior and not preserves(data,prior):return result
     fresh=preserved_entries(data)
     for field in result:
         for row in fresh[field]:
@@ -57,10 +58,14 @@ def merge_preserved(prior,data):
     return result
 
 
+def preserves(data,preserved):
+    return isinstance(data,dict) and all(not values or (isinstance(data.get(field),list) and
+        all(row in data[field] for row in values)) for field,values in (preserved or {}).items())
+
+
 def check_preserved(data,preserved):
-    for field,values in (preserved or {}).items():
-        require(all(row in data.get(field,[]) for row in values),
-                'catalogue correction must preserve valid entries: '+canonical(preserved))
+    require(preserves(data,preserved),
+            'catalogue correction must preserve valid entries: '+canonical(preserved))
 
 
 def check_extension(data,prior):
@@ -68,6 +73,8 @@ def check_extension(data,prior):
     for field in ('sorts','predicates'):
         require(data[field][:len(prior[field])]==prior[field],
                 'catalogue extension must preserve published order and handles')
+    require(any(len(data[field])>len(prior[field]) for field in ('sorts','predicates')),
+            'catalogue extension must strictly grow before fresh coverage')
 
 
 def coverage(data,entries,count):

@@ -493,8 +493,8 @@ def test_codex_preflight_failure_tests_every_case(codex):
     config, auth, write, tmp = codex
     write('bad_schema');log=EventLog(tmp/'events.jsonl');calls=make_calls(config,log,'P')
     result=codex_schema_preflight(calls)
-    assert not result['passed'] and result['accepted']==0 and result['total']==20
-    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==20
+    assert not result['passed'] and result['accepted']==0 and result['total']==21
+    assert sum(e['stage']=='codex_schema_preflight_failed' for e in log.read())==21
     config['codex_cli']['schema_preflight_log']=str(log.path)
     with pytest.raises(ValueError):require_codex_preflight(config,ROOT)
 

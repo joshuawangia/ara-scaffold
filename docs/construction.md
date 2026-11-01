@@ -813,3 +813,47 @@ alignment replay changes it, including a prior solver refusal becoming acceptanc
 the fork refuses before H instead of reopening source interpretation. The
 formula-change exemption is bound to an explicit consolidation request on the
 current construction fork, not an inherited run configuration.
+
+## Selected shared-predicate pilot
+
+`ara shared-predicates --source-run RUN --run-dir NEW --selection-file FILE --stop-at freeze`
+starts a new, opt-in source-only lifecycle. `--plan-only` verifies the source and prints
+its selection/config without generation or a destination journal. The selection JSON
+has `commitment_ids`, `max_unresolved` and `failure_streak`; all IDs must already be
+accepted SOURCE commitments. No extraction, target generation or search runs here.
+The compact source receipt binds the verified source tail, construction artifacts,
+selected originals, source evidence and unchanged provenance. It does not copy or
+re-account unrelated source calls. Frozen readers revalidate the retained original run; missing or changed source evidence refuses.
+
+A corpus catalogue proposes sorts, nonzero-arity predicates, ordered argument roles,
+sharing reasons and distinctions. Runtime assigns content keys/handles. Formulas are
+one item per request and use only bound variables and declared predicates. Explicit
+unary sort guards express quantifier restrictions in the existing single-domain FOL;
+no solver type semantics, constant identities or sort exclusivity are invented.
+Unsupported scope/individuals can retain the original formula with an explicit cost.
+Corrections carry all prior validation feedback. Default construction is unchanged.
+
+Each structurally valid candidate is back-translated without its source sentence,
+then independently keyed fidelity samples require three unanimous equivalence,
+scope-preservation and no-addition judgments. Any adverse sample retains the exact
+original; it cannot be retried into acceptance. Individual and full endorsed-set
+consistency must be established by Z3. Reported/attacked stance remains unchanged.
+Unresolved items are logged as `consolidation_unresolved`, not admitted decompositions.
+The declared unresolved/streak thresholds refuse excessive failure before freeze.
+
+`shared-predicates.json` and nested `shared-predicate-formalization-v1` provenance
+retain the entire catalogue, candidates, translations and judgments. Native replay
+checks every admitted item, retained original, threshold, derived symbol use and
+metric. The outer v5 provenance and frozen-T codecs are unchanged; readers need the
+new nested validator. The native fork additionally checks the construction/selection
+origin and binds the candidate, blind translation and all fidelity samples to logged accepted model responses. Alignment is disabled for this mode: an unchecked later semantic bridge
+would bypass fidelity. Hypothesis injection and old consolidation cannot be combined
+with this mode.
+
+Reports/methodology disclose admitted and unresolved items, actual cross-SOURCE
+sharing excluding unary sort guards, atom cost and unanimous-judgment coverage. The
+bank metric uses bounded native one-step matching/licensing of endorsed source
+premises, excludes Boolean packaging and discloses rule coverage/truncation. It is
+not a route search or proof that no other inference exists. Model fidelity consensus
+is evidence, not independent semantic certification. Inspect the real pilot artifacts
+before scaling.

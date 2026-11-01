@@ -163,7 +163,11 @@ def methodology(log_path: Path) -> str:
                               for e in events if e['stage']=='route' for p in [json.loads(e['payload_json'])]]},
         'forward_coverage': [json.loads(e['payload_json']) for e in events if e['stage']=='forward_coverage'],
         'freeze_forks': [json.loads(e['payload_json']) for e in events if e['stage']=='freeze_forked'],
-        'construction': {'consolidation': [dict(plan_id=v['plan']['plan_id'],before=v['before'],after=v['after'],sha256=v['sha256'],
+        'construction': {'shared_predicates': [dict(before=v['before'],after=v['after'],policy=v['policy'],sha256=v['sha256'])
+                             for e in events if e['stage']=='shared_predicates_finished' for v in [json.loads(e['payload_json'])]],
+                         'consolidation_unresolved': [json.loads(e['payload_json']) for e in events if e['stage']=='consolidation_unresolved'],
+                         'shared_predicate_bank_metrics': [json.loads(e['payload_json']) for e in events if e['stage']=='shared_predicate_bank_metrics'],
+                         'consolidation': [dict(plan_id=v['plan']['plan_id'],before=v['before'],after=v['after'],sha256=v['sha256'],
                              original_commitments=v['original_commitments'],note='Disclosed model re-formalization of unchanged source content.')
                              for e in events if e['stage']=='vocabulary_consolidated' for v in [json.loads(e['payload_json'])]],
                          'hypotheses': [json.loads(e['payload_json']) for e in events if e['stage'] == 'hypotheses_admitted'],

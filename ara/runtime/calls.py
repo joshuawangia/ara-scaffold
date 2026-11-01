@@ -1,6 +1,8 @@
 """The single model boundary: prompt, reserve, call, validate, log, cache."""
 from __future__ import annotations
 
+from copy import deepcopy
+
 import json
 import re
 import time
@@ -267,6 +269,9 @@ class ModelCalls:
         if kind == 'search_evidence':
             return None
         schema = json.loads((self.root / 'schemas' / f'{kind}.json').read_text())
+        if kind == 'predicate_formalize' and inputs.get('catalogue'):
+            branch=next(b for b in schema['$defs']['formula']['oneOf'] if b['properties']['op'].get('const')=='predicate')
+            branch['properties']['name']={'type':'string','enum':[e['handle'] for e in inputs['catalogue']]}
         if kind in ('audit_essay','audit_publication') and inputs.get('outline',{}).get('hypothesis_disclosure'):
             schema['properties']['labels']['items']['properties']['role']['enum'].append('proposed_principle')
         if kind == 'extract_paper':
@@ -334,6 +339,7 @@ class ModelCalls:
         if whole_essay:
             attempts = 4
         request_inputs = inputs
+        validation_history = []
         for attempt in range(attempts):
             try:
                 return self._transport_call(kind, request_inputs, check, attempt=attempt + 1, fresh=fresh)
@@ -344,6 +350,9 @@ class ModelCalls:
                                 reason=str(exc))
                 if not whole_essay:
                     request_inputs = {**inputs, 'validation_feedback': exc.feedback}
+                    if kind.startswith('predicate_'):
+                        validation_history.append(exc.feedback)
+                        request_inputs['validation_history'] = deepcopy(validation_history)
         raise AssertionError('unreachable')
 
     def _transport_call(self, kind, inputs, check, *, attempt, fresh=False):

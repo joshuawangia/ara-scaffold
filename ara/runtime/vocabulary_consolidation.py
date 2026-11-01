@@ -166,6 +166,9 @@ def validate_batch(data, inputs, original, prior, symbols, rows):
 
 def validate_receipt(receipt, final, symbols, rows):
     """Replay every formalization; return original T/catalogue for source history checks."""
+    if isinstance(receipt,dict) and receipt.get('schema_version')=='shared-predicate-formalization-v1':
+        from ara.runtime.shared_predicates import validate_receipt as validate_predicates
+        return validate_predicates(receipt,final,symbols,rows)
     from ara.runtime.validation import validate_local
     from pathlib import Path
     fields={'schema_version','plan','original_commitments','original_symbols','provenance',

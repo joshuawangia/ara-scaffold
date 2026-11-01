@@ -240,7 +240,7 @@ def validate_commitment_provenance(value: dict, commitments: CommitmentSet, cata
         source_commitments, source_symbols = validate_receipt(
             value['consolidation'], source_commitments, source_symbols, source_rows)
         from ara.runtime.consolidation_bindings import VERSION
-        if value['consolidation']['schema_version']==VERSION:
+        if value['consolidation']['schema_version'] in (VERSION,'shared-predicate-formalization-v1'):
             # Only a fully replayed new-definition receipt grants this policy.
             precise_symbols={symbol_identity(s) for s in value['consolidation']['symbols']}
     for source in source_commitments.commitments:
@@ -292,4 +292,12 @@ def load_commitment_provenance(directory: Path, commitments: CommitmentSet, cata
     path = directory / 'commitment-provenance.json'
     if not path.exists():
         return None
-    return validate_commitment_provenance(json.loads(path.read_text()), commitments, catalogue)
+    value=validate_commitment_provenance(json.loads(path.read_text()), commitments, catalogue)
+    if (value.get('consolidation') or {}).get('schema_version')=='shared-predicate-formalization-v1':
+        from ara.runtime.logging import read_log, LogTampered
+        from ara.runtime.predicate_receipts import verify_runtime
+        records=read_log(directory/'events.jsonl')
+        if (directory/'events.anchor').read_text().splitlines()!=[r['hash'] for r in records]:
+            raise LogTampered('shared predicate journal/anchor mismatch')
+        verify_runtime([r['event'] for r in records],value)
+    return value

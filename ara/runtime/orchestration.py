@@ -112,6 +112,8 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
     validate_hypothesis_config(calls.config)
     from ara.runtime.vocabulary_consolidation import policy, consolidate
     policy(calls.config)
+    from ara.runtime.shared_predicates import policy as predicate_policy
+    predicate_policy(calls.config)
     state = getattr(calls, 'alignment_resume', None)
     if state is not None:
         from ara.runtime.closure_budget import apply_context_limits
@@ -130,11 +132,18 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         if latest['commitments'] != commitments.to_dict():
             raise ValueError('frozen catalogue construction mismatch')
         from ara.runtime.symbol_alignment import align_symbols
-        commitments,symbols,rows,consolidation = consolidate(calls,commitments,latest['symbols'],latest['provenance'],literature)
+        if predicate_policy(calls.config):
+            from ara.runtime.shared_predicates import formalize
+            commitments,symbols,rows,consolidation = formalize(calls,commitments,latest['symbols'],latest['provenance'],getattr(calls,'shared_predicate_evidence',literature))
+        else:
+            commitments,symbols,rows,consolidation = consolidate(calls,commitments,latest['symbols'],latest['provenance'],literature)
         if consolidation is not None and state is not None and state.get('consolidation') is None:
             # Prior alignment judgments bind the original formulas/catalogue and cannot be replayed.
             calls.alignment_resume = None
-        commitments, symbols, rows, alignment = align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)
+        if predicate_policy(calls.config):
+            alignment = None  # New semantic merges require the same fidelity gate, never an unchecked bridge.
+        else:
+            commitments, symbols, rows, alignment = align_symbols(calls, commitments, symbols, rows, consolidation=consolidation)
         if state is not None and state.get('expected_source') is not None:
             from ara.runtime.construction_fork import validate_restored_source
             if consolidation is None or not state.get('reformalizing_source', False):
@@ -163,9 +172,12 @@ def prepare_commitments(calls: ModelCalls, bank: Bank, literature: str, audience
         calls.log.record('symbol_catalogue_frozen', **artifact['symbol_catalogue'])
         from ara.runtime.commitment_provenance import make_commitment_provenance
         provenance = make_commitment_provenance(commitments, artifact['symbol_catalogue'], rows, alignment=alignment, hypotheses=hypotheses, consolidation=consolidation)
+        if predicate_policy(calls.config):
+            from ara.runtime.predicate_receipts import verify_runtime
+            verify_runtime(calls.log.read(),provenance)
         save_immutable(calls.log.path.parent / 'commitment-provenance.json', canonical(provenance))
         calls.log.record('commitment_provenance_frozen', **provenance)
-    elif calls.config.get('construction_consolidate_vocabulary'):
+    elif calls.config.get('construction_consolidate_vocabulary') or calls.config.get('construction_shared_predicates'):
         raise ValueError('vocabulary consolidation requires rich construction and verified provenance')
     elif calls.config.get('hypothesis_premises'):
         raise ValueError('hypothesis premises require rich construction and verified provenance')

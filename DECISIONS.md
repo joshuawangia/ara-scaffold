@@ -4923,3 +4923,19 @@ Native handle binding, consistency, endpoints, capacity and the sole freeze rema
 mandatory. The fresh freeze-only lifecycle is an orchestrator instruction; the
 operator's standing approvals remain loosened limits, parallel efforts and drafting
 all candidates.
+
+## Shared predicates — catalogue before per-item formalization
+
+Per operator request, introduce an opt-in selected-source lifecycle with a typed
+corpus catalogue first. Runtime keys concepts and evidence uses; one formula per
+request avoids list cardinality and echoed identifier failures. Predicates use
+bound variables with explicit unary sort guards in the unchanged FOL solver.
+Blind back-translation and three separately keyed conservative fidelity judgments
+precede admission; any adverse sample retains the exact original. Full endorsed-set
+consistency remains mandatory, and source stance/text/citations do not change.
+Unresolved items are disclosed and bounded. No unchecked post-fidelity alignment or
+hypothesis injection is allowed. A compact native verified-source selection avoids
+copying unrelated journals. V5 outer provenance carries a new replayed nested
+receipt; native frozen forks verify its source origin. Metrics exclude sort guards
+from content sharing and report bounded native bank applicability separately.
+Default runs are unchanged; useful real sharing must be measured before scaling.

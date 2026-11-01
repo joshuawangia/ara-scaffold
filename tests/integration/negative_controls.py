@@ -2940,6 +2940,10 @@ CASES += [
      'tests/runtime/test_consolidation_screen.py::test_fresh_definitions_do_not_inherit_legacy_lexicon'),
 ]
 
+from runpy import run_path
+CASES += run_path(str(ROOT / 'tests/runtime/shared_predicate_negative_controls.py'))['CASES']
+
+
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT
     output = ROOT / 'runs/delta-controls'

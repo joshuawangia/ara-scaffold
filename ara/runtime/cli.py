@@ -60,6 +60,13 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument('--unknown-usage-policy', choices=('count-at-reservation',), required=True)
     resume.add_argument('--plan-only', action='store_true', help='free counts and verified restoration only; no generation')
     resume.add_argument('--output-dir', type=Path, help='separate empty directory for count-only resume receipts')
+    predicates = sub.add_parser('shared-predicates', help='opt-in catalogue-first selected-source lifecycle; stop at freeze')
+    predicates.add_argument('--source-run', type=Path, required=True)
+    predicates.add_argument('--run-dir', type=Path, required=True)
+    predicates.add_argument('--selection-file', type=Path, required=True)
+    predicates.add_argument('--plan-only', action='store_true')
+    predicates.add_argument('--stop-at', choices=('freeze',), default='freeze')
+    predicates.add_argument('--codex-schema-preflight-log', type=Path)
     alignment = sub.add_parser('resume-alignment', help='continue unfinished alignment from verified completed construction')
     alignment.add_argument('--run-dir', type=Path, required=True)
     alignment.add_argument('--stop-at', choices=('freeze',), help='stop after the single freeze, before target generation or search')
@@ -233,6 +240,37 @@ def main(argv: list[str] | None = None, *, engine_factory: Callable = native_eng
     started = time.monotonic()
     human_elapsed = 0.0
     try:
+        if args.command == 'shared-predicates':
+            from ara.runtime.predicate_fork import inspect_selection, initialize
+            from ara.runtime.codex_preflight import require_codex_preflight
+            from ara.runtime.orchestration import prepare_commitments
+            bank=load_bank(ROOT/'bank')
+            plan=inspect_selection(args.source_run,args.run_dir,bank,json.loads(args.selection_file.read_text()))
+            config=plan['run']['config']
+            if args.codex_schema_preflight_log is not None:
+                config['codex_cli']={**config.get('codex_cli',{}),'schema_preflight_log':str(args.codex_schema_preflight_log)}
+            if args.plan_only:
+                print(json.dumps(dict(source_selection=plan['receipt'],config=config,generation_calls=0)))
+                return 0
+            require_codex_preflight(config,ROOT)
+            log=initialize(plan,args.run_dir)
+            log.human('shared-predicates',json.dumps(raw_args),selection=args.selection_file.read_text(),
+                      instruction_origin='operator',stop_controller='native_cli')
+            calls=calls_factory(config,log,plan['run']['topic'])
+            calls.alignment_resume=dict(commitments=plan['commitments'])
+            calls.shared_predicate_evidence=plan['evidence']
+            commitments=prepare_commitments(calls,bank,plan['run']['literature'],plan['run']['audience'])
+            from ara.runtime.predicate_metrics import bank_instances
+            metric=bank_instances(commitments,plan['rows'],bank,log)
+            log.record('shared_predicate_bank_metrics',**metric)
+            from ara.runtime.extraction import save_immutable
+            from ara.runtime.cache import canonical
+            save_immutable(args.run_dir/'shared-predicate-bank-metrics.json',canonical(metric))
+            log.record('run_stopped_at_freeze',controller='native_cli',command='shared-predicates',
+                       commitments=len(commitments.commitments),note='Explicit native freeze-only lifecycle; no targets or search.')
+            log.record('run_finished',state='frozen')
+            print(str(args.run_dir))
+            return 0
         if args.command == 'plan-target-request':
             from ara.runtime.planning import plan_recorded_target
             report = plan_recorded_target(args.run_dir, args.out, ROOT, gap_id=args.gap_id,

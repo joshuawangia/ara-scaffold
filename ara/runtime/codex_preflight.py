@@ -16,9 +16,11 @@ def manifest(config, root):
         if path.stem in ('formula', 'extract_paper', 'polish_essay', 'audit_publication'):
             continue  # Utility schema and API-only extraction; web retrieval has no JSON schema.
         kind = path.stem
+        if kind.startswith('predicate_') and not config.get('construction_shared_predicates'):
+            continue
         if kind == 'consolidate_vocabulary' and not config.get('construction_consolidate_vocabulary'):
             continue
-        for correction in ((False, True) if kind in (*KINDS, 'consolidate_vocabulary') else (False,)):
+        for correction in ((False, True) if kind in (*KINDS, 'consolidate_vocabulary','predicate_catalogue','predicate_formalize','predicate_backtranslate','predicate_fidelity') else (False,)):
             _, overrides, scoped = dispatch_settings(config, kind, correction=correction)
             actual = scoped if overrides else config
             settings = stage_settings(actual, kind)

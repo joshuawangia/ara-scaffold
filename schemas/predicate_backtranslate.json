@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "additionalProperties": false,
+  "title": "predicate_backtranslate",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

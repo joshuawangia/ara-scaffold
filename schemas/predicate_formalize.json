@@ -1,0 +1,308 @@
+{
+  "type": "object",
+  "properties": {
+    "mode": {
+      "enum": [
+        "decompose",
+        "retain"
+      ]
+    },
+    "formula": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/formula"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "mode",
+    "formula",
+    "reason"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "formula": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "predicate"
+            },
+            "args": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "terms": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/term"
+              },
+              "minItems": 0
+            },
+            "variable": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "op",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "not"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "and"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 2
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "or"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 2
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "implies"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "iff"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "forall"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "op",
+            "args",
+            "variable"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "exists"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/formula"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            },
+            "name": {
+              "type": "null"
+            },
+            "terms": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "variable": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "op",
+            "args",
+            "variable"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "term": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "variable"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "title": "predicate_formalize",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

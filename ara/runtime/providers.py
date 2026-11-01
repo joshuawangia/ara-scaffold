@@ -184,7 +184,7 @@ def structured_schema(schema: dict, depth: int = 2, *, encoded_formulas: bool = 
 
 
 def stage_settings(config: dict, kind: str) -> dict:
-    if kind in ('judge_symbol_alignment', 'consolidate_vocabulary'):
+    if kind in ('judge_symbol_alignment', 'consolidate_vocabulary','predicate_catalogue','predicate_formalize','predicate_backtranslate','predicate_fidelity'):
         kind = 'build_t_batch'
     stage = ('extraction' if kind == 'extract_paper' else
              'construction' if kind in ('build_t', 'select_t_roots', 'build_t_batch', 'reconcile_t') else

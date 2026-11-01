@@ -271,8 +271,12 @@ def construction(records, evidence):
     events=[r['event'] for r in records]
     ids=set(hypothesis_ids(provenance_from_events(events,frozen_from_events(events)))) if any(
         e['stage']=='hypotheses_admitted' for e in events) else set()
+    selected=[payload(e) for e in events if e['stage']=='shared_predicate_source']
+    selected_evidence=selected[-1]['evidence'] if selected else {}
     for c in commitments:
         matches = [v for v in evidence.get(c['id'], []) if v.get('citation') == c['citation']]
+        if not matches and c['id'] in selected_evidence:
+            matches=[{**selected_evidence[c['id']],'citation':c['citation']}]
         if c['id'] in ids:
             enriched.append(dict(**c,source_evidence=[],kind='hypothesis',stance='proposed',
                 provenance='proposed hypothesis; conditional on H; not source evidence'))
@@ -288,6 +292,10 @@ def construction(records, evidence):
         values = {item.get(field) for item in commitment['source_evidence']}
         return next(iter(values)) if len(values) == 1 and None not in values else '(unknown or ambiguous)'
     return dict(commitments=enriched,
+                shared_predicates=[dict(before=v['before'],after=v['after'],policy=v['policy'],sha256=v['sha256'])
+                    for e in events if e['stage']=='shared_predicates_finished' for v in [payload(e)]],
+                consolidation_unresolved=[payload(e) for e in events if e['stage']=='consolidation_unresolved'],
+                shared_predicate_bank_metrics=[payload(e) for e in events if e['stage']=='shared_predicate_bank_metrics'],
                 consolidation=[dict(plan_id=v['plan']['plan_id'],before=v['before'],after=v['after'],sha256=v['sha256'],
                     note='Disclosed model re-formalization; source text/citations/stance unchanged.')
                     for e in events if e['stage']=='vocabulary_consolidated' for v in [payload(e)]],

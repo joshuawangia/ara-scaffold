@@ -66,13 +66,15 @@ def related_text(markdown):
     return found[0]
 
 
-def check_currency(markdown, currency):
+def check_currency(markdown, currency, *, proposal=None):
     used = set(LIT.findall(markdown))
     if currency is None:
         require(not used, 'literature citation without currency input')
         return
-    related = related_text(markdown)
     require(used <= currency['evidence'].keys(), 'unrecorded literature citation')
+    if proposal:
+        return
+    related = related_text(markdown)
     require(used and any(currency['evidence'][id]['kind']=='bounded_search_record' for id in used),
             'related-work section missing search-scope citation')
     require(any(currency['evidence'][id]['work'] for id in used), 'related-work section missing source citation')

@@ -27,12 +27,9 @@ def effective_run(events):
     return run
 
 
-def fork_from_freeze(source, destination, bank):
-    source, destination = Path(source).resolve(), Path(destination).absolute()
-    if destination.resolve().is_relative_to(source) or source.is_relative_to(destination.resolve()):
-        raise ValueError('fork destination must be separate from source')
-    if destination.is_symlink() or (destination.exists() and (not destination.is_dir() or any(destination.iterdir()))):
-        raise ValueError('fork destination must be empty')
+def verified_freeze_prefix(source, bank):
+    """Read and verify the original freeze without creating a copy or new events."""
+    source = Path(source).resolve()
     path = source/'events.jsonl'
     lock = source/'events.lock'
     with lock.open('rb') if lock.exists() else nullcontext() as stream:
@@ -76,6 +73,29 @@ def fork_from_freeze(source, destination, bank):
         # Detect a source rewrite even if it did not cooperate with the lock.
         if len(lines) != len(rows) or any(json.loads(line) != row for line,row in zip(lines,rows)):
             raise LogTampered('fork source changed during verification')
+    return dict(source=source, rows=rows[:count], events=events, prefix=prefix,
+                freeze_hash=freeze['hash'], artifacts=artifacts, run=run, commitments=commitments)
+
+
+def fork_from_freeze(source, destination, bank):
+    source, destination = Path(source).resolve(), Path(destination).absolute()
+    if destination.resolve().is_relative_to(source) or source.is_relative_to(destination.resolve()):
+        raise ValueError('fork destination must be separate from source')
+    if destination.is_symlink() or (destination.exists() and (not destination.is_dir() or any(destination.iterdir()))):
+        raise ValueError('fork destination must be empty')
+    snapshot = verified_freeze_prefix(source, bank)
+    return write_freeze_prefix(snapshot, destination)
+
+
+def write_freeze_prefix(snapshot, destination):
+    """Materialize an already verified snapshot; caller must retain its exact bytes."""
+    source=snapshot['source']; rows=snapshot['rows']; count=len(rows)
+    prefix=snapshot['prefix']; artifacts=snapshot['artifacts']
+    destination=Path(destination).absolute()
+    if destination.resolve().is_relative_to(source) or source.is_relative_to(destination.resolve()):
+        raise ValueError('fork destination must be separate from source')
+    if destination.is_symlink() or (destination.exists() and (not destination.is_dir() or any(destination.iterdir()))):
+        raise ValueError('fork destination must be empty')
     destination.parent.mkdir(parents=True,exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix='.freeze-fork-',dir=destination.parent))
     try:
@@ -84,11 +104,11 @@ def fork_from_freeze(source, destination, bank):
         for name,content in artifacts.items():
             (temporary/name).write_bytes(content)
         log = EventLog(temporary/'events.jsonl')
-        log.record('freeze_forked', source_run=str(source), records=count, freeze_hash=freeze['hash'],
+        log.record('freeze_forked', source_run=str(source), records=count, freeze_hash=snapshot['freeze_hash'],
                    prefix_sha256=sha256(prefix).hexdigest(), artifacts={name:sha256(value).hexdigest() for name,value in artifacts.items()},
                    note='Exact source prefix through freeze, counted once as imported history; no targets or search receipts copied.')
         os.rename(temporary,destination)
     except BaseException:
         shutil.rmtree(temporary)
         raise
-    return EventLog(destination/'events.jsonl'),run,commitments
+    return EventLog(destination/'events.jsonl'),snapshot['run'],snapshot['commitments']

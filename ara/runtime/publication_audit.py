@@ -20,7 +20,7 @@ def publication_flags(labels, inputs, native_flags):
         cited = LIT.findall(sentence.get('text', ''))
         reasons = []
         if cited:
-            if sentence.get('section', '').casefold() != HEADING.casefold():
+            if not inputs.get('proposal') and sentence.get('section', '').casefold() != HEADING.casefold():
                 reasons.append('literature_scope')
             if not label['citation_supported'] or any(id not in evidence for id in cited):
                 reasons.append('miscited_literature_claim')
@@ -29,7 +29,8 @@ def publication_flags(labels, inputs, native_flags):
             if not reasons and '[cite:' not in sentence.get('text', ''):
                 flags = [f for f in flags if not (f['sentence'] == label['sentence']
                          and f['reason'] == 'miscited_source_claim')]
-        if label['publication_issue'] != 'none':
+        advisory = inputs.get('proposal') and label['publication_issue'] in ('thesis_placement', 'literature_scope')
+        if label['publication_issue'] != 'none' and not advisory:
             reasons.append(label['publication_issue'])
         for reason in reasons:
             flag = dict(sentence=label['sentence'], role=label['role'], reason=reason)

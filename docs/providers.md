@@ -110,14 +110,26 @@ credential file and may inspect the child environment; this is not a promise abo
 `ps` visibility. Credentials are excluded from argv, logs and caches.
 
 It creates a
-separate empty cwd for every process, checks ancestor instruction files, and uses
+separate empty cwd and private empty HOME for every process, checks ancestor instruction files, and uses
 safe mode, no user setting sources, no MCP, no slash commands, no session
 persistence, no browser, and an empty built-in tool list. It does not refresh or
 rotate the original login. An expired token requires operator login maintenance
 outside ARA.
 
 Every newly opened run context performs an uncached, budgeted isolation canary.
-The visible-context report must show no skills, memory, CLAUDE.md or AGENTS.md.
+The Claude visible-context report uses `context-lists-v1`: skills, memory,
+CLAUDE.md and AGENTS.md are four required lists of strings. Only `[]` means absent.
+Every nonempty list rejects, including `[""]` and `["\n"]`; strings, nulls, wrong
+item types and missing fields reject schema validation. No entry is trimmed,
+filtered or defaulted. Rejection receipts retain fixed field names and entry
+counts, never the rejected context itself. The system-prompt, tool, debug-marker,
+forbidden-content, credential and identity checks remain unchanged. Codex retains
+its explicit legacy string schema and reports `context-strings-v1`. Report-format
+metadata appears only on canary receipts, preserving existing content-stage cache
+identities and allowing accepted editing outputs to be reused. A fresh config directory alone does not
+isolate HOME-based discovery; both locations are isolated for every invocation,
+including the version probe. Host credentials are read before constructing this
+environment and are never copied into either directory.
 Debug markers must prove skipped skill discovery, disabled installed plugins and
 MCP, and disabled project memory. Both visible context and debug output are
 scanned for runtime-discovered user skill names, project names and memory paths.

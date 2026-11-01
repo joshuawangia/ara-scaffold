@@ -36,15 +36,21 @@ def sentence_spans(body, *, literature=False):
 
 def audit_flags(labels, inputs, draft):
     """Apply the three typed failure rules; semantic role/support comes from audit."""
+    from ara.runtime.audit_carryover import effective_labels
+    labels = effective_labels(labels, inputs)
     sentences = {s['sentence']: s['text'] for s in inputs['sentences']}
+    scopes = {s['sentence']: s.get('proposal_scope') for s in inputs['sentences']}
     allowed = {b['id']: b for b in inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
     bibliography = {b['id']: b for b in draft.get('bibliography', [])}
+    from ara.runtime.proposal import role_failure, author_names, source_attribution
+    authors = author_names(inputs.get('source_evidence', {}))
     flags = []
     for item in labels:
         role, reason = item['role'], None
         cited = [marker[6:-1] for marker in CITE.findall(sentences.get(item['sentence'], ''))]
         premises = {r['evidence_id'] for r in inputs['outline'].get('source_roles', [])
                     if r['role'] == 'global_premise' and r['node_id'] in item['node_ids']}
+        proposal_reason = role_failure(role, sentences.get(item['sentence'], ''), inputs.get('proposal'), source_authors=authors, proposal_scope=scopes.get(item['sentence']))
         hypothesis_nodes = {r['node_id'] for r in inputs['outline'].get('source_roles', [])
                             if r['role']=='hypothesis_premise'}
         if hypothesis_nodes & set(item['node_ids']):
@@ -53,15 +59,18 @@ def audit_flags(labels, inputs, draft):
                 bool(inputs['outline'].get('hypothesis_disclosure',{}).get('conditional_on')))
             if set(item['node_ids']) - hypothesis_nodes:
                 reason = 'hypothesis_role_covers_source_or_inference'
-        elif role == 'proposed_principle':
-            reason = 'unauthorized_hypothesis_role'
+        elif proposal_reason:
+            reason = proposal_reason
+        elif inputs.get('proposal') and role == 'argument_step' and inputs['root_conclusion']['node_id'] in item['node_ids']:
+            reason = 'proposal_presented_as_derivation'
         elif role == 'unsupported_claim':
             reason = 'unsupported_claim'
         elif role == 'argument_step' and not item['node_ids']:
             reason = 'unmapped_argument_step'
         elif role == 'argument_step' and premises and not premises <= set(cited):
             reason = 'miscited_source_claim'
-        elif role == 'source_claim' or (cited and 'source_evidence' in inputs):
+        elif role == 'source_claim' or (cited and 'source_evidence' in inputs) or (
+                inputs.get('proposal') and source_attribution(sentences.get(item['sentence'], ''), authors)):
             if (not item['citation_supported'] or not cited or
                     any(tid not in allowed or bibliography.get(tid) != allowed[tid] for tid in cited)):
                 reason = 'miscited_source_claim'
@@ -89,15 +98,25 @@ def audit_result(route, draft, inputs, data):
         raise ValidationError('essay audit: sentence inventory mismatch')
     referenced = {node for item in labels for node in item['node_ids']}
     require(referenced <= ids, 'essay audit: unknown node id')
-    covered = {node for item in labels if item['role'] in ('argument_step', 'source_claim', 'proposed_principle')
+    from ara.runtime.audit_carryover import effective_labels
+    labels = effective_labels(labels, inputs)
+    covered = {node for item in labels if item['role'] in (('argument_step', 'source_claim', 'proposed_principle', 'argument_for_proposal')
+                                                     if inputs.get('proposal') else ('argument_step', 'source_claim', 'proposed_principle'))
                for node in item['node_ids']}
     missing = ids - covered
+    scopes = {s['sentence']: s.get('proposal_scope', {}) for s in inputs['sentences']}
+    from ara.runtime.proposal_scopes import is_proposal_heading
+    if inputs.get('proposal') and not any(item['role'] == 'proposed_principle' and route.root_id in item['node_ids']
+            and is_proposal_heading(scopes.get(item['sentence'], {}).get('heading', '')) for item in labels):
+        missing.add(route.root_id)
     extra = list(dict.fromkeys(item['sentence'] for item in flags))
     markers = set(re.findall(r'\[\[node:([^\]]+)\]\]', draft['body']))
     result = {'covered_node_ids': sorted(covered), 'missing_node_ids': sorted(missing),
               'extra_steps': extra, 'flags': flags,
               'role_counts': dict(Counter(item['role'] for item in labels)),
               'faithful': not missing and not extra and markers == ids}
+    if 'verified_sentence_carryover' in inputs:
+        result['verified_sentence_carryover'] = inputs['verified_sentence_carryover']
     return result
 
 
@@ -110,10 +129,63 @@ def _same_audit_request(previous_prompt, prompt):
         template, current_input = prompt.split('\nINPUT_JSON\n', 1)
         previous = json.loads(previous_input)
         previous.pop('validation_feedback', None)
-        return previous_template == template and previous == json.loads(current_input)
+        current = json.loads(current_input)
+        previous.pop('verified_sentence_carryover', None)
+        current.pop('verified_sentence_carryover', None)
+        return previous_template.split('\n', 1)[0] == template.split('\n', 1)[0] and previous == current
     except (ValueError, TypeError, AttributeError):
         return False
 
+
+
+def _proposal_metadata_request(previous_prompt, prompt):
+    """Match unchanged substantive inventory across deterministic disclosure insertion."""
+    try:
+        old_template, old_json = previous_prompt.split('\nINPUT_JSON\n', 1)
+        template, current_json = prompt.split('\nINPUT_JSON\n', 1)
+        old, current = json.loads(old_json), json.loads(current_json)
+        old.pop('validation_feedback', None)
+        old.pop('verified_sentence_carryover', None)
+        current.pop('verified_sentence_carryover', None)
+        if old_template.split('\n', 1)[0] != template.split('\n', 1)[0] or not current.get('proposal'):
+            return None
+        if {k:v for k,v in old.items() if k != 'sentences'} != {k:v for k,v in current.items() if k != 'sentences'}:
+            return None
+        label = current['proposal']['disclosure']
+        def inventory(data):
+            rows = []
+            for sentence in data['sentences']:
+                text = sentence['text']
+                if re.fullmatch(r'(?:#{1,6}\s*)?(?:\d+[.)]\s*)?Proposal', text, re.I):
+                    continue
+                if text == 'Status and method':
+                    text = 'Methodology'
+                if label in text:
+                    text = text.replace(label, '').replace('This paper proposes the disclosure:', '').replace('Disclosure:', '').replace('Proposal status:', '')
+                    text = text.strip(' \t\n."“”\'—-:;')
+                elif text.strip() == 'Disclosure: .':
+                    text = ''
+                if text:
+                    row = {k:v for k,v in sentence.items() if k not in ('sentence','start','end','proposal_scope','section')}
+                    rows.append((sentence['sentence'], {**row, 'text':text}))
+            return rows
+        before, after = inventory(old), inventory(current)
+        if [r for _,r in before] != [r for _,r in after]:
+            return None
+        return old, dict(zip((n for n,_ in before), (n for n,_ in after)))
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return None
+
+
+def _remap_adverse(result, labels, mapping):
+    flags = [{**f, 'sentence':mapping[f['sentence']]} for f in result['flags'] if f['sentence'] in mapping]
+    extra = [mapping[n] for n in result['extra_steps'] if n in mapping]
+    # Only changed disclosure metadata may disappear; substantive flags and
+    # missing-node failures remain binding, with their current sentence numbers.
+    faithful = (not flags and not extra and not result['missing_node_ids'] and
+                (result['faithful'] or bool(result['extra_steps'])))
+    return ({**result, 'flags':flags, 'extra_steps':extra, 'faithful':faithful, 'metadata_only_remap':True},
+            [{**label, 'sentence':mapping[label['sentence']]} for label in labels if label['sentence'] in mapping])
 
 def _partial_adverse_history(route, draft, inputs, data, schema, config):
     """Salvage adverse facts only; an invalid inventory supplies no clean verdict."""
@@ -150,6 +222,9 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
     context = {} if publication_context is None else dict(publication_context=publication_context)
     kind = 'audit_publication' if publication_context is not None else 'audit_essay'
     inputs = calls.audit_inputs(route, draft, **context)
+    from ara.runtime.audit_carryover import prepare_meaning_checks
+    if prepare_meaning_checks(calls, route, draft, inputs):
+        inputs = calls.audit_inputs(route, draft, **context)
     scoped = calls._for_construction_stage(kind, inputs)
     prompt = scoped.render(kind, inputs)[1]
     prompt_hash = digest(prompt)
@@ -160,8 +235,30 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                 continue
             previous = events[index - 2] if index > 1 else {}
             recorded = json.loads(previous['payload_json']) if previous.get('stage') == 'essay_audit' else None
-            if not _same_audit_request(event['prompt'], prompt) and (recorded or {}).get('prompt_sha256') != prompt_hash:
+            same = _same_audit_request(event['prompt'], prompt) or (recorded or {}).get('prompt_sha256') == prompt_hash
+            remap = None if same else _proposal_metadata_request(event['prompt'], prompt)
+            if not same and remap is None:
                 continue
+            history_inputs = remap[0] if remap else inputs
+            if remap:
+                current_rows = {s['sentence']: s for s in inputs['sentences']}
+                rows = []
+                for row in history_inputs['sentences']:
+                    updated = {k:v for k,v in row.items() if k != 'proposal_scope'}
+                    current = current_rows.get(remap[1].get(row['sentence']), {})
+                    if 'section' in current:
+                        updated['section'] = current['section']
+                    scope = current.get('proposal_scope')
+                    if scope is not None:
+                        updated['proposal_scope'] = scope
+                    rows.append(updated)
+                history_inputs = {**history_inputs, 'sentences': rows}
+                if 'verified_sentence_carryover' in inputs:
+                    inverse = {new:old for old,new in remap[1].items()}
+                    carryover = inputs['verified_sentence_carryover']
+                    history_inputs['verified_sentence_carryover'] = {**carryover, 'sentences': [
+                        {**p, 'sentence':inverse[p['sentence']], 'label':{**p['label'], 'sentence':inverse[p['sentence']]}}
+                        for p in carryover['sentences'] if p['sentence'] in inverse]}
             data = None
             schema = scoped.response_schema(kind, inputs)
             try:
@@ -169,21 +266,28 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
                 if hasattr(scoped.provider, 'normalize_output'):
                     data = scoped.provider.normalize_output(schema, data)
                 validate_local(schema, data, calls.config)
-                result = audit_result(route, draft, inputs, data)
-                if recorded is not None:
+                result = audit_result(route, draft, history_inputs, data)
+                if recorded is not None and remap is None and 'verified_sentence_carryover' not in inputs and event['prompt'].split('\nINPUT_JSON\n', 1)[0] == prompt.split('\nINPUT_JSON\n', 1)[0]:
                     result = {key: recorded[key] for key in result}
             except (ValueError, TypeError, KeyError, ValidationError) as exc:
                 ignored.append(dict(event=index, reason=type(exc).__name__))
-                recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)
+                recovered = _partial_adverse_history(route, draft, history_inputs, data, schema, calls.config)
                 if recovered is not None:
                     ignored[-1]['retained_adverse'] = True
                     result, labels = recovered
+                    if remap:
+                        result, labels = _remap_adverse(result, labels, remap[1])
+                    if result['faithful']:
+                        continue
                     historical.append(dict(event=index, invalid_reason=type(exc).__name__, **result))
                     failures.append(EssayAuditFailed(result, inputs, labels))
                 continue
+            labels = data['labels']
+            if remap:
+                result, labels = _remap_adverse(result, labels, remap[1])
             if not partial_only and not result['faithful']:
                 historical.append(dict(event=index, **result))
-                failures.append(EssayAuditFailed(result, inputs, data['labels']))
+                failures.append(EssayAuditFailed(result, inputs, labels))
 
     events = calls.log.read()
     collect_history(events)
@@ -225,6 +329,8 @@ def audit_consensus(calls, route, draft, *, publication_context=None):
         missing_node_ids=sorted({n for s in all_results for n in s['missing_node_ids']}),
         extra_steps=sorted({f['sentence'] for f in flags}), flags=flags,
         faithful=all(s['faithful'] for s in all_results))
+    if 'verified_sentence_carryover' in inputs:
+        result['verified_sentence_carryover'] = inputs['verified_sentence_carryover']
     calls.log.record('essay_audit_consensus', **result)
     if not result['faithful']:
         labels = {}
@@ -255,6 +361,8 @@ def audit_and_revise(calls, route, draft, *, final=False):
         try:
             if final:
                 cleaned, verification = calls.verify_originality_citations(draft)
+                from ara.runtime.proposal import retain_disclosure
+                cleaned = retain_disclosure(calls, route, cleaned, phase='verification_cleanup')
                 calls.validate_essay(route, cleaned, minimum_words=0)
                 audit_consensus(calls, route, cleaned)
                 return cleaned, verification
@@ -270,7 +378,8 @@ def audit_and_revise(calls, route, draft, *, final=False):
                                  **failure.result)
                 raise
             spans = sentence_spans(draft['body'])
-            originals = {flag['sentence']: draft['body'][slice(*spans[flag['sentence'] - 1])]
+            originals = {flag['sentence']: (draft['title'] if flag['sentence'] == len(spans)+1 and failure.inputs.get('proposal')
+                                           else draft['body'][slice(*spans[flag['sentence'] - 1])])
                          for flag in flags}
             citation_repairs = {f['sentence'] for f in failure.result['flags'] if f['reason'] == 'miscited_source_claim'}
             allowed = {b['id']: b for b in failure.inputs.get('source_evidence', {}).get('allowed_bibliography', [])}
@@ -289,7 +398,7 @@ def audit_and_revise(calls, route, draft, *, final=False):
                 numbers = [r['sentence'] for r in replacements]
                 require(len(numbers) == len(set(numbers)) and set(numbers) == set(originals),
                         'revision must cover exactly the flagged sentences')
-                body = draft['body']
+                body, title = draft['body'], draft['title']
                 for item in sorted(replacements, key=lambda r: r['sentence'], reverse=True):
                     old, text = originals[item['sentence']], item['text']
                     require(not final or text != old, 'revision left flagged sentence unchanged')
@@ -303,9 +412,12 @@ def audit_and_revise(calls, route, draft, *, final=False):
                             require(actual == expected or addition,
                                     f'revision changed {name} in sentence {item["sentence"]}: '
                                     f'forbidden or misplaced markers {actual!r}; required exact sequence {expected!r}')
-                    start, end = spans[item['sentence'] - 1]
-                    body = body[:start] + text + body[end:]
-                revised = {**draft, 'body': body}
+                    if item['sentence'] == len(spans)+1 and failure.inputs.get('proposal'):
+                        title = text
+                    else:
+                        start, end = spans[item['sentence'] - 1]
+                        body = body[:start] + text + body[end:]
+                revised = {**draft, 'body': body, 'title': title}
                 bibliography = {b['id']: b for b in draft['bibliography']}
                 for marker in CITE.findall(body):
                     tid = marker[6:-1]

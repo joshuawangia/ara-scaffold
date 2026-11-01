@@ -53,8 +53,10 @@ def catalogue(events, ids):
     """Use hash-bound page text already held in the log, never web absence."""
     frozen = frozen_from_events(events)
     provenance = provenance_from_events(events, frozen)
+    from ara.runtime.proposal import local_catalogue
+    proposal_entries = local_catalogue(events, ids)
     if provenance is None:
-        return {}
+        return proposal_entries
     wanted = {tid: provenance['commitments'][tid] for tid in citation_ids(ids, provenance)
               if tid in provenance['commitments']}
     source_ids = {s['source_id'] for s in wanted.values()}
@@ -94,7 +96,7 @@ def catalogue(events, ids):
                 continue
             local['conflict'] |= number in local['pages'] and local['pages'][number] != text
             local['pages'][number] = text
-    result = {}
+    result = dict(proposal_entries)
     for tid, source in sorted(wanted.items()):
         commitment = frozen.get(tid)
         paper = papers.get(source['source_id'])
@@ -155,7 +157,7 @@ def local_verdicts(calls, draft, items):
         require(status != 'unresolved', 'local citation evidence unresolved: ' + item['id'])
         result[item['id']] = dict(**item, status='verified' if status == 'verified' else 'unverified',
             action='retain' if status == 'verified' else 'remove', evidence_urls=[], detail=reason,
-            verification_basis='local_frozen_T', local_evidence=entry,
+            verification_basis='local_proposal_pdf' if item['id'].startswith('proposal:') else 'local_frozen_T', local_evidence=entry,
             **({'removal_reason': reason} if status == 'mismatch' else {}))
     from ara.runtime.essay_audit import sentence_spans
     spans = [draft['body'][a:b] for a,b in sentence_spans(draft['body'])]
@@ -184,7 +186,9 @@ def check_coverage(events, route, draft):
     provenance = provenance_from_events(events, frozen)
     if provenance is None:
         return  # Legacy runs without source provenance cannot claim local verification.
-    required = citation_ids(support_ids(route, frozen), provenance)
+    from ara.runtime.proposal import required_ids, from_events, validate_disclosure
+    validate_disclosure(from_events(events, route.id), draft)
+    required = citation_ids(support_ids(route, frozen) | required_ids(events, route), provenance)
     entries = catalogue(events, required)
     cited = set(CITATION.findall(draft['body']))
     bibliography = {b['id']: b for b in draft['bibliography']}
@@ -201,7 +205,8 @@ def restore_citations(calls, route, draft):
     from ara.runtime.calls import require
     from ara.runtime.essay_audit import CITE, NODE, sentence_spans
     events = calls.log.read()
-    entries = catalogue(events, support_ids(route, frozen_from_events(events)))
+    from ara.runtime.proposal import required_ids
+    entries = catalogue(events, support_ids(route, frozen_from_events(events)) | required_ids(events, route))
     if not entries:
         return draft
     allowed = {tid: e['bibliography'] for tid,e in entries.items()}

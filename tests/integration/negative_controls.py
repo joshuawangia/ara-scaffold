@@ -13,7 +13,7 @@ CASES = [
     ('writer_correction_path', 'ara/runtime/calls.py', "if validating and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):", "if validating and kind != 'write_essay' and not (kind in ('audit_essay', 'audit_publication') and isinstance(exc, Rejected)):", 'tests/runtime/test_writer_validation.py::test_invalid_writer_corrects_before_audit'),
     ('writer_exhaustion_bound', 'ara/runtime/calls.py', 'for attempt in range(attempts):', 'for attempt in range(attempts - 1):', 'tests/runtime/test_writer_validation.py::test_writer_correction_exhaustion_clean_cli_stop'),
     ('writer_failure_not_cached', 'ara/runtime/calls.py', '            if validating and not', "            if kind == 'write_essay': self.cache.put(key, {'raw': raw})\n            if validating and not", 'tests/runtime/test_writer_validation.py::test_writer_correction_exhaustion_clean_cli_stop'),
-    ('writer_projection', 'ara/runtime/calls.py', "return {'outline': self.essay_outline(route), 'word_limit':", "return {'outline': route.to_dict(), 'word_limit':", 'tests/runtime/test_essay_outline.py::test_route_status_and_cost_never_reach_writer'),
+    ('writer_projection', 'ara/runtime/calls.py', "'outline': self.essay_outline(route), 'word_limit':", "'outline': route.to_dict(), 'word_limit':", 'tests/runtime/test_essay_outline.py::test_route_status_and_cost_never_reach_writer'),
     ('shared_audit_outline', 'ara/runtime/calls.py', "'outline': self.essay_outline(route),\n                  'root_conclusion':", "'outline': {'nodes': [], 'links': []},\n                  'root_conclusion':", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
     ('scheme_name', 'ara/runtime/calls.py', "'scheme': entry.name", "'scheme': entry.id", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
     ('inference_links', 'ara/runtime/calls.py', "'premises': list(node.children)", "'premises': []", 'tests/runtime/test_essay_outline.py::test_writer_and_auditor_receive_same_content_only_outline'),
@@ -1829,7 +1829,7 @@ CASES += [
      '            calls.audit_essay(route, draft)', '            if round_number == 0: calls.audit_essay(route, draft)',
      'tests/runtime/test_audit_revision.py::test_audit_revision_stops_after_three_rounds'),
     ('audit_resume_draft', 'ara/runtime/cli.py',
-     '        compose(calls, chosen, draft)', '        compose(calls, chosen)',
+     '        compose(calls, chosen, draft, proposal_packet=packet)', '        compose(calls, chosen, proposal_packet=packet)',
      'tests/integration/test_cli_e2e.py'),
 ]
 
@@ -2044,9 +2044,7 @@ CASES += [
     ('typed_audit_bibliography', 'ara/runtime/essay_audit.py',
      'bibliography.get(tid) != allowed[tid]', 'False',
      'tests/runtime/test_typed_audit.py::test_source_claim_requires_correct_frozen_citation[bibliography]'),
-    ('typed_audit_coverage', 'ara/runtime/essay_audit.py',
-     "if item['role'] in ('argument_step', 'source_claim', 'proposed_principle')", 'if True',
-     'tests/runtime/test_typed_audit.py::test_presentation_mapping_does_not_fake_route_coverage'),
+    ('typed_audit_coverage', 'ara/runtime/essay_audit.py', "if item['role'] in (('argument_step', 'source_claim', 'proposed_principle', 'argument_for_proposal')\n                                                     if inputs.get('proposal') else ('argument_step', 'source_claim', 'proposed_principle'))", 'if True', 'tests/runtime/test_typed_audit.py::test_presentation_mapping_does_not_fake_route_coverage'),
     ('typed_audit_root', 'ara/runtime/calls.py',
      "'root_conclusion': {'node_id': route.root_id", "'root_conclusion': {'node_id': ''",
      'tests/runtime/test_typed_audit.py::test_root_conclusion_is_explicit_and_a_mapped_argument_step'),
@@ -2105,18 +2103,10 @@ CASES += [
     ('publication_targeted_repair', 'ara/runtime/publication_audit.py',
      "if index not in allowed_blocks:", "if False:",
      'tests/runtime/test_publication.py::test_repair_cannot_change_unflagged_abstract'),
-    ('publication_second_audit', 'ara/runtime/publication.py',
-     'for attempt in range(4):', 'for attempt in range(3):',
-     'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[3-True]'),
-    ('publication_repair_cap', 'ara/runtime/publication.py',
-     "if attempt == 3 or not audit.get('flags'):", "if attempt == 2 or not audit.get('flags'):",
-     'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[4-False]'),
-    ('publication_issue_enforcement', 'ara/runtime/publication_audit.py',
-     "if label['publication_issue'] != 'none':", 'if False:',
-     'tests/runtime/test_publication.py::test_publication_issue_reaches_targeted_repair'),
-    ('publication_literature_scope', 'ara/runtime/publication_audit.py',
-     "if sentence.get('section', '').casefold() != HEADING.casefold():", 'if False:',
-     'tests/runtime/test_publication.py::test_publication_literature_sentence_scope_and_typed_support'),
+    ('publication_second_audit', 'ara/runtime/publication.py', '        while True:\n', '        while repair_rounds < 3:\n', 'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[3-True]'),
+    ('publication_repair_cap', 'ara/runtime/publication.py', "if repair_rounds == 3 or not audit.get('flags'):", "if repair_rounds == 2 or not audit.get('flags'):", 'tests/runtime/test_publication.py::test_three_targeted_repairs_then_audit_or_exact_fallback[4-False]'),
+    ('publication_issue_enforcement', 'ara/runtime/publication_audit.py', "if label['publication_issue'] != 'none' and not advisory:", 'if False:', 'tests/runtime/test_publication.py::test_publication_issue_reaches_targeted_repair'),
+    ('publication_literature_scope', 'ara/runtime/publication_audit.py', "if not inputs.get('proposal') and sentence.get('section', '').casefold() != HEADING.casefold():", 'if False:', 'tests/runtime/test_publication.py::test_publication_literature_sentence_scope_and_typed_support'),
     ('publication_unsafe_html', 'ara/runtime/publication_pdf.py',
      "{'html': False}", "{'html': True}",
      'tests/runtime/test_publication.py::test_html_embeds_only_declared_figures_and_escapes'),
@@ -2145,7 +2135,7 @@ CASES += [
      "('publication_length_policy', 'publication_completed',", "('publication_completed',",
      'tests/runtime/test_publication.py::test_publication_cli_pins_provider_and_runs_offline_followups'),
     ('publication_short_evidence', 'ara/runtime/calls.py',
-     "if publication_context is not None or self.config['essay_min_words'] >= 4500 or any(\n                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):",
+     "if proposal or publication_context is not None or self.config['essay_min_words'] >= 4500 or any(\n                e['stage'] == 'commitment_provenance_frozen' for e in self.log.read()):",
      "if False:",
      'tests/runtime/test_publication.py::test_publication_literature_sentence_scope_and_typed_support'),
     ('publication_heading_case', 'ara/runtime/publication_currency.py',
@@ -2354,10 +2344,7 @@ CASES += [
     ('publication_repair_sentence_scope', 'ara/runtime/publication.py',
      "validate_sentence_repair(candidate['markdown'], value['markdown'], flagged)", 'pass',
      'tests/runtime/test_publication_quality5.py::test_repair_cannot_rewrite_unflagged_sentence_in_flagged_paragraph'),
-    ('publication_consensus_dispatch', 'ara/runtime/publication.py',
-     'audit = audit_consensus(calls,route,current,publication_context=publication_context)',
-     'audit = calls.audit_essay(route,current,publication_context=publication_context)',
-     'tests/runtime/test_publication_quality5.py::test_publication_second_sample_dissent_reaches_repair'),
+    ('publication_consensus_dispatch', 'ara/runtime/publication.py', 'if not title_only:\n                    audit = audit_consensus(calls,route,current,publication_context=publication_context)', 'if not title_only:\n                    audit = calls.audit_essay(route,current,publication_context=publication_context)', 'tests/runtime/test_publication_quality5.py::test_publication_second_sample_dissent_reaches_repair'),
     ('publication_consensus_history', 'ara/runtime/essay_audit.py',
      "if event['stage'] != kind or", "if event['stage'] != 'audit_essay' or",
      'tests/runtime/test_publication_quality5.py::test_publication_gate_keeps_adverse_history_despite_clean_cache'),
@@ -2371,16 +2358,13 @@ CASES += [
     ('frozen_citation_coverage', 'ara/runtime/citations.py', 'if not required <= cited or not required <= bibliography.keys() or not cited <= bibliography.keys():', 'if False:', 'tests/runtime/test_local_citations.py::test_export_refuses_missing_route_source_coverage'),
     ('frozen_citation_restoration', 'ara/runtime/orchestration.py', 'draft = restore_citations(calls, route, draft)', 'draft = draft', 'tests/runtime/test_local_citations.py::test_citation_restoration_preserves_prose_and_repair_budget'),
     ('frozen_citation_premise', 'ara/runtime/essay_audit.py', "elif role == 'argument_step' and premises and not premises <= set(cited):", 'elif False:', 'tests/runtime/test_local_citations.py::test_uncited_source_premise_cannot_hide_as_argument_step'),
-    ('frozen_citation_cited_inference', 'ara/runtime/essay_audit.py', "elif role == 'source_claim' or (cited and 'source_evidence' in inputs):", "elif role == 'source_claim':", 'tests/runtime/test_local_citations.py::test_cited_argument_step_cannot_hide_mismatched_source'),
+    ('frozen_citation_cited_inference', 'ara/runtime/essay_audit.py', "elif role == 'source_claim' or (cited and 'source_evidence' in inputs) or (", "elif role == 'source_claim' or (", 'tests/runtime/test_local_citations.py::test_cited_argument_step_cannot_hide_mismatched_source'),
     ('frozen_citation_addition', 'ara/runtime/essay_audit.py', 'require(actual == expected or addition,', 'require(actual == expected,', 'tests/runtime/test_local_citations.py::test_miscited_sentence_can_add_only_approved_frozen_markers'),
 ]
 
 
 CASES += [
-    ('publication_post_verification_consensus', 'ara/runtime/publication.py',
-     'audit_consensus(calls,route,chosen,publication_context=publication_context)',
-     'calls.audit_essay(route,chosen,publication_context=publication_context)',
-     'tests/runtime/test_publication_quality5.py::test_post_verification_gate_also_requires_fresh_unanimous_samples'),
+    ('publication_post_verification_consensus', 'ara/runtime/publication.py', "if native_citations['status'] == 'pass':\n                        audit = audit_consensus(calls,route,current,publication_context=publication_context)", "if native_citations['status'] == 'pass':\n                        audit = calls.audit_essay(route,current,publication_context=publication_context)", 'tests/runtime/test_publication_quality5.py::test_post_verification_gate_also_requires_fresh_unanimous_samples'),
 
 
     ('target_context_full_validation', 'ara/runtime/calls.py',
@@ -2411,7 +2395,7 @@ CASES += [
      'tests/runtime/test_codex_cli.py::test_context_window_default_and_unpinned_model'),
 
 
-    ('audit_consensus_partial_history', 'ara/runtime/essay_audit.py', 'recovered = _partial_adverse_history(route, draft, inputs, data, schema, calls.config)', 'recovered = None', 'tests/runtime/test_audit_consensus.py::test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit'),
+    ('audit_consensus_partial_history', 'ara/runtime/essay_audit.py', 'recovered = _partial_adverse_history(route, draft, history_inputs, data, schema, calls.config)', 'recovered = None', 'tests/runtime/test_audit_consensus.py::test_native_resume_cannot_export_unchanged_draft_after_invalid_adverse_audit'),
     ('audit_consensus_partial_schema_history', 'ara/runtime/essay_audit.py', 'if recovered is not None:', 'if False:', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[invalid_label]'),
     ('audit_consensus_corrected_partial_history', 'ara/runtime/essay_audit.py', "previous.pop('validation_feedback', None)", 'pass', 'tests/runtime/test_audit_consensus.py::test_invalid_inventory_keeps_valid_adverse_history_on_repeated_resume[corrected_partial]'),
     ('frozen_citation_native_retention', 'ara/runtime/calls.py', 'local = local_verdicts(self, draft, all_items)', 'local = {}', 'tests/runtime/test_local_citations.py::test_native_competition_compose_cannot_strip_frozen_citations_and_export[True]'),
@@ -2458,7 +2442,7 @@ CASES += [('delivery_alignment_source_citations',
 
 CASES += [('delivery_alignment_reading_sources',
   'ara/runtime/publication_references.py',
-  "    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', [])\n"
+  "    sources = evidence['supporting_commitments'] + evidence.get('alignment_source_evidence', []) + evidence.get('proposal_source_evidence', [])\n"
   '    supports =',
   "    sources = evidence['supporting_commitments']\n    supports =",
   'tests/runtime/test_delivery_alignment_citations.py::test_alignment_publication_preserves_definition_citations_and_judgment_role[reading]'),
@@ -3020,6 +3004,9 @@ CASES += [
      "settings['definition_screen']=PRECISE_SCREEN", "settings['definition_screen']=None",
      'tests/runtime/test_consolidation_screen.py::test_fresh_definitions_do_not_inherit_legacy_lexicon'),
 ]
+import runpy
+CASES += runpy.run_path(str(ROOT / "tests/runtime/proposal_negative_controls.py"))["CASES"]
+CASES += runpy.run_path(str(ROOT / "tests/runtime/claude_canary_negative_controls.py"))["CASES"]
 
 def main():
     assert Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, text=True).strip()) == ROOT

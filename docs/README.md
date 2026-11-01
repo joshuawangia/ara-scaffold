@@ -12,6 +12,8 @@ guide owns one concern; link to it instead of copying its procedure.
 | [Providers and isolation](providers.md) | API/CLI setup, stage dispatch, isolation, retry policies and Codex schema gate |
 | [Accounting](accounting.md) | Logs, budgets, measured/reserved/inherited usage, calibration and export |
 | [OCR](ocr.md) | Optional local models, installation, span repair, audit and limits |
+| [Proposal admission](proposal-admission.md) | Verified paper-owned OPEN targets, free admission plans and capacity gates |
+| [Audit carry-over](audit-carryover.md) | Verified sentence reuse, meaning checks and persistent adverse history |
 | [Publication](publication.md) | Isolated polish, deterministic figures, PDF rendering and verification status |
 | [Reporting](reporting.md) | Offline reader, linked evidence, trace verification and report limits |
 | [Verification](verification.md) | Check commands, evidence standards and historical live receipts |

@@ -32,7 +32,9 @@
               "signpost",
               "objection",
               "reply",
-              "unsupported_claim"
+              "unsupported_claim",
+              "proposed_principle",
+              "argument_for_proposal"
             ]
           },
           "citation_supported": {

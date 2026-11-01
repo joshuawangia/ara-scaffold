@@ -20,6 +20,25 @@ CITATION = re.compile(r'\[cite:([^\]]+)\]')
 NODE = re.compile(r'\[\[node:([^\]]+)\]\]')
 
 
+def publication_context_policy(maximum, margin=16384):
+    """The pinned editor has a native 1M window; retain conservative reserves."""
+    require(type(maximum) is int and maximum > 0,
+            'publication output allowance must be a positive integer')
+    require(type(margin) is int and margin > 0,
+            'publication context margin must be a positive integer')
+    window = 1000000
+    output = maximum * 2  # ClaudeCodeProvider.context_output_tokens, including its two-turn reserve.
+    bound = window - output - margin
+    require(bound > 0, 'publication context reserves exhaust the model window')
+    return dict(provider='claude_code', model=MODEL, window_tokens=window,
+                output_allowance_tokens=output, margin_tokens=margin,
+                admission_bound_tokens=bound,
+                basis='Pinned Opus 5.5 native context window; operator-authorized publication policy',
+                references=['https://code.claude.com/docs/en/model-config#extended-context',
+                            'https://platform.claude.com/docs/en/models/overview'],
+                admission_note='Native admission also counts request output within this conservative bound; full evidence retained.')
+
+
 class RunSources:
     """Read-only view of native evidence builders, without opening a provider."""
     essay_outline = ModelCalls.essay_outline
@@ -48,7 +67,7 @@ def length_policy(minimum_words=3000):
                 editorial_preference='prefer a tight supported paper over padding')
 
 
-def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None, minimum_words=3000):
+def validate_polish(value, original, figure_ids, *, whole=False, currency=None, reading_markdown=None, minimum_words=3000, proposal=None):
     markdown = value['markdown']
     body = paragraphs(strip_figures(markdown))
     if whole:
@@ -61,14 +80,16 @@ def validate_polish(value, original, figure_ids, *, whole=False, currency=None, 
         headings = re.findall(r'^## (\d+)\. (.+)$',markdown,re.M)
         require([int(n) for n,_ in headings] == list(range(1,len(headings)+1)), 'publication numbered sections invalid')
         labels = ' '.join(h.lower() for _,h in headings)
-        require(all(term in labels for term in ('introduction','argument','objection','repl','limit','conclusion')), 'publication required section missing')
+        required = ('proposal',) if proposal else (
+            'introduction','argument','objection','repl','limit','conclusion')
+        require(all(term in labels for term in required), 'publication required section missing')
     require([x['paragraph'] for x in value['change_log']] == list(range(len(body))), 'publication paragraph change log incomplete')
     require(set(CITATION.findall(markdown)) == set(CITATION.findall(original)), 'publication citation inventory changed')
     require(set(NODE.findall(markdown)) == set(NODE.findall(original)), 'publication node coverage changed')
     if whole:
-        require(not NODE.findall(body[0]), 'publication abstract must not duplicate node markers')
+        require(not NODE.findall(abstract[1]), 'publication abstract must not duplicate node markers')
         from ara.runtime.publication_currency import check_currency
-        check_currency(markdown,currency)
+        check_currency(markdown,currency,proposal=proposal)
     found = FIGURE.findall(markdown)
     placements = value['figure_placements']
     require(found == [p['id'] for p in placements] and len(found) == len(set(found)) and set(found) <= figure_ids,
@@ -109,11 +130,46 @@ def as_draft(markdown, bibliography):
     return dict(title=lines[0].removeprefix('# ').strip(), body='\n'.join(lines[1:]).strip(), bibliography=bibliography)
 
 
+def verified_legacy_import(events, route, draft):
+    """Legacy metadata is import-compatible only for the current accepted draft."""
+    start = max((i for i,e in enumerate(events) if e['stage'] == 'essay_composition_started'), default=0)
+    active = events[start:]
+    finals = [(i,json.loads(e['payload_json'])) for i,e in enumerate(active) if e['stage'] == 'final_draft']
+    if not finals:
+        return False
+    index, final = finals[-1]
+    if final.get('route_id') != route.id or final.get('draft') != draft:
+        return False
+    gates = [json.loads(e['payload_json']) for e in active[:index] if e['stage'] == 'essay_audit_consensus']
+    if not gates:
+        return False
+    gate = gates[-1]
+    return (gate.get('audit_kind') == 'audit_essay' and gate.get('status') == 'complete'
+            and gate.get('route_id') == route.id and gate.get('faithful') is True
+            and gate.get('flags') == [] and gate.get('k',0) >= 3
+            and len(gate.get('samples',[])) >= 3
+            and all(s.get('faithful') is True and s.get('flags') == [] for s in gate['samples'])
+            and gate.get('draft_sha256') == digest(canonical(draft)))
+
+
 def polish(calls, route, draft, *, currency=None):
     from ara.runtime.essay_audit import audit_consensus
     calls.screen_imported_draft(draft, kind='audit_publication')
     from ara.runtime.hypotheses import validate_disclosure
     validate_disclosure(calls.log.read(),route,draft)
+    from ara.runtime.proposal import activate, validate_disclosure as validate_proposal_disclosure
+    proposal = activate(calls, route)
+    validate_proposal_disclosure(proposal, draft, allow_legacy=bool(proposal) and verified_legacy_import(calls.log.read(), route, draft))
+    from ara.runtime.publication_resume import repair_state
+    inline_enabled = calls.config.get('publication_inline_repairs', False)
+    title_only = calls.config.get('publication_title_format_only', False)
+    require(not (inline_enabled and title_only), 'choose inline repairs or title formatting only')
+    resumed = repair_state(calls.log.read(), route.id, digest(canonical(draft)), inline=inline_enabled or title_only)
+    require(not title_only or resumed['candidate'] is not None,
+            'title formatting requires an accepted publication candidate')
+    if resumed['candidate'] is not None:
+        calls.screen_imported_draft(as_draft(resumed['candidate']['markdown'], draft['bibliography']),
+                                    kind='audit_publication')
     policy = length_policy(calls.config.get('publication_min_words', 3000))
     calls.log.record('publication_length_policy', route_id=route.id, **policy)
     from ara.runtime.publication_figures import figure_data
@@ -129,50 +185,154 @@ def polish(calls, route, draft, *, currency=None):
             records.setdefault(id,dict(record=record,verification='logged_currency_record'))
     def check_whole(value):
         validate_disclosure(calls.log.read(),route,as_draft(value['markdown'],draft['bibliography']))
+        validate_proposal_disclosure(proposal, as_draft(value['markdown'], draft['bibliography']))
         reading,_ = reading_copy(value['markdown'],evidence,records,currency)
-        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'])
+        validate_polish(value,original,figure_ids,whole=True,currency=currency,reading_markdown=reading,minimum_words=policy['minimum_words'],proposal=proposal)
         return value
+    def repair_failure(exc, before_value, after_value):
+        from ara.runtime.publication_audit import repair_length_feedback
+        feedback = dict(validator_failure=str(exc), minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'])
+        try:
+            before = reading_copy(before_value['markdown'],evidence,records,currency)[0]
+            after = reading_copy(after_value['markdown'],evidence,records,currency)[0]
+            feedback.update(repair_length_feedback(before, after))
+        except Rejected as length_error:
+            feedback['length_diagnostics_unavailable'] = str(length_error)
+        return Rejected(canonical(feedback))
+    def check_inline(value):
+        try:
+            return check_whole(value)
+        except Rejected as exc:
+            raise repair_failure(exc, candidate, value) from exc
+    def check_composed(value):
+        from ara.runtime.proposal import insert_disclosure
+        before = as_draft(value['markdown'], draft['bibliography'])
+        disclosed = insert_disclosure(proposal, before)
+        if disclosed == before:
+            return check_whole(value)
+        # Validate the model's inventories and indices before metadata shifts them.
+        validate_polish(value, original, figure_ids)
+        markdown = '# ' + disclosed['title'] + '\n\n' + disclosed['body']
+        improvements = {p: c['improvement'] for p,c in zip(paragraphs(value['markdown']), value['change_log'])}
+        normalized = dict(value, markdown=markdown,
+            figure_placements=[dict(id=m[1], after_paragraph=len(paragraphs(markdown[:m.start()]))-1)
+                               for m in FIGURE.finditer(markdown)],
+            change_log=[dict(paragraph=i, improvement=improvements.get(p,
+                'Required proposal disclosure inserted; substantive text retained. Original model edits are recorded.'))
+                        for i,p in enumerate(paragraphs(markdown))])
+        check_whole(normalized)
+        calls.log.record('publication_proposal_disclosure_inserted', route_id=route.id,
+                         before_sha256=digest(canonical(value)), after_sha256=digest(canonical(normalized)),
+                         model_change_log=value['change_log'], semantic_repair_rounds_unchanged=True)
+        return normalized
+    def format_titles(value, failed, origin):
+        from ara.runtime.publication_verification import title_format_body
+        from ara.runtime.publication_inline import with_markdown
+        current = as_draft(value['markdown'], draft['bibliography'])
+        formatted = title_format_body(current, failed, {r['record'].get('title') for r in records.values()})
+        body_start = value['markdown'].index(current['body'])
+        markdown = (value['markdown'][:body_start] + formatted
+                    + value['markdown'][body_start+len(current['body']):])
+        updated = with_markdown(value, markdown,
+            'Exact cited work-title delimiters changed to italics; wording retained.')
+        check_whole(updated)
+        calls.log.record('publication_title_format_repair', before_sha256=digest(canonical(value)),
+            failed_items=failed, diagnosis_origin=origin, whole_paper_rounds_unchanged=True,
+            inline_passes_unchanged=True, **updated)
+        return updated
     figure_ids = {f['id'] for f in figures}
     chunks = sections(draft,calls.log.read())
     original = '\n\n'.join(chunks)
     calls.log.record('publication_started', route_id=route.id, original_draft=draft,
-                     original_sha256=digest(canonical(draft)), requested_model=MODEL)
-    base = dict(outline=calls.essay_outline(route), source_evidence=evidence,
+                     original_sha256=digest(canonical(draft)), requested_model=MODEL,
+                     resumed_repair_rounds=resumed['repair_rounds'], resumed_inline_passes=resumed['inline_passes'])
+    base = dict(**({'proposal': proposal} if proposal else {}), outline=calls.essay_outline(route), source_evidence=evidence,
                 minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'],
                 figures=[dict(id=f['id'],caption=f['caption']) for f in figures], original_title=draft['title'], literature_currency=currency)
     accepted = []
-    candidate = None
+    candidate = resumed['candidate']
+    if candidate is not None:
+        check_whole(candidate)
     audit = dict(faithful=False)
     failure = None
-    repair_rounds = 0
-    accepted_repair_rounds = 0
+    repair_rounds = resumed['repair_rounds']
+    accepted_repair_rounds = resumed['accepted_repair_rounds']
+    inline_passes = resumed['inline_passes']
+    native_citations = dict(status='not_run',reason='polish failed; original draft retained')
     try:
-        for index,chunk in enumerate(chunks):
-            result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
-                markdown=chunk,paragraphs=paragraphs(chunk)),
-                lambda value,chunk=chunk: validate_polish(value,chunk,figure_ids))
-            accepted.append(result)
-            calls.log.record('publication_section',route_id=route.id,section_index=index,**result)
-        merged = '\n\n'.join(v['markdown'] for v in accepted)
-        candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
-            original_markdown=original,paragraphs=paragraphs(merged)),
-            check_whole)
-        for attempt in range(4):
+        if title_only:
+            from ara.runtime.publication_verification import logged_title_failures
+            failed = logged_title_failures(calls.log.read(), as_draft(candidate['markdown'], draft['bibliography']))
+            if failed:
+                candidate = format_titles(candidate, failed, 'exact_logged_request')
+        if candidate is None:
+            for index,chunk in enumerate(chunks):
+                result = calls.call('polish_essay',dict(**base,mode='section',section_index=index,
+                    markdown=chunk,paragraphs=paragraphs(chunk)),
+                    lambda value,chunk=chunk: validate_polish(value,chunk,figure_ids))
+                accepted.append(result)
+                calls.log.record('publication_section',route_id=route.id,section_index=index,**result)
+            merged = '\n\n'.join(v['markdown'] for v in accepted)
+            candidate = calls.call('polish_essay',dict(**base,mode='whole',markdown=merged,
+                original_markdown=original,paragraphs=paragraphs(merged)),
+                check_composed)
+            calls.log.record('publication_candidate', **candidate)
+        while True:
             current = as_draft(candidate['markdown'],draft['bibliography'])
             citation_check(current,evidence)
             try:
-                audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                if not title_only:
+                    audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                try:
+                    verifier = calls._for_construction_stage('audit_publication', {})
+                    calls.log.record('publication_verification_provider',
+                                     provider=verifier.config['provider'], model=verifier.config['model'])
+                    cleaned, verification = verifier.verify_originality_citations(current)
+                    native_citations = dict(status='pass' if cleaned == current and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
+                    if native_citations['status'] == 'pass':
+                        audit = audit_consensus(calls,route,current,publication_context=publication_context)
+                    else:
+                        failed = [item for item in verification['items'] if item['status'] != 'verified']
+                        if failed and all(item.get('kind') == 'quotation' for item in failed):
+                            from ara.runtime.publication_verification import quotation_flags, title_format_body
+                            if inline_enabled or title_only:
+                                candidate = format_titles(candidate, failed, 'current_verification')
+                                continue
+                            title_format_body(current,failed,{r['record'].get('title') for r in records.values()})
+                            inputs = verifier.audit_inputs(route,current,publication_context=publication_context)
+                            flags = quotation_flags(current,inputs,failed)
+                            audit = {**audit, 'faithful': False, 'flags': flags,
+                                     'extra_steps': [f['sentence'] for f in flags],
+                                     'native_verification_issues': failed, 'title_format_only': True,
+                                     'repair_instruction': 'Only replace quotation marks around the identified work-title occurrences with Markdown italics (*title*). Preserve every other character, all title wording and every citation.'}
+                            calls.log.record('publication_verification_flags', **audit)
+                            raise EssayAuditFailed(audit,inputs,[])
+                except (ClaudeCodeError, Rejected) as exc:
+                    if str(exc) != 'stage_requires_api_provider':
+                        raise
+                    native_citations = dict(status='blocked',reason=str(exc))
+                    calls.log.record('publication_verification_blocked',**native_citations)
                 break
             except EssayAuditFailed as rejection:
                 audit = rejection.result
-                if attempt == 3 or not audit.get('flags'):
+                if title_only:
+                    raise
+                if inline_enabled:
+                    from ara.runtime.publication_inline import LIMIT, repair, eligible_sentences
+                    eligible = eligible_sentences(candidate['markdown'], rejection)
+                    if eligible:
+                        require(inline_passes < LIMIT, 'publication inline pass budget exhausted')
+                        inline_passes += 1
+                        candidate = repair(calls, candidate, rejection, base, check_inline, inline_passes)
+                        continue
+                if repair_rounds == 3 or not audit.get('flags'):
                     raise
                 inputs = rejection.inputs
                 flagged = [dict(**sentence,
                     role=next(f['role'] for f in audit['flags'] if f['sentence']==sentence['sentence']),
                     reasons=[f['reason'] for f in audit['flags'] if f['sentence']==sentence['sentence']])
                     for sentence in inputs['sentences'] if sentence['sentence'] in audit['extra_steps']]
-                from ara.runtime.publication_audit import repair_locations, validate_repair_scope, validate_sentence_repair, repair_length_feedback
+                from ara.runtime.publication_audit import repair_locations, validate_repair_scope, validate_sentence_repair
                 prior = paragraphs(candidate['markdown'])
                 flagged = repair_locations(candidate['markdown'], flagged)
                 allowed_blocks = sorted({s['location']['block_index'] for s in flagged})
@@ -182,19 +342,18 @@ def polish(calls, route, draft, *, currency=None):
                 def validate_repair(value):
                     try:
                         check_whole(value)
+                        if audit.get('title_format_only'):
+                            from ara.runtime.publication_verification import title_format_body
+                            expected = title_format_body(current,audit['native_verification_issues'],
+                                                         {r['record'].get('title') for r in records.values()})
+                            require(as_draft(value['markdown'],draft['bibliography'])['body'] == expected,
+                                    'work-title formatting repair changed wording or other occurrences')
                         validate_repair_scope(candidate['markdown'], value['markdown'], allowed_blocks)
                         validate_sentence_repair(candidate['markdown'], value['markdown'], flagged)
                     except Rejected as exc:
-                        feedback = dict(validator_failure=str(exc), minimum_words=policy['minimum_words'], maximum_words=policy['maximum_words'])
-                        try:
-                            before = reading_copy(candidate['markdown'],evidence,records,currency)[0]
-                            after = reading_copy(value['markdown'],evidence,records,currency)[0]
-                            feedback.update(repair_length_feedback(before, after))
-                        except Rejected as length_error:
-                            feedback['length_diagnostics_unavailable'] = str(length_error)
-                        raise Rejected(canonical(feedback)) from exc
+                        raise repair_failure(exc, candidate, value) from exc
                     return value
-                repair_rounds = attempt + 1
+                repair_rounds += 1
                 candidate = calls.call('polish_essay',dict(**base,mode='repair',repair_round=repair_rounds,markdown=candidate['markdown'],
                     original_markdown=original,paragraphs=prior,allowed_paragraphs=allowed,allowed_blocks=allowed_blocks,
                     flagged_sentences=flagged,audit_failures=audit['flags'],audit=audit),validate_repair,
@@ -208,18 +367,8 @@ def polish(calls, route, draft, *, currency=None):
     success = bool(audit['faithful'])
     chosen = as_draft(candidate['markdown'],draft['bibliography']) if success else draft
     local_citations = citation_check(chosen,evidence)
-    native_citations = dict(status='not_run',reason='polish failed; original draft retained')
-    if success:
-        try:
-            cleaned, verification = calls.verify_originality_citations(chosen)
-            native_citations = dict(status='pass' if cleaned == chosen and all(i['status']=='verified' for i in verification['items']) else 'fail', result=verification)
-            if native_citations['status'] == 'pass':
-                audit_consensus(calls,route,chosen,publication_context=publication_context)
-        except (ClaudeCodeError, Rejected) as exc:
-            if str(exc) != 'stage_requires_api_provider':
-                raise
-            native_citations = dict(status='blocked',reason=str(exc))
-            calls.log.record('publication_verification_blocked',**native_citations)
+    if not success:
+        native_citations = dict(status='not_run',reason='polish failed; original draft retained')
     markdown = candidate['markdown'] if success else '# '+draft['title']+'\n\n'+original
     placements = candidate['figure_placements'] if success else [
         dict(id=f['id'],after_paragraph=len(paragraphs(markdown))-1) for f in figures]
@@ -230,6 +379,7 @@ def polish(calls, route, draft, *, currency=None):
     result = dict(route_id=route.id,route_sha256=digest(route.to_json()),polished=success,audit=audit,polish_failure=failure,
         local_citations=local_citations,native_citations=native_citations,word_limits=policy,
         repair_rounds=repair_rounds,accepted_repair_rounds=accepted_repair_rounds,
+        inline_passes=inline_passes,
         repair_validation_attempts=REPAIR_VALIDATION_ATTEMPTS,
         words=len(NODE.sub('',FIGURE.sub('',reading)).split()),
         audit_words=len(NODE.sub('',FIGURE.sub('',markdown)).split()),
@@ -274,6 +424,7 @@ def publish(log, result):
         local_citations=result['local_citations'],native_citations=result['native_citations'],words=result['words'],
         bibliographic_records=result['bibliographic_records'],repair_rounds=result['repair_rounds'],
         accepted_repair_rounds=result['accepted_repair_rounds'],word_limits=result['word_limits'],
+        inline_passes=result.get('inline_passes',0),
         repair_validation_attempts=result['repair_validation_attempts'])
     (directory/'latest.json').write_text(canonical(dict(path=name,sha256=digest(canonical(result)))))
     return result,target
@@ -324,13 +475,28 @@ def publication_command(args, log, root, calls_factory):
         minimum = args.min_words if args.min_words is not None else config.get('publication_min_words', 3000)
         length_policy(minimum)
         config.update(provider='claude_code',model=MODEL,stages={},fallbacks=[],validation_attempts=1,
+                      publication_inline_repairs=getattr(args,'inline_repairs',False),
+                      publication_title_format_only=getattr(args,'title_format_only',False),
                       publication_min_words=minimum,essay_min_words=minimum,essay_word_limit=6000,max_output_tokens=24576,
                       cache_dir=str(args.run_dir/'publication/cache'))
+        # A writer's Codex client window belongs to the separately selected
+        # Codex auditor, never to the Claude publication provider.
+        config.pop('model_context_window', None)
+        config.pop('model_context_margin_tokens', None)
+        context_policy = publication_context_policy(
+            config.get('polish_essay_max_output_tokens', config['max_output_tokens']),
+            config.get('publication_context_margin_tokens', 16384))
+        config['model_context_token_bound'] = context_policy['admission_bound_tokens']
+        config['publication_context_policy'] = context_policy
         if args.audit_provider == 'codex_cli':
             audit_model = args.audit_model or writer_settings['model']
             require(audit_model.startswith('gpt-'), 'Codex publication audit requires a configured GPT model')
             config['stages']['audit_publication'] = dict(provider='codex_cli', model=audit_model,
-                effort=writer_settings['effort'], system_prompt=writer_settings.get('system_prompt', ''))
+                effort=writer_settings['effort'], system_prompt=writer_settings.get('system_prompt', ''),
+                model_context_token_bound=writer_settings['model_context_token_bound'])
+            config['stages']['audit_publication'].update({key: writer_settings[key] for key in
+                ('model_context_window', 'model_context_margin_tokens', 'propose_targets_max_output_tokens')
+                if key in writer_settings})
         elif args.audit_model is not None:
             require(args.audit_model == MODEL, 'Claude publication audit uses the pinned publication model')
         config.setdefault('claude_code', {}).setdefault('timeout_seconds', 900)
@@ -339,6 +505,7 @@ def publication_command(args, log, root, calls_factory):
         calls = calls_factory(config,log,run['topic'],imported_draft=draft)
         validate_local(json.loads((root/'schemas/write_essay.json').read_text()),draft,run['config'])
         log.record('publication_configuration',config=config,draft_path=str(draft_path),draft_sha256=digest(canonical(draft)))
+        log.record('publication_context_policy', **context_policy)
         from ara.runtime.publication_currency import load_currency
         currency = load_currency(args.literature_currency, log)
         result,directory = polish(calls,route,draft,currency=currency)

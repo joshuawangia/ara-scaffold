@@ -689,3 +689,41 @@ continues to disclose the bridge as a model judgment.
 Each target's declared `basis_commitment_ids` stays in the model-visible frozen commitment rows for mapping, cut proposal and joint-slot formalization. Search expands complete formal/alignment neighbourhoods using `target_context_hops` (default 1), including alignment evidence bundles. Child leaves inherit their search job's target scope; concurrent targets and retries keep separate contexts. Optional bridges and leads rank by symbols shared with the leaf and this required neighbourhood.
 
 Shrinking optional guidance never removes the basis, configured neighbourhood, exact leaf matches or fixed slot bindings. Every `search_context_slice` logs the basis IDs, neighbourhood, actual basis coverage, selected rows, frozen hash bindings, field bytes and counted input/output totals. If mandatory context cannot fit, the job refuses before dispatch with that breakdown; sibling jobs can continue. An open formalization slot retains the entire frozen catalogue because arbitrary text does not provide a complete formal dependency set. Its definitions/signatures are mandatory even at k=0. Gates still use full verified frozen inputs.
+### OPEN proposal papers
+
+`ara select --run-dir RUN --route ID --proposal-packet PACKET.json` accepts an
+explicit paper-owned proposal on an OPEN route. The immutable packet names
+`route_id`, exact `target_text`, `thesis_origin` (`ara` or `eps2`),
+`dossier_mapping`, `missing_premise`, `frozen_evidence_ids`, `local_sources`, and
+`minimum_words` (3000–4500). Supplementary sources name `id` (`proposal:` prefix),
+`pdf_path`, `pdf_sha256`, `page_start`, `page_end`, bibliography `record`, and an
+exact `excerpt`. Record fields include id/authors/year/title/venue; optional URL
+and version metadata remain disclosed inputs. Pages and matching excerpts are
+retained in the append-only log. No declaration changes T or licenses an edge.
+
+The proposal audit enforces four paper-level rules: the title page carries the origin
+label (in the short title or body before Abstract) and Abstract contains one disclosure sentence; the bridge principle is
+in a clearly headed Proposal section and is not attributed to a source; source
+claims are cited and faithful; no unsupported claim is presented as established.
+The bridge uses proposed_principle, with a faithful root-node mapping in Proposal.
+The abstract and other sections may restate the same proposal. Supporting
+arguments, objections and replies use argument_for_proposal throughout the paper.
+Neither sentence-level ownership prefixes nor paragraph markers are required.
+Source discussion is allowed within Proposal, with the same citation obligations.
+A status note and repeated process disclaimers are not required.
+
+`proposal_scopes.sentence_scopes(body, spans)` identifies Proposal section spans,
+ending at the next heading. `calls.audit_inputs` adds their `proposal_scope`
+metadata; model output cannot supply that authorization. `proposal.role_failure`
+accepts `proposal_scope` alongside `frozen_hypothesis` and `source_authors`.
+OPEN mode never authorizes H; H retains separate validated node binding and
+conditional disclosure. Publication owns its layout integration.
+
+Composition, resume and post-verification cleanup add the title-page label and one
+fixed, unquoted abstract disclosure deterministically. They preserve substantive
+text and do not invent a status note. Verified legacy imports may call
+`validate_disclosure(..., allow_legacy=True)` only at entry; new output and repairs
+use the current contract. Metadata corrections do not consume or reset semantic
+repairs, and unchanged adverse history remains binding. Citation cleanup cannot
+erase retained local evidence. Fresh k>=3 union auditing and the shared three-round
+repair cap remain unchanged. Resume restores the logged immutable packet.

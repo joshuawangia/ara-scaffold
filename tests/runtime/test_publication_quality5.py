@@ -155,6 +155,9 @@ def test_post_verification_gate_also_requires_fresh_unanimous_samples(rig,monkey
     original=calls.provider.complete;audits=0
     def complete(kind,prompt,schema,maximum):
         nonlocal audits
+        data=json.loads(prompt.split('\nINPUT_JSON\n')[1])
+        if kind=='polish_essay' and data['mode']=='repair':
+            return Response(response(dict(polished(paper()),markdown=data['markdown'])))
         value=original(kind,prompt,schema,maximum)
         if kind=='audit_publication':
             audits+=1
@@ -163,9 +166,10 @@ def test_post_verification_gate_also_requires_fresh_unanimous_samples(rig,monkey
                 return Response(response(out))
         return value
     monkeypatch.setattr(calls.provider,'complete',complete)
-    with pytest.raises(EssayAuditFailed):polish(calls,route,paper())
-    assert audits==6
-    assert not (calls.log.path.parent/'publication/latest.json').exists()
+    result, _ = polish(calls,route,paper())
+    assert not result['polished']
+    assert result['repair_rounds']==3
+    assert audits==15  # The unchanged repairs cannot erase final-gate dissent.
 
 
 @pytest.mark.parametrize('malformed',['partial','duplicate','unknown_node'])

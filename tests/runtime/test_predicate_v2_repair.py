@@ -14,7 +14,11 @@ def test_rejected_overwrite_keeps_prior_authority_recoverable(rig,monkeypatch):
         if kind!='predicate_catalogue':return
         attempts.append(deepcopy(inputs))
         if len(attempts)==1:data['extra']='Q'
-        elif len(attempts)==2:data['sorts'][0]['gloss']='Q'
+        elif len(attempts)==2:
+            data['sorts'][0]['gloss']='Q'
+            data['sorts'].append(dict(name='b',gloss='b'))
+            data['predicates'].append(dict(gloss='G(x)',roles=[dict(role='x',sort='b')],
+                                          sharing_rationale='P Q',distinctions='R'))
     calls,t,rows,seen=setup(rig,monkeypatch,damage);calls.config['validation_attempts']=3
     final=prepare_commitments(calls,load_bank(ROOT/'bank'),'P','P')
     assert len(attempts)==3

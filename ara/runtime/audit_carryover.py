@@ -131,7 +131,15 @@ def aligned_pairs(source, inputs, draft):
         def removal_or_unchanged(row):
             source_prefix=PREFIX.match(' '.join(row['text'].split()))
             return target_prefix is None or (source_prefix is not None and source_prefix[0].casefold()==target_prefix[0].casefold())
-        exact=[r for r in candidates if normalized_sentence(r['text'])==text and removal_or_unchanged(r)]
+        def same_prefix_text(row):
+            original = normalized_sentence(row['text'])
+            if original == text:
+                return True
+            # Removing ownership may expose a lowercase sentence-initial word.
+            # Only that initial capital may change; never case-fold the claim.
+            return (target_prefix is None and PREFIX.match(' '.join(row['text'].split())) is not None
+                    and original[:1].upper() + original[1:] == text)
+        exact=[r for r in candidates if same_prefix_text(r) and removal_or_unchanged(r)]
         if exact:
             # Identical duplicate text with incompatible roles is ambiguous.
             if len({canonical({k:v for k,v in r['label'].items() if k!='sentence'}) for r in exact})!=1:

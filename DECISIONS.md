@@ -4786,3 +4786,11 @@ history, source fidelity checks or repair limits are relaxed.
 Review follow-up: apply identical whitespace normalization to heading presence
 and per-section budget selection. A padded Abstract heading must not bypass
 its proposal budget. The native regression refuses before section dispatch.
+
+## Model-free prefix rendering
+
+Ownership-prefix removal may capitalize the newly exposed first character.
+The verified-source carry-over matcher accepts exactly that case change only
+after an existing prefix is removed; later case, words, negation and citations
+remain significant. No model judgment or fresh audit is implied by rendering.
+Source receipt recovery includes the nonadverse schema-retry correction.

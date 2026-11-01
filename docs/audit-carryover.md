@@ -18,7 +18,8 @@ Missing or incompatible evidence leaves sentences on the ordinary audit path.
 `ara.runtime.audit_carryover.normalized_sentence` normalizes whitespace,
 typographic quotes and serial commas and removes a leading paper-owned cue.
 It retains words, logical symbols and citation markers. Deterministic carry-over
-permits removing the cue; adding or changing a cue requires a meaning check.
+permits removing the cue and capitalizing only the newly exposed first character;
+all later word casing remains significant. Adding or changing a cue requires a meaning check.
 Citation markers and their bibliography records must remain unchanged.
 
 Other wording changes may be aligned to a source sentence using text similarity.

@@ -260,3 +260,20 @@ def test_meaning_shape_retry_stops_after_one_correction(rig,monkeypatch):
     assert 'validation_feedback' in requests[1]
     assert not any(k=='audit_publication' for k,_ in seen)
     assert not any(e['stage']=='sentence_meaning_consensus' for e in calls.log.read())
+
+
+def test_prefix_removal_allows_only_sentence_initial_capitalization(rig, monkeypatch):
+    calls, route, source, _, seen = setup_source(rig, monkeypatch, first='This paper argues that p entails Q.')
+    draft = revised(source, 'P entails Q.')
+    inputs = calls.audit_inputs(route, draft, publication_context=dict(original_draft=source))
+    rows = inputs['verified_sentence_carryover']['sentences']
+    assert {r['sentence'] for r in rows if r['method']=='prefix_only'} == {1, 2}
+    assert len(seen) == 3  # Source receipts only; no meaning or publication call.
+
+
+@pytest.mark.parametrize('text', ['P entails q.', 'P does not entail Q.', 'P entails R.'])
+def test_prefix_capitalization_does_not_hide_other_word_changes(rig, monkeypatch, text):
+    calls, route, source, _, seen = setup_source(rig, monkeypatch, first='This paper argues that p entails Q.')
+    inputs = calls.audit_inputs(route, revised(source,text), publication_context=dict(original_draft=source))
+    assert 1 not in {r['sentence'] for r in inputs['verified_sentence_carryover']['sentences']}
+    assert len(seen) == 3

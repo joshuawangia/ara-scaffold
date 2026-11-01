@@ -5157,7 +5157,7 @@ history, source fidelity checks or repair limits are relaxed.
 Review follow-up: apply identical whitespace normalization to heading presence
 and per-section budget selection. A padded Abstract heading must not bypass
 its proposal budget. The native regression refuses before section dispatch.
-# Exact operator-instructed publication flow
+## Exact operator-instructed publication flow
 
 An explicitly authorized new flow-only publication may use a retained UTF-8
 instruction file instead of the standard section and whole-paper prompts.
@@ -5172,3 +5172,11 @@ The operator-only flow schema is excluded from ordinary Codex preflight, alongsi
 the separately exercised publication schemas. Its exact instruction cannot be
 assumed in ordinary writer configuration; flow transport remains covered by its
 own native-boundary tests. Review FLOW-F1 reproduced this registration failure.
+
+## Model-free prefix rendering
+
+Ownership-prefix removal may capitalize the newly exposed first character.
+The verified-source carry-over matcher accepts exactly that case change only
+after an existing prefix is removed; later case, words, negation and citations
+remain significant. No model judgment or fresh audit is implied by rendering.
+Source receipt recovery includes the nonadverse schema-retry correction.

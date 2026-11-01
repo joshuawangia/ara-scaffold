@@ -150,3 +150,17 @@ CASES += [
   "if version==V3 and (unresolved>p['max_unresolved'] or streak>=p['failure_streak']):", 'if False:',
   'tests/runtime/test_predicate_v3.py::test_diagnostic_stop_counts_rejections_and_prevents_freeze'),
 ]
+
+
+CASES += [
+ ('sharedpred3_alias_identity','ara/runtime/predicate_catalogue_policy.py',
+  "sorts={s['name']:visible(s['gloss']) for s in data['sorts']}",
+  "sorts={s['name']:s['name'] for s in data['sorts']}",
+  'tests/runtime/test_predicate_v3_review.py::test_native_alias_revision_refuses_before_second_coverage'),
+ ('sharedpred3_causal_order','ara/runtime/predicate_catalogue_policy.py',
+  "require(previous<cat[0]<cov[0],'catalogue/coverage order mismatch')", 'pass',
+  'tests/runtime/test_predicate_v3_review.py::test_reader_refuses_catalogue_response_after_coverage_or_protection'),
+ ('sharedpred3_exact_feedback','ara/runtime/predicate_catalogue_policy.py',
+  "'coverage':deepcopy(checks[-1])", "'coverage':None",
+  'tests/runtime/test_predicate_v3_review.py::test_revision_keeps_exact_missing_components_and_reasons'),
+]

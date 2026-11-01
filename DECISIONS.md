@@ -5001,3 +5001,12 @@ history and solver gates remain unchanged. Configured rejection limits now emit 
 v3 diagnostic pause with attempted/admitted/rejected/unattempted counts before
 refusal; no automatic resume or partial freeze is implied. Live metrics remain
 separate from claimed coverage and offline gate evidence.
+
+
+V3 provisional identity treats local sort labels as aliases of their visible
+glosses. Predicate glosses and ordered role meanings remain in the identity;
+this is deterministic normalization, not semantic equivalence inference.
+Revision feedback retains the exact positional missing-components/reasons.
+Frozen replay enforces accepted catalogue then coverage for every revision,
+followed by protection before formalization dispatch or response. Authenticated
+values alone do not establish this causal order.

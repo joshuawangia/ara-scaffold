@@ -36,8 +36,13 @@ def capacity_feedback(data):
 
 
 def vocabulary_key(data):
-    return digest(canonical(dict(sorts=sorted(data['sorts'],key=canonical),
-        predicates=sorted([dict(gloss=p['gloss'],roles=p['roles']) for p in data['predicates']],key=canonical))))
+    from ara.runtime.commitment_provenance import _definition_screen_text
+    def visible(text):return ' '.join(_definition_screen_text(text).split())
+    # Local sort labels are aliases, not new meanings. Ordered role semantics stay explicit.
+    sorts={s['name']:visible(s['gloss']) for s in data['sorts']}
+    predicates=[dict(gloss=visible(p['gloss']),roles=[dict(role=visible(r['role']),sort=sorts[r['sort']])
+                 for r in p['roles']]) for p in data['predicates']]
+    return digest(canonical(dict(sorts=sorted(set(sorts.values())),predicates=sorted(predicates,key=canonical))))
 
 
 def draft(data,history=()):
@@ -72,7 +77,8 @@ def assess(data,check,sources):
 def catalogue_inputs(base,history,checks):
     result={**base,'policy_version':V3,'catalogue_capacity':CAPACITY,'minimum_source_papers':MIN_PAPERS}
     if history:result.update(mode='provisional_revision',revision=len(history),draft_catalogue=history[-1],
-                            coverage_feedback=assess(history[-1],checks[-1],base['sources']))
+                            coverage_feedback={**assess(history[-1],checks[-1],base['sources']),
+                                               'coverage':deepcopy(checks[-1])})
     return result
 
 
@@ -121,7 +127,19 @@ def verify_protection(events,base,history,checks):
     found=[(i,json.loads(e['payload_json'])) for i,e in enumerate(events) if e['stage']=='shared_predicate_catalogue_protected']
     require(len(found)==1 and found[0][1]==expected,'catalogue protection receipt mismatch')
     position=found[0][0]
+    from ara.runtime.predicate_receipts import model_inputs
+    def accepted_positions(kind,inputs):
+        return [i for i,e in enumerate(events) if e['stage']==kind and e['label']=='MODEL' and
+                json.loads(e['payload_json']).get('status')=='accepted' and model_inputs(e)==inputs]
+    previous=-1
+    for revision,(data,check) in enumerate(zip(history,checks,strict=True)):
+        cat=accepted_positions('predicate_catalogue',catalogue_inputs(base,history[:revision],checks[:revision]))
+        cov=accepted_positions('predicate_coverage',coverage_inputs(base,data,revision))
+        require(len(cat)==len(cov)==1,'catalogue protection requires unique accepted responses')
+        require(previous<cat[0]<cov[0],'catalogue/coverage order mismatch')
+        previous=cov[0]
     cover=[i for i,e in enumerate(events) if e['stage']=='predicate_coverage' and e['label']=='MODEL']
-    formal=[i for i,e in enumerate(events) if e['stage']=='predicate_formalize' and e['label']=='MODEL']
+    formal=[i for i,e in enumerate(events) if (e['stage']=='predicate_formalize' and e['label']=='MODEL') or
+            (e['stage']=='call_start' and json.loads(e['payload_json']).get('kind')=='predicate_formalize')]
     require(bool(cover) and max(cover)<position and (not formal or position<min(formal)),
             'catalogue protection order mismatch')

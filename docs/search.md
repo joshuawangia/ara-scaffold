@@ -11,10 +11,10 @@ uv run ara run --profile pilot --topic 'P Q' --literature /path/to/literature.tx
 uv run ara select --run-dir runs/pilot
 ```
 
-The pilot requests a pool of 20 target candidates per attempt, retains up to 10
+The pilot requests a pool of 30 target candidates per attempt, retains up to 30
 that pass preflight, and searches them at depth 6 and node cap 500 before human
 route selection. Excluded
-candidates remain disclosed; the accepted set can contain fewer than ten or none.
+candidates remain disclosed; the accepted set can contain fewer than 30 or none.
 
 `search_concurrency` (top-level configuration, default 4)
 bounds independent target/polarity searches; set it to 1 for sequential searches.
@@ -51,9 +51,10 @@ reports the latest phase; earlier pause/failure events remain in the log.
 
 Target proposal permits an initial batch and at most two corrections. Passing
 candidates remain retained in stable attempt/response order; later batches fill
-remaining places. Each candidate receives the own-thesis classification below. If all ten candidates pass, there are 20 polarity
-searches. For 20 similarly sized searches, four workers can reduce that portion
-from 20 waves to about five; proposal, forward/conflict analysis, solver checks,
+remaining places. Each candidate receives the own-thesis classification below.
+The ordinary and pilot defaults request 30 candidates, giving up to 60 polarity
+searches. Four workers can schedule 60 similarly sized jobs in about 15 waves
+when the zero-inference pause does not stop the phase; proposal, forward/conflict analysis, solver checks,
 logging and provider limits reduce the total speedup. This is an expected effect, not a
 measured live-provider result.
 
@@ -205,7 +206,7 @@ uv run ara run --config runs/example-config.yaml --topic 'P Q' --literature test
 ```
 
 This reproducible example is offline. A normal run waits for human route
-selection. The unmodified configuration requests ten targets, depth six and 500
+selection. The unmodified configuration requests 30 targets, depth six and 500
 nodes; its ordinary 200,000-token cap can refuse conservative web admission.
 Review caps before a larger run.
 
@@ -281,7 +282,7 @@ legacy catalogues remain unavailable; code does not invent their definitions.
 All classification dispositions, cache replays and solver receipts are logged.
 
 Proposal asks for 30 candidates per attempt and retains at most
-`min(target_candidates, 10)`. An explicit named position uses a one-item pool and
+`min(target_candidates, 30)`. An explicit named position uses a one-item pool and
 preserves its exact text. A response may supply fewer candidates when it cannot
 fill the pool; received/requested counts and `underfilled` are logged. At most
 three proposal attempts run, with passing candidates retained across corrections

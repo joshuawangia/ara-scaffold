@@ -20,6 +20,22 @@ exports from logs, and proves cached graph replay. Negative controls disable
 production behavior, require red tests, restore it and require green tests. Run
 them without another checkout writer.
 
+## Control inventories
+
+`tests/integration/negative_controls.py` is the current integration inventory;
+it includes the proposal and Claude canary tuples. Carry-over, meaning-inventory,
+proposal-admission and publication-flow controls have additional owning runners
+under `tests/runtime/`. Their runner arguments and causal diagnostics are defined
+in those files; keep their evidence separate from the integration count.
+
+Older standalone runtime scripts (`negative_controls.py`, `eta_negative_controls.py`,
+`iota_negative_controls.py` and `zeta_negative_controls.py`) retain historical
+anchors, some of which no longer match production. Their presence is not a
+passing current gate. Use the current integration inventory and the owning
+runners above; a report must name exactly which controls it executed, which it
+inherited and any invalid anchors. Do not count a setup error as a detected
+production defect.
+
 ## Historical live smoke
 
 A historical clean-clone real smoke at `a20e03c` completed with both audit passes,

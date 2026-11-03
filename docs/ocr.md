@@ -81,7 +81,7 @@ provider calls and writes content only under ignored `runs/`:
 
 ```bash
 unshare -Urn .venv/bin/python tools/ocr_audit.py \
-  --manifest literature/manifest.yaml --fulltext-dir literature/fulltext \
+  --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext \
   --run-dir runs/ocr-audit
 ```
 

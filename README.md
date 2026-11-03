@@ -72,9 +72,9 @@ and `uv run ara COMMAND --help`.
 
 | Task | Command | Details |
 | --- | --- | --- |
-| Estimate PDF extraction without generation | `uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --ocr off --provider mock --estimate-only --run-dir runs/estimate` | [Extraction](docs/extraction.md) |
-| Extract one PDF | `uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction` | API credential and default [OCR setup](docs/ocr.md) required |
-| Plan extraction ranges | `uv run ara plan-extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --ocr off --token-counter local --run-dir runs/extraction-plan` | Local estimates; generation disabled |
+| Estimate PDF extraction without generation | `uv run ara extract --profile extraction --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --ocr off --provider mock --estimate-only --run-dir runs/estimate` | [Extraction](docs/extraction.md) |
+| Extract one PDF | `uv run ara extract --profile extraction --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --paper-id p --run-dir runs/extraction` | API credential and default [OCR setup](docs/ocr.md) required |
+| Plan extraction ranges | `uv run ara plan-extraction --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --paper-id p --ocr off --token-counter local --run-dir runs/extraction-plan` | Local estimates; generation disabled |
 | Plan construction | `uv run ara plan-construction --literature runs/extraction/literature.extracted.txt --topic 'P' --profile pilot --token-counter local --run-dir runs/construction-plan` | [Construction](docs/construction.md); preserve extraction provenance |
 | Construct and search | `uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot` | [Search](docs/search.md); pauses for route selection |
 | Reuse a verified freeze | `uv run ara fork-from-freeze --source-run runs/source --run-dir runs/fork` | [Frozen forks](docs/search.md#reuse-a-verified-freeze); proposes new targets without rebuilding T |

@@ -2,12 +2,12 @@
 
 [Documentation index](README.md) · [Project README](../README.md)
 
-Place manifest-listed PDFs in `literature/fulltext/`. See [local OCR](ocr.md) for
+Place manifest-listed PDFs in your full-text directory. See [local OCR](ocr.md) for
 the default intake requirements. This text-only estimate needs no OCR weights or
 provider credential:
 
 ```sh
-uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --provider mock --ocr off --estimate-only --run-dir runs/extraction-estimate
+uv run ara extract --profile extraction --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --provider mock --ocr off --estimate-only --run-dir runs/extraction-estimate
 ```
 
 With credentials configured, extract the chosen sources through the normal logged
@@ -15,7 +15,7 @@ model boundary. `p` below is a placeholder to replace with a manifest id; omit
 `--paper-id` only when ready to extract the entire manifest.
 
 ```sh
-uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --run-dir runs/extraction
+uv run ara extract --profile extraction --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --paper-id p --run-dir runs/extraction
 uv run ara run --profile pilot --topic 'P' --literature runs/extraction/literature.extracted.txt --run-dir runs/pilot-extracted
 ```
 
@@ -39,7 +39,7 @@ also reach construction. Use it with the original extracted literature and
 operator-set caps. The ordinary `extraction` profile above retains its defaults.
 
 ```sh
-uv run ara plan-extraction --profile extraction-full --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --paper-id p --ocr off --token-counter local --run-dir runs/extraction-plan
+uv run ara plan-extraction --profile extraction-full --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --paper-id p --ocr off --token-counter local --run-dir runs/extraction-plan
 ```
 
 The example disables OCR; omit `--ocr off` after installing its dependencies and
@@ -143,7 +143,7 @@ request without fetching it.
 Reuse completed papers in a fresh destination with repeatable `--resume-from`:
 
 ```sh
-uv run ara extract --config config.yaml --profile extraction-full --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --resume-from runs/extraction-old --run-dir runs/extraction-new
+uv run ara extract --config config.yaml --profile extraction-full --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --resume-from runs/extraction-old --run-dir runs/extraction-new
 ```
 
 Set the full profile's operator caps before generation. Resume checks source
@@ -276,7 +276,7 @@ evidence. Offline salvage verifies original receipts, retains accepted evidence
 and rechecks grounding without creating a generation-capable provider:
 
 ```sh
-uv run ara extract --profile extraction --manifest literature/manifest.yaml --fulltext-dir literature/fulltext --ocr off --salvage-only --resume-from runs/extraction-old --run-dir runs/extraction-salvage
+uv run ara extract --profile extraction --manifest /path/to/manifest.yaml --fulltext-dir /path/to/fulltext --ocr off --salvage-only --resume-from runs/extraction-old --run-dir runs/extraction-salvage
 ```
 
 Match the original source intake and effective acceptance settings; `--ocr off` is

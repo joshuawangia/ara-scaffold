@@ -54,7 +54,6 @@ and concurrency tests.
 | `tools/replay_extraction.py` | Offline historical response replay |
 | `tools/fetch_ocr_models.py`, `tools/ocr_audit.py` | Weight provisioning and local OCR audit |
 | `tools/calibrate_claude_code.py`, `tools/benchmark_search_traces.py` | Token-estimate calibration and trace benchmarking |
-| `literature/` | Bibliographic metadata and ignored local PDFs; [input guidance](literature/README.md) |
 | `runs/`, `cache/`, `*.egg-info/` | Ignored runtime/build outputs; never source authority |
 
 `pyproject.toml` owns pytest discovery (`tests/`), package data and the CLI entry

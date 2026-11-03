@@ -1,3 +1,0 @@
-**ON HOLD — not started.** The brain's updated instruction is to finish Task 1, send its smoke DONE line, then wait. The operator requires per-paper extraction now being built by gamma. Beta's file arrived, but its presence no longer authorizes starting the pilot. No pilot cost, calls, routes, selection, or retrieval occurred. Pilot cost/time are zero because no pilot command was run.
-
-Original requested input: `runs/inputs/epistemic-modals-literature.txt`. Observed beta file: 13,435 bytes, SHA-256 `c5d822011ffa24d2aeb687d8f3cff567a3f25c7ee80aed3a979045163182c872`. This is provenance only, not approval to use it for a pilot. Await the brain's revised input/instructions.
